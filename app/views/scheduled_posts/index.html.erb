@@ -1,0 +1,225 @@
+<!-- Content Scheduler with Calendar View -->
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Content Scheduler</h1>
+          <p class="mt-1 text-gray-600">Plan and manage your social media content posting schedule</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <%= link_to "New Schedule", new_scheduled_post_path, class: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Total Scheduled</p>
+            <p class="text-2xl font-bold text-gray-900"><%= @total_scheduled %></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Today's Posts</p>
+            <p class="text-2xl font-bold text-gray-900"><%= @today_posts %></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">This Week</p>
+            <p class="text-2xl font-bold text-gray-900"><%= @this_week_posts %></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Success Rate</p>
+            <p class="text-2xl font-bold text-gray-900">98%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Toggle -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center space-x-4">
+        <h2 class="text-xl font-semibold text-gray-900">Posting Schedule</h2>
+        <div class="flex rounded-lg border border-gray-300 overflow-hidden">
+          <button class="view-toggle active px-4 py-2 text-sm font-medium" data-view="calendar">
+            Calendar View
+          </button>
+          <button class="view-toggle px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900" data-view="timeline">
+            Timeline View
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar View -->
+    <div id="calendar-view" class="view-content">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">January <%= Date.current.year %></h3>
+            <div class="flex items-center space-x-2">
+              <button class="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-full">Today</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="p-6">
+          <!-- Calendar Grid -->
+          <div class="grid grid-cols-7 gap-1 mb-4">
+            <div class="text-center text-sm font-medium text-gray-500 p-2">Sun</div>
+            <div class="text-center text-sm font-medium text-gray-500 p-2">Mon</div>
+            <div class="text-center text-sm font-medium text-gray-500 p-2">Tue</div>
+            <div class="text-center text-sm font-medium text-gray-500 p-2">Wed</div>
+            <div class="text-center text-sm font-medium text-gray-500 p-2">Thu</div>
+            <div class="text-center text-sm font-medium text-gray-500 p-2">Fri</div>
+            <div class="text-center text-sm font-medium text-gray-500 p-2">Sat</div>
+          </div>
+          
+          <!-- Calendar Days -->
+          <div class="grid grid-cols-7 gap-1">
+            <% (1..31).each do |day| %>
+              <% date = Date.new(Date.current.year, 1, day) %>
+              <% posts_for_day = @scheduled_posts.select { |post| post.scheduled_time.to_date == date } %>
+              <div class="calendar-day min-h-[120px] p-2 border border-gray-200 <%= 'bg-blue-50' if date == Date.current %>">
+                <div class="text-sm font-medium text-gray-900 mb-2"><%= day %></div>
+                <div class="space-y-1">
+                  <% posts_for_day.each do |post| %>
+                    <div class="post-card p-1 text-xs rounded cursor-pointer hover:opacity-80 <%= post.status == 'scheduled' ? 'bg-blue-500 text-white' : post.status == 'published' ? 'bg-green-500 text-white' : 'bg-red-500 text-white' %>"
+                         data-post-id="<%= post.id %>">
+                      <div class="font-medium truncate"><%= post.content.title.truncate(15) %></div>
+                      <div class="text-xs opacity-90"><%= post.scheduled_time.strftime('%I:%M %p') %></div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline View -->
+    <div id="timeline-view" class="view-content hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Posting Timeline</h3>
+          </div>
+        </div>
+        
+        <div class="divide-y divide-gray-200">
+          <% if @upcoming_posts.any? %>
+            <% @upcoming_posts.each do |post| %>
+              <div class="p-6 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-4">
+                    <input type="checkbox" class="post-checkbox" data-post-id="<%= post.id %>">
+                    <div class="flex-shrink-0">
+                      <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="text-lg font-medium text-gray-900">
+                        <%= link_to post.content.title, post, class: "hover:text-purple-600" %>
+                      </h4>
+                      <div class="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                        <span><%= post.scheduled_time.strftime('%B %d, %Y at %I:%M %p') %></span>
+                        <span>•</span>
+                        <span class="capitalize"><%= post.platform %></span>
+                        <span>•</span>
+                        <span class="capitalize"><%= post.content.content_type %></span>
+                      </div>
+                      <p class="text-sm text-gray-600 mt-2">
+                        <%= post.content.body.truncate(150) %>
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-4">
+                    <span class="px-3 py-1 text-sm rounded-full <%= status_class(post.status) %>">
+                      <%= post.status.titleize %>
+                    </span>
+                    <div class="flex items-center space-x-2">
+                      <%= link_to "Edit", edit_scheduled_post_path(post), 
+                                  class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="p-12 text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No scheduled posts</h3>
+              <p class="mt-1 text-sm text-gray-500">Start by scheduling your first post to see your content timeline.</p>
+              <div class="mt-6">
+                <%= link_to "Schedule a Post", new_scheduled_post_path, 
+                            class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% def status_class(status) %>
+  <% case status %>
+  <% when 'scheduled' %>
+    bg-blue-100 text-blue-800
+  <% when 'published' %>
+    bg-green-100 text-green-800
+  <% when 'failed' %>
+    bg-red-100 text-red-800
+  <% when 'cancelled' %>
+    bg-gray-100 text-gray-800
+  <% else %>
+    bg-gray-100 text-gray-800
+  <% end %>
+<% end %>

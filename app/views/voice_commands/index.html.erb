@@ -1,0 +1,173 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-4">
+          <li>
+            <div>
+              <%= link_to "Dashboard", dashboards_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <span class="text-gray-500">Voice Commands</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+      
+      <div class="mt-4">
+        <h1 class="text-3xl font-bold text-gray-900">Voice Commands</h1>
+        <p class="mt-2 text-gray-600">Manage and review your voice command interactions with the AI autopilot.</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="space-y-6">
+      <!-- Commands Overview -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Command Overview</h3>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-600"><%= @voice_commands.where(command_type: 'create_campaign').count %></div>
+              <div class="text-sm text-gray-500">Campaign Commands</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600"><%= @voice_commands.where(command_type: 'generate_content').count %></div>
+              <div class="text-sm text-gray-500">Content Commands</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-purple-600"><%= @voice_commands.where(command_type: 'schedule_post').count %></div>
+              <div class="text-sm text-gray-500">Schedule Commands</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-orange-600"><%= @voice_commands.where(command_type: 'general_inquiry').count %></div>
+              <div class="text-sm text-gray-500">General Inquiries</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Commands -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Recent Commands</h3>
+        </div>
+        <div class="divide-y divide-gray-200">
+          <% if @voice_commands.any? %>
+            <% @voice_commands.order(created_at: :desc).limit(10).each do |command| %>
+              <div class="p-6 hover:bg-gray-50">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-3">
+                      <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                          </svg>
+                        </div>
+                      </div>
+                      <div class="flex-1">
+                        <h4 class="font-medium text-gray-900">
+                          <%= command.transcript.presence || "No transcript available" %>
+                        </h4>
+                        <div class="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                          <span><%= command.created_at.strftime('%B %d, %Y at %I:%M %p') %></span>
+                          <span>•</span>
+                          <span class="capitalize"><%= command.command_type.gsub('_', ' ') %></span>
+                          <span>•</span>
+                          <span class="capitalize"><%= command.status %></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-4">
+                    <span class="px-3 py-1 text-sm rounded-full <%= status_class(command.status) %>">
+                      <%= command.status.titleize %>
+                    </span>
+                    <div class="flex items-center space-x-2">
+                      <%= link_to "View Details", voice_command_path(command), 
+                                  class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="p-12 text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No voice commands yet</h3>
+              <p class="mt-1 text-sm text-gray-500">Start using voice commands with the AI autopilot to see them here.</p>
+              <div class="mt-6">
+                <%= link_to "Voice Commands", voice_commands_path, 
+                            class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Command Statistics -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Command Statistics</h3>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-medium text-gray-900 mb-3">Success Rate</h4>
+              <div class="space-y-2">
+                <% total_commands = @voice_commands.count %>
+                <% successful_commands = @voice_commands.where(status: 'completed').count %>
+                <% success_rate = total_commands > 0 ? (successful_commands.to_f / total_commands * 100).round(1) : 0 %>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600">Successful Commands</span>
+                  <span class="text-sm font-medium"><%= successful_commands %>/<%= total_commands %> (<%= success_rate %>%)</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: <%= success_rate %>%"></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 class="font-medium text-gray-900 mb-3">Most Used Commands</h4>
+              <div class="space-y-2">
+                <% command_types = @voice_commands.pluck(:command_type).tally.sort_by { |_, count| -count }.take(3) %>
+                <% command_types.each do |type, count| %>
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600 capitalize"><%= type.gsub('_', ' ') %></span>
+                    <span class="text-sm font-medium"><%= count %></span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% def status_class(status) %>
+  <% case status %>
+  <% when 'pending' %>
+    bg-yellow-100 text-yellow-800
+  <% when 'processing' %>
+    bg-blue-100 text-blue-800
+  <% when 'completed' %>
+    bg-green-100 text-green-800
+  <% when 'failed' %>
+    bg-red-100 text-red-800
+  <% else %>
+    bg-gray-100 text-gray-800
+  <% end %>
+<% end %>

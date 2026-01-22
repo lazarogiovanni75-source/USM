@@ -1,0 +1,1 @@
+add_reference :scheduled_posts, :user, null: false, foreign_key: true

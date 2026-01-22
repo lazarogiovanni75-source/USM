@@ -1,0 +1,141 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-4">
+          <li>
+            <div>
+              <%= link_to "Dashboard", dashboards_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div>
+              <%= link_to "Scheduled Posts", scheduled_posts_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div>
+              <%= link_to @scheduled_post.content.title, scheduled_post_path(@scheduled_post), class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <span class="text-gray-500">Edit</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+      
+      <div class="mt-4">
+        <h1 class="text-3xl font-bold text-gray-900">Edit Scheduled Post</h1>
+        <p class="mt-2 text-gray-600">Update the scheduling details and platform information.</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white shadow rounded-lg">
+      <div class="p-6">
+        <%= form_with(model: @scheduled_post, local: true) do |form| %>
+          <div class="space-y-6">
+            <!-- Content Information -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Content Details</h3>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900"><%= @scheduled_post.content.title %></h4>
+                    <p class="text-sm text-gray-500 mt-1"><%= @scheduled_post.content.body.truncate(150) %></p>
+                    <div class="mt-2 flex items-center space-x-4 text-xs text-gray-400">
+                      <span class="capitalize"><%= @scheduled_post.content.content_type %></span>
+                      <span>•</span>
+                      <span><%= @scheduled_post.content.platform.capitalize %></span>
+                      <span>•</span>
+                      <span class="capitalize"><%= @scheduled_post.content.status %></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scheduling Options -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Scheduling Options</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Platform -->
+                <div>
+                  <%= form.label :platform, "Platform", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.select :platform, 
+                               options_for_select([
+                                 ['Instagram', 'instagram'],
+                                 ['TikTok', 'tiktok'], 
+                                 ['Twitter', 'twitter'],
+                                 ['Facebook', 'facebook'],
+                                 ['LinkedIn', 'linkedin']
+                               ], @scheduled_post.social_account.platform), 
+                               {}, 
+                               { class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500", required: true } %>
+                </div>
+
+                <!-- Scheduled Date & Time -->
+                <div>
+                  <%= form.label :scheduled_at, "Scheduled Date & Time", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.datetime_field :scheduled_at, 
+                                        value: @scheduled_post.scheduled_at.strftime('%Y-%m-%dT%H:%M'),
+                                        class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                        required: true %>
+                </div>
+
+                <!-- Status -->
+                <div>
+                  <%= form.label :status, "Status", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.select :status, 
+                               options_for_select([
+                                 ['Scheduled', 'scheduled'],
+                                 ['Published', 'published'],
+                                 ['Failed', 'failed'],
+                                 ['Cancelled', 'cancelled']
+                               ], @scheduled_post.status), 
+                               {}, 
+                               { class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500" } %>
+                </div>
+
+                <!-- Posted At -->
+                <div>
+                  <%= form.label :posted_at, "Posted At", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.datetime_field :posted_at, 
+                                        class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500" %>
+                  <p class="mt-1 text-xs text-gray-500">Set when the post was actually published</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <%= link_to "Cancel", scheduled_post_path(@scheduled_post), 
+                          class: "px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+              <%= form.submit "Update Schedule", 
+                             class: "px-4 py-2 bg-purple-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-purple-700" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

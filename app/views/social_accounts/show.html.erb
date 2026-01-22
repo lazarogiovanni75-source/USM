@@ -1,0 +1,143 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-4">
+          <li>
+            <div>
+              <%= link_to "Dashboard", dashboards_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div>
+              <%= link_to "Social Accounts", social_accounts_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <span class="text-gray-500"><%= @social_account&.platform&.capitalize || "Unknown" %></span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+      
+      <div class="mt-4">
+        <h1 class="text-3xl font-bold text-gray-900"><%= @social_account&.platform&.capitalize || "Unknown" %> Account</h1>
+        <p class="mt-2 text-gray-600">Manage your <%= @social_account&.platform&.capitalize || "social" %> social media account connection.</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="space-y-6">
+      <!-- Account Overview -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Account Overview</h3>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Platform</dt>
+              <dd class="mt-1 text-sm text-gray-900 capitalize"><%= @social_account.platform %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Account Name</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @social_account.account_name || "Not provided" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Access Token</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @social_account.access_token? ? "Configured" : "Not set" %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Status</dt>
+              <dd class="mt-1">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Connected
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Connected On</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @social_account.created_at.strftime('%B %d, %Y') %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @social_account.updated_at.strftime('%B %d, %Y') %></dd>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Posts -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Recent Posts</h3>
+        </div>
+        <div class="p-6">
+          <% recent_posts = @social_account.user.scheduled_posts.joins(:social_account, :content).where(social_accounts: { platform: @social_account.platform }).order(scheduled_posts: { scheduled_at: :desc }).limit(5) %>
+          <% if recent_posts.any? %>
+            <div class="space-y-4">
+              <% recent_posts.each do |post| %>
+                <div class="border border-gray-200 rounded-lg p-4">
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <h4 class="font-medium text-gray-900"><%= post.content.title %></h4>
+                      <p class="text-sm text-gray-500 mt-1"><%= post.content.body.truncate(100) %></p>
+                      <div class="mt-2 flex items-center space-x-4 text-xs text-gray-400">
+                        <span>Scheduled: <%= post.scheduled_at.strftime('%B %d, %Y at %I:%M %p') %></span>
+                        <span>•</span>
+                        <span class="capitalize"><%= post.status %></span>
+                      </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <span class="px-2 py-1 text-xs rounded-full <%= post.status == 'published' ? 'bg-green-100 text-green-800' : post.status == 'scheduled' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' %>">
+                        <%= post.status.titleize %>
+                      </span>
+                      <%= link_to "View", scheduled_post_path(post), class: "text-purple-600 hover:text-purple-800 text-sm font-medium" %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-8">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No posts yet</h3>
+              <p class="mt-1 text-sm text-gray-500">Start scheduling posts to this platform to see them here.</p>
+              <div class="mt-6">
+                <%= link_to "Schedule Post", new_scheduled_post_path, 
+                            class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Actions</h3>
+        </div>
+        <div class="p-6">
+          <div class="flex space-x-4">
+            <%= link_to "Edit Account", edit_social_account_path(@social_account), 
+                        class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700" %>
+            <%= link_to "Schedule Post", new_scheduled_post_path, 
+                        class: "inline-flex items-center px-4 py-2 border border-purple-300 text-sm font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200" %>
+            <%= link_to "View All Accounts", social_accounts_path, 
+                        class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
