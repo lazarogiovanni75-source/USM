@@ -1,0 +1,249 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center gap-4">
+        <%= link_to "← Back to Drafts", drafts_path, class: "btn-info" %>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">New Draft</h1>
+          <p class="text-gray-600">Create a new content draft with AI suggestions</p>
+        </div>
+      </div>
+    </div>
+
+    <%= form_with model: @draft, url: drafts_path, class: "space-y-6" do |form| %>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Title -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Content Details</h2>
+            
+            <div class="space-y-4">
+              <div>
+                <%= form.label :title, "Title", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= form.text_field :title, 
+                      class: "form-input w-full",
+                      placeholder: "Enter your content title..." %>
+              </div>
+
+              <div>
+                <%= form.label :content, "Content", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= form.text_area :content, 
+                      rows: 8,
+                      class: "form-input w-full",
+                      placeholder: "Write your content here..." %>
+                
+                <!-- Character Count -->
+                <div class="mt-2 text-sm text-gray-500">
+                  <span id="char-count">0</span> characters
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Auto-save Status -->
+          <div id="auto-save-status" class="text-sm text-gray-500 hidden">
+            <span class="inline-flex items-center">
+              <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
+              Auto-saving...
+            </span>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+          <!-- Publish Settings -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Settings</h3>
+            
+            <div class="space-y-4">
+              <div>
+                <%= form.label :platform, "Platform", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= form.select :platform, 
+                      [["General", "general"], ["Instagram", "instagram"], ["Twitter", "twitter"], 
+                       ["Facebook", "facebook"], ["LinkedIn", "linkedin"], ["TikTok", "tiktok"]], 
+                      {}, { class: "form-select w-full" } %>
+              </div>
+
+              <div>
+                <%= form.label :content_type, "Content Type", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= form.select :content_type, 
+                      [["Post", "post"], ["Story", "story"], ["Reel/Short", "reel"], 
+                       ["Article", "article"], ["Video Script", "video_script"]], 
+                      {}, { class: "form-select w-full" } %>
+              </div>
+
+              <div>
+                <%= form.label :status, "Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= form.select :status, 
+                      [["Draft", "draft"], ["Reviewing", "reviewing"], ["Approved", "approved"]], 
+                      {}, { class: "form-select w-full" } %>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Suggestions -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Assistance</h3>
+            
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <input type="checkbox" 
+                       id="generate_suggestions" 
+                       name="generate_suggestions" 
+                       value="true"
+                       class="form-checkbox mr-3">
+                <label for="generate_suggestions" class="text-sm text-gray-700">
+                  Generate AI suggestions automatically
+                </label>
+              </div>
+              
+              <button type="button" 
+                      id="analyze-content"
+                      class="btn-secondary w-full">
+                Analyze Content
+              </button>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="space-y-3">
+            <%= form.submit "Create Draft", class: "btn-primary w-full" %>
+            <%= link_to "Cancel", drafts_path, class: "btn-secondary w-full text-center" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Content Analysis -->
+    <div class="mt-6">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Content Analysis</h2>
+        
+        <div id="content-analysis" class="space-y-3">
+          <div class="text-center text-gray-500 py-8">
+            Click "Analyze Content" to get AI-powered insights
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const contentField = document.getElementById('draft_content');
+  const charCount = document.getElementById('char-count');
+  const analyzeBtn = document.getElementById('analyze-content');
+  const analysisDiv = document.getElementById('content-analysis');
+  const autoSaveStatus = document.getElementById('auto-save-status');
+  
+  // Character counter
+  contentField.addEventListener('input', function() {
+    charCount.textContent = this.value.length;
+  });
+  
+  // Content analysis
+  analyzeBtn.addEventListener('click', function() {
+    const content = contentField.value;
+    const platform = document.getElementById('draft_platform').value;
+    
+    if (!content.trim()) {
+      alert('Please enter some content to analyze.');
+      return;
+    }
+    
+    // Show loading state
+    analysisDiv.innerHTML = `
+      <div class="text-center text-gray-500 py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        Analyzing content...
+      </div>
+    `;
+    
+    // Simulate AI analysis (replace with actual API call)
+    setTimeout(() => {
+      const suggestions = generateMockAnalysis(content, platform);
+      displayAnalysis(suggestions);
+    }, 1500);
+  });
+  
+  function generateMockAnalysis(content, platform) {
+    const suggestions = [];
+    const wordCount = content.split(/\s+/).length;
+    
+    // Platform-specific suggestions
+    if (platform === 'twitter' && content.length > 280) {
+      suggestions.push({
+        type: 'warning',
+        title: 'Character Limit',
+        message: 'Your content exceeds Twitter\'s 280 character limit.',
+        confidence: 95
+      });
+    }
+    
+    if (platform === 'instagram' && !content.includes('#')) {
+      suggestions.push({
+        type: 'suggestion',
+        title: 'Hashtags',
+        message: 'Consider adding relevant hashtags for better reach.',
+        confidence: 80
+      });
+    }
+    
+    if (wordCount < 10) {
+      suggestions.push({
+        type: 'warning',
+        title: 'Content Length',
+        message: 'Your content might be too short to be effective.',
+        confidence: 75
+      });
+    }
+    
+    if (suggestions.length === 0) {
+      suggestions.push({
+        type: 'success',
+        title: 'Great Content!',
+        message: 'Your content looks good and follows best practices.',
+        confidence: 85
+      });
+    }
+    
+    return suggestions;
+  }
+  
+  function displayAnalysis(suggestions) {
+    analysisDiv.innerHTML = suggestions.map(suggestion => `
+      <div class="border rounded-lg p-4 ${
+        suggestion.type === 'warning' ? 'border-yellow-200 bg-yellow-50' :
+        suggestion.type === 'suggestion' ? 'border-blue-200 bg-blue-50' :
+        'border-green-200 bg-green-50'
+      }">
+        <div class="flex justify-between items-start">
+          <div>
+            <h4 class="font-medium ${
+              suggestion.type === 'warning' ? 'text-yellow-900' :
+              suggestion.type === 'suggestion' ? 'text-blue-900' :
+              'text-green-900'
+            }">${suggestion.title}</h4>
+            <p class="text-sm mt-1 ${
+              suggestion.type === 'warning' ? 'text-yellow-800' :
+              suggestion.type === 'suggestion' ? 'text-blue-800' :
+              'text-green-800'
+            }">${suggestion.message}</p>
+          </div>
+          <span class="text-xs px-2 py-1 rounded ${
+            suggestion.type === 'warning' ? 'bg-yellow-200 text-yellow-800' :
+            suggestion.type === 'suggestion' ? 'bg-blue-200 text-blue-800' :
+            'bg-green-200 text-green-800'
+          }">
+            ${suggestion.confidence}% confident
+          </span>
+        </div>
+      </div>
+    `).join('');
+  }
+});
+</script>

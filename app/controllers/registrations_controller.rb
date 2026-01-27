@@ -8,15 +8,19 @@ class RegistrationsController < ApplicationController
 
   def create
     @user = User.new(user_params)
-
+    
     if @user.save
-      session_record = @user.sessions.create!
-      cookies.signed.permanent[:session_token] = { value: session_record.id, httponly: true }
-
-      send_email_verification
-      redirect_to root_path, notice: "Welcome! You have signed up successfully"
+      # Create a session for the newly registered user
+      @session = @user.sessions.create!
+      cookies.signed.permanent[:session_token] = { value: @session.id, httponly: true }
+      
+      # Send email verification if email is not generated
+      unless @user.email_was_generated?
+        UserMailer.with(user: @user).email_verification.deliver_later
+      end
+      
+      redirect_to root_path, notice: "Welcome! Your account has been created successfully."
     else
-      flash.now[:alert] = handle_password_errors(@user)
       render :new, status: :unprocessable_entity
     end
   end
@@ -29,9 +33,5 @@ class RegistrationsController < ApplicationController
 
   def user_params
     params.require(:user).permit(:name, :email, :password, :password_confirmation)
-  end
-
-  def send_email_verification
-    UserMailer.with(user: @user).email_verification.deliver_later
   end
 end

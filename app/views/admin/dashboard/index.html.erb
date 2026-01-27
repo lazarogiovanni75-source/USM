@@ -50,7 +50,7 @@
               <span class="text-sm font-medium text-blue-700 dark:text-blue-300">View All Logs</span>
             <% end %>
 
-            <%= link_to edit_admin_account_path, class: "flex items-center justify-center p-4 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors" do %>
+            <%= link_to admin_change_password_path, class: "flex items-center justify-center p-4 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors" do %>
               <svg class="w-5 h-5 text-orange-600 dark:text-orange-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-2a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"/>
               </svg>
@@ -162,7 +162,7 @@
         <button onclick="document.getElementById('password-modal').remove()" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
           Remind Me Later
         </button>
-        <a href="<%= edit_admin_account_path %>" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 font-medium">
+        <a href="<%= admin_change_password_path %>" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 font-medium">
           Change Password Now
         </a>
       </div>

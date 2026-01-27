@@ -1,0 +1,166 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900"><%= @webhook.name %></h1>
+          <p class="mt-2 text-gray-600">Webhook details and configuration</p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <%= link_to test_zapier_webhook_path(@webhook), 
+              method: :post,
+              class: "btn-secondary inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors" do %>
+            <%= lucide_icon "test-tube", class: "w-4 h-4 mr-2" %>
+            Test Webhook
+          <% end %>
+          <%= link_to edit_zapier_webhook_path(@webhook), 
+              class: "btn-secondary inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors" do %>
+            <%= lucide_icon "edit", class: "w-4 h-4 mr-2" %>
+            Edit
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Main Content -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Status -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Status</h2>
+          
+          <div class="flex items-center space-x-4">
+            <% if @webhook.status == 'active' %>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                Active
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                <div class="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                Inactive
+              </span>
+            <% end %>
+            
+            <span class="text-sm text-gray-500">
+              Created <%= @webhook.created_at.strftime('%B %d, %Y at %I:%M %p') %>
+            </span>
+          </div>
+        </div>
+
+        <!-- Webhook URL -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Webhook URL</h2>
+          
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <code class="text-sm font-mono text-gray-800 break-all"><%= @webhook.webhook_url %></code>
+              <button onclick="navigator.clipboard.writeText('<%= @webhook.webhook_url %>')" 
+                      class="ml-2 p-1 text-gray-500 hover:text-gray-700">
+                <%= lucide_icon "copy", class: "w-4 h-4" %>
+              </button>
+            </div>
+          </div>
+          
+          <p class="text-sm text-gray-500 mt-2">
+            Use this URL in your Zapier integration to receive webhook data
+          </p>
+        </div>
+
+        <!-- Trigger Events -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Trigger Events</h2>
+          
+          <% if @webhook.trigger_events.present? %>
+            <div class="space-y-3">
+              <% @webhook.trigger_events.each do |event| %>
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span class="text-sm font-medium text-gray-900">
+                    <%= event.gsub('_', ' ').titleize %>
+                  </span>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-8">
+              <%= lucide_icon "alert-circle", class: "w-8 h-8 text-gray-300 mx-auto mb-2" %>
+              <p class="text-sm text-gray-500">No trigger events configured</p>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Configuration -->
+        <% if @webhook.config.present? %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Custom Configuration</h2>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <pre class="text-sm font-mono text-gray-800"><%= JSON.pretty_generate(JSON.parse(@webhook.config)) rescue @webhook.config %></pre>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Activity Log -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+          
+          <div class="space-y-4">
+            <div class="flex items-start space-x-3">
+              <div class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+              <div class="flex-1">
+                <p class="text-sm text-gray-900">Webhook created</p>
+                <p class="text-xs text-gray-500"><%= @webhook.created_at.strftime('%B %d, %Y at %I:%M %p') %></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Actions -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+          
+          <div class="space-y-3">
+            <%= link_to test_zapier_webhook_path(@webhook), 
+                method: :post,
+                class: "w-full text-center py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" do %>
+              Test Webhook
+            <% end %>
+            
+            <%= link_to edit_zapier_webhook_path(@webhook), 
+                class: "w-full text-center py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors" do %>
+              Edit Configuration
+            <% end %>
+            
+            <%= link_to zapier_webhook_path(@webhook), 
+                method: :delete,
+                data: { confirm: 'Are you sure you want to delete this webhook? This action cannot be undone.' },
+                class: "w-full text-center py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors" do %>
+              Delete Webhook
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Help -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <%= lucide_icon "info", class: "w-5 h-5 text-blue-400" %>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-blue-800">Webhook Testing</h3>
+              <div class="mt-2 text-sm text-blue-700">
+                <p class="mb-2">Use the test button to send a sample payload to your webhook URL and verify it's working correctly.</p>
+                <p class="text-xs">Make sure your Zapier integration is set up to handle the webhook data.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

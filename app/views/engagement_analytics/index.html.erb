@@ -1,0 +1,267 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Engagement Analytics</h1>
+    
+    <div class="flex items-center space-x-4">
+      <!-- Date Range Selector -->
+      <div class="flex items-center space-x-2">
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Period:</label>
+        <select onchange="updateDateRange(this.value)" class="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500">
+          <option value="7" <%= 'selected' if @date_range == '7' %>>Last 7 days</option>
+          <option value="30" <%= 'selected' if @date_range == '30' %>>Last 30 days</option>
+          <option value="90" <%= 'selected' if @date_range == '90' %>>Last 90 days</option>
+          <option value="365" <%= 'selected' if @date_range == '365' %>>Last year</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview Metrics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+          <%= lucide_icon "file-text", class: "w-6 h-6 text-blue-600 dark:text-blue-400" %>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Posts</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white"><%= @analytics[:overview][:total_posts] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+          <%= lucide_icon "heart", class: "w-6 h-6 text-green-600 dark:text-green-400" %>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Likes</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white"><%= @analytics[:overview][:total_likes] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+          <%= lucide_icon "message-circle", class: "w-6 h-6 text-purple-600 dark:text-purple-400" %>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Comments</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white"><%= @analytics[:overview][:total_comments] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
+          <%= lucide_icon "share", class: "w-6 h-6 text-yellow-600 dark:text-yellow-400" %>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Shares</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white"><%= @analytics[:overview][:total_shares] %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Engagement Rate Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Engagement Rate</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white"><%= @analytics[:overview][:engagement_rate] %>%</p>
+        </div>
+        <div class="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg">
+          <%= lucide_icon "trending-up", class: "w-6 h-6 text-indigo-600 dark:text-indigo-400" %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Comment Rate</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white"><%= @analytics[:overview][:comment_rate] %>%</p>
+        </div>
+        <div class="p-2 bg-pink-100 dark:bg-pink-900/20 rounded-lg">
+          <%= lucide_icon "message-square", class: "w-6 h-6 text-pink-600 dark:text-pink-400" %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Share Rate</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white"><%= @analytics[:overview][:share_rate] %>%</p>
+        </div>
+        <div class="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+          <%= lucide_icon "repeat", class: "w-6 h-6 text-orange-600 dark:text-orange-400" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Suggestions -->
+  <% if @content_suggestions.any? %>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">AI-Powered Suggestions</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <% @content_suggestions.each do |suggestion| %>
+          <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+            <div class="flex items-start space-x-3">
+              <div class="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <%= lucide_icon "lightbulb", class: "w-5 h-5 text-blue-600 dark:text-blue-400" %>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                  <%= suggestion[:title] %>
+                </h3>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                  <%= suggestion[:description] %>
+                </p>
+                <% if suggestion[:action] == 'create_content' %>
+                  <%= link_to "Create Content", new_content_path, class: "text-xs bg-blue-600 text-white px-3 py-1 rounded-full hover:bg-blue-700" %>
+                <% elsif suggestion[:action] == 'schedule_post' %>
+                  <%= link_to "Schedule Post", new_scheduled_post_path, class: "text-xs bg-green-600 text-white px-3 py-1 rounded-full hover:bg-green-700" %>
+                <% elsif suggestion[:action] == 'create_interactive_content' %>
+                  <%= link_to "Create Interactive Post", new_draft_path, class: "text-xs bg-purple-600 text-white px-3 py-1 rounded-full hover:bg-purple-700" %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Top Performing Posts -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Top Performing Posts</h2>
+      
+      <% if @analytics[:top_posts].any? %>
+        <div class="space-y-3">
+          <% @analytics[:top_posts].each_with_index do |post, index| %>
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0">
+                  <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <%= index + 1 %>
+                  </span>
+                </div>
+                <div>
+                  <h3 class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-xs">
+                    <%= post[:title] %>
+                  </h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <%= post[:platform].capitalize %> • <%= post[:total_engagements] %> engagements
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                <span><%= post[:likes] %> ❤️</span>
+                <span><%= post[:comments] %> 💬</span>
+                <span><%= post[:shares] %> 🔄</span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <%= lucide_icon "file-x", class: "w-8 h-8 mx-auto mb-2" %>
+          <p class="text-sm">No posts available</p>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Platform Breakdown -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Platform Performance</h2>
+      
+      <% if @analytics[:platform_breakdown].any? %>
+        <div class="space-y-4">
+          <% @analytics[:platform_breakdown].each do |platform, metrics| %>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                  <%= platform %>
+                </span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                  <%= metrics[:likes] + metrics[:comments] + metrics[:shares] %> total engagements
+                </span>
+              </div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: <%= [((metrics[:likes] + metrics[:comments] + metrics[:shares]).to_f / @analytics[:overview][:total_engagements] * 100).round(1), 5].max %>%"></div>
+              </div>
+              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <span><%= metrics[:likes] %> likes</span>
+                <span><%= metrics[:comments] %> comments</span>
+                <span><%= metrics[:shares] %> shares</span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <%= lucide_icon "smartphone", class: "w-8 h-8 mx-auto mb-2" %>
+          <p class="text-sm">No platform data available</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Best Posting Times -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Optimal Posting Times</h2>
+    
+    <% if @best_posting_times[:best_times].any? %>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <% @best_posting_times[:best_times].each do |time| %>
+          <div class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="text-lg font-semibold text-gray-900 dark:text-white">
+              <%= sprintf('%02d:00', time[:hour]) %>
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              <%= time[:avg_engagement].round(1) %> avg engagements
+            </div>
+          </div>
+        <% end %>
+      </div>
+      
+      <% if @best_posting_times[:recommendations].any? %>
+        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <h3 class="text-sm font-medium text-blue-900 dark:text-blue-400 mb-2">Recommendations</h3>
+          <ul class="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+            <% @best_posting_times[:recommendations].each do |recommendation| %>
+              <li>• <%= recommendation %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <%= lucide_icon "clock", class: "w-8 h-8 mx-auto mb-2" %>
+        <p class="text-sm">No posting time data available</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+function updateDateRange(days) {
+  window.location.href = `?date_range=${days}`;
+}
+
+function toggleExportMenu() {
+  // Implement export menu toggle
+  console.log('Toggle export menu');
+}
+</script>

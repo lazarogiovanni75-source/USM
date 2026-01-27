@@ -1,0 +1,242 @@
+<!-- Voice Settings Management -->
+<div class="min-h-screen bg-gray-50">
+  <!-- Header Section -->
+  <div class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Voice Settings</h1>
+          <p class="mt-1 text-gray-600">Configure your voice preferences and tone settings</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+              <span class="text-white font-medium text-sm"><%= current_user.name.present? ? current_user.name.first : current_user.email.first %></span>
+            </div>
+            <span class="text-sm text-gray-700 font-medium"><%= current_user.email %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Voice Tone Selection -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
+      <h2 class="text-xl font-semibold text-gray-900 mb-6">Voice Tone Selection</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="voice-tone-option cursor-pointer" data-tone="neutral">
+          <div class="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-gradient-to-r from-gray-400 to-gray-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+              </div>
+              <h3 class="font-medium text-gray-900">Neutral</h3>
+              <p class="text-sm text-gray-600 mt-1">Standard, balanced tone</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="voice-tone-option cursor-pointer" data-tone="energetic">
+          <div class="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+              </div>
+              <h3 class="font-medium text-gray-900">Energetic</h3>
+              <p class="text-sm text-gray-600 mt-1">Upbeat, enthusiastic tone</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="voice-tone-option cursor-pointer" data-tone="calm">
+          <div class="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-blue-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+              </div>
+              <h3 class="font-medium text-gray-900">Calm</h3>
+              <p class="text-sm text-gray-600 mt-1">Relaxed, soothing tone</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice Speed Settings -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
+      <h2 class="text-xl font-semibold text-gray-900 mb-6">Voice Speed</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Speech Rate</label>
+          <input type="range" id="voiceSpeed" min="0.5" max="2.0" step="0.1" value="1.0" 
+                 class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Slow (0.5x)</span>
+            <span id="speedValue">Normal (1.0x)</span>
+            <span>Fast (2.0x)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice Preview -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
+      <h2 class="text-xl font-semibold text-gray-900 mb-6">Voice Preview</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Preview Text</label>
+          <textarea id="previewText" rows="3" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Enter text to preview your voice settings...">Hello! This is a preview of your voice settings. How does this sound?</textarea>
+        </div>
+        
+        <div class="flex space-x-4">
+          <button id="previewVoice" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+            Preview Voice
+          </button>
+          <button id="saveSettings" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            Save Settings
+          </button>
+        </div>
+        
+        <div id="previewStatus" class="text-sm text-gray-600"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Voice tone selection
+  const toneOptions = document.querySelectorAll('.voice-tone-option');
+  let selectedTone = 'neutral';
+  
+  toneOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      // Remove active class from all options
+      toneOptions.forEach(opt => {
+        opt.querySelector('div').classList.remove('border-purple-500', 'bg-purple-50');
+        opt.querySelector('div').classList.add('border-gray-200');
+      });
+      
+      // Add active class to selected option
+      const div = this.querySelector('div');
+      div.classList.remove('border-gray-200');
+      div.classList.add('border-purple-500', 'bg-purple-50');
+      
+      selectedTone = this.dataset.tone;
+    });
+  });
+  
+  // Voice speed slider
+  const speedSlider = document.getElementById('voiceSpeed');
+  const speedValue = document.getElementById('speedValue');
+  
+  speedSlider.addEventListener('input', function() {
+    const speed = parseFloat(this.value);
+    speedValue.textContent = `${speed === 1.0 ? 'Normal' : speed < 1.0 ? 'Slow' : 'Fast'} (${speed}x)`;
+  });
+  
+  // Preview voice
+  document.getElementById('previewVoice').addEventListener('click', function() {
+    const text = document.getElementById('previewText').value;
+    const speed = parseFloat(speedSlider.value);
+    
+    if (!text.trim()) {
+      document.getElementById('previewStatus').textContent = 'Please enter some text to preview.';
+      return;
+    }
+    
+    this.disabled = true;
+    this.textContent = 'Generating...';
+    document.getElementById('previewStatus').textContent = 'Generating voice preview...';
+    
+    // Call voice generation API
+    fetch('/voice/generate_voice', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({
+        text: text,
+        voice_id: 'pNInz6obpgDQGcFmaJgB', // Default voice
+        tone: selectedTone,
+        speed: speed
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('previewStatus').textContent = 'Voice generated successfully!';
+        // Play the audio if available
+        if (data.audio_url) {
+          const audio = new Audio(data.audio_url);
+          audio.play();
+        }
+      } else {
+        document.getElementById('previewStatus').textContent = 'Error generating voice: ' + (data.error || 'Unknown error');
+      }
+    })
+    .catch(error => {
+      document.getElementById('previewStatus').textContent = 'Error: ' + error.message;
+    })
+    .finally(() => {
+      this.disabled = false;
+      this.textContent = 'Preview Voice';
+    });
+  });
+  
+  // Save settings
+  document.getElementById('saveSettings').addEventListener('click', function() {
+    const speed = parseFloat(speedSlider.value);
+    
+    this.disabled = true;
+    this.textContent = 'Saving...';
+    
+    fetch('/voice/save_voice_settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({
+        voice_id: 'pNInz6obpgDQGcFmaJgB',
+        tone: selectedTone,
+        speed: speed
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('previewStatus').textContent = 'Settings saved successfully!';
+        document.getElementById('previewStatus').classList.add('text-green-600');
+      } else {
+        document.getElementById('previewStatus').textContent = 'Error saving settings: ' + (data.errors || 'Unknown error');
+        document.getElementById('previewStatus').classList.add('text-red-600');
+      }
+    })
+    .catch(error => {
+      document.getElementById('previewStatus').textContent = 'Error: ' + error.message;
+      document.getElementById('previewStatus').classList.add('text-red-600');
+    })
+    .finally(() => {
+      this.disabled = false;
+      this.textContent = 'Save Settings';
+    });
+  });
+});
+</script>

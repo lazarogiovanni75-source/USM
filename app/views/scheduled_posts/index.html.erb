@@ -1,225 +1,252 @@
-<!-- Content Scheduler with Calendar View -->
-<div class="min-h-screen bg-gray-50">
-  <!-- Header -->
-  <div class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center py-6">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900">Content Scheduler</h1>
-          <p class="mt-1 text-gray-600">Plan and manage your social media content posting schedule</p>
+<%= page_title_for('scheduled_posts') %>
+
+<div class="flex flex-col lg:flex-row gap-6" data-controller="scheduled-posts" data-scheduled-posts-room-id-value="default" data-scheduled-posts-user-id-value="default">
+  <!-- Main Content -->
+  <div class="flex-1">
+    <!-- View Toggle -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+      <div class="flex items-center justify-between">
+        <div class="flex space-x-1">
+          <button 
+            class="px-3 py-2 text-sm font-medium rounded-lg transition-colors bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400"
+            data-view="list"
+            data-action="scheduled-posts#changeView"
+          >
+            List View
+          </button>
+          <button 
+            class="px-3 py-2 text-sm font-medium rounded-lg transition-colors text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            data-view="calendar"
+            data-action="scheduled-posts#changeView"
+          >
+            Calendar View
+          </button>
         </div>
-        <div class="flex items-center space-x-4">
-          <%= link_to "New Schedule", new_scheduled_post_path, class: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2" %>
+        
+        <div class="flex items-center space-x-3">
+          <!-- Filters -->
+          <select class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  data-action="scheduled-posts#filterByStatus">
+            <option value="">All Status</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="published">Published</option>
+            <option value="failed">Failed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          
+          <select class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  data-action="scheduled-posts#filterByPlatform">
+            <option value="">All Platforms</option>
+            <option value="instagram">Instagram</option>
+            <option value="twitter">Twitter</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="facebook">Facebook</option>
+            <option value="tiktok">TikTok</option>
+          </select>
         </div>
+      </div>
+    </div>
+
+    <!-- Posts List -->
+    <div id="posts-list" class="space-y-4" data-scheduled-posts-target="postsList">
+      <% if @scheduled_posts.any? %>
+        <% @scheduled_posts.each do |post| %>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+               data-post-id="<%= post.id %>">
+            
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-2">
+                  <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
+                      <%= post.platform[0].upcase %>
+                    </span>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                      <%= truncate(post.content.title, length: 50) if post.content %>
+                    </h3>
+                    <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span><%= post.platform.capitalize %></span>
+                      <span>•</span>
+                      <span><%= post.scheduled_at.strftime("%b %d, %Y at %I:%M %p") %></span>
+                      <span>•</span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                  <%= post.status == 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                     post.status == 'scheduled' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                                     post.status == 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                     'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400' %>">
+                        <%= post.status.titleize %>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <% if post.content %>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                    <%= truncate(post.content.body, length: 150) %>
+                  </p>
+                <% end %>
+                
+                <% if post.error_message %>
+                  <div class="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+                    Error: <%= post.error_message %>
+                  </div>
+                <% end %>
+              </div>
+              
+              <div class="flex items-center space-x-2 ml-4">
+                <% if post.status == 'scheduled' %>
+                  <button 
+                    class="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                    title="Publish Now"
+                    data-action="scheduled-posts#publishNow"
+                    data-post-id="<%= post.id %>"
+                  >
+                    <%= lucide_icon "send", class: "w-4 h-4" %>
+                  </button>
+                <% end %>
+                
+                <%= link_to edit_scheduled_post_path(post),
+                    class: "p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors",
+                    title: "Edit" do %>
+                  <%= lucide_icon "edit-2", class: "w-4 h-4" %>
+                <% end %>
+                
+                <button 
+                  class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  title="Delete"
+                  data-action="scheduled-posts#deletePost"
+                  data-post-id="<%= post.id %>"
+                >
+                  <%= lucide_icon "trash-2", class: "w-4 h-4" %>
+                </button>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="text-center py-12">
+          <%= lucide_icon "calendar", class: "w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" %>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No Scheduled Posts</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">Get started by scheduling your first post</p>
+          <%= link_to "Schedule a Post", new_scheduled_post_path,
+              class: "inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors" do %>
+            <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>
+            Schedule Post
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+  
+  <!-- Sidebar -->
+  <div class="lg:w-80">
+    <!-- Quick Stats -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Quick Stats</h3>
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Published</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            <%= @scheduled_posts.where(status: 'published').count %>
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Pending</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            <%= @scheduled_posts.where(status: 'scheduled').count %>
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Failed</span>
+          <span class="text-sm font-medium text-red-600 dark:text-red-400">
+            <%= @scheduled_posts.where(status: 'failed').count %>
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Today</span>
+          <span class="text-sm font-medium text-primary-600 dark:text-primary-400">
+            <%= @scheduled_posts.where(scheduled_at: Time.current.beginning_of_day..Time.current.end_of_day).count %>
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Optimization Suggestions -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Optimization</h3>
+      <div class="space-y-2">
+        <button 
+          class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          data-action="scheduled-posts#optimizeSchedule"
+        >
+          <%= lucide_icon "zap", class: "w-4 h-4 mr-2" %>
+          Optimize Timing
+        </button>
+        <button 
+          class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          data-action="scheduled-posts#showEngagementPredictions"
+        >
+          <%= lucide_icon "trending-up", class: "w-4 h-4 mr-2" %>
+          Engagement Predictions
+        </button>
+        <button 
+          class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          data-action="scheduled-posts#batchSchedule"
+        >
+          <%= lucide_icon "calendar-plus", class: "w-4 h-4 mr-2" %>
+          Batch Schedule
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
-            </svg>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Total Scheduled</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @total_scheduled %></p>
-          </div>
-        </div>
+  <!-- Bulk Actions Panel (Hidden by default) -->
+  <div id="bulk-actions-panel" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Bulk Actions</h3>
+        <button 
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          data-action="scheduled-posts#closeBulkActions"
+        >
+          <%= lucide_icon "x", class: "w-5 h-5" %>
+        </button>
       </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Today's Posts</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @today_posts %></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-            </svg>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">This Week</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @this_week_posts %></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-            </svg>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Success Rate</p>
-            <p class="text-2xl font-bold text-gray-900">98%</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- View Toggle -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center space-x-4">
-        <h2 class="text-xl font-semibold text-gray-900">Posting Schedule</h2>
-        <div class="flex rounded-lg border border-gray-300 overflow-hidden">
-          <button class="view-toggle active px-4 py-2 text-sm font-medium" data-view="calendar">
-            Calendar View
-          </button>
-          <button class="view-toggle px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900" data-view="timeline">
-            Timeline View
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Calendar View -->
-    <div id="calendar-view" class="view-content">
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div class="p-6 border-b border-gray-100">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">January <%= Date.current.year %></h3>
-            <div class="flex items-center space-x-2">
-              <button class="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-full">Today</button>
-            </div>
-          </div>
-        </div>
-        
-        <div class="p-6">
-          <!-- Calendar Grid -->
-          <div class="grid grid-cols-7 gap-1 mb-4">
-            <div class="text-center text-sm font-medium text-gray-500 p-2">Sun</div>
-            <div class="text-center text-sm font-medium text-gray-500 p-2">Mon</div>
-            <div class="text-center text-sm font-medium text-gray-500 p-2">Tue</div>
-            <div class="text-center text-sm font-medium text-gray-500 p-2">Wed</div>
-            <div class="text-center text-sm font-medium text-gray-500 p-2">Thu</div>
-            <div class="text-center text-sm font-medium text-gray-500 p-2">Fri</div>
-            <div class="text-center text-sm font-medium text-gray-500 p-2">Sat</div>
-          </div>
-          
-          <!-- Calendar Days -->
-          <div class="grid grid-cols-7 gap-1">
-            <% (1..31).each do |day| %>
-              <% date = Date.new(Date.current.year, 1, day) %>
-              <% posts_for_day = @scheduled_posts.select { |post| post.scheduled_time.to_date == date } %>
-              <div class="calendar-day min-h-[120px] p-2 border border-gray-200 <%= 'bg-blue-50' if date == Date.current %>">
-                <div class="text-sm font-medium text-gray-900 mb-2"><%= day %></div>
-                <div class="space-y-1">
-                  <% posts_for_day.each do |post| %>
-                    <div class="post-card p-1 text-xs rounded cursor-pointer hover:opacity-80 <%= post.status == 'scheduled' ? 'bg-blue-500 text-white' : post.status == 'published' ? 'bg-green-500 text-white' : 'bg-red-500 text-white' %>"
-                         data-post-id="<%= post.id %>">
-                      <div class="font-medium truncate"><%= post.content.title.truncate(15) %></div>
-                      <div class="text-xs opacity-90"><%= post.scheduled_time.strftime('%I:%M %p') %></div>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Timeline View -->
-    <div id="timeline-view" class="view-content hidden">
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div class="p-6 border-b border-gray-100">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">Posting Timeline</h3>
-          </div>
-        </div>
-        
-        <div class="divide-y divide-gray-200">
-          <% if @upcoming_posts.any? %>
-            <% @upcoming_posts.each do |post| %>
-              <div class="p-6 hover:bg-gray-50">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-4">
-                    <input type="checkbox" class="post-checkbox" data-post-id="<%= post.id %>">
-                    <div class="flex-shrink-0">
-                      <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
-                        </svg>
-                      </div>
-                    </div>
-                    <div class="flex-1">
-                      <h4 class="text-lg font-medium text-gray-900">
-                        <%= link_to post.content.title, post, class: "hover:text-purple-600" %>
-                      </h4>
-                      <div class="flex items-center space-x-4 mt-1 text-sm text-gray-500">
-                        <span><%= post.scheduled_time.strftime('%B %d, %Y at %I:%M %p') %></span>
-                        <span>•</span>
-                        <span class="capitalize"><%= post.platform %></span>
-                        <span>•</span>
-                        <span class="capitalize"><%= post.content.content_type %></span>
-                      </div>
-                      <p class="text-sm text-gray-600 mt-2">
-                        <%= post.content.body.truncate(150) %>
-                      </p>
-                    </div>
-                  </div>
-                  <div class="flex items-center space-x-4">
-                    <span class="px-3 py-1 text-sm rounded-full <%= status_class(post.status) %>">
-                      <%= post.status.titleize %>
-                    </span>
-                    <div class="flex items-center space-x-2">
-                      <%= link_to "Edit", edit_scheduled_post_path(post), 
-                                  class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-          <% else %>
-            <div class="p-12 text-center">
-              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
-              </svg>
-              <h3 class="mt-2 text-sm font-medium text-gray-900">No scheduled posts</h3>
-              <p class="mt-1 text-sm text-gray-500">Start by scheduling your first post to see your content timeline.</p>
-              <div class="mt-6">
-                <%= link_to "Schedule a Post", new_scheduled_post_path, 
-                            class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700" %>
-              </div>
-            </div>
-          <% end %>
-        </div>
+      
+      <div class="space-y-3">
+        <button 
+          class="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          data-action="scheduled-posts#bulkPublish"
+        >
+          <%= lucide_icon "send", class: "w-4 h-4 mr-3" %>
+          Publish Selected Posts
+        </button>
+        <button 
+          class="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          data-action="scheduled-posts#bulkReschedule"
+        >
+          <%= lucide_icon "calendar", class: "w-4 h-4 mr-3" %>
+          Reschedule Selected Posts
+        </button>
+        <button 
+          class="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          data-action="scheduled-posts#bulkCancel"
+        >
+          <%= lucide_icon "x", class: "w-4 h-4 mr-3" %>
+          Cancel Selected Posts
+        </button>
+        <button 
+          class="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          data-action="scheduled-posts#bulkOptimize"
+        >
+          <%= lucide_icon "zap", class: "w-4 h-4 mr-3" %>
+          Optimize Selected Posts
+        </button>
       </div>
     </div>
   </div>
 </div>
-
-<% def status_class(status) %>
-  <% case status %>
-  <% when 'scheduled' %>
-    bg-blue-100 text-blue-800
-  <% when 'published' %>
-    bg-green-100 text-green-800
-  <% when 'failed' %>
-    bg-red-100 text-red-800
-  <% when 'cancelled' %>
-    bg-gray-100 text-gray-800
-  <% else %>
-    bg-gray-100 text-gray-800
-  <% end %>
-<% end %>
+</div>

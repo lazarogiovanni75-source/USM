@@ -5,6 +5,23 @@ const tsparser = require('@typescript-eslint/parser')
 module.exports = [
   eslint.configs.recommended,
   {
+    files: ['app/javascript/**/*.{ts,js}'],
+    languageOptions: {
+      globals: {
+        ...require('globals').browser,
+        ...require('globals').node,
+        App: 'readonly',
+        Turbo: 'readonly',
+        Stimulus: 'readonly',
+        fetch: 'readonly',
+        console: 'readonly',
+        Audio: 'readonly',
+        URL: 'readonly',
+        document: 'readonly',
+      },
+    },
+  },
+  {
     files: ['app/javascript/**/*.ts'],
     plugins: {
       '@typescript-eslint': tseslint,
@@ -17,7 +34,15 @@ module.exports = [
       },
       globals: {
         ...require('globals').browser,
+        ...require('globals').node,
         App: 'readonly',
+        Turbo: 'readonly',
+        Stimulus: 'readonly',
+        fetch: 'readonly',
+        console: 'readonly',
+        Audio: 'readonly',
+        URL: 'readonly',
+        document: 'readonly',
       },
     },
     rules: {
@@ -98,6 +123,7 @@ module.exports = [
       'test/',
       '**/*.config.js',
       '**/*.min.js',
+      'railway-backend/**/*'
     ],
   },
 ]

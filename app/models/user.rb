@@ -4,29 +4,77 @@ class User < ApplicationRecord
 
   has_secure_password validations: false
 
-  # ========== Role-based Access Control (Optional) ==========
-  # If you need roles (premium, moderator, etc.), add a `role` field:
-  #   rails g migration AddRoleToUsers role:string
-  #   # In migration: add_column :users, :role, :string, default: 'user', null: false
-  #   # Then add in this model:
-  #   ROLES = %w[user premium moderator].freeze
-  #   validates :role, inclusion: { in: ROLES }
-  #   def premium? = role == 'premium'
-  #   def moderator? = role == 'moderator'
-  # ==========================================================
-
-  # ========== Multi-Role Separate Routes (e.g. Doctor/Patient) ==========
-  # For apps needing separate signup/login pages per role:
-  #   1. ROLES = %w[doctor patient].freeze
-  #   2. Add scoped routes: scope '/doctor', as: 'doctor' do ... end
-  #   3. In RegistrationsController#create: @user.role = params[:role]
-  #   4. Create role-specific views: sessions/new_doctor.html.erb
-  #   5. For extra fields per role, use polymorphic Profile:
-  #      has_one :doctor_profile, dependent: :destroy
-  #      has_one :patient_profile, dependent: :destroy
-  #      def profile = doctor? ? doctor_profile : patient_profile
-  # See generator output for full setup instructions.
-  # ======================================================================
+  # Role-based Access Control
+  ROLES = %w[user premium moderator admin].freeze
+  validates :role, inclusion: { in: ROLES }, if: -> { role.present? }
+  
+  # Subscription Plans
+  SUBSCRIPTION_PLANS = %w[free basic premium enterprise].freeze
+  validates :subscription_plan, inclusion: { in: SUBSCRIPTION_PLANS }, if: -> { subscription_plan.present? }
+  
+  # Helper methods
+  def premium? = subscription_plan == 'premium' || subscription_plan == 'enterprise'
+  def enterprise? = subscription_plan == 'enterprise'
+  def admin? = role == 'admin'
+  def moderator? = role == 'moderator'
+  def free_plan? = subscription_plan == 'free' || subscription_plan.blank?
+  
+  # Role-based authorization methods
+  def can_access_feature?(feature_name)
+    case feature_name
+    when 'ai_advanced'
+      premium? || admin? || moderator?
+    when 'voice_premium'
+      premium? || admin? || moderator?
+    when 'analytics_advanced'
+      enterprise? || admin?
+    when 'automation_advanced'
+      premium? || admin? || moderator?
+    when 'admin_features'
+      admin? || moderator?
+    when 'user_management'
+      admin?
+    else
+      true # Default: allow access
+    end
+  end
+  
+  # Subscription and role combinations
+  def can_create_campaigns?
+    !free_plan? || admin? || moderator?
+  end
+  
+  def can_schedule_posts?
+    !free_plan? || admin? || moderator?
+  end
+  
+  def can_use_ai_features?
+    !free_plan? || admin? || moderator?
+  end
+  
+  def can_access_analytics?
+    !free_plan? || admin? || moderator?
+  end
+  
+  def can_manage_automation?
+    premium? || enterprise? || admin? || moderator?
+  end
+  
+  # Admin panel access
+  def can_access_admin_panel?
+    admin? || moderator?
+  end
+  
+  # Role upgrade/downgrade validation
+  def can_change_role_to?(new_role)
+    return false unless ROLES.include?(new_role)
+    
+    # Prevent self-demotion from admin unless super admin exists
+    return false if admin? && new_role != 'admin'
+    
+    # Only admins can change other users' roles
+    admin?
+  end
 
   generates_token_for :email_verification, expires_in: 2.days do
     email
@@ -57,6 +105,23 @@ class User < ApplicationRecord
   has_many :scheduled_posts, dependent: :destroy
   has_many :performance_metrics, dependent: :destroy
   has_many :voice_commands, dependent: :destroy
+  
+  # AI & Voice features
+  has_many :ai_conversations, dependent: :destroy
+  has_many :ai_messages, through: :ai_conversations
+  has_many :voice_settings, dependent: :destroy
+  has_many :content_suggestions, dependent: :destroy
+  has_many :draft_contents, dependent: :destroy
+  
+  # Content & Scheduling features
+  has_many :content_templates, dependent: :destroy
+  has_many :automation_rules, dependent: :destroy
+  has_many :zapier_webhooks, dependent: :destroy
+  has_many :scheduled_tasks, dependent: :destroy
+  
+  # Analytics features
+  has_many :engagement_metrics, dependent: :destroy
+  has_many :trend_analyses, dependent: :destroy
 
   # OAuth methods
   def self.from_omniauth(auth)

@@ -13,6 +13,10 @@ import VoiceCommandController from "./voice_command_controller"
 import ContentIndexController from "./content_index_controller"
 import ContentNewController from "./content_new_controller"
 import ScheduledPostNewController from "./scheduled_post_new_controller"
+import CalendarController from "./calendar_controller"
+import PwaInstallController from "./pwa_install_controller"
+import MobileWebviewController from "./mobile_webview_controller"
+import ScheduledPostsController from "./scheduled_posts_controller"
 
 const application = Application.start()
 
@@ -29,5 +33,9 @@ application.register("voice-command", VoiceCommandController)
 application.register("content-index", ContentIndexController)
 application.register("content-new", ContentNewController)
 application.register("scheduled-post-new", ScheduledPostNewController)
+application.register("calendar", CalendarController)
+application.register("pwa-install", PwaInstallController)
+application.register("mobile-webview", MobileWebviewController)
+application.register("scheduled-posts", ScheduledPostsController)
 
 window.Stimulus = application

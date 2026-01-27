@@ -2,8 +2,18 @@
 <%# This partial will be rendered in different contexts (desktop horizontal / mobile vertical) %>
 <%# The parent wrapper determines the layout %>
 
-<%# Navigation links are PUBLIC (visible to ALL users). %>
-<%# Example with mobile-responsive styles and active state highlighting: %>
+<%# Public navigation links (visible to ALL users) %>
 <%= link_to "Features", features_pages_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
 <%= link_to "Pricing", pricing_pages_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
 <%= link_to "About", about_pages_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+
+<%# Dashboard and main application features - accessible to all users %>
+<%= link_to "Dashboard", dashboards_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+<%= link_to "Calendar", calendar_index_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+<%= link_to "Content", contents_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+<%= link_to "Analytics", engagement_analytics_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+<%= link_to "Trends", trend_analyses_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+<%= link_to "Automation", automation_rules_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+<%= link_to "Auto-Responses", auto_response_triggers_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+<%= link_to "AI Tasks", scheduled_ai_tasks_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>
+<%= link_to "Zapier", zapier_webhooks_path, class: "block px-3 py-2 md:p-0 rounded-lg md:rounded-none hover:bg-surface md:hover:bg-transparent text-secondary hover:text-primary transition-colors" %>

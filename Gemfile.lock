@@ -175,6 +175,9 @@ GEM
     herb (0.7.5-arm64-darwin)
     herb (0.7.5-x86_64-darwin)
     herb (0.7.5-x86_64-linux-gnu)
+    httparty (0.21.0)
+      mini_mime (>= 1.0.0)
+      multi_xml (>= 0.5.2)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     image_processing (1.14.0)
@@ -484,6 +487,7 @@ DEPENDENCIES
   friendly_id (~> 5.5)
   good_job (~> 4.6)
   herb (~> 0.7.5)
+  httparty (~> 0.21.0)
   image_processing (~> 1.2)
   jbuilder
   jsbundling-rails

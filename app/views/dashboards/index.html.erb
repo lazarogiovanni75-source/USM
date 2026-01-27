@@ -1,28 +1,15 @@
-<!-- Dashboard Overview -->
+<!-- Comprehensive AI-Powered Dashboard -->
 <div class="min-h-screen bg-gray-50">
   <!-- Header Section -->
   <div class="bg-white shadow-sm border-b border-gray-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-6">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p class="mt-1 text-gray-600">Manage your social media campaigns with AI-powered automation</p>
+          <h1 class="text-3xl font-bold text-gray-900">AI-Powered Dashboard</h1>
+          <p class="mt-1 text-gray-600">Manage your content with 25 powerful AI features</p>
         </div>
-        <div class="flex items-center space-x-4">
-          <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-              <span class="text-white font-medium text-sm"><%= current_user.name.present? ? current_user.name.first : current_user.email.first %></span>
-            </div>
-            <span class="text-sm text-gray-700 font-medium"><%= current_user.email %></span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Statistics Cards -->
+    <!-- Enhanced Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
         <div class="flex items-center">
@@ -31,9 +18,25 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
             </svg>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Total Campaigns</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @total_campaigns %></p>
+          <div class="ml-4 flex-1">
+            <p class="text-sm font-medium text-gray-600">Total Content</p>
+            <p class="text-2xl font-bold text-gray-900"><%= @comprehensive_metrics[:overview][:total_content] %></p>
+            <div class="flex items-center mt-1">
+              <% if @comprehensive_metrics[:overview][:content_growth_rate] > 0 %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  +<%= @comprehensive_metrics[:overview][:content_growth_rate] %>%
+                </span>
+              <% elsif @comprehensive_metrics[:overview][:content_growth_rate] < 0 %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  <%= @comprehensive_metrics[:overview][:content_growth_rate] %>%
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                  0%
+                </span>
+              <% end %>
+              <span class="text-xs text-gray-500 ml-2">this month</span>
+            </div>
           </div>
         </div>
       </div>
@@ -42,12 +45,28 @@
         <div class="flex items-center">
           <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
             </svg>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Content Created</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @total_contents %></p>
+          <div class="ml-4 flex-1">
+            <p class="text-sm font-medium text-gray-600">AI Interactions</p>
+            <p class="text-2xl font-bold text-gray-900"><%= @comprehensive_metrics[:overview][:ai_conversations] %></p>
+            <div class="flex items-center mt-1">
+              <% if @comprehensive_metrics[:overview][:ai_growth_rate] > 0 %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  +<%= @comprehensive_metrics[:overview][:ai_growth_rate] %>%
+                </span>
+              <% elsif @comprehensive_metrics[:overview][:ai_growth_rate] < 0 %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  <%= @comprehensive_metrics[:overview][:ai_growth_rate] %>%
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                  0%
+                </span>
+              <% end %>
+              <span class="text-xs text-gray-500 ml-2">this month</span>
+            </div>
           </div>
         </div>
       </div>
@@ -56,12 +75,15 @@
         <div class="flex items-center">
           <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
             </svg>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Scheduled Posts</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @scheduled_posts_count %></p>
+          <div class="ml-4 flex-1">
+            <p class="text-sm font-medium text-gray-600">Performance Score</p>
+            <p class="text-2xl font-bold text-gray-900"><%= @comprehensive_metrics[:performance][:performance_score] %></p>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full" style="width: <%= @comprehensive_metrics[:performance][:performance_score] %>%"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -73,159 +95,284 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
             </svg>
           </div>
-          <div class="ml-4">
+          <div class="ml-4 flex-1">
             <p class="text-sm font-medium text-gray-600">Engagement Rate</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @engagement_rate %>%</p>
+            <p class="text-2xl font-bold text-gray-900"><%= @comprehensive_metrics[:engagement][:engagement_rate] %>%</p>
+            <div class="flex items-center mt-1">
+              <% if @comprehensive_metrics[:engagement][:engagement_growth_rate] > 0 %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  +<%= @comprehensive_metrics[:engagement][:engagement_growth_rate] %>%
+                </span>
+              <% elsif @comprehensive_metrics[:engagement][:engagement_growth_rate] < 0 %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  <%= @comprehensive_metrics[:engagement][:engagement_growth_rate] %>%
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                  0%
+                </span>
+              <% end %>
+              <span class="text-xs text-gray-500 ml-2">vs last month</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Main Dashboard Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      
-      <!-- Left Column: Voice Command Interface -->
-      <div class="lg:col-span-1">
-        <%= render 'shared/voice_command_interface' %>
-      </div>
-
-      <!-- Right Column: Content and Campaigns -->
-      <div class="lg:col-span-2 space-y-8">
-        
-        <!-- Recent Campaigns -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div class="p-6 border-b border-gray-100">
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-gray-900">Recent Campaigns</h2>
-              <%= link_to "View All", campaigns_path, class: "text-sm text-purple-600 hover:text-purple-800 font-medium" %>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+              <span class="text-white font-medium text-sm"><%= current_user.name.present? ? current_user.name.first : current_user.email.first %></span>
             </div>
+            <span class="text-sm text-gray-700 font-medium"><%= current_user.email %></span>
           </div>
-          <div class="p-6">
-            <% if @campaigns.any? %>
-              <div class="space-y-4">
-                <% @campaigns.each do |campaign| %>
-                  <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div class="flex-1">
-                      <h3 class="font-medium text-gray-900"><%= campaign.name %></h3>
-                      <p class="text-sm text-gray-600 mt-1"><%= campaign.description&.truncate(100) %></p>
-                      <div class="flex items-center space-x-4 mt-2">
-                        <span class="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded-full"><%= campaign.status %></span>
-                        <span class="text-xs text-gray-500"><%= campaign.start_date.strftime('%b %d, %Y') %></span>
-                      </div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                      <span class="text-xs text-gray-500">Budget:</span>
-                      <span class="text-sm font-medium text-green-600">$<%= campaign.budget %></span>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-            <% else %>
-              <div class="text-center py-8">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No campaigns yet</h3>
-                <p class="mt-1 text-sm text-gray-500">Get started by creating your first campaign using voice commands.</p>
-              </div>
-            <% end %>
-          </div>
-        </div>
-
-        <!-- Recent Content -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div class="p-6 border-b border-gray-100">
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-gray-900">Recent Content</h2>
-              <%= link_to "View All", contents_path, class: "text-sm text-purple-600 hover:text-purple-800 font-medium" %>
-            </div>
-          </div>
-          <div class="p-6">
-            <% if @contents.any? %>
-              <div class="space-y-4">
-                <% @contents.each do |content| %>
-                  <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                    <div class="flex-shrink-0">
-                      <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                      </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="font-medium text-gray-900"><%= content.title %></p>
-                      <p class="text-sm text-gray-600 mt-1"><%= content.body&.truncate(150) %></p>
-                      <div class="flex items-center space-x-4 mt-2">
-                        <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full"><%= content.content_type %></span>
-                        <span class="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded-full"><%= content.platform %></span>
-                        <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full"><%= content.status %></span>
-                      </div>
-                    </div>
-                    <div class="text-right">
-                      <p class="text-xs text-gray-500"><%= content.created_at.strftime('%b %d') %></p>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-            <% else %>
-              <div class="text-center py-8">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No content yet</h3>
-                <p class="mt-1 text-sm text-gray-500">Start generating content using voice commands or the quick actions above.</p>
-              </div>
-            <% end %>
-          </div>
-        </div>
-
-        <!-- Scheduled Posts -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div class="p-6 border-b border-gray-100">
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-gray-900">Scheduled Posts</h2>
-              <%= link_to "View All", scheduled_posts_path, class: "text-sm text-purple-600 hover:text-purple-800 font-medium" %>
-            </div>
-          </div>
-          <div class="p-6">
-            <% if @scheduled_posts.any? %>
-              <div class="space-y-4">
-                <% @scheduled_posts.each do |post| %>
-                  <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div class="flex items-center space-x-4">
-                      <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
-                          </svg>
-                        </div>
-                      </div>
-                      <div>
-                        <p class="font-medium text-gray-900"><%= post.content.title %></p>
-                        <p class="text-sm text-gray-600 mt-1">
-                          Scheduled for <%= post.scheduled_time.strftime('%b %d, %Y at %I:%M %p') %>
-                        </p>
-                      </div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                      <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full"><%= post.status %></span>
-                      <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full"><%= post.platform %></span>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-            <% else %>
-              <div class="text-center py-8">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No scheduled posts</h3>
-                <p class="mt-1 text-sm text-gray-500">Schedule your content to be posted automatically at optimal times.</p>
-              </div>
-            <% end %>
-          </div>
+          <span class="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full"><%= current_user.role&.humanize || 'User' %></span>
         </div>
       </div>
     </div>
   </div>
-</div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Quick Actions Bar -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <%= link_to ai_chat_index_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg text-white hover:from-purple-600 hover:to-blue-600 transition-all" do %>
+          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+          </svg>
+          <span class="text-sm font-medium">AI Chat</span>
+        <% end %>
+
+        <%= link_to content_creation_index_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg text-white hover:from-blue-600 hover:to-cyan-600 transition-all" do %>
+          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+          </svg>
+          <span class="text-sm font-medium">Create Content</span>
+        <% end %>
+
+        <%= link_to draft_contents_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-white hover:from-orange-600 hover:to-red-600 transition-all" do %>
+          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
+          <span class="text-sm font-medium">Drafts</span>
+        <% end %>
+
+        <%= link_to content_templates_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg text-white hover:from-pink-600 hover:to-purple-600 transition-all" do %>
+          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+          </svg>
+          <span class="text-sm font-medium">Templates</span>
+        <% end %>
+
+        <%= link_to automation_rules_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-lg text-white hover:from-indigo-600 hover:to-blue-600 transition-all" do %>
+          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="text-sm font-medium">Automation</span>
+        <% end %>
+
+        <%= link_to engagement_analytics_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg text-white hover:from-green-600 hover:to-teal-600 transition-all" do %>
+          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          <span class="text-sm font-medium">Analytics</span>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Comprehensive Metrics Sections -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Performance Metrics -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+          Performance Overview
+        </h2>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Posts Analyzed</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:performance][:posts_analyzed] %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Total Engagement</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:performance][:total_engagement] %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Avg Engagement Rate</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:performance][:average_engagement_rate] %>%</span>
+          </div>
+          <div class="pt-4 border-t border-gray-200">
+            <div class="text-sm text-gray-600 mb-2">Top Performing Post</div>
+            <div class="text-sm font-medium text-gray-900 truncate"><%= @comprehensive_metrics[:performance][:top_post_title] %></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Platform Analytics -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          Platform Analytics
+        </h2>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Most Active Platform</span>
+            <span class="text-sm font-medium text-gray-900 capitalize"><%= @comprehensive_metrics[:platform][:most_active_platform] %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Platforms Used</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:platform][:total_platforms_used] %></span>
+          </div>
+          <div class="pt-4 border-t border-gray-200">
+            <div class="text-sm text-gray-600 mb-2">Platform Distribution</div>
+            <% @comprehensive_metrics[:platform][:platform_distribution].each do |platform, count| %>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-gray-700 capitalize"><%= platform %></span>
+                <span class="text-sm font-medium text-gray-900"><%= count %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity & Growth Metrics -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Activity Metrics -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Recent Activity (7 days)
+        </h2>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Content Created</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:recent_content] %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">AI Interactions</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:recent_ai_interactions] %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Drafts Updated</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:recent_drafts] %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Posts Scheduled</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:recent_scheduled] %></span>
+          </div>
+          <div class="pt-4 border-t border-gray-200">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Activity Score</span>
+              <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:activity_score] %>/100</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full" style="width: <%= @comprehensive_metrics[:activity][:activity_score] %>%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- growth metrics -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          Growth Trends
+        </h2>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Content Growth</span>
+            <span class="text-sm font-medium <%= @comprehensive_metrics[:growth][:content_growth] > 0 ? 'text-green-600' : 'text-red-600' %>">
+              <%= @comprehensive_metrics[:growth][:content_growth] > 0 ? '+' : '' %><%= @comprehensive_metrics[:growth][:content_growth] %>%
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">AI Usage Growth</span>
+            <span class="text-sm font-medium <%= @comprehensive_metrics[:growth][:ai_growth] > 0 ? 'text-green-600' : 'text-red-600' %>">
+              <%= @comprehensive_metrics[:growth][:ai_growth] > 0 ? '+' : '' %><%= @comprehensive_metrics[:growth][:ai_growth] %>%
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Current Period Content</span>
+            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:growth][:current_period_content] %></span>
+          </div>
+          <div class="pt-4 border-t border-gray-200">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Progression Score</span>
+              <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:growth][:progression_score] %>/100</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div class="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" style="width: <%= @comprehensive_metrics[:growth][:progression_score] %>%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Engagement Breakdown -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+        </svg>
+        Engagement Breakdown
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-red-500"><%= @comprehensive_metrics[:engagement][:total_likes] %></div>
+          <div class="text-sm text-gray-600">Likes</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-blue-500"><%= @comprehensive_metrics[:engagement][:total_comments] %></div>
+          <div class="text-sm text-gray-600">Comments</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-500"><%= @comprehensive_metrics[:engagement][:total_shares] %></div>
+          <div class="text-sm text-gray-600">Shares</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-purple-500"><%= @comprehensive_metrics[:engagement][:total_views] %></div>
+          <div class="text-sm text-gray-600">Views</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend Analysis -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <svg class="w-5 h-5 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+        </svg>
+        Content Creation Trends
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Best Day for Content</h3>
+          <div class="flex items-center">
+            <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-lg font-semibold text-gray-900"><%= @comprehensive_metrics[:trends][:best_day_for_content] %></span>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Lowest Activity Day</h3>
+          <div class="flex items-center">
+            <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-lg font-semibold text-gray-900"><%= @comprehensive_metrics[:trends][:worst_day_for_content] %></span>
+          </div>
+        </div>
+      </div>
+    </div>

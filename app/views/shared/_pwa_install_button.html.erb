@@ -1,0 +1,27 @@
+<div class="fixed bottom-4 right-4 z-50">
+  <button 
+    id="pwa-install-button" 
+    data-mobile-webview-target="installButton"
+    class="hidden bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full shadow-lg transition-all duration-200 flex items-center space-x-2"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+    </svg>
+    <span class="text-sm font-medium">Install App</span>
+  </button>
+</div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const installButton = document.getElementById('pwa-install-button');
+  
+  if (installButton) {
+    installButton.addEventListener('click', function() {
+      // Custom PWA install logic
+      const event = new CustomEvent('pwa-install-clicked');
+      document.dispatchEvent(event);
+    });
+  }
+});
+</script>

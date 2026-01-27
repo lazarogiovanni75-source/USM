@@ -1,0 +1,142 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <%= link_to "← Back to Drafts", drafts_path, class: "hover:text-blue-600" %>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900"><%= @draft.title || "Untitled Draft" %></h1>
+            <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+              <span class="badge badge-<%= @draft.status %>"><%= @draft.status.humanize %></span>
+              <span><%= @draft.platform.titleize %></span>
+              <span><%= @draft.content_type.titleize %></span>
+              <span>Updated <%= time_ago_in_words(@draft.updated_at) %> ago</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <%= link_to "Edit", edit_draft_path(@draft), class: "btn-secondary" %>
+          <%= button_to "Publish", convert_to_content_draft_path(@draft), method: :post, class: "btn-primary", data: { confirm: "Convert to published content?" } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Main Content -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Draft Content -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Content</h2>
+            <div class="text-sm text-gray-500">
+              <%= @draft.content.length %> characters
+            </div>
+          </div>
+          
+          <div class="prose max-w-none">
+            <% if @draft.content.present? %>
+              <%= simple_format(@draft.content) %>
+            <% else %>
+              <p class="text-gray-500 italic">No content yet</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- AI Suggestions -->
+        <% if @suggestions && @suggestions.any? %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="suggestions">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold text-gray-900">AI Suggestions</h2>
+              <%= link_to "Regenerate", edit_draft_path(@draft), class: "btn-secondary btn-sm" %>
+            </div>
+            
+            <div class="space-y-4">
+              <% @suggestions.each do |suggestion| %>
+                <div class="border border-gray-200 rounded-lg p-4">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <h4 class="font-medium text-gray-900"><%= suggestion.topic %></h4>
+                      <p class="text-gray-700 mt-1"><%= suggestion.suggestion %></p>
+                      <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                        <span>Confidence: <%= (suggestion.confidence * 100).round %>%</span>
+                        <span class="badge badge-info"><%= suggestion.status.humanize %></span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2 ml-4">
+                      <%= button_to "Accept", content_suggestion_path(suggestion), method: :patch, params: { content_suggestion: { status: 'accepted' } }, class: "btn-sm btn-primary" %>
+                      <%= button_to "Reject", content_suggestion_path(suggestion), method: :patch, params: { content_suggestion: { status: 'rejected' } }, class: "btn-sm btn-secondary" %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          
+          <div class="space-y-3">
+            <button class="btn-primary w-full" onclick="analyzeDraft()">
+              Analyze Content
+            </button>
+            
+            <%= link_to "Duplicate", duplicate_draft_path(@draft), method: :post, class: "btn-secondary w-full text-center", data: { confirm: "Duplicate this draft?" } %>
+            
+            <%= button_to "Delete", @draft, method: :delete, class: "btn-danger w-full", data: { confirm: "Are you sure you want to delete this draft?" } %>
+          </div>
+        </div>
+
+        <!-- Draft Information -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Information</h3>
+          
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Platform:</span>
+              <span class="font-medium"><%= @draft.platform.titleize %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Type:</span>
+              <span class="font-medium"><%= @draft.content_type.titleize %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Status:</span>
+              <span class="font-medium"><%= @draft.status.humanize %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Word Count:</span>
+              <span class="font-medium"><%= @draft.content.split.length %> words</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Created:</span>
+              <span class="font-medium"><%= time_ago_in_words(@draft.created_at) %> ago</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Updated:</span>
+              <span class="font-medium"><%= time_ago_in_words(@draft.updated_at) %> ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+function analyzeDraft() {
+  // Implement content analysis functionality
+  alert('Content analysis feature coming soon!');
+}
+
+function regenerateSuggestions() {
+  // Implement suggestion regeneration
+  alert('Suggestion regeneration feature coming soon!');
+}
+</script>

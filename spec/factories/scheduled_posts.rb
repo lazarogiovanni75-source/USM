@@ -4,7 +4,7 @@ FactoryBot.define do
     association :content
     association :social_account
     scheduled_at { Time.current }
-    status { "MyString" }
+    status { "scheduled" }
     posted_at { Time.current }
     platform_post_id { "MyString" }
 

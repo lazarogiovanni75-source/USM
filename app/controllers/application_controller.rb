@@ -106,5 +106,30 @@ class ApplicationController < ActionController::Base
   end
 
   # Authentication private methods end
+  
+  # Authorization methods
+  def require_feature!(feature_name)
+    unless current_user&.can_access_feature?(feature_name)
+      redirect_to dashboard_path, alert: "You don't have access to this feature. Please upgrade your plan."
+    end
+  end
+  
+  def require_admin_role!
+    unless current_user&.admin? && !current_user&.free_plan?
+      redirect_to dashboard_path, alert: "Admin access required."
+    end
+  end
+  
+  def require_moderator_role!
+    unless current_user&.moderator? || current_user&.admin?
+      redirect_to dashboard_path, alert: "Moderator or admin access required."
+    end
+  end
+  
+  def require_premium_subscription!
+    unless current_user&.premium? || current_user&.admin? || current_user&.moderator?
+      redirect_to pricing_path, alert: "Premium subscription required to access this feature."
+    end
+  end
 end
 

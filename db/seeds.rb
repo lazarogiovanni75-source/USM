@@ -137,7 +137,7 @@ scheduled_post1 = ScheduledPost.create!(
   social_account: social_account1,
   user: main_user,
   scheduled_at: 2.days.from_now,
-  status: "pending"
+  status: "scheduled"
 )
 
 scheduled_post2 = ScheduledPost.create!(
@@ -153,7 +153,7 @@ scheduled_post3 = ScheduledPost.create!(
   social_account: social_account1,
   user: main_user,
   scheduled_at: 3.days.from_now,
-  status: "pending"
+  status: "scheduled"
 )
 
 puts "Creating performance metrics..."

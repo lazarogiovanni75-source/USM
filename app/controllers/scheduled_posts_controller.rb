@@ -39,9 +39,10 @@ class ScheduledPostsController < ApplicationController
     @available_content = current_user.contents.where(status: 'approved')
 
     if @scheduled_post.save
-      # Calculate optimal posting time if not specified
+      # Calculate optimal posting time if requested
       if params[:optimize_timing].present?
-        optimal_time = SchedulerService.new.calculate_optimal_time(
+        scheduler = SchedulerService.new(current_user)
+        optimal_time = scheduler.calculate_optimal_time(
           @scheduled_post.content.platform,
           @scheduled_post.content.campaign&.target_audience
         )
@@ -71,7 +72,7 @@ class ScheduledPostsController < ApplicationController
 
   # Bulk operations
   def bulk_update
-    post_ids = params[:post_ids]
+    post_ids = params[:post_ids]&.split(',')&.map(&:strip)
     action = params[:action_type]
     
     posts = current_user.scheduled_posts.where(id: post_ids)
@@ -88,10 +89,12 @@ class ScheduledPostsController < ApplicationController
       message = "Successfully published #{updated_count} posts."
     when 'reschedule'
       new_time = DateTime.parse(params[:new_time])
+      scheduler = SchedulerService.new(current_user)
+      
       posts.each do |post|
-        if post.update(scheduled_at: new_time)
-          updated_count += 1
-        end
+        # Use conflict resolution for bulk rescheduling
+        result = scheduler.reschedule_with_conflicts_resolution(post.id, new_time)
+        updated_count += 1 if result[:success]
       end
       message = "Successfully rescheduled #{updated_count} posts."
     when 'cancel'
@@ -101,6 +104,21 @@ class ScheduledPostsController < ApplicationController
         end
       end
       message = "Successfully cancelled #{updated_count} scheduled posts."
+    when 'optimize'
+      scheduler = SchedulerService.new(current_user)
+      optimization_results = scheduler.batch_schedule_optimization(post_ids)
+      
+      if optimization_results.any?
+        # Apply optimizations
+        optimization_results.each do |opt_result|
+          post = current_user.scheduled_posts.find(opt_result[:post_id])
+          post.update!(scheduled_at: opt_result[:suggested_time])
+          updated_count += 1
+        end
+        message = "Successfully optimized #{updated_count} posts for better engagement."
+      else
+        message = "No optimization opportunities found."
+      end
     end
     
     redirect_to scheduled_posts_path, notice: message
@@ -132,17 +150,99 @@ class ScheduledPostsController < ApplicationController
     platform = params[:platform]
     audience = params[:audience]
     
-    optimal_times = SchedulerService.new.calculate_optimal_times(platform, audience)
-    render 'optimal_times', formats: :turbo_stream
+    scheduler = SchedulerService.new(current_user)
+    optimal_times = scheduler.calculate_optimal_times(platform, audience)
+    render json: { optimal_times: optimal_times }
+  end
+
+  # Batch scheduling with optimization
+  def batch_schedule
+    posts_data = JSON.parse(params[:posts_data] || '[]')
+    platform = params[:platform]
+    
+    scheduler = SchedulerService.new(current_user)
+    suggested_schedule = scheduler.suggest_schedule_batch(posts_data, platform)
+    
+    render json: { suggested_schedule: suggested_schedule }
+  end
+
+  # Schedule optimization
+  def optimize_schedule
+    scheduler = SchedulerService.new(current_user)
+    optimization_results = scheduler.batch_schedule_optimization(params[:post_ids])
+    
+    if optimization_results.any?
+      optimization_results.each do |opt_result|
+        post = current_user.scheduled_posts.find(opt_result[:post_id])
+        post.update!(scheduled_at: opt_result[:suggested_time])
+      end
+      render json: { 
+        success: true, 
+        optimized_count: optimization_results.length,
+        improvements: optimization_results
+      }
+    else
+      render json: { 
+        success: false, 
+        message: "No optimization opportunities found." 
+      }
+    end
   end
 
   # Preview scheduling impact
   def preview_scheduling
-    post_ids = params[:post_ids]
+    post_ids = params[:post_ids]&.split(',')&.map(&:strip)
     new_time = DateTime.parse(params[:new_time])
     
-    impact_analysis = SchedulerService.new.analyze_scheduling_impact(post_ids, new_time)
-    render 'scheduling_impact', formats: :turbo_stream
+    scheduler = SchedulerService.new(current_user)
+    impact_analysis = scheduler.analyze_scheduling_impact(post_ids, new_time)
+    render json: impact_analysis
+  end
+
+  # Platform engagement predictions
+  def engagement_predictions
+    post_ids = params[:post_ids]&.split(',')&.map(&:strip)
+    posts = current_user.scheduled_posts.where(id: post_ids)
+    
+    scheduler = SchedulerService.new(current_user)
+    predictions = []
+    
+    posts.each do |post|
+      score = scheduler.calculate_platform_engagement_score(post.platform, post.scheduled_at)
+      predictions << {
+        post_id: post.id,
+        platform: post.platform,
+        scheduled_time: post.scheduled_at,
+        engagement_score: score,
+        recommendations: generate_engagement_recommendations(post, score)
+      }
+    end
+    
+    render json: { predictions: predictions }
+  end
+
+  private
+
+  def generate_engagement_recommendations(post, score)
+    recommendations = []
+    
+    if score < 0.6
+      recommendations << "Consider scheduling at peak hours for #{post.platform}"
+    end
+    
+    if post.scheduled_at.saturday? || post.scheduled_at.sunday?
+      if post.platform == 'linkedin'
+        recommendations << "LinkedIn engagement is lower on weekends"
+      else
+        recommendations << "Weekend posting may perform well for #{post.platform}"
+      end
+    end
+    
+    if post.scheduled_at.hour < 6 || post.scheduled_at.hour > 22
+      recommendations << "Consider scheduling during business hours"
+    end
+    
+    recommendations
   end
 
   # Analytics for scheduling performance
@@ -156,6 +256,19 @@ class ScheduledPostsController < ApplicationController
     @posts_by_day = @scheduled_posts.group("DATE(scheduled_at)").count
     @posts_by_platform = @scheduled_posts.group(:platform).count
     @success_rate = (@scheduled_posts.where(status: 'published').count.to_f / @scheduled_posts.count * 100).round(2)
+    
+    # Enhanced analytics with scheduling insights
+    scheduler = SchedulerService.new(current_user)
+    @engagement_scores = {}
+    
+    @posts_by_platform.each do |platform, count|
+      # Calculate average engagement score for this platform
+      platform_posts = @scheduled_posts.where(platform: platform[0]) # platform is array [platform, count]
+      total_score = platform_posts.sum do |post|
+        scheduler.calculate_platform_engagement_score(post.platform, post.scheduled_at)
+      end
+      @engagement_scores[platform[0]] = (total_score / platform_posts.count).round(3) if platform_posts.any?
+    end
     
     render 'analytics'
   end

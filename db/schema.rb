@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_26_175716) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -69,6 +69,92 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
     t.index ["role"], name: "index_administrators_on_role"
   end
 
+  create_table "ai_conversations", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "title", default: "AI Chat"
+    t.string "session_type", default: "general"
+    t.json "metadata"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["session_type"], name: "index_ai_conversations_on_session_type"
+    t.index ["user_id"], name: "index_ai_conversations_on_user_id"
+  end
+
+  create_table "ai_messages", force: :cascade do |t|
+    t.bigint "ai_conversation_id", null: false
+    t.string "role"
+    t.text "content"
+    t.integer "tokens_used"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ai_conversation_id"], name: "index_ai_messages_on_ai_conversation_id"
+    t.index ["role"], name: "index_ai_messages_on_role"
+  end
+
+  create_table "ai_task_results", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "task_type", null: false
+    t.text "summary"
+    t.jsonb "result_data", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_ai_task_results_on_created_at"
+    t.index ["task_type"], name: "index_ai_task_results_on_task_type"
+    t.index ["user_id"], name: "index_ai_task_results_on_user_id"
+  end
+
+  create_table "auto_response_triggers", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.string "trigger_type", null: false
+    t.string "response_type", null: false
+    t.string "status", default: "active"
+    t.text "conditions", default: [], array: true
+    t.jsonb "config", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["response_type"], name: "index_auto_response_triggers_on_response_type"
+    t.index ["status"], name: "index_auto_response_triggers_on_status"
+    t.index ["trigger_type"], name: "index_auto_response_triggers_on_trigger_type"
+    t.index ["user_id"], name: "index_auto_response_triggers_on_user_id"
+  end
+
+  create_table "auto_responses", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "content_id", null: false
+    t.bigint "auto_response_trigger_id"
+    t.bigint "response_template_id"
+    t.string "response_type", null: false
+    t.string "status", default: "generated"
+    t.text "ai_generated_text"
+    t.datetime "sent_at"
+    t.jsonb "response_data", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["auto_response_trigger_id"], name: "index_auto_responses_on_auto_response_trigger_id"
+    t.index ["content_id"], name: "index_auto_responses_on_content_id"
+    t.index ["created_at"], name: "index_auto_responses_on_created_at"
+    t.index ["response_template_id"], name: "index_auto_responses_on_response_template_id"
+    t.index ["response_type"], name: "index_auto_responses_on_response_type"
+    t.index ["status"], name: "index_auto_responses_on_status"
+    t.index ["user_id"], name: "index_auto_responses_on_user_id"
+  end
+
+  create_table "automation_rules", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name"
+    t.string "trigger_type"
+    t.string "action_type"
+    t.json "conditions"
+    t.json "actions"
+    t.boolean "is_active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["is_active"], name: "index_automation_rules_on_is_active"
+    t.index ["user_id"], name: "index_automation_rules_on_user_id"
+  end
+
   create_table "campaigns", force: :cascade do |t|
     t.string "name", default: "Untitled"
     t.text "description"
@@ -79,6 +165,52 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_campaigns_on_user_id"
+  end
+
+  create_table "content_suggestions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "content_type"
+    t.text "topic"
+    t.text "suggestion"
+    t.decimal "confidence"
+    t.string "status", default: "pending"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_content_suggestions_on_status"
+    t.index ["user_id"], name: "index_content_suggestions_on_user_id"
+  end
+
+  create_table "content_template_variables", force: :cascade do |t|
+    t.bigint "content_template_id", null: false
+    t.string "variable_name", null: false
+    t.text "variable_type", null: false
+    t.text "default_value"
+    t.text "placeholder_text"
+    t.jsonb "validation_rules", default: "{}"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["content_template_id"], name: "index_content_template_variables_on_content_template_id"
+    t.index ["variable_name"], name: "index_content_template_variables_on_variable_name"
+    t.index ["variable_type"], name: "index_content_template_variables_on_variable_type"
+  end
+
+  create_table "content_templates", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "name"
+    t.string "category"
+    t.text "content"
+    t.json "variables"
+    t.string "platform"
+    t.boolean "is_active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "description"
+    t.text "template_content"
+    t.text "template_type"
+    t.integer "usage_count", default: 0
+    t.boolean "is_featured", default: false
+    t.index ["is_active"], name: "index_content_templates_on_is_active"
+    t.index ["user_id"], name: "index_content_templates_on_user_id"
   end
 
   create_table "contents", force: :cascade do |t|
@@ -95,6 +227,32 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
     t.datetime "updated_at", null: false
     t.index ["campaign_id"], name: "index_contents_on_campaign_id"
     t.index ["user_id"], name: "index_contents_on_user_id"
+  end
+
+  create_table "draft_contents", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "title"
+    t.text "content"
+    t.string "content_type"
+    t.string "platform"
+    t.string "status", default: "draft"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_draft_contents_on_status"
+    t.index ["user_id"], name: "index_draft_contents_on_user_id"
+  end
+
+  create_table "engagement_metrics", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "content_id"
+    t.string "metric_type"
+    t.decimal "metric_value"
+    t.date "date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["content_id"], name: "index_engagement_metrics_on_content_id"
+    t.index ["metric_type"], name: "index_engagement_metrics_on_metric_type"
+    t.index ["user_id"], name: "index_engagement_metrics_on_user_id"
   end
 
   create_table "friendly_id_slugs", force: :cascade do |t|
@@ -211,6 +369,79 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
     t.index ["scheduled_post_id"], name: "index_performance_metrics_on_scheduled_post_id"
   end
 
+  create_table "prompt_templates", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name"
+    t.string "category"
+    t.text "prompt"
+    t.text "description"
+    t.json "variables"
+    t.boolean "is_public", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["is_public"], name: "index_prompt_templates_on_is_public"
+    t.index ["user_id"], name: "index_prompt_templates_on_user_id"
+  end
+
+  create_table "publish_queues", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "scheduled_post_id"
+    t.bigint "content_id"
+    t.text "platform", null: false
+    t.jsonb "content_data", default: "{}", null: false
+    t.datetime "scheduled_at", null: false
+    t.integer "priority", default: 5, null: false
+    t.text "status", default: "pending", null: false
+    t.datetime "published_at"
+    t.text "platform_post_id"
+    t.text "error_message"
+    t.integer "retry_count", default: 0
+    t.datetime "next_retry_at"
+    t.datetime "lock_expires_at"
+    t.datetime "locked_at"
+    t.jsonb "dependency_ids", default: "[]"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["content_id"], name: "index_publish_queues_on_content_id"
+    t.index ["lock_expires_at"], name: "index_publish_queues_on_lock_expires_at"
+    t.index ["platform"], name: "index_publish_queues_on_platform"
+    t.index ["priority"], name: "index_publish_queues_on_priority"
+    t.index ["scheduled_at"], name: "index_publish_queues_on_scheduled_at"
+    t.index ["scheduled_post_id"], name: "index_publish_queues_on_scheduled_post_id"
+    t.index ["status"], name: "index_publish_queues_on_status"
+    t.index ["user_id"], name: "index_publish_queues_on_user_id"
+  end
+
+  create_table "response_templates", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name", null: false
+    t.text "body", null: false
+    t.string "category", default: "custom"
+    t.boolean "active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_response_templates_on_active"
+    t.index ["category"], name: "index_response_templates_on_category"
+    t.index ["user_id"], name: "index_response_templates_on_user_id"
+  end
+
+  create_table "scheduled_ai_tasks", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.string "task_type", null: false
+    t.string "schedule_type", null: false
+    t.string "status", default: "active"
+    t.datetime "next_run_at"
+    t.jsonb "config", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["next_run_at"], name: "index_scheduled_ai_tasks_on_next_run_at"
+    t.index ["status"], name: "index_scheduled_ai_tasks_on_status"
+    t.index ["task_type"], name: "index_scheduled_ai_tasks_on_task_type"
+    t.index ["user_id"], name: "index_scheduled_ai_tasks_on_user_id"
+  end
+
   create_table "scheduled_posts", force: :cascade do |t|
     t.bigint "content_id"
     t.bigint "social_account_id"
@@ -223,6 +454,19 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
     t.integer "user_id", null: false
     t.index ["content_id"], name: "index_scheduled_posts_on_content_id"
     t.index ["social_account_id"], name: "index_scheduled_posts_on_social_account_id"
+  end
+
+  create_table "scheduled_tasks", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "task_type"
+    t.json "payload"
+    t.datetime "scheduled_at"
+    t.datetime "executed_at"
+    t.string "status", default: "pending"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_scheduled_tasks_on_status"
+    t.index ["user_id"], name: "index_scheduled_tasks_on_user_id"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -246,6 +490,47 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
     t.index ["user_id"], name: "index_social_accounts_on_user_id"
   end
 
+  create_table "task_executions", force: :cascade do |t|
+    t.bigint "scheduled_ai_task_id", null: false
+    t.bigint "user_id", null: false
+    t.string "status", default: "executed"
+    t.jsonb "execution_data", default: {}
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_task_executions_on_created_at"
+    t.index ["scheduled_ai_task_id"], name: "index_task_executions_on_scheduled_ai_task_id"
+    t.index ["status"], name: "index_task_executions_on_status"
+    t.index ["user_id"], name: "index_task_executions_on_user_id"
+  end
+
+  create_table "trend_analyses", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "analysis_type"
+    t.json "data"
+    t.decimal "trend_score"
+    t.text "insights"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["analysis_type"], name: "index_trend_analyses_on_analysis_type"
+    t.index ["user_id"], name: "index_trend_analyses_on_user_id"
+  end
+
+  create_table "trigger_executions", force: :cascade do |t|
+    t.bigint "auto_response_trigger_id", null: false
+    t.bigint "user_id", null: false
+    t.string "status", default: "executed"
+    t.jsonb "engagement_data", default: {}
+    t.jsonb "response_data", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["auto_response_trigger_id"], name: "index_trigger_executions_on_auto_response_trigger_id"
+    t.index ["created_at"], name: "index_trigger_executions_on_created_at"
+    t.index ["status"], name: "index_trigger_executions_on_status"
+    t.index ["user_id"], name: "index_trigger_executions_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "name"
     t.string "email", null: false
@@ -255,6 +540,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
     t.string "uid"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "role"
+    t.string "subscription_plan"
+    t.string "subscription_status"
+    t.datetime "subscription_expires_at"
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
@@ -273,9 +562,53 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_073048) do
     t.index ["user_id"], name: "index_voice_commands_on_user_id"
   end
 
+  create_table "voice_settings", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "voice_id"
+    t.string "tone", default: "neutral"
+    t.decimal "speed", default: "1.0"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_voice_settings_on_user_id"
+    t.index ["voice_id"], name: "index_voice_settings_on_voice_id"
+  end
+
+  create_table "zapier_webhooks", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "webhook_url"
+    t.string "event_type"
+    t.boolean "is_active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "name", null: false
+    t.text "trigger_events", default: [], array: true
+    t.jsonb "config", default: {}
+    t.string "endpoint_id"
+    t.string "status", default: "active"
+    t.index ["endpoint_id"], name: "index_zapier_webhooks_on_endpoint_id", unique: true
+    t.index ["is_active"], name: "index_zapier_webhooks_on_is_active"
+    t.index ["status"], name: "index_zapier_webhooks_on_status"
+    t.index ["trigger_events"], name: "index_zapier_webhooks_on_trigger_events", using: :gin
+    t.index ["user_id"], name: "index_zapier_webhooks_on_user_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "admin_oplogs", "administrators"
+  add_foreign_key "ai_task_results", "users"
+  add_foreign_key "auto_response_triggers", "users"
+  add_foreign_key "auto_responses", "auto_response_triggers"
+  add_foreign_key "auto_responses", "contents"
+  add_foreign_key "auto_responses", "response_templates"
+  add_foreign_key "auto_responses", "users"
+  add_foreign_key "content_template_variables", "content_templates"
+  add_foreign_key "publish_queues", "users"
+  add_foreign_key "response_templates", "users"
+  add_foreign_key "scheduled_ai_tasks", "users"
   add_foreign_key "scheduled_posts", "users", name: "scheduled_posts_user_id_fkey"
   add_foreign_key "sessions", "users"
+  add_foreign_key "task_executions", "scheduled_ai_tasks"
+  add_foreign_key "task_executions", "users"
+  add_foreign_key "trigger_executions", "auto_response_triggers"
+  add_foreign_key "trigger_executions", "users"
 end

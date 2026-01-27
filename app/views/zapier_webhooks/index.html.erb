@@ -1,0 +1,153 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Zapier Integration</h1>
+          <p class="mt-2 text-gray-600">Connect your content management with external workflows and automations</p>
+        </div>
+        <%= link_to new_zapier_webhook_path, 
+            class: "btn-primary inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors" do %>
+          <%= lucide_icon "plus", class: "w-5 h-5 mr-2" %>
+          Create Webhook
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Workflow Templates -->
+    <div class="mb-8">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Quick Start Templates</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <% @workflow_templates.each do |template| %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                  <%= lucide_icon template[:icon], class: "w-6 h-6 text-blue-600 mr-3" %>
+                  <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                    <%= template[:category].titleize %>
+                  </span>
+                </div>
+              </div>
+              
+              <h3 class="text-lg font-semibold text-gray-900 mb-2"><%= template[:name] %></h3>
+              <p class="text-gray-600 text-sm mb-4"><%= template[:description] %></p>
+              
+              <div class="space-y-2 mb-4">
+                <% template[:trigger_events].each do |event| %>
+                  <span class="inline-block text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-full">
+                    <%= event.gsub('_', ' ').titleize %>
+                  </span>
+                <% end %>
+              </div>
+              
+              <%= link_to create_from_template_zapier_webhooks_path(template_id: template[:id]),
+                  method: :post,
+                  class: "w-full text-center py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium" do %>
+                Use Template
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Active Webhooks -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">Active Webhooks</h2>
+      </div>
+      
+      <% if @webhooks.any? %>
+        <div class="divide-y divide-gray-200">
+          <% @webhooks.each do |webhook| %>
+            <div class="p-6">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <h3 class="text-lg font-medium text-gray-900 mr-3"><%= webhook.name %></h3>
+                    <% if webhook.status == 'active' %>
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                        Active
+                      </span>
+                    <% else %>
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <div class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1.5"></div>
+                        Inactive
+                      </span>
+                    <% end %>
+                  </div>
+                  
+                  <div class="text-sm text-gray-500 mb-3">
+                    <span class="font-mono text-xs"><%= webhook.webhook_url %></span>
+                  </div>
+                  
+                  <div class="flex flex-wrap gap-2">
+                    <% webhook.trigger_events.each do |event| %>
+                      <span class="inline-block text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                        <%= event.gsub('_', ' ').titleize %>
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+                
+                <div class="flex items-center space-x-2 ml-4">
+                  <%= link_to test_zapier_webhook_path(webhook), 
+                      method: :post,
+                      class: "text-blue-600 hover:text-blue-700 text-sm font-medium" do %>
+                    Test
+                  <% end %>
+                  
+                  <%= link_to edit_zapier_webhook_path(webhook), 
+                      class: "text-gray-600 hover:text-gray-700 text-sm font-medium" do %>
+                    Edit
+                  <% end %>
+                  
+                  <%= link_to zapier_webhook_path(webhook), 
+                      method: :delete,
+                      data: { confirm: 'Are you sure?' },
+                      class: "text-red-600 hover:text-red-700 text-sm font-medium" do %>
+                    Delete
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="p-8 text-center">
+          <%= lucide_icon "webhook", class: "w-12 h-12 text-gray-300 mx-auto mb-4" %>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No webhooks configured</h3>
+          <p class="text-gray-500 mb-4">Create your first webhook to start automating workflows</p>
+          <%= link_to new_zapier_webhook_path, 
+              class: "btn-primary inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors" do %>
+            <%= lucide_icon "plus", class: "w-5 h-5 mr-2" %>
+            Create First Webhook
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Integration Status -->
+    <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <%= lucide_icon "info", class: "w-5 h-5 text-blue-400" %>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-blue-800">How Zapier Integration Works</h3>
+          <div class="mt-2 text-sm text-blue-700">
+            <ul class="list-disc list-inside space-y-1">
+              <li>Create workflows that trigger when specific events happen in your content management</li>
+              <li>Send data to external services like Slack, Google Sheets, or your own applications</li>
+              <li>Use pre-built templates for common automation scenarios</li>
+              <li>Test your webhooks to ensure they're working correctly</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
