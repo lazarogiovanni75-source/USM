@@ -15,32 +15,24 @@ class PwaController < ApplicationController
 
   # Handle PWA installation events
   def install_prompt
-    # This endpoint can be used to trigger custom install prompts
-    render json: { 
-      installable: pwa_installable?,
-      manifest_url: pwa_manifest_url,
-      service_worker_url: pwa_service_worker_url
-    }
+    @installable = pwa_installable?
+    @manifest_url = pwa_manifest_url
+    @service_worker_url = pwa_service_worker_url
   end
 
   # Handle PWA update notifications
   def update_available
-    render json: { 
-      update_available: service_worker_update_available?,
-      version: current_service_worker_version,
-      message: 'A new version is available'
-    }
+    @update_available = service_worker_update_available?
+    @version = current_service_worker_version
   end
 
   # Get PWA status and capabilities
   def status
-    render json: {
-      pwa_enabled: pwa_enabled?,
-      webview: webview?,
-      installable: pwa_installable?,
-      capabilities: pwa_capabilities,
-      theme: current_theme
-    }
+    @pwa_enabled = pwa_enabled?
+    @webview = webview?
+    @installable = pwa_installable?
+    @capabilities = pwa_capabilities
+    @theme = current_theme
   end
 
   private

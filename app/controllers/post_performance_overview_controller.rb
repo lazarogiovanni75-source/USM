@@ -24,22 +24,7 @@ class PostPerformanceOverviewController < ApplicationController
     @service = PostPerformanceOverviewService.new(current_user)
     post_ids = params[:post_ids]&.split(',') if params[:post_ids].present?
     
-    @report = @service.generate_performance_report(
-      post_ids,
-      params[:format] || 'json'
-    )
-    
-    respond_to do |format|
-      format.json { render json: @report }
-      format.csv { 
-        # CSV export logic would go here
-        render plain: "CSV export not implemented yet"
-      }
-      format.pdf do
-        # PDF generation would go here
-        render plain: "PDF export not implemented yet"
-      end
-    end
+    @report = @service.generate_performance_report(post_ids)
   end
   
   def compare_posts
@@ -67,13 +52,8 @@ class PostPerformanceOverviewController < ApplicationController
     
     case format
     when 'csv'
-      respond_to do |format|
-        format.csv { send_data generate_csv_data(@data), filename: "performance_report_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv" }
-      end
-    when 'json'
-      respond_to do |format|
-        format.json { render json: @data }
-      end
+      csv_data = generate_csv_data(@data)
+      send_data csv_data, filename: "performance_report_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv"
     else
       redirect_to post_performance_overview_index_path, alert: 'Unsupported export format'
     end
@@ -99,16 +79,10 @@ class PostPerformanceOverviewController < ApplicationController
     @post_performance = @service.get_post_performance(params[:id])
     
     unless @post_performance
-      render json: { error: 'Post not found' }, status: :not_found
+      flash[:alert] = 'Post not found'
+      redirect_to post_performance_overview_index_path
       return
     end
-    
-    render json: {
-      performance_score: @post_performance[:performance_score],
-      comparisons: @post_performance[:comparisons],
-      recommendations: @post_performance[:recommendations],
-      benchmarks: @post_performance[:benchmarks]
-    }
   end
   
   private

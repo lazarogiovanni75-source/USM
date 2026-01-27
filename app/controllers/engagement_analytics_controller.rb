@@ -18,11 +18,6 @@ class EngagementAnalyticsController < ApplicationController
     @days = params[:days]&.to_i || 30
     
     @analytics = @analytics_service.get_engagement_metrics(@days.days.ago..Time.current)
-    
-    respond_to do |format|
-      format.html
-      format.json { render json: @analytics }
-    end
   end
   
   def posting_times
@@ -30,11 +25,6 @@ class EngagementAnalyticsController < ApplicationController
     @days = params[:days]&.to_i || 30
     
     @posting_times = @analytics_service.get_best_posting_times(@days)
-    
-    respond_to do |format|
-      format.html
-      format.json { render json: @posting_times }
-    end
   end
   
   def content_performance
@@ -42,11 +32,6 @@ class EngagementAnalyticsController < ApplicationController
     @days = params[:days]&.to_i || 30
     
     @content_performance = @analytics_service.get_content_type_performance(@days)
-    
-    respond_to do |format|
-      format.html
-      format.json { render json: @content_performance }
-    end
   end
   
   def audience_growth
@@ -54,21 +39,11 @@ class EngagementAnalyticsController < ApplicationController
     @days = params[:days]&.to_i || 30
     
     @audience_growth = @analytics_service.get_audience_growth_insights(@days)
-    
-    respond_to do |format|
-      format.html
-      format.json { render json: @audience_growth }
-    end
   end
   
   def suggestions
     @analytics_service = EngagementAnalyticsService.new(current_user)
     @suggestions = @analytics_service.get_content_suggestions
-    
-    respond_to do |format|
-      format.html
-      format.json { render json: @suggestions }
-    end
   end
   
   def export_data
@@ -80,11 +55,8 @@ class EngagementAnalyticsController < ApplicationController
     
     case @format
     when 'csv'
-      respond_to do |format|
-        format.csv { render csv: @analytics }
-      end
-    when 'json'
-      render json: @analytics
+      @csv_output = @analytics.to_csv
+      send_data @csv_output, filename: "engagement_analytics_#{Date.current}.csv"
     else
       redirect_to engagement_analytics_index_path, alert: 'Invalid export format'
     end
@@ -103,7 +75,7 @@ class EngagementAnalyticsController < ApplicationController
     analytics2 = @analytics_service.get_engagement_metrics(period2_start..period2_end)
     
     # Calculate percentage changes
-    comparison = {
+    @comparison = {
       period1: analytics1[:overview],
       period2: analytics2[:overview],
       changes: {
@@ -113,11 +85,6 @@ class EngagementAnalyticsController < ApplicationController
         avg_likes: calculate_percentage_change(analytics1[:overview][:total_likes] / [analytics1[:overview][:total_posts], 1].max, analytics2[:overview][:total_likes] / [analytics2[:overview][:total_posts], 1].max)
       }
     }
-    
-    respond_to do |format|
-      format.html { @comparison = comparison }
-      format.json { render json: comparison }
-    end
   end
   
   private

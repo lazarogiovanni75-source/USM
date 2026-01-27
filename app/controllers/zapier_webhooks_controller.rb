@@ -21,7 +21,7 @@ class ZapierWebhooksController < ApplicationController
     @webhook = current_user.zapier_webhooks.build(webhook_params)
     
     if @webhook.save
-      redirect_to @webhook, notice: 'Webhook was successfully created.'
+      redirect_to zapier_webhook_path(@webhook), notice: 'Webhook was successfully created.'
     else
       @zapier_service = ZapierIntegrationService.new(current_user)
       @workflow_templates = @zapier_service.get_workflow_templates
@@ -36,7 +36,7 @@ class ZapierWebhooksController < ApplicationController
 
   def update
     if @webhook.update(webhook_params)
-      redirect_to @webhook, notice: 'Webhook was successfully updated.'
+      redirect_to zapier_webhook_path(@webhook), notice: 'Webhook was successfully updated.'
     else
       @zapier_service = ZapierIntegrationService.new(current_user)
       @workflow_templates = @zapier_service.get_workflow_templates
@@ -63,9 +63,9 @@ class ZapierWebhooksController < ApplicationController
     result = @zapier_service.send_to_zapier(@webhook.webhook_url, test_data)
     
     if result[:success]
-      redirect_to @webhook, notice: 'Webhook test successful!'
+      redirect_to zapier_webhook_path(@webhook), notice: 'Webhook test successful!'
     else
-      redirect_to @webhook, alert: "Webhook test failed: #{result[:error]}"
+      redirect_to zapier_webhooks_url, alert: "Webhook test failed: #{result[:error]}"
     end
   end
 
@@ -76,14 +76,16 @@ class ZapierWebhooksController < ApplicationController
       webhook_type = params[:type] || 'generic'
       
       zapier_service = ZapierIntegrationService.new
-      result = zapier_service.handle_webhook(payload, webhook_type)
+      @result = zapier_service.handle_webhook(payload, webhook_type)
       
-      render json: { success: true, result: result }
+      @success = true
     rescue JSON::ParserError
-      render json: { error: 'Invalid JSON payload' }, status: :bad_request
+      @error = 'Invalid JSON payload'
+      @success = false
     rescue => e
       Rails.logger.error "Webhook processing failed: #{e.message}"
-      render json: { error: 'Internal server error' }, status: :internal_server_error
+      @error = 'Internal server error'
+      @success = false
     end
   end
 
@@ -136,7 +138,7 @@ class ZapierWebhooksController < ApplicationController
     @webhook = current_user.zapier_webhooks.build(webhook_params.merge(trigger_events: process_trigger_events))
     
     if @webhook.save
-      redirect_to @webhook, notice: 'Webhook was successfully created.'
+      redirect_to zapier_webhook_path(@webhook), notice: 'Webhook was successfully created.'
     else
       @zapier_service = ZapierIntegrationService.new(current_user)
       @workflow_templates = @zapier_service.get_workflow_templates
@@ -146,7 +148,7 @@ class ZapierWebhooksController < ApplicationController
   
   def update
     if @webhook.update(webhook_params.merge(trigger_events: process_trigger_events))
-      redirect_to @webhook, notice: 'Webhook was successfully updated.'
+      redirect_to zapier_webhook_path(@webhook), notice: 'Webhook was successfully updated.'
     else
       @zapier_service = ZapierIntegrationService.new(current_user)
       @workflow_templates = @zapier_service.get_workflow_templates

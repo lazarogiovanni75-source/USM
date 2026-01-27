@@ -28,7 +28,7 @@ class ScheduledAiTasksController < ApplicationController
     @task = @scheduled_ai_service.create_task(task_params)
     
     if @task.persisted? && @task.valid?
-      redirect_to @task, notice: 'Scheduled AI task was successfully created.'
+      redirect_to scheduled_ai_task_path(@task), notice: 'Scheduled AI task was successfully created.'
     else
       @task_templates = @scheduled_ai_service.get_task_templates
       render :new, status: :unprocessable_entity
@@ -42,7 +42,7 @@ class ScheduledAiTasksController < ApplicationController
 
   def update
     if @task.update(task_params)
-      redirect_to @task, notice: 'Scheduled AI task was successfully updated.'
+      redirect_to scheduled_ai_task_path(@task), notice: 'Scheduled AI task was successfully updated.'
     else
       @scheduled_ai_service = ScheduledAiTasksService.new(current_user)
       @task_templates = @scheduled_ai_service.get_task_templates
@@ -60,7 +60,7 @@ class ScheduledAiTasksController < ApplicationController
     @task.update(status: new_status)
     
     status_text = new_status == 'active' ? 'activated' : 'deactivated'
-    redirect_to @task, notice: "Scheduled AI task was successfully #{status_text}."
+    redirect_to scheduled_ai_task_path(@task), notice: "Scheduled AI task was successfully #{status_text}."
   end
 
   def execute_now
@@ -68,20 +68,20 @@ class ScheduledAiTasksController < ApplicationController
     result = @scheduled_ai_service.execute_task(@task)
     
     if result[:success]
-      redirect_to @task, notice: "Task executed successfully: #{result[:action]}"
+      redirect_to scheduled_ai_task_path(@task), notice: "Task executed successfully: #{result[:action]}"
     else
-      redirect_to @task, alert: "Task execution failed: #{result[:error]}"
+      redirect_to scheduled_ai_tasks_url, alert: "Task execution failed: #{result[:error]}"
     end
   end
 
   def pause_task
     @task.update(status: 'paused')
-    redirect_to @task, notice: 'Scheduled AI task was paused.'
+    redirect_to scheduled_ai_task_path(@task), notice: 'Scheduled AI task was paused.'
   end
 
   def resume_task
     @task.update(status: 'active')
-    redirect_to @task, notice: 'Scheduled AI task was resumed.'
+    redirect_to scheduled_ai_task_path(@task), notice: 'Scheduled AI task was resumed.'
   end
 
   def create_from_template
@@ -102,7 +102,7 @@ class ScheduledAiTasksController < ApplicationController
       )
       
       if @task.save
-        redirect_to @task, notice: 'Scheduled AI task was created from template.'
+        redirect_to scheduled_ai_task_path(@task), notice: 'Scheduled AI task was created from template.'
       else
         redirect_to scheduled_ai_tasks_url, alert: 'Failed to create task from template.'
       end

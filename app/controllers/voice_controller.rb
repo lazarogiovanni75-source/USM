@@ -3,30 +3,20 @@ class VoiceController < ApplicationController
 
   def generate_voice
     text = params[:text]
-    voice_id = params[:voice_id] || 'pNInz6obpgDQGcFmaJgB' # Default voice
+    voice_id = params[:voice_id] || 'pNInz6obpgDQGcFmaJgB'
     tone = params[:tone] || 'neutral'
     speed = params[:speed] || 1.0
 
-    # Call Railway backend for voice generation
-    response = call_railway_voice_api(text, voice_id, tone, speed)
-    
-    render json: response
+    @response = call_railway_voice_api(text, voice_id, tone, speed)
   end
 
   def speech_to_text
     audio_file = params[:audio_file]
-    
-    # Call Railway backend for speech-to-text
-    response = call_railway_speech_api(audio_file)
-    
-    render json: response
+    @response = call_railway_speech_api(audio_file)
   end
 
   def get_voices
-    # Call Railway backend to get available voices
-    response = call_railway_voices_api()
-    
-    render json: response
+    @response = call_railway_voices_api()
   end
 
   def save_voice_settings
@@ -38,10 +28,11 @@ class VoiceController < ApplicationController
       tone: params[:tone],
       speed: params[:speed]
     )
-      render json: { success: true, message: "Voice settings saved" }
+      flash[:notice] = "Voice settings saved"
     else
-      render json: { success: false, errors: user_voice_setting.errors.full_messages }
+      flash[:alert] = user_voice_setting.errors.full_messages.join(', ')
     end
+    redirect_to voice_settings_path
   end
 
   private

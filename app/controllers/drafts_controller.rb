@@ -26,10 +26,7 @@ class DraftsController < ApplicationController
         generate_suggestions(@draft)
       end
       
-      respond_to do |format|
-        format.html { redirect_to @draft, notice: 'Draft created successfully.' }
-        format.turbo_stream { flash.now[:notice] = 'Draft created successfully.' }
-      end
+      redirect_to draft_path(@draft), notice: 'Draft created successfully.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -46,10 +43,7 @@ class DraftsController < ApplicationController
         regenerate_suggestions(@draft)
       end
       
-      respond_to do |format|
-        format.html { redirect_to @draft, notice: 'Draft updated successfully.' }
-        format.turbo_stream { flash.now[:notice] = 'Draft updated successfully.' }
-      end
+      redirect_to draft_path(@draft), notice: 'Draft updated successfully.'
     else
       render :edit, status: :unprocessable_entity
     end
@@ -57,10 +51,7 @@ class DraftsController < ApplicationController
 
   def destroy
     @draft.destroy
-    respond_to do |format|
-      format.html { redirect_to drafts_url, notice: 'Draft deleted successfully.' }
-      format.turbo_stream { flash.now[:notice] = 'Draft deleted successfully.' }
-    end
+    redirect_to drafts_url, notice: 'Draft deleted successfully.'
   end
 
   def convert_to_content
@@ -82,12 +73,9 @@ class DraftsController < ApplicationController
       # Accept related suggestions
       @draft.content_suggestions.pending.update_all(status: 'accepted')
       
-      respond_to do |format|
-        format.html { redirect_to content, notice: 'Draft converted to published content.' }
-        format.turbo_stream { flash.now[:notice] = 'Draft converted to published content.' }
-      end
+      redirect_to content_path(content), notice: 'Draft converted to published content.'
     else
-      redirect_to @draft, alert: 'Failed to convert draft to content.'
+      redirect_to draft_path(@draft), alert: 'Failed to convert draft to content.'
     end
   end
 
@@ -99,12 +87,9 @@ class DraftsController < ApplicationController
     duplicated_draft.content_suggestions = @draft.content_suggestions.map(&:dup)
     
     if duplicated_draft.save
-      respond_to do |format|
-        format.html { redirect_to duplicated_draft, notice: 'Draft duplicated successfully.' }
-        format.turbo_stream { flash.now[:notice] = 'Draft duplicated successfully.' }
-      end
+      redirect_to draft_path(duplicated_draft), notice: 'Draft duplicated successfully.'
     else
-      redirect_to @draft, alert: 'Failed to duplicate draft.'
+      redirect_to draft_path(@draft), alert: 'Failed to duplicate draft.'
     end
   end
 
@@ -135,10 +120,7 @@ class DraftsController < ApplicationController
       message = 'Selected drafts archived successfully.'
     end
     
-    respond_to do |format|
-      format.html { redirect_to drafts_url, notice: message }
-      format.turbo_stream { flash.now[:notice] = message }
-    end
+    redirect_to drafts_url, notice: message
   end
 
   def search

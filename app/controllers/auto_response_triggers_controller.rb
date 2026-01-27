@@ -26,7 +26,7 @@ class AutoResponseTriggersController < ApplicationController
     @trigger = @auto_response_service.create_trigger(trigger_params)
     
     if @trigger.persisted? && @trigger.valid?
-      redirect_to @trigger, notice: 'Auto-response trigger was successfully created.'
+      redirect_to auto_response_trigger_path(@trigger), notice: 'Auto-response trigger was successfully created.'
     else
       @trigger_templates = @auto_response_service.get_trigger_templates
       render :new, status: :unprocessable_entity
@@ -40,7 +40,7 @@ class AutoResponseTriggersController < ApplicationController
 
   def update
     if @trigger.update(trigger_params)
-      redirect_to @trigger, notice: 'Auto-response trigger was successfully updated.'
+      redirect_to auto_response_trigger_path(@trigger), notice: 'Auto-response trigger was successfully updated.'
     else
       @auto_response_service = AutoResponseTriggersService.new(current_user)
       @trigger_templates = @auto_response_service.get_trigger_templates
@@ -58,7 +58,7 @@ class AutoResponseTriggersController < ApplicationController
     @trigger.update(status: new_status)
     
     status_text = new_status == 'active' ? 'activated' : 'deactivated'
-    redirect_to @trigger, notice: "Auto-response trigger was successfully #{status_text}."
+    redirect_to auto_response_trigger_path(@trigger), notice: "Auto-response trigger was successfully #{status_text}."
   end
 
   def test_trigger
@@ -77,9 +77,9 @@ class AutoResponseTriggersController < ApplicationController
     result = @auto_response_service.execute_trigger_response(@trigger, test_data)
     
     if result[:success]
-      redirect_to @trigger, notice: "Trigger test successful: #{result[:action]}"
+      redirect_to auto_response_trigger_path(@trigger), notice: "Trigger test successful: #{result[:action]}"
     else
-      redirect_to @trigger, alert: "Trigger test failed: #{result[:error]}"
+      redirect_to auto_response_triggers_url, alert: "Trigger test failed: #{result[:error]}"
     end
   end
 

@@ -26,7 +26,7 @@ class AutomationRulesController < ApplicationController
     @rule = @automation_service.create_rule(rule_params)
     
     if @rule.persisted? && @rule.valid?
-      redirect_to @rule, notice: 'Automation rule was successfully created.'
+      redirect_to automation_rule_path(@rule), notice: 'Automation rule was successfully created.'
     else
       @rule_templates = @automation_service.get_rule_templates
       render :new, status: :unprocessable_entity
@@ -40,7 +40,7 @@ class AutomationRulesController < ApplicationController
 
   def update
     if @rule.update(rule_params)
-      redirect_to @rule, notice: 'Automation rule was successfully updated.'
+      redirect_to automation_rule_path(@rule), notice: 'Automation rule was successfully updated.'
     else
       @automation_service = AutomationRulesService.new(current_user)
       @rule_templates = @automation_service.get_rule_templates
@@ -58,7 +58,7 @@ class AutomationRulesController < ApplicationController
     @rule.update(status: new_status)
     
     status_text = new_status == 'active' ? 'activated' : 'deactivated'
-    redirect_to @rule, notice: "Automation rule was successfully #{status_text}."
+    redirect_to automation_rule_path(@rule), notice: "Automation rule was successfully #{status_text}."
   end
 
   def create_from_template
@@ -79,7 +79,7 @@ class AutomationRulesController < ApplicationController
       )
       
       if @rule.save
-        redirect_to @rule, notice: 'Automation rule was created from template.'
+        redirect_to automation_rule_path(@rule), notice: 'Automation rule was created from template.'
       else
         redirect_to automation_rules_url, alert: 'Failed to create rule from template.'
       end
@@ -101,24 +101,17 @@ class AutomationRulesController < ApplicationController
     result = @automation_service.execute_rule_action(@rule, test_data)
     
     if result[:success]
-      redirect_to @rule, notice: "Rule test successful: #{result[:action]}"
+      redirect_to automation_rule_path(@rule), notice: "Rule test successful: #{result[:action]}"
     else
-      redirect_to @rule, alert: "Rule test failed: #{result[:error]}"
+      redirect_to automation_rules_url, alert: "Rule test failed: #{result[:error]}"
     end
   end
 
   def export_rules
     rules = current_user.automation_rules
     
-    respond_to do |format|
-      format.csv do
-        csv_data = generate_rules_csv(rules)
-        send_data csv_data, filename: "automation_rules_#{Date.current}.csv"
-      end
-      format.json do
-        render json: rules.as_json(include: [:rule_executions])
-      end
-    end
+    csv_data = generate_rules_csv(rules)
+    send_data csv_data, filename: "automation_rules_#{Date.current}.csv"
   end
 
   def bulk_actions

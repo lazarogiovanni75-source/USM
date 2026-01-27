@@ -47,16 +47,8 @@ class TrendAnalysesController < ApplicationController
   def export_trends
     @trend_service = TrendDetectionService.new(current_user)
     @trends = @trend_service.detect_all_trends
-    
-    respond_to do |format|
-      format.csv do
-        csv_data = generate_trends_csv(@trends)
-        send_data csv_data, filename: "trend_analysis_#{Date.current}.csv"
-      end
-      format.json do
-        render json: @trends
-      end
-    end
+    @csv_data = generate_trends_csv(@trends)
+    send_data @csv_data, filename: "trend_analysis_#{Date.current}.csv"
   end
 
   private

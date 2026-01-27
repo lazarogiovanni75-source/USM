@@ -36,7 +36,7 @@ class ContentTemplatesController < ApplicationController
     @template = current_user.content_templates.build(template_params)
     
     if @template.save
-      redirect_to @template, notice: 'Template created successfully'
+      redirect_to content_template_path(@template), notice: 'Template created successfully'
     else
       render :new
     end
@@ -50,7 +50,7 @@ class ContentTemplatesController < ApplicationController
     @template = current_user.content_templates.find(params[:id])
     
     if @template.update(template_params)
-      redirect_to @template, notice: 'Template updated successfully'
+      redirect_to content_template_path(@template), notice: 'Template updated successfully'
     else
       render :edit
     end
@@ -70,7 +70,7 @@ class ContentTemplatesController < ApplicationController
       @new_template = original_template.duplicate_for_user(current_user)
       
       if @new_template.persisted?
-        redirect_to @new_template, notice: 'Template duplicated successfully'
+        redirect_to content_template_path(@new_template), notice: 'Template duplicated successfully'
       else
         redirect_to content_templates_path, alert: 'Failed to duplicate template'
       end
@@ -83,24 +83,17 @@ class ContentTemplatesController < ApplicationController
     @template = ContentTemplate.find(params[:id])
     
     variables = params[:variables] || {}
-    processed_content = @template.process_variables(variables)
+    @processed_content = @template.process_variables(variables)
     
     # Increment usage count
     @template.increment_usage
-    
-    respond_to do |format|
-      format.html { redirect_to @template }
-      format.json { render json: { content: processed_content } }
-    end
   end
   
   def preview
     @template = ContentTemplate.find(params[:id])
     
     variables = params[:variables] || {}
-    processed_content = @template.process_variables(variables)
-    
-    render json: { content: processed_content }
+    @processed_content = @template.process_variables(variables)
   end
   
   def search
@@ -114,13 +107,11 @@ class ContentTemplatesController < ApplicationController
     templates = templates.for_platform(platform) if platform.present?
     templates = templates.by_category(category) if category.present?
     
-    render json: templates.limit(10).pluck(:id, :name, :description, :category, :platform)
+    @templates = templates.limit(10).pluck(:id, :name, :description, :category, :platform)
   end
   
   def popular
     @templates = ContentTemplate.popular.limit(20)
-    
-    render json: @templates
   end
   
   def categories
@@ -128,7 +119,7 @@ class ContentTemplatesController < ApplicationController
       { id: key, name: key.humanize, count: ContentTemplate.by_category(key).count }
     end
     
-    render json: categories
+    @categories = categories
   end
   
   private

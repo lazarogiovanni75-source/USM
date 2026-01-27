@@ -29,20 +29,10 @@ class CalendarController < ApplicationController
     
     @post.update!(scheduled_at: new_date.to_datetime.change(hour: new_time.hour, minute: new_time.minute))
     
-    respond_to do |format|
-      format.turbo_stream { 
-        render turbo_stream: [
-          turbo_stream.update("calendar-day-#{params[:day]}", partial: 'calendar/post', locals: { post: @post }),
-          turbo_stream.update("post-#{@post.id}", partial: 'calendar/dragged_post', locals: { post: @post })
-        ]
-      }
-      format.json { render json: { success: true } }
-    end
+    @success = true
   rescue => e
-    respond_to do |format|
-      format.turbo_stream { render turbo_stream: turbo_stream.update("post-#{@post.id}", '') }
-      format.json { render json: { success: false, error: e.message }, status: :unprocessable_entity }
-    end
+    @error = e.message
+    @success = false
   end
 
   def quick_schedule
@@ -56,13 +46,8 @@ class CalendarController < ApplicationController
       status: 'scheduled'
     )
     
-    respond_to do |format|
-      format.turbo_stream { 
-        render turbo_stream: turbo_stream.update("day-#{date.strftime('%Y-%m-%d')}", 
-          partial: 'calendar/day_cell', locals: { date: date, posts: [scheduled_post] })
-      }
-      format.json { render json: { success: true, post: scheduled_post } }
-    end
+    @date = date
+    @scheduled_post = scheduled_post
   end
 
   def month_view
@@ -74,11 +59,6 @@ class CalendarController < ApplicationController
       .where('scheduled_at >= ? AND scheduled_at <= ?', @start_date, @end_date)
       .includes(:content)
       .order(:scheduled_at)
-    
-    respond_to do |format|
-      format.turbo_stream { render partial: 'calendar/month_calendar' }
-      format.json { render json: { posts: @scheduled_posts } }
-    end
   end
 
   def week_view
@@ -89,11 +69,6 @@ class CalendarController < ApplicationController
       .where('scheduled_at >= ? AND scheduled_at <= ?', @start_date, @end_date)
       .includes(:content)
       .order(:scheduled_at)
-    
-    respond_to do |format|
-      format.turbo_stream { render partial: 'calendar/week_calendar' }
-      format.json { render json: { posts: @scheduled_posts } }
-    end
   end
 
   def day_view
@@ -107,29 +82,19 @@ class CalendarController < ApplicationController
       .order(:scheduled_at)
     
     @available_slots = generate_available_slots(@date)
-    
-    respond_to do |format|
-      format.turbo_stream { render partial: 'calendar/day_calendar' }
-      format.json { render json: { posts: @scheduled_posts, slots: @available_slots } }
-    end
   end
 
   def create_content_slots
-    # Generate suggested posting slots based on user's historical data and best practices
     date = Date.parse(params[:date])
     platform = params[:platform] || 'all'
     
-    slots = []
+    @slots = []
     6.times do |i|
-      slots << {
-        time: date.beginning_of_day + (i * 4).hours + 12.hours, # 12pm, 4pm, 8pm, etc
+      @slots << {
+        time: date.beginning_of_day + (i * 4).hours + 12.hours,
         suggested: true,
         engagement_prediction: rand(0.7..0.9).round(2)
       }
-    end
-    
-    respond_to do |format|
-      format.json { render json: { slots: slots } }
     end
   end
 
@@ -142,11 +107,6 @@ class CalendarController < ApplicationController
       .where('scheduled_at >= ? AND scheduled_at <= ?', @start_date, @end_date)
       .group(:platform)
       .count
-    
-    respond_to do |format|
-      format.turbo_stream { render partial: 'calendar/platform_stats' }
-      format.json { render json: { stats: @platform_stats } }
-    end
   end
 
   def analytics_view
@@ -160,11 +120,6 @@ class CalendarController < ApplicationController
       published_posts: current_user.scheduled_posts.where('scheduled_at >= ? AND scheduled_at <= ?', @start_date, @end_date, status: 'published').count,
       pending_posts: current_user.scheduled_posts.where('scheduled_at >= ? AND scheduled_at <= ?', @start_date, @end_date, status: 'pending').count
     }
-    
-    respond_to do |format|
-      format.turbo_stream { render partial: 'calendar/analytics' }
-      format.json { render json: { analytics: @analytics } }
-    end
   end
 
   private

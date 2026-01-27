@@ -142,7 +142,7 @@ class ScheduledPostsController < ApplicationController
     @selected_date = params[:date] ? Date.parse(params[:date]) : Date.current
     @posts_for_date = current_user.scheduled_posts.where(scheduled_at: @selected_date.beginning_of_day..@selected_date.end_of_day)
     
-    render 'calendar'
+    render 'scheduled_posts/calendar'
   end
 
   # Get optimal posting times
@@ -150,9 +150,8 @@ class ScheduledPostsController < ApplicationController
     platform = params[:platform]
     audience = params[:audience]
     
-    scheduler = SchedulerService.new(current_user)
-    optimal_times = scheduler.calculate_optimal_times(platform, audience)
-    render json: { optimal_times: optimal_times }
+    @scheduler = SchedulerService.new(current_user)
+    @optimal_times = @scheduler.calculate_optimal_times(platform, audience)
   end
 
   # Batch scheduling with optimization
@@ -160,10 +159,8 @@ class ScheduledPostsController < ApplicationController
     posts_data = JSON.parse(params[:posts_data] || '[]')
     platform = params[:platform]
     
-    scheduler = SchedulerService.new(current_user)
-    suggested_schedule = scheduler.suggest_schedule_batch(posts_data, platform)
-    
-    render json: { suggested_schedule: suggested_schedule }
+    @scheduler = SchedulerService.new(current_user)
+    @suggested_schedule = @scheduler.suggest_schedule_batch(posts_data, platform)
   end
 
   # Schedule optimization
@@ -176,17 +173,11 @@ class ScheduledPostsController < ApplicationController
         post = current_user.scheduled_posts.find(opt_result[:post_id])
         post.update!(scheduled_at: opt_result[:suggested_time])
       end
-      render json: { 
-        success: true, 
-        optimized_count: optimization_results.length,
-        improvements: optimization_results
-      }
+      flash[:notice] = "Successfully optimized #{optimization_results.length} posts for better engagement."
     else
-      render json: { 
-        success: false, 
-        message: "No optimization opportunities found." 
-      }
+      flash[:alert] = "No optimization opportunities found."
     end
+    redirect_to scheduled_posts_path
   end
 
   # Preview scheduling impact
@@ -194,9 +185,8 @@ class ScheduledPostsController < ApplicationController
     post_ids = params[:post_ids]&.split(',')&.map(&:strip)
     new_time = DateTime.parse(params[:new_time])
     
-    scheduler = SchedulerService.new(current_user)
-    impact_analysis = scheduler.analyze_scheduling_impact(post_ids, new_time)
-    render json: impact_analysis
+    @scheduler = SchedulerService.new(current_user)
+    @impact_analysis = @scheduler.analyze_scheduling_impact(post_ids, new_time)
   end
 
   # Platform engagement predictions
@@ -204,11 +194,11 @@ class ScheduledPostsController < ApplicationController
     post_ids = params[:post_ids]&.split(',')&.map(&:strip)
     posts = current_user.scheduled_posts.where(id: post_ids)
     
-    scheduler = SchedulerService.new(current_user)
+    @scheduler = SchedulerService.new(current_user)
     predictions = []
     
     posts.each do |post|
-      score = scheduler.calculate_platform_engagement_score(post.platform, post.scheduled_at)
+      score = @scheduler.calculate_platform_engagement_score(post.platform, post.scheduled_at)
       predictions << {
         post_id: post.id,
         platform: post.platform,
@@ -218,7 +208,7 @@ class ScheduledPostsController < ApplicationController
       }
     end
     
-    render json: { predictions: predictions }
+    @predictions = predictions
   end
 
   private

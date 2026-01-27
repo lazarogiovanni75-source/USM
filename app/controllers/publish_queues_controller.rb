@@ -13,11 +13,6 @@ class PublishQueuesController < ApplicationController
   
   def show
     @queue_item = current_user.publish_queues.find(params[:id])
-    
-    respond_to do |format|
-      format.html
-      format.json { render json: @queue_item }
-    end
   end
   
   def new
@@ -104,15 +99,10 @@ class PublishQueuesController < ApplicationController
       max_items: params[:max_items]&.to_i || 5
     )
     
-    respond_to do |format|
-      format.html do
-        if result[:rate_limited]
-          redirect_to publish_queues_path, alert: "Rate limited. Please wait before processing more items."
-        else
-          redirect_to publish_queues_path, notice: "Processed #{result[:processed_count]} items from queue"
-        end
-      end
-      format.json { render json: result }
+    if result[:rate_limited]
+      redirect_to publish_queues_path, alert: "Rate limited. Please wait before processing more items."
+    else
+      redirect_to publish_queues_path, notice: "Processed #{result[:processed_count]} items from queue"
     end
   end
   
@@ -120,15 +110,10 @@ class PublishQueuesController < ApplicationController
     @queue_service = PublishQueueService.new(current_user)
     result = @queue_service.cancel_queue_item(params[:id])
     
-    respond_to do |format|
-      format.html do
-        if result[:success]
-          redirect_to publish_queues_path, notice: result[:message]
-        else
-          redirect_to publish_queues_path, alert: result[:error]
-        end
-      end
-      format.json { render json: result }
+    if result[:success]
+      redirect_to publish_queues_path, notice: result[:message]
+    else
+      redirect_to publish_queues_path, alert: result[:error]
     end
   end
   
@@ -136,15 +121,10 @@ class PublishQueuesController < ApplicationController
     @queue_service = PublishQueueService.new(current_user)
     result = @queue_service.retry_failed_item(params[:id])
     
-    respond_to do |format|
-      format.html do
-        if result[:success]
-          redirect_to publish_queues_path, notice: result[:message]
-        else
-          redirect_to publish_queues_path, alert: result[:error]
-        end
-      end
-      format.json { render json: result }
+    if result[:success]
+      redirect_to publish_queues_path, notice: result[:message]
+    else
+      redirect_to publish_queues_path, alert: result[:error]
     end
   end
   
@@ -173,26 +153,17 @@ class PublishQueuesController < ApplicationController
     @queue_service = PublishQueueService.new(current_user)
     result = @queue_service.optimize_queue
     
-    respond_to do |format|
-      format.html do
-        redirect_to publish_queues_path, notice: "Optimized #{result[:optimized_count]} queue items"
-      end
-      format.json { render json: result }
-    end
+    redirect_to publish_queues_path, notice: "Optimized #{result[:optimized_count]} queue items"
   end
   
   def queue_status
     @queue_service = PublishQueueService.new(current_user)
-    status = @queue_service.get_queue_status
-    
-    render json: status
+    @queue_status = @queue_service.get_queue_status
   end
   
   def queue_analytics
     @queue_service = PublishQueueService.new(current_user)
-    analytics = @queue_service.get_queue_analytics(params[:days]&.to_i || 7)
-    
-    render json: analytics
+    @queue_analytics = @queue_service.get_queue_analytics(params[:days]&.to_i || 7)
   end
   
   private

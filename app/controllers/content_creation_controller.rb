@@ -16,16 +16,9 @@ class ContentCreationController < ApplicationController
       status: 'draft'
     )
 
-    render json: {
-      success: true,
-      draft: {
-        id: draft.id,
-        title: draft.title,
-        content: draft.content,
-        content_type: draft.content_type,
-        platform: draft.platform
-      }
-    }
+    @draft = draft
+    flash[:notice] = 'Draft created successfully'
+    redirect_to draft_path(draft)
   end
 
   def update_draft
@@ -38,19 +31,12 @@ class ContentCreationController < ApplicationController
       platform: params[:platform],
       status: params[:status] || 'draft'
     )
-      render json: {
-        success: true,
-        draft: {
-          id: draft.id,
-          title: draft.title,
-          content: draft.content,
-          content_type: draft.content_type,
-          platform: draft.platform,
-          status: draft.status
-        }
-      }
+      @draft = draft
+      flash[:notice] = 'Draft updated successfully'
+      redirect_to draft_path(draft)
     else
-      render json: { success: false, errors: draft.errors.full_messages }
+      flash[:alert] = draft.errors.full_messages.join(', ')
+      redirect_to edit_draft_path(draft)
     end
   end
 
@@ -84,17 +70,8 @@ class ContentCreationController < ApplicationController
       status: 'draft'
     )
 
-    render json: {
-      success: true,
-      draft: {
-        id: draft.id,
-        title: draft.title,
-        content: draft.content,
-        content_type: draft.content_type,
-        platform: draft.platform
-      },
-      ai_response: response
-    }
+    @draft = draft
+    @ai_response = response
   end
 
   def publish_content
@@ -114,16 +91,9 @@ class ContentCreationController < ApplicationController
     # Update draft status
     draft.update(status: 'published')
 
-    render json: {
-      success: true,
-      content: {
-        id: content.id,
-        title: content.title,
-        content_type: content.content_type,
-        platform: content.platform,
-        status: content.status
-      }
-    }
+    @content = content
+    flash[:notice] = 'Content published successfully'
+    redirect_to content_path(content)
   end
 
   def schedule_content
@@ -142,14 +112,9 @@ class ContentCreationController < ApplicationController
     # Update draft status
     draft.update(status: 'scheduled')
 
-    render json: {
-      success: true,
-      scheduled_post: {
-        id: scheduled_post.id,
-        scheduled_time: scheduled_post.scheduled_time,
-        status: scheduled_post.status
-      }
-    }
+    @scheduled_post = scheduled_post
+    flash[:notice] = 'Content scheduled successfully'
+    redirect_to scheduled_post_path(scheduled_post)
   end
 
   private

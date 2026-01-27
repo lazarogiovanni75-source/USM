@@ -126,10 +126,8 @@ class PromptTemplatesController < ApplicationController
     end
   end
   
-  # GET /prompt_templates/categories
   def categories
     @categories = PromptTemplate.categories_with_counts
-    render json: @categories
   end
   
   # GET /prompt_templates/popular
@@ -153,21 +151,17 @@ class PromptTemplatesController < ApplicationController
     render :index
   end
   
-  # POST /prompt_templates/:id/rate
   def rate
     @template = PromptTemplate.accessible_to(current_user).find(params[:id])
     rating = params[:rating].to_i
     
     if rating.between?(1, 5)
       @template.rate_template(rating)
-      render json: { 
-        success: true, 
-        new_average: @template.rating_average,
-        new_count: @template.rating_count 
-      }
+      flash[:notice] = 'Rating saved'
     else
-      render json: { success: false, error: 'Invalid rating' }, status: :unprocessable_entity
+      flash[:alert] = 'Invalid rating'
     end
+    redirect_to prompt_template_path(@template)
   end
   
   # GET /prompt_templates/export/:id
@@ -176,10 +170,8 @@ class PromptTemplatesController < ApplicationController
     
     template_data = @template.export_to_hash
     
-    respond_to do |format|
-      format.json { render json: template_data }
-      format.yml { render json: template_data }
-    end
+    json_data = template_data.to_json
+    send_data json_data, filename: "template_#{@template.id}_#{Date.current}.json"
   end
   
   # POST /prompt_templates/import
@@ -217,18 +209,14 @@ class PromptTemplatesController < ApplicationController
     variables = params[:variables] || {}
     missing_vars = @template.missing_variables(variables)
     
-    preview_prompt = if missing_vars.any?
+    @preview_prompt = if missing_vars.any?
                       @template.process_template(variables) + "\n\n[Note: Missing variables: #{missing_vars.join(', ')}]"
                     else
                       @template.process_template(variables)
                     end
     
-    render json: {
-      success: true,
-      preview: preview_prompt,
-      missing_variables: missing_vars,
-      all_variables: @template.extract_variables
-    }
+    @missing_variables = missing_vars
+    @all_variables = @template.extract_variables
   end
   
   private

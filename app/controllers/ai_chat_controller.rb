@@ -19,11 +19,8 @@ class AiChatController < ApplicationController
       metadata: {}
     )
     
-    render json: { 
-      success: true, 
-      conversation_id: @conversation.id,
-      message: "New conversation created" 
-    }
+    flash[:notice] = 'New conversation created'
+    redirect_to ai_chat_path(@conversation)
   end
   
   def send_message
@@ -66,28 +63,10 @@ class AiChatController < ApplicationController
     # Get conversation insights
     insights = ConversationMemoryService.analyze_conversation(@conversation)
     
-    render json: {
-      success: true,
-      user_message: {
-        id: user_message.id,
-        role: user_message.role,
-        content: user_message.content,
-        created_at: user_message.created_at
-      },
-      ai_message: {
-        id: ai_message.id,
-        role: ai_message.role,
-        content: ai_message.content,
-        created_at: ai_message.created_at,
-        tokens_used: ai_message.tokens_used
-      },
-      conversation_insights: insights,
-      memory_status: {
-        topics: @conversation.get_from_memory('conversation_topics') || [],
-        preferences: @conversation.get_from_memory('user_preferences') || {},
-        health: @conversation.memory_health
-      }
-    }
+    @conversation = @conversation
+    @user_message = user_message
+    @ai_message = ai_message
+    @insights = insights
   end
   
   def suggest_content
@@ -111,15 +90,7 @@ class AiChatController < ApplicationController
       status: 'generated'
     )
     
-    render json: {
-      success: true,
-      suggestion: {
-        id: suggestion.id,
-        content: suggestion.suggestion,
-        confidence: suggestion.confidence,
-        content_type: suggestion.content_type
-      }
-    }
+    @suggestion = suggestion
   end
   
   private
