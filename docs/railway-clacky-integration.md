@@ -21,7 +21,7 @@ Your application uses a dual-backend architecture:
    ```
 
 2. **Create a new Railway project**
-   - Go to [Railway.app](https://railway.app)
+   - Go to [Railway.app](https://railway.app)c
    - Sign in with GitHub
    - Click "New Project"
    - Select "Deploy from GitHub repo"

@@ -1,5 +1,8 @@
 // API Configuration for Ultimate Social Media Platform
-const RAILWAY_API_URL = 'https://backend-api-production-00f5.up.railway.app';
+// Railway backend URL comes from Rails environment variable
+// In development: defaults to hardcoded URL
+// In production: uses CLACKY_RAILWAY_BACKEND_URL environment variable
+const RAILWAY_API_URL = document.querySelector('meta[name="railway-backend-url"]')?.content || 'https://backend-api-production-00f5.up.railway.app';
 
 export const apiConfig = {
   baseUrl: RAILWAY_API_URL,

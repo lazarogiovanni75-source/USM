@@ -12,7 +12,8 @@ class UltimateSocialMediaService {
     this.ai = aiService;
     this.video = videoService;
     this.social = socialService;
-    this.baseUrl = 'https://backend-api-production-00f5.up.railway.app';
+    // Get Railway backend URL from meta tag (set by Rails)
+    this.baseUrl = document.querySelector('meta[name="railway-backend-url"]')?.content || 'https://backend-api-production-00f5.up.railway.app';
   }
 
   // Complete workflow: Generate AI content, create voice-over, and post to social

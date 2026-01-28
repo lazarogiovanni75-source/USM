@@ -1,178 +1,212 @@
-# Ultimate Social Media Backend - Railway Deployment
+# Ultimate Social Media API - Railway Backend
 
-## Overview
+Node.js backend service that handles third-party API integrations for the Ultimate Social Media Platform.
 
-This is the **complete backend API** for your Ultimate Social Media platform, designed to run on Railway. It includes all your required integrations:
+## 🚀 Quick Deploy to Railway
 
-- 🎙️ **ElevenLabs** - Voice generation for AI content
-- 🤖 **OpenAI** - AI content generation and campaign ideas
-- 🎬 **Shotstack** - Video creation and editing
-- 📱 **Make.ai** - Multi-platform social media posting
+### Method 1: One-Click Deploy (Recommended)
 
-## Railway Deployment Steps
+1. Click the button below to deploy to Railway:
+   
+   [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new)
 
-### 1. Create Railway Project
+2. Select **"Deploy from GitHub repo"**
+3. Choose your repository
+4. **Set root directory**: `railway-backend`
+5. Add environment variables (see below)
+6. Click **Deploy**
+
+### Method 2: Manual Deploy
+
+1. Go to [Railway.app](https://railway.app)
+2. Sign in with GitHub
+3. Click **"New Project"** → **"Deploy from GitHub repo"**
+4. Select your repository
+5. **Important**: Click "Settings" → Set **Root Directory** to `railway-backend`
+6. Go to **"Variables"** tab and add required environment variables
+7. Railway will auto-deploy
+
+## 🔑 Required Environment Variables
+
+Add these in Railway dashboard → Variables tab:
+
 ```bash
-# Login to Railway
-railway login
+# Required API Keys
+ELEVENLABS_API_KEY=your_elevenlabs_key
+OPENAI_API_KEY=your_openai_key
+SHOTSTACK_API_KEY=your_shotstack_key
 
-# Create new project
-railway new
+# Service Configuration
+PORT=3000
+NODE_ENV=production
 
-# Add environment variables
-railway variables set ELEVENLABS_API_KEY=your_elevenlabs_key
-railway variables set OPENAI_API_KEY=your_openai_key
-railway variables set SHOTSTACK_API_KEY=your_shotstack_key
-railway variables set MAKEAI_API_KEY=your_makeai_key
+# CORS - Update with your ClackyAI domain
+ALLOWED_ORIGINS=https://your-thread.clacky.app,http://localhost:3000
 ```
 
-### 2. Deploy to Railway
+### Optional Variables
+
 ```bash
-# Initialize git (if not already done)
-git init
-git add .
-git commit -m "Ultimate Social Media Backend"
-
-# Connect to Railway
-railway link
-
-# Deploy
-railway up
+MAKEAI_API_KEY=your_makeai_key
+ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/...
+ELEVENLABS_VOICE_ID=pNInz6obpgDQGcFmaJgB
+OPENAI_MODEL=gpt-4o-mini
+SHOTSTACK_ENVIRONMENT=stage
 ```
 
-### 3. Get Your Railway URL
-After deployment, Railway will provide you with a URL like:
-`https://your-app.up.railway.app`
+## 📋 Getting API Keys
 
-## API Endpoints
+### ElevenLabs (Voice Generation)
+1. Visit: https://elevenlabs.io
+2. Profile → API Key
+3. Copy your `xi-api-key`
 
-### 🎙️ Voice Generation (ElevenLabs)
+### OpenAI (AI Content)
+1. Visit: https://platform.openai.com
+2. API Keys → Create new secret key
+3. Copy the `sk-...` key
+
+### Shotstack (Video Generation)
+1. Visit: https://shotstack.io
+2. Dashboard → API
+3. Copy your API key
+4. Use `stage` environment for testing
+
+### Make.ai (Optional)
+1. Visit: https://make.com
+2. Profile → API Key
+3. Copy your API key
+
+## 🧪 Testing Your Deployment
+
+After deployment, your Railway URL will be something like:
+`https://your-app-name.up.railway.app`
+
+### Test Health Endpoint
+
 ```bash
-POST /api/voice/generate
-Content-Type: application/json
+curl https://your-app-name.up.railway.app/health
+```
 
+Expected response:
+```json
 {
-  "text": "Hello from Ultimate Social Media!",
-  "voice": "pNInz6obpgDQGcFmaJgB",
-  "speed": 1.0
+  "status": "ok",
+  "service": "ultimate-social-media-api",
+  "timestamp": "2025-01-27T...",
+  "version": "1.0.0"
 }
 ```
 
-### 🤖 AI Content Generation (OpenAI)
+### Test Voice API
+
 ```bash
-POST /api/ai/generate-content
-Content-Type: application/json
-
-{
-  "prompt": "Create a social media post about productivity tips",
-  "contentType": "post",
-  "platform": "instagram",
-  "campaign": "Productivity Week"
-}
+curl https://your-app-name.up.railway.app/api/voices
 ```
 
-### 🎬 Video Generation (Shotstack)
+### Test AI Content Generation
+
 ```bash
-POST /api/video/generate
-Content-Type: application/json
-
-{
-  "script": "Welcome to our amazing product!",
-  "voiceUrl": "https://your-railway-app.up.railway.app/api/voice/generate",
-  "style": "social"
-}
+curl -X POST https://your-app-name.up.railway.app/api/ai/generate-content \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Write a tweet about coffee", "platform": "twitter"}'
 ```
 
-### 📱 Social Media Posting (Make.ai)
-```bash
-POST /api/social/post
-Content-Type: application/json
+## 📁 API Endpoints
 
-{
-  "content": "Check out our latest feature!",
-  "platforms": ["instagram", "twitter", "facebook"],
-  "scheduledTime": "2024-01-15T10:00:00Z"
-}
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/api/voices` | GET | Get available ElevenLabs voices |
+| `/api/voice/generate` | POST | Generate voice from text |
+| `/api/ai/generate-content` | POST | Generate AI content |
+| `/api/video/generate` | POST | Generate video |
+| `/api/social/post` | POST | Post to social media |
+| `/api/analytics/performance` | GET | Get analytics data |
 
-### 📊 Analytics
-```bash
-GET /api/analytics/performance
-```
+## 🔗 Connect to ClackyAI
 
-## Frontend Integration
+After deployment:
 
-Your frontend should call the Railway-hosted API:
+1. Copy your Railway URL (e.g., `https://your-app.up.railway.app`)
+2. In ClackyAI environment, set:
+   ```bash
+   CLACKY_RAILWAY_BACKEND_URL=https://your-app.up.railway.app
+   ```
+3. ClackyAI will automatically use this URL for all third-party API calls
 
-```javascript
-// Set your Railway URL
-const API_BASE = 'https://your-app.up.railway.app';
-
-// Voice Generation
-const generateVoice = async (text) => {
-  const response = await fetch(`${API_BASE}/api/voice/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, voice: 'pNInz6obpgDQGcFmaJgB' })
-  });
-  return response.blob(); // Returns audio MP3
-};
-
-// AI Content Generation
-const generateContent = async (prompt) => {
-  const response = await fetch(`${API_BASE}/api/ai/generate-content`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, contentType: 'post', platform: 'instagram' })
-  });
-  return response.json();
-};
-
-// Social Media Posting
-const postToSocial = async (content, platforms) => {
-  const response = await fetch(`${API_BASE}/api/social/post`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content, platforms })
-  });
-  return response.json();
-};
-```
-
-## Security Features
-
-- ✅ **CORS Protection** - Configurable allowed origins
-- ✅ **Rate Limiting** - 100 requests per 15 minutes per IP
-- ✅ **Helmet Security** - Security headers protection
-- ✅ **API Key Protection** - All keys stored in Railway environment
-- ✅ **Error Handling** - Comprehensive error responses
-- ✅ **Request Logging** - Morgan logging for debugging
-
-## Testing Locally
+## 🛠️ Local Development
 
 ```bash
 # Install dependencies
 npm install
 
-# Copy environment template
+# Copy environment example
 cp .env.example .env
 
 # Edit .env with your API keys
+nano .env
 
 # Start development server
 npm run dev
 
-# Test endpoints
+# Test locally
 curl http://localhost:3000/health
-curl http://localhost:3000/api/voices
 ```
 
-## Production Features
+## 📦 Dependencies
 
-- **Health Check** - `/health` endpoint for Railway monitoring
-- **Graceful Shutdown** - Proper process termination
-- **Request IDs** - Track requests through logging
-- **Compression** - Gzip compression for better performance
-- **Environment Detection** - Different behavior for dev/prod
+- **express**: Web framework
+- **cors**: Cross-origin resource sharing
+- **helmet**: Security headers
+- **axios**: HTTP client for API calls
+- **express-rate-limit**: Rate limiting
+- **compression**: Response compression
+- **morgan**: HTTP logging
 
-Your Ultimate Social Media backend is now **Railway-ready** with all integrations! 🎉
+## 🔒 Security Features
+
+- ✅ Helmet security headers
+- ✅ CORS configured
+- ✅ Rate limiting (100 req/15min per IP)
+- ✅ Request size limits (10MB)
+- ✅ Environment variable validation
+- ✅ HTTPS only in production
+
+## 🐛 Troubleshooting
+
+### 404 Error
+- **Cause**: App not deployed or wrong URL
+- **Fix**: Verify deployment in Railway dashboard
+
+### CORS Error
+- **Cause**: Frontend domain not in ALLOWED_ORIGINS
+- **Fix**: Add your ClackyAI domain to ALLOWED_ORIGINS
+
+### 401 API Error
+- **Cause**: Invalid or missing API key
+- **Fix**: Check API keys in Railway Variables tab
+
+### Service Timeout
+- **Cause**: Railway free tier sleeps after inactivity
+- **Fix**: Upgrade plan or wait for wake-up (~30s)
+
+## 📚 Documentation
+
+- [Railway Docs](https://docs.railway.app)
+- [ElevenLabs API](https://docs.elevenlabs.io)
+- [OpenAI API](https://platform.openai.com/docs)
+- [Shotstack API](https://shotstack.io/docs)
+
+## 🤝 Support
+
+For issues with:
+- **Railway deployment**: Check Railway logs in dashboard
+- **API integrations**: Check respective service status pages
+- **ClackyAI connection**: Verify CORS and backend URL
+
+---
+
+**Version**: 1.0.0  
+**Node**: >=18.0.0  
+**Last Updated**: 2025-01-27
