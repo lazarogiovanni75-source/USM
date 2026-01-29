@@ -35,6 +35,7 @@ Add these in Railway dashboard → Variables tab:
 ELEVENLABS_API_KEY=your_elevenlabs_key
 OPENAI_API_KEY=your_openai_key
 SHOTSTACK_API_KEY=your_shotstack_key
+DEFAPI_API_KEY=your_defapi_key
 
 # Service Configuration
 PORT=3000
@@ -71,6 +72,13 @@ SHOTSTACK_ENVIRONMENT=stage
 2. Dashboard → API
 3. Copy your API key
 4. Use `stage` environment for testing
+
+### DefAPI (AI Video Generation)
+1. Visit: https://defapi.org
+2. Create account or sign in
+3. Go to API Settings → Copy your API key
+4. Use model: `openai/sora-2` for video generation
+5. Endpoints: `POST /video/start`, `GET /video/status/:jobId`
 
 ### Make.ai (Optional)
 1. Visit: https://make.com
@@ -120,7 +128,9 @@ curl -X POST https://your-app-name.up.railway.app/api/ai/generate-content \
 | `/api/voices` | GET | Get available ElevenLabs voices |
 | `/api/voice/generate` | POST | Generate voice from text |
 | `/api/ai/generate-content` | POST | Generate AI content |
-| `/api/video/generate` | POST | Generate video |
+| `/api/video/generate` | POST | Generate video (Shotstack) |
+| `/video/start` | POST | Start video generation (DefAPI) |
+| `/video/status/:jobId` | GET | Check DefAPI job status |
 | `/api/social/post` | POST | Post to social media |
 | `/api/analytics/performance` | GET | Get analytics data |
 

@@ -202,6 +202,65 @@ app.post('/api/ai/generate-content', async (req, res) => {
 });
 
 // ================================
+// VIDEO GENERATION (DefAPI - Alternative)
+// ================================
+
+app.post('/video/start', async (req, res) => {
+  const prompt = req.body.prompt || 'Vertical 9:16, 10s, abstract tech motion';
+
+  if (!process.env.DEFAPI_API_KEY) {
+    return res.status(500).json({ error: 'DefAPI API key not configured' });
+  }
+
+  try {
+    const response = await axios.post(
+      'https://api.defapi.org/v1/run',
+      {
+        model: 'openai/sora-2',
+        input: {
+          prompt,
+          duration: 10,
+          aspect_ratio: '9:16'
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.DEFAPI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    res.json({ jobId: response.data.id });
+  } catch (error) {
+    console.error('DefAPI Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Video generation failed' });
+  }
+});
+
+app.get('/video/status/:jobId', async (req, res) => {
+  const { jobId } = req.params;
+
+  if (!process.env.DEFAPI_API_KEY) {
+    return res.status(500).json({ error: 'DefAPI API key not configured' });
+  }
+
+  try {
+    const response = await axios.get(
+      `https://api.defapi.org/v1/status/${jobId}`,
+      {
+        headers: { Authorization: `Bearer ${process.env.DEFAPI_API_KEY}` }
+      }
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('DefAPI Status Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Status check failed' });
+  }
+});
+
+// ================================
 // VIDEO GENERATION (Shotstack)
 // ================================
 
@@ -372,6 +431,8 @@ app.use('*', (req, res) => {
       'GET /api/voices',
       'POST /api/ai/generate-content',
       'POST /api/video/generate',
+      'POST /video/start',
+      'GET /video/status/:jobId',
       'POST /api/social/post',
       'GET /api/analytics/performance'
     ]
@@ -383,6 +444,6 @@ app.listen(PORT, () => {
   console.log(`📡 Railway deployment ready`);
   console.log(`🎙️ Voice Generation: ElevenLabs`);
   console.log(`🤖 AI Content: OpenAI`);
-  console.log(`🎬 Video Generation: Shotstack`);
+  console.log(`🎬 Video Generation: Shotstack + DefAPI`);
   console.log(`📱 Social Posting: Make.ai`);
 });
