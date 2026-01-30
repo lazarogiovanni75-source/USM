@@ -10,8 +10,8 @@ function App() {
       <div className="min-h-screen bg-gray-100">
         <nav className="bg-blue-600 text-white p-4">
           <div className="container mx-auto">
-            <h1 className="text-2xl font-bold mb-4">Clacky App</h1>
-            <div className="flex gap-4">
+            <h1 className="text-2xl font-bold mb-6">Ultimate Social Media</h1>
+            <div className="flex gap-6">
               <Link to="/" className="hover:underline">Draft</Link>
               <Link to="/approval" className="hover:underline">Approval</Link>
               <Link to="/video" className="hover:underline">Video</Link>
