@@ -116,7 +116,6 @@ class User < ApplicationRecord
   # Content & Scheduling features
   has_many :content_templates, dependent: :destroy
   has_many :automation_rules, dependent: :destroy
-  has_many :zapier_webhooks, dependent: :destroy
   has_many :scheduled_tasks, dependent: :destroy
   
   # Analytics features

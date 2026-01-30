@@ -26,7 +26,6 @@ class DashboardsController < ApplicationController
     
     # Automation
     @automation_rules = @user.automation_rules.order(created_at: :desc).limit(5)
-    @zapier_webhooks = @user.zapier_webhooks.order(created_at: :desc).limit(5)
     @scheduled_tasks = @user.scheduled_tasks.order(created_at: :desc).limit(5)
     
     # Calculate comprehensive statistics

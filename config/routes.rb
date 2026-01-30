@@ -232,28 +232,8 @@ Rails.application.routes.draw do
     end
   end
   
-  # API webhook endpoint
-  namespace :api do
-    namespace :v1 do
-      post 'zapier/webhooks/:type', to: 'zapier_webhooks#receive'
-    end
-  end
   resources :scheduled_tasks, only: [:index]
-  
-  # Zapier Integration routes
-  resources :zapier_webhooks, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
-    member do
-      post 'test_webhook'
-      post 'toggle_status'
-    end
-    collection do
-      post 'create_from_template'
-      post 'bulk_actions'
-      get 'templates'
-      get 'webhook_logs'
-    end
-  end
-  
+
   resources :scheduled_ai_tasks, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
     member do
       post 'execute_now'
