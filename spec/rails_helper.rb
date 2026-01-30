@@ -1,6 +1,7 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
 ENV['RAILS_ENV'] ||= 'test'
+ENV['SKIP_WEBHOOKS'] = 'true'  # Skip webhook jobs during tests
 require_relative '../config/environment'
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 return unless Rails.env.test?

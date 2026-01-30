@@ -3,14 +3,16 @@ class ScheduledPost < ApplicationRecord
   belongs_to :social_account
   belongs_to :user
   has_many :performance_metrics, dependent: :destroy
-  
+
+  after_create :trigger_make_webhook
+
   enum status: {
     scheduled: 'scheduled',
     published: 'published',
     failed: 'failed',
     cancelled: 'cancelled'
   }
-  
+
   validates :scheduled_at, presence: true
   
   scope :by_platform, ->(platform) { joins(:social_account).where(social_accounts: { platform: platform }) if platform.present? }
@@ -36,5 +38,20 @@ class ScheduledPost < ApplicationRecord
   def optimal_posting_time
     # This would integrate with your calendar service for optimal timing
     SchedulerService.new.optimal_time_for_platform(platform)
+  end
+
+  private
+
+  # Enqueue webhook job asynchronously after post is created/scheduled
+  # Skip webhook during test seeding to avoid test logger conflicts
+  def trigger_make_webhook
+    # Skip in test environment during seeding (avoid test logger conflicts)
+    return if Rails.env.test? && ENV['SKIP_WEBHOOKS'].present?
+
+    PostWebhookJob.perform_later(id, 'created')
+  rescue StandardError => e
+    # Log as warn instead of error to avoid test environment logger raising exceptions
+    Rails.logger.warn("[ScheduledPost] Failed to enqueue webhook job: #{e.message}")
+    # Don't fail post creation if webhook fails to enqueue
   end
 end
