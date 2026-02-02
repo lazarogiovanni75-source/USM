@@ -60,7 +60,7 @@ Rails.application.configure do
   # config.assume_ssl = true
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  config.force_ssl = false  # Disabled for Railway - Railway handles SSL at proxy level
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
@@ -113,7 +113,8 @@ Rails.application.configure do
   # Enable DNS rebinding protection and other `Host` header attacks.
   config.hosts = [
     "ultimatesocialmedia01.com",     # Allow requests from your custom domain
-    /.*\.ultimatesocialmedia01\.com/ # Allow requests from subdomains like `www.ultimatesocialmedia01.com`
+    /.*\.ultimatesocialmedia01\.com/, # Allow requests from subdomains like `www.ultimatesocialmedia01.com`
+    /.*\.railway\.app/                # Allow Railway provided domain
   ]
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
