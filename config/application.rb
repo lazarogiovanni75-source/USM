@@ -11,7 +11,8 @@ module Myapp
   class Application < Rails::Application
 
     # check environment variables in production
-    EnvChecker.check_required_env_vars if Rails.env.production?
+    # Disabled for Railway - Railway provides variables at runtime
+    # EnvChecker.check_required_env_vars if Rails.env.production?
 
     config.generators do |g|
       g.test_framework :rspec,
