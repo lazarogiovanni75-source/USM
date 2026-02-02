@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-# Background job for posting content to Buffer
+# Background job for posting content to Postforme API
 # when social posts are created or scheduled.
 #
 # This job is enqueued by ScheduledPost callbacks and processes
-# Buffer API delivery asynchronously to avoid blocking the main request.
+# Postforme API delivery asynchronously to avoid blocking the main request.
 # Supports retry with exponential backoff for reliable delivery.
 class PostWebhookJob < ApplicationJob
   queue_as :default
@@ -20,7 +20,6 @@ class PostWebhookJob < ApplicationJob
     scheduled_post = ScheduledPost.find_by(id: scheduled_post_id)
     return unless scheduled_post
 
-    # Calculate attempt number (executions + 1 for current attempt)
     attempt_number = executions + 1
 
     Rails.logger.info(
@@ -28,19 +27,19 @@ class PostWebhookJob < ApplicationJob
       "(attempt #{attempt_number}/5) at #{Time.current.iso8601}"
     )
 
-    # Get Buffer access token from social account
-    buffer_service = BufferService.new(scheduled_post.social_account&.buffer_access_token)
-    unless buffer_service.configured?
-      Rails.logger.error("[PostWebhookJob] Buffer not configured for post #{scheduled_post.id}")
-      raise BufferService::BufferError, 'Buffer access token not configured'
+    # Get Postforme API key from social account
+    postforme_service = PostformeService.new(scheduled_post.social_account&.postforme_api_key)
+    unless postforme_service.configured?
+      Rails.logger.error("[PostWebhookJob] Postforme not configured for post #{scheduled_post.id}")
+      raise PostformeService::PostformeError, 'Postforme API key not configured'
     end
 
     content = scheduled_post.content
-    profile_id = scheduled_post.social_account&.buffer_profile_id
+    profile_id = scheduled_post.social_account&.postforme_profile_id
 
     unless profile_id.present?
-      Rails.logger.error("[PostWebhookJob] Buffer profile ID not configured for post #{scheduled_post.id}")
-      raise BufferService::BufferError, 'Buffer profile ID not configured'
+      Rails.logger.error("[PostWebhookJob] Postforme profile ID not configured for post #{scheduled_post.id}")
+      raise PostformeService::PostformeError, 'Postforme profile ID not configured'
     end
 
     text = extract_caption(content)
@@ -50,22 +49,22 @@ class PostWebhookJob < ApplicationJob
     options[:media] = media if media.present?
     options[:scheduled_at] = scheduled_post.scheduled_at if scheduled_post.scheduled_at.present?
 
-    # If posting immediately, use share_now
+    # If posting immediately, use share_now or create_post with now: true
     if event_type == 'share_now'
-      response = buffer_service.share_now(profile_id, text, options)
+      response = postforme_service.create_post(profile_id, text, options.merge(now: true))
     else
       # For scheduled posts
-      response = buffer_service.create_update(profile_id, text, options)
+      response = postforme_service.create_post(profile_id, text, options)
     end
 
-    if response.present? && (response['success'] || response['update'].present?)
+    if response.present? && response_success?(response)
       Rails.logger.info(
-        "[PostWebhookJob] Successfully posted to Buffer for post #{scheduled_post.id} " \
+        "[PostWebhookJob] Successfully posted to Postforme for post #{scheduled_post.id} " \
         "on attempt #{attempt_number} at #{Time.current.iso8601}"
       )
 
-      # Extract Buffer update ID from response
-      buffer_update_id = response.dig('update', 'id') || response['updates']&.first&.dig('id')
+      # Extract Postforme post ID from response
+      postforme_post_id = extract_post_id(response)
 
       # Mark posting as successful
       scheduled_post.update!(
@@ -73,33 +72,28 @@ class PostWebhookJob < ApplicationJob
         webhook_error: nil,
         webhook_attempts: attempt_number,
         last_webhook_at: Time.current,
-        buffer_update_id: buffer_update_id
+        postforme_post_id: postforme_post_id
       )
 
       true
     else
-      # Log failure with attempt number and payload details
       log_failed_attempt(scheduled_post, attempt_number, response)
-
-      # Raise exception to trigger retry (if under max attempts)
-      raise BufferService::BufferError, "Buffer posting failed - will retry"
+      raise PostformeService::PostformeError, "Postforme posting failed - will retry"
     end
   rescue ActiveRecord::RecordNotFound => e
     Rails.logger.warn(
       "[PostWebhookJob] ScheduledPost #{scheduled_post_id} not found at #{Time.current.iso8601}: #{e.message}"
     )
     raise
-  rescue BufferService::BufferError => e
-    # Check if this is the last retry attempt
-    if executions >= 4 # 0-indexed, so 4 = 5th attempt
+  rescue PostformeService::PostformeError => e
+    if executions >= 4
       handle_all_retries_exhausted(scheduled_post_id, e)
     end
 
     log_detailed_error(e, scheduled_post_id)
     raise
   rescue StandardError => e
-    # Check if this is the last retry attempt
-    if executions >= 4 # 0-indexed, so 4 = 5th attempt
+    if executions >= 4
       handle_all_retries_exhausted(scheduled_post_id, e)
     end
 
@@ -109,7 +103,6 @@ class PostWebhookJob < ApplicationJob
 
   private
 
-  # Get the number of previous execution attempts (for retry tracking)
   def executions
     execution_attempts.to_i
   end
@@ -132,18 +125,27 @@ class PostWebhookJob < ApplicationJob
 
     media = {}
 
-    # Handle different media_urls formats
     case media_urls
     when String
       parsed = JSON.parse(media_urls)
-      media[:photo] = parsed['urls']&.first || parsed.first if parsed.present?
+      media[:url] = parsed['urls']&.first || parsed.first if parsed.present?
     when Array
-      media[:photo] = media_urls.first if media_urls.present?
+      media[:url] = media_urls.first if media_urls.present?
     when Hash
-      media[:photo] = media_urls['urls']&.first || media_urls.values.first if media_urls.present?
+      media[:url] = media_urls['urls']&.first || media_urls.values.first if media_urls.present?
     end
 
     media.present? ? media : nil
+  end
+
+  def response_success?(response)
+    # Adjust based on actual Postforme API response structure
+    response['success'] || response['post'] || response['id'] || response['data']&.dig('id')
+  end
+
+  def extract_post_id(response)
+    # Adjust based on actual Postforme API response structure
+    response.dig('post', 'id') || response.dig('id') || response['data']&.dig('id')
   end
 
   def log_failed_attempt(scheduled_post, attempt_number, response)
@@ -152,11 +154,11 @@ class PostWebhookJob < ApplicationJob
       platform: scheduled_post.social_account&.platform,
       scheduled_at: scheduled_post.scheduled_at&.iso8601,
       content_title: scheduled_post.content&.title&.slice(0, 50),
-      buffer_response: response&.slice('success', 'error', 'message')
+      postforme_response: response&.slice('success', 'error', 'message', 'id')
     }
 
     Rails.logger.warn(
-      "[PostWebhookJob] Buffer posting FAILED - Attempt #{attempt_number}/5 for post #{scheduled_post.id} " \
+      "[PostWebhookJob] Postforme posting FAILED - Attempt #{attempt_number}/5 for post #{scheduled_post.id} " \
       "at #{Time.current.iso8601}. Details: #{payload_summary.to_json}"
     )
   end
@@ -174,7 +176,6 @@ class PostWebhookJob < ApplicationJob
     scheduled_post = ScheduledPost.find_by(id: scheduled_post_id)
     return unless scheduled_post
 
-    # Mark the Buffer posting as failed in the database
     scheduled_post.update!(
       webhook_status: 'failed',
       webhook_error: "All retries exhausted - #{exception.class}: #{exception.message}",
@@ -182,7 +183,6 @@ class PostWebhookJob < ApplicationJob
       last_webhook_at: Time.current
     )
 
-    # Send notification to admin
     notify_admin_about_failure(scheduled_post, exception)
   end
 
@@ -198,9 +198,8 @@ class PostWebhookJob < ApplicationJob
       attempts: 5
     }
 
-    # Log the admin notification
     Rails.logger.warn(
-      "[PostWebhookJob] ADMIN NOTIFICATION - Buffer Posting Failed for Post ##{scheduled_post.id}: " \
+      "[PostWebhookJob] ADMIN NOTIFICATION - Postforme Posting Failed for Post ##{scheduled_post.id}: " \
       "user_id=#{admin_notification[:user_id]}, " \
       "platform=#{admin_notification[:platform]}, " \
       "error=#{admin_notification[:error_type]}: #{admin_notification[:error_message]}, " \

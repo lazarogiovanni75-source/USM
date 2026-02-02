@@ -38,8 +38,8 @@
     <div class="bg-white shadow rounded-lg">
       <div class="p-6">
         <%= form_with(model: @social_account, local: true) do |form| %>
-          <div class="space-y-6">
-            <!-- Platform Selection -->
+="space-y-6">
+            <!--          <div class Platform Selection -->
             <div>
               <h3 class="text-lg font-medium text-gray-900 mb-4">Select Platform</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -80,6 +80,33 @@
               </div>
             </div>
 
+            <!-- Postforme Integration -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Postforme Integration</h3>
+              <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p class="text-sm text-purple-700">
+                  <%= lucide_icon "info", class: "w-4 h-4 inline mr-2" %>
+                  Postforme is used for scheduling and posting to social media platforms. 
+                  Get your API key from <a href="https://postforme.com" target="_blank" class="underline">postforme.com</a>.
+                </p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <%= form.label :postforme_api_key, "Postforme API Key", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.text_field :postforme_api_key, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                   placeholder: "pfm_live_..." %>
+                </div>
+
+                <div>
+                  <%= form.label :postforme_profile_id, "Postforme Profile ID", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.text_field :postforme_profile_id, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                   placeholder: "Profile ID from Postforme" %>
+                </div>
+              </div>
+            </div>
+
             <!-- Connection Status -->
             <div>
               <h3 class="text-lg font-medium text-gray-900 mb-4">Connection Status</h3>
@@ -89,9 +116,6 @@
                   <label for="is_connected" class="ml-2 block text-sm text-gray-700">
                     Mark this account as connected (you can update access tokens later)
                   </label>
-                </div>
-                <div class="text-sm text-gray-500">
-                  Note: You'll need to configure API access tokens for posting to these platforms.
                 </div>
               </div>
             </div>
@@ -111,3 +135,16 @@
 </div>
 
 <!-- stimulus-validator: allow-script -->
+<script>
+function selectPlatform(platform) {
+  document.getElementById('platform_input').value = platform;
+  // Remove selected state from all platforms
+  document.querySelectorAll('[onclick^="selectPlatform"]').forEach(el => {
+    el.classList.remove('border-purple-500', 'bg-purple-50');
+    el.classList.add('border-gray-300');
+  });
+  // Add selected state to clicked platform
+  event.currentTarget.classList.remove('border-gray-300');
+  event.currentTarget.classList.add('border-purple-500', 'bg-purple-50');
+}
+</script>

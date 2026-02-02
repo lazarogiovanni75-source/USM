@@ -21,14 +21,6 @@
             </div>
           </li>
           <li>
-            <div>
-              <%= link_to @social_account.platform.capitalize, social_account_path(@social_account), class: "text-gray-400 hover:text-gray-500" %>
-              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-              </svg>
-            </div>
-          </li>
-          <li>
             <div class="flex items-center">
               <span class="text-gray-500">Edit</span>
             </div>
@@ -82,6 +74,32 @@
                   <%= form.text_field :access_token, 
                                    class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
                                    placeholder: "Optional - for API access" %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Postforme Integration -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Postforme Integration</h3>
+              <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p class="text-sm text-purple-700">
+                  <%= lucide_icon "info", class: "w-4 h-4 inline mr-2" %>
+                  Postforme is used for scheduling and posting to social media platforms.
+                </p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <%= form.label :postforme_api_key, "Postforme API Key", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.text_field :postforme_api_key, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                   placeholder: "pfm_live_..." %>
+                </div>
+
+                <div>
+                  <%= form.label :postforme_profile_id, "Postforme Profile ID", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.text_field :postforme_profile_id, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                   placeholder: "Profile ID from Postforme" %>
                 </div>
               </div>
             </div>

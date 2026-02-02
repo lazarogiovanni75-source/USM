@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_31_074824) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_31_080002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -388,6 +388,24 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_074824) do
     t.index ["scheduled_post_id"], name: "index_performance_metrics_on_scheduled_post_id"
   end
 
+  create_table "postforme_analytics", force: :cascade do |t|
+    t.bigint "scheduled_post_id", null: false
+    t.string "postforme_post_id"
+    t.integer "clicks"
+    t.integer "impressions"
+    t.integer "engagement"
+    t.integer "reach"
+    t.integer "shares"
+    t.integer "likes"
+    t.integer "comments"
+    t.datetime "posted_at"
+    t.datetime "synced_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["postforme_post_id"], name: "index_postforme_analytics_on_postforme_post_id"
+    t.index ["scheduled_post_id"], name: "index_postforme_analytics_on_scheduled_post_id"
+  end
+
   create_table "prompt_templates", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "name"
@@ -476,6 +494,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_074824) do
     t.integer "webhook_attempts", default: 0
     t.datetime "last_webhook_at"
     t.string "buffer_update_id"
+    t.string "postforme_post_id"
     t.index ["content_id"], name: "index_scheduled_posts_on_content_id"
     t.index ["social_account_id"], name: "index_scheduled_posts_on_social_account_id"
   end
@@ -513,6 +532,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_074824) do
     t.datetime "updated_at", null: false
     t.string "buffer_profile_id"
     t.string "buffer_access_token"
+    t.string "postforme_api_key"
+    t.string "postforme_profile_id"
     t.index ["user_id"], name: "index_social_accounts_on_user_id"
   end
 
@@ -629,6 +650,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_074824) do
   add_foreign_key "auto_responses", "users"
   add_foreign_key "content_suggestions", "draft_contents"
   add_foreign_key "content_template_variables", "content_templates"
+  add_foreign_key "postforme_analytics", "scheduled_posts"
   add_foreign_key "publish_queues", "users"
   add_foreign_key "response_templates", "users"
   add_foreign_key "scheduled_ai_tasks", "users"
