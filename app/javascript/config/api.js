@@ -16,13 +16,10 @@ export const apiConfig = {
     ai: {
       generateContent: '/api/ai/generate-content'
     },
-    // Video Generation (Shotstack)
-    video: {
-      generate: '/api/video/generate'
-    },
-    // Social Media Posting (Make.ai)
+    // Social Media Posting (Buffer)
     social: {
-      post: '/api/social/post'
+      post: '/api/social/post',
+      schedules: '/api/social/schedules'
     },
     // Analytics
     analytics: {

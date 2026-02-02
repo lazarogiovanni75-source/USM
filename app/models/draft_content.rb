@@ -1,5 +1,6 @@
 class DraftContent < ApplicationRecord
   belongs_to :user
+  has_many :content_suggestions, dependent: :destroy
   
   validates :title, presence: true
   validates :content_type, presence: true

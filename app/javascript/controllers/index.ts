@@ -12,6 +12,7 @@ import VoiceInteractionController from "./voice_interaction_controller"
 import VoiceCommandController from "./voice_command_controller"
 import ContentIndexController from "./content_index_controller"
 import ContentNewController from "./content_new_controller"
+import ContentCreationController from "./content_creation_controller"
 import ScheduledPostNewController from "./scheduled_post_new_controller"
 import CalendarController from "./calendar_controller"
 import PwaInstallController from "./pwa_install_controller"
@@ -32,6 +33,7 @@ application.register("voice-interaction", VoiceInteractionController)
 application.register("voice-command", VoiceCommandController)
 application.register("content-index", ContentIndexController)
 application.register("content-new", ContentNewController)
+application.register("content-creation", ContentCreationController)
 application.register("scheduled-post-new", ScheduledPostNewController)
 application.register("calendar", CalendarController)
 application.register("pwa-install", PwaInstallController)

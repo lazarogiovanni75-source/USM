@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-# Background job for sending Make webhook notifications
+# Background job for posting content to Buffer
 # when social posts are created or scheduled.
 #
 # This job is enqueued by ScheduledPost callbacks and processes
-# webhook delivery asynchronously to avoid blocking the main request.
+# Buffer API delivery asynchronously to avoid blocking the main request.
 # Supports retry with exponential backoff for reliable delivery.
 class PostWebhookJob < ApplicationJob
   queue_as :default
@@ -15,7 +15,7 @@ class PostWebhookJob < ApplicationJob
   retry_on StandardError, wait: ->(executions) { 3 * (2**executions) }, attempts: 5
 
   # Called when all retry attempts are exhausted
-  # Marks webhook as failed in the database and sends admin notification
+  # Marks posting as failed in the database and sends admin notification
   def perform(scheduled_post_id, event_type = 'created')
     scheduled_post = ScheduledPost.find_by(id: scheduled_post_id)
     return unless scheduled_post
@@ -28,33 +28,74 @@ class PostWebhookJob < ApplicationJob
       "(attempt #{attempt_number}/5) at #{Time.current.iso8601}"
     )
 
-    service = MakeWebhookService.new(scheduled_post)
-    success = event_type == 'created' ? service.trigger_post_created : service.trigger_post_scheduled
+    # Get Buffer access token from social account
+    buffer_service = BufferService.new(scheduled_post.social_account&.buffer_access_token)
+    unless buffer_service.configured?
+      Rails.logger.error("[PostWebhookJob] Buffer not configured for post #{scheduled_post.id}")
+      raise BufferService::BufferError, 'Buffer access token not configured'
+    end
 
-    if success
+    content = scheduled_post.content
+    profile_id = scheduled_post.social_account&.buffer_profile_id
+
+    unless profile_id.present?
+      Rails.logger.error("[PostWebhookJob] Buffer profile ID not configured for post #{scheduled_post.id}")
+      raise BufferService::BufferError, 'Buffer profile ID not configured'
+    end
+
+    text = extract_caption(content)
+    media = extract_media(content)
+
+    options = {}
+    options[:media] = media if media.present?
+    options[:scheduled_at] = scheduled_post.scheduled_at if scheduled_post.scheduled_at.present?
+
+    # If posting immediately, use share_now
+    if event_type == 'share_now'
+      response = buffer_service.share_now(profile_id, text, options)
+    else
+      # For scheduled posts
+      response = buffer_service.create_update(profile_id, text, options)
+    end
+
+    if response.present? && (response['success'] || response['update'].present?)
       Rails.logger.info(
-        "[PostWebhookJob] Successfully sent webhook for post #{scheduled_post.id} " \
+        "[PostWebhookJob] Successfully posted to Buffer for post #{scheduled_post.id} " \
         "on attempt #{attempt_number} at #{Time.current.iso8601}"
       )
 
-      # Mark webhook as successful
+      # Extract Buffer update ID from response
+      buffer_update_id = response.dig('update', 'id') || response['updates']&.first&.dig('id')
+
+      # Mark posting as successful
       scheduled_post.update!(
         webhook_status: 'success',
         webhook_error: nil,
         webhook_attempts: attempt_number,
-        last_webhook_at: Time.current
+        last_webhook_at: Time.current,
+        buffer_update_id: buffer_update_id
       )
+
+      true
     else
       # Log failure with attempt number and payload details
-      log_failed_attempt(scheduled_post, attempt_number)
+      log_failed_attempt(scheduled_post, attempt_number, response)
 
       # Raise exception to trigger retry (if under max attempts)
-      raise StandardError, "Webhook delivery failed - will retry"
+      raise BufferService::BufferError, "Buffer posting failed - will retry"
     end
   rescue ActiveRecord::RecordNotFound => e
     Rails.logger.warn(
       "[PostWebhookJob] ScheduledPost #{scheduled_post_id} not found at #{Time.current.iso8601}: #{e.message}"
     )
+    raise
+  rescue BufferService::BufferError => e
+    # Check if this is the last retry attempt
+    if executions >= 4 # 0-indexed, so 4 = 5th attempt
+      handle_all_retries_exhausted(scheduled_post_id, e)
+    end
+
+    log_detailed_error(e, scheduled_post_id)
     raise
   rescue StandardError => e
     # Check if this is the last retry attempt
@@ -77,17 +118,46 @@ class PostWebhookJob < ApplicationJob
     0
   end
 
-  def log_failed_attempt(scheduled_post, attempt_number)
+  def extract_caption(content)
+    return nil if content.nil?
+    content.body.presence || content.title.presence || content.caption.presence
+  end
+
+  def extract_media(content)
+    return nil if content.nil?
+    return nil if content.media_urls.blank?
+
+    media_urls = content.media_urls
+    return nil if media_urls.empty?
+
+    media = {}
+
+    # Handle different media_urls formats
+    case media_urls
+    when String
+      parsed = JSON.parse(media_urls)
+      media[:photo] = parsed['urls']&.first || parsed.first if parsed.present?
+    when Array
+      media[:photo] = media_urls.first if media_urls.present?
+    when Hash
+      media[:photo] = media_urls['urls']&.first || media_urls.values.first if media_urls.present?
+    end
+
+    media.present? ? media : nil
+  end
+
+  def log_failed_attempt(scheduled_post, attempt_number, response)
     payload_summary = {
       user_id: scheduled_post.user_id,
       platform: scheduled_post.social_account&.platform,
       scheduled_at: scheduled_post.scheduled_at&.iso8601,
-      content_title: scheduled_post.content&.title&.slice(0, 50)
+      content_title: scheduled_post.content&.title&.slice(0, 50),
+      buffer_response: response&.slice('success', 'error', 'message')
     }
 
     Rails.logger.warn(
-      "[PostWebhookJob] Webhook delivery FAILED - Attempt #{attempt_number}/5 for post #{scheduled_post.id} " \
-      "at #{Time.current.iso8601}. Payload: #{payload_summary.to_json}"
+      "[PostWebhookJob] Buffer posting FAILED - Attempt #{attempt_number}/5 for post #{scheduled_post.id} " \
+      "at #{Time.current.iso8601}. Details: #{payload_summary.to_json}"
     )
   end
 
@@ -96,24 +166,15 @@ class PostWebhookJob < ApplicationJob
       "[PostWebhookJob] ERROR (attempt #{executions + 1}/5) at #{Time.current.iso8601}: " \
       "post_id=#{scheduled_post_id}, " \
       "error_class=#{exception.class}, " \
-      "error_message=#{exception.message}, " \
-      "http_status=#{extract_http_status(exception)}"
+      "error_message=#{exception.message}"
     )
-  end
-
-  def extract_http_status(exception)
-    return nil unless exception.respond_to?(:response) && exception.response.present?
-
-    exception.response.code
-  rescue StandardError
-    nil
   end
 
   def handle_all_retries_exhausted(scheduled_post_id, exception)
     scheduled_post = ScheduledPost.find_by(id: scheduled_post_id)
     return unless scheduled_post
 
-    # Mark the webhook delivery as failed in the database
+    # Mark the Buffer posting as failed in the database
     scheduled_post.update!(
       webhook_status: 'failed',
       webhook_error: "All retries exhausted - #{exception.class}: #{exception.message}",
@@ -133,61 +194,19 @@ class PostWebhookJob < ApplicationJob
       scheduled_time: scheduled_post.scheduled_at&.iso8601,
       error_type: exception.class.to_s,
       error_message: exception.message,
-      error_details: extract_error_details(exception),
       timestamp: Time.current.iso8601,
       attempts: 5
     }
 
     # Log the admin notification
     Rails.logger.warn(
-      "[PostWebhookJob] ADMIN NOTIFICATION - Webhook Delivery Failed for Post ##{scheduled_post.id}: " \
+      "[PostWebhookJob] ADMIN NOTIFICATION - Buffer Posting Failed for Post ##{scheduled_post.id}: " \
       "user_id=#{admin_notification[:user_id]}, " \
       "platform=#{admin_notification[:platform]}, " \
       "error=#{admin_notification[:error_type]}: #{admin_notification[:error_message]}, " \
       "timestamp=#{admin_notification[:timestamp]}"
     )
-
-    # In production, integrate with your notification system:
-    # AdminNotificationService.deliver(
-    #   subject: "[URGENT] Webhook Delivery Failed - Post ##{scheduled_post.id}",
-    #   body: build_admin_email_body(admin_notification),
-    #   priority: 'high'
-    # )
   rescue StandardError => e
     Rails.logger.warn("[PostWebhookJob] Failed to send admin notification: #{e.message}")
-  end
-
-  def extract_error_details(exception)
-    {
-      message: exception.message,
-      backtrace: exception.backtrace&.first(5),
-      response_code: extract_http_status(exception)
-    }
-  rescue StandardError
-    { message: exception.message }
-  end
-
-  def build_admin_email_body(notification)
-    <<~BODY
-      Webhook delivery to Make failed after 5 retry attempts.
-
-      Post Details:
-      - Post ID: #{notification[:post_id]}
-      - User ID: #{notification[:user_id]}
-      - Platform: #{notification[:platform]}
-      - Scheduled Time: #{notification[:scheduled_time]}
-
-      Error Information:
-      - Error Type: #{notification[:error_type]}
-      - Error Message: #{notification[:error_message]}
-      - HTTP Status: #{notification[:error_details][:response_code] || 'N/A'}
-
-      Timestamp: #{notification[:timestamp]}
-
-      Please check:
-      1. Webhook URL configuration
-      2. Network connectivity
-      3. Make webhook endpoint status
-    BODY
   end
 end

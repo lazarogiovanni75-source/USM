@@ -1,4 +1,4 @@
-# ClackyAI Rails7 starter
+pfm_live_4NJHWqt7cUTpmVkXAqxCRa# ClackyAI Rails7 starter
 
 The template for ClackyAI
 

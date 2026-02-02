@@ -57,8 +57,15 @@ class DraftsController < ApplicationController
   def convert_to_content
     @draft = current_user.draft_contents.find(params[:id])
     
+    # Find or create a default campaign for the user
+    campaign = current_user.campaigns.first_or_create(
+      name: 'Default Campaign',
+      status: 'active'
+    )
+    
     # Create actual content from draft
     content = current_user.contents.build(
+      campaign_id: campaign.id,
       title: @draft.title,
       body: @draft.content,
       content_type: @draft.content_type,
@@ -71,11 +78,11 @@ class DraftsController < ApplicationController
       @draft.update(status: 'published')
       
       # Accept related suggestions
-      @draft.content_suggestions.pending.update_all(status: 'accepted')
+      @draft.content_suggestions.where(status: 'pending').update_all(status: 'accepted')
       
       redirect_to content_path(content), notice: 'Draft converted to published content.'
     else
-      redirect_to draft_path(@draft), alert: 'Failed to convert draft to content.'
+      redirect_to draft_path(@draft), alert: "Failed to convert draft to content: #{content.errors.full_messages.join(', ')}."
     end
   end
 
@@ -175,7 +182,7 @@ class DraftsController < ApplicationController
 
   def regenerate_suggestions(draft)
     # Clear existing pending suggestions
-    draft.content_suggestions.pending.destroy_all
+    draft.content_suggestions.where(status: 'pending').destroy_all
     
     # Generate new suggestions based on updated content
     generate_suggestions(draft)
