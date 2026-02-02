@@ -10,7 +10,7 @@ Rails.application.configure do
   # your application in memory, allowing both threaded web servers
   # and those relying on copy on write to perform better.
   # Rake tasks automatically ignore this option for performance.
-  config.eager_load = true
+  config.eager_load = true  # Explicitly set to true for production
 
   # Full error reports are disabled and caching is turned on.
   config.consider_all_requests_local = false
@@ -30,8 +30,9 @@ Rails.application.configure do
   # config.action_dispatch.x_sendfile_header = "X-Sendfile" # for Apache
   # config.action_dispatch.x_sendfile_header = "X-Accel-Redirect" # for NGINX
 
-  # Store uploaded files on the cloud storage bucket (S3/GCS)
-  config.active_storage.service = :storage_bucket
+  # Store uploaded files locally (Railway persistent storage)
+  # Change to :storage_bucket if S3 credentials are configured
+  config.active_storage.service = :local
 
   # Mount Action Cable outside main process or domain.
   config.action_cable.disable_request_forgery_protection = true
