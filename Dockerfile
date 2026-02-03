@@ -22,6 +22,9 @@ RUN npm ci --production=false
 # Copy application code
 COPY --chown=ruby:ruby . .
 
+# Generate database.yml from example if it doesn't exist
+RUN cp -n config/database.yml.example config/database.yml || true
+
 # Precompile assets
 RUN SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
 
