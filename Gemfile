@@ -23,6 +23,7 @@ gem "turbo-rails", "~> 2.0"
 gem "lucide-rails", "~> 0.7.1"
 gem "aws-sdk-s3", "~> 1.206"
 gem "httparty", "~> 0.21.0"
+gem "csv", "~> 3.3"  # Suppress Ruby 3.4 deprecation warning
 
 group :development do
   gem "error_highlight", ">= 0.4.0", platforms: [ :ruby ]
