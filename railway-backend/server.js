@@ -1,11 +1,26 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
 const db = require('./database');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
+
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -15,13 +30,22 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const DEFAPI_API_KEY = process.env.DEFAPI_API_KEY;
 const DEFAPI_BASE_URL = 'https://api.deeinf.com/v1';
 
-// Health check
-app.get('/health', (req, res) => {
+// Health check - works even without database
+app.get('/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+  try {
+    await db.query('SELECT 1');
+    dbStatus = 'connected';
+  } catch (e) {
+    dbStatus = 'disconnected';
+  }
+  
   res.json({ 
     status: 'ok', 
     service: 'ultimate-social-media-api',
     timestamp: new Date().toISOString(),
-    database: 'connected'
+    database: dbStatus,
+    version: '1.0.0'
   });
 });
 
