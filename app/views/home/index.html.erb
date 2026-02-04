@@ -14,12 +14,8 @@
           Transform your social media strategy with voice-activated AI. Create campaigns, generate content, and schedule posts automatically across all platforms.
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-          <button class="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl shadow-xl">
-            Start Free Trial
-          </button>
-          <button class="border-2 border-white text-white hover:bg-white hover:text-purple-600 font-semibold px-8 py-4 rounded-xl">
-            Watch Demo
-          </button>
+          <%= link_to "Start Free Trial", sign_up_path, class: "bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl shadow-xl text-center" %>
+          <%= link_to "Sign In", sign_in_path, class: "border-2 border-white text-white hover:bg-white hover:text-purple-600 font-semibold px-8 py-4 rounded-xl text-center" %>
         </div>
         <div class="mt-8 flex items-center justify-center lg:justify-start space-x-6 text-white/70">
           <div class="flex items-center">
