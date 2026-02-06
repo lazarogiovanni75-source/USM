@@ -2,14 +2,18 @@ require 'rails_helper'
 
 RSpec.describe "Postforme webhooks", type: :request do
 
-  # Uncomment this if controller need authentication
-  # let(:user) { last_or_create(:user) }
-  # before { sign_in_as(user) }
+  describe "POST /api/v1/postforme/webhook" do
+    it "receives webhook and processes data" do
+      payload = {
+        event: "post.published",
+        post: {
+          id: "12345",
+          title: "Test Post"
+        }
+      }.to_json
 
-  describe "POST /postforme_webhooks" do
-    it "creates a new postforme_webhook" do
-      post postforme_webhooks_path, params: { postforme_webhook: attributes_for(:postforme_webhook) }
-      expect(response).to be_success_with_view_check
+      post api_v1_postforme_webhook_path, params: payload, headers: { 'Content-Type' => 'application/json' }
+      expect(response).to have_http_status(:ok)
     end
   end
 end

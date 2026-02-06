@@ -1,378 +1,205 @@
-<!-- Comprehensive AI-Powered Dashboard -->
-<div class="min-h-screen bg-gray-50">
-  <!-- Header Section -->
-  <div class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center py-6">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900">AI-Powered Dashboard</h1>
-          <p class="mt-1 text-gray-600">Manage your content with 25 powerful AI features</p>
-        </div>
+<% content_for :title, "Dashboard" %>
 
-    <!-- Enhanced Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-            </svg>
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+  <!-- Header -->
+  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40">
+    <div class="container-xl mx-auto px-4 py-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+            <span class="text-white font-bold text-xl"><%= current_user.name.present? ? current_user.name.first : current_user.email.first.upcase %></span>
           </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-600">Total Content</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @comprehensive_metrics[:overview][:total_content] %></p>
-            <div class="flex items-center mt-1">
-              <% if @comprehensive_metrics[:overview][:content_growth_rate] > 0 %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                  +<%= @comprehensive_metrics[:overview][:content_growth_rate] %>%
-                </span>
-              <% elsif @comprehensive_metrics[:overview][:content_growth_rate] < 0 %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                  <%= @comprehensive_metrics[:overview][:content_growth_rate] %>%
-                </span>
-              <% else %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                  0%
-                </span>
-              <% end %>
-              <span class="text-xs text-gray-500 ml-2">this month</span>
-            </div>
+          <div>
+            <h1 class="text-2xl font-bold text-primary">Welcome back, <%= current_user.name.present? ? current_user.name.split.first : 'there' %>! 👋</h1>
+            <p class="text-sm text-muted">Your social media command center</p>
           </div>
         </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-            </svg>
+        <div class="flex flex-wrap gap-3">
+          <div class="bg-white rounded-xl px-4 py-2 shadow-sm border border-border/50">
+            <p class="text-xs text-muted">Messages</p>
+            <p class="text-lg font-bold text-primary"><%= @ai_conversations_count || 0 %></p>
           </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-600">AI Interactions</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @comprehensive_metrics[:overview][:ai_conversations] %></p>
-            <div class="flex items-center mt-1">
-              <% if @comprehensive_metrics[:overview][:ai_growth_rate] > 0 %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                  +<%= @comprehensive_metrics[:overview][:ai_growth_rate] %>%
-                </span>
-              <% elsif @comprehensive_metrics[:overview][:ai_growth_rate] < 0 %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                  <%= @comprehensive_metrics[:overview][:ai_growth_rate] %>%
-                </span>
-              <% else %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                  0%
-                </span>
-              <% end %>
-              <span class="text-xs text-gray-500 ml-2">this month</span>
-            </div>
+          <div class="bg-white rounded-xl px-4 py-2 shadow-sm border border-border/50">
+            <p class="text-xs text-muted">Content</p>
+            <p class="text-lg font-bold text-primary"><%= @total_contents || 0 %></p>
           </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-            </svg>
+          <div class="bg-white rounded-xl px-4 py-2 shadow-sm border border-border/50">
+            <p class="text-xs text-muted">Scheduled</p>
+            <p class="text-lg font-bold text-primary"><%= @scheduled_posts_count || 0 %></p>
           </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-600">Performance Score</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @comprehensive_metrics[:performance][:performance_score] %></p>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full" style="width: <%= @comprehensive_metrics[:performance][:performance_score] %>%"></div>
-            </div>
+          <div class="bg-white rounded-xl px-4 py-2 shadow-sm border border-border/50">
+            <p class="text-xs text-muted">Engagement</p>
+            <p class="text-lg font-bold text-primary"><%= @engagement_rate || 0 %>%</p>
           </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-            </svg>
-          </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-600">Engagement Rate</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @comprehensive_metrics[:engagement][:engagement_rate] %>%</p>
-            <div class="flex items-center mt-1">
-              <% if @comprehensive_metrics[:engagement][:engagement_growth_rate] > 0 %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                  +<%= @comprehensive_metrics[:engagement][:engagement_growth_rate] %>%
-                </span>
-              <% elsif @comprehensive_metrics[:engagement][:engagement_growth_rate] < 0 %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                  <%= @comprehensive_metrics[:engagement][:engagement_growth_rate] %>%
-                </span>
-              <% else %>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                  0%
-                </span>
-              <% end %>
-              <span class="text-xs text-gray-500 ml-2">vs last month</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-        <div class="flex items-center space-x-4">
-          <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-              <span class="text-white font-medium text-sm"><%= current_user.name.present? ? current_user.name.first : current_user.email.first %></span>
-            </div>
-            <span class="text-sm text-gray-700 font-medium"><%= current_user.email %></span>
-          </div>
-          <span class="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full"><%= current_user.role&.humanize || 'User' %></span>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    
-    <!-- Quick Actions Bar -->
-    <div class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <%= link_to ai_chat_index_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg text-white hover:from-purple-600 hover:to-blue-600 transition-all" do %>
-          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-          </svg>
-          <span class="text-sm font-medium">AI Chat</span>
-        <% end %>
-
-        <%= link_to content_creation_index_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg text-white hover:from-blue-600 hover:to-cyan-600 transition-all" do %>
-          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-          </svg>
-          <span class="text-sm font-medium">Create Content</span>
-        <% end %>
-
-        <%= link_to draft_contents_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-white hover:from-orange-600 hover:to-red-600 transition-all" do %>
-          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-          </svg>
-          <span class="text-sm font-medium">Drafts</span>
-        <% end %>
-
-        <%= link_to content_templates_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg text-white hover:from-pink-600 hover:to-purple-600 transition-all" do %>
-          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
-          </svg>
-          <span class="text-sm font-medium">Templates</span>
-        <% end %>
-
-        <%= link_to automation_rules_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-lg text-white hover:from-indigo-600 hover:to-blue-600 transition-all" do %>
-          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span class="text-sm font-medium">Automation</span>
-        <% end %>
-
-        <%= link_to engagement_analytics_path, class: "flex flex-col items-center p-4 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg text-white hover:from-green-600 hover:to-teal-600 transition-all" do %>
-          <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-          </svg>
-          <span class="text-sm font-medium">Analytics</span>
-        <% end %>
-      </div>
-    </div>
-
-    <!-- Comprehensive Metrics Sections -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-      <!-- Performance Metrics -->
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
-          Performance Overview
-        </h2>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Posts Analyzed</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:performance][:posts_analyzed] %></span>
+  <div class="container-xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- LEFT: Inbox -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
+          <div class="bg-gradient-to-r from-primary/10 to-secondary/10 px-6 py-4 border-b border-border/50">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <%= lucide_icon "inbox", class: "w-5 h-5 text-white" %>
+                </div>
+                <div>
+                  <h2 class="text-lg font-bold text-primary">Unified Inbox</h2>
+                  <p class="text-xs text-muted"><%= @ai_conversations_count || 0 %> conversations</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Total Engagement</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:performance][:total_engagement] %></span>
+          <div class="divide-y divide-border/30 max-h-[500px] overflow-y-auto">
+            <% if @ai_conversations && @ai_conversations.any? %>
+              <% @ai_conversations.each do |conversation| %>
+                <%= link_to dashboard_path(conversation_id: conversation.id), class: "flex items-start gap-4 p-4 hover:bg-surface-elevated/50 #{params[:conversation_id].to_i == conversation.id ? 'bg-primary/5 border-l-4 border-primary' : ''}" do %>
+                  <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                    <%= conversation.title.present? ? conversation.title.first.upcase : 'C' %>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                      <h3 class="font-semibold text-primary truncate"><%= conversation.title || 'Untitled' %></h3>
+                      <span class="text-xs text-muted"><%= time_ago_in_words(conversation.updated_at) %> ago</span>
+                    </div>
+                    <p class="text-sm text-muted line-clamp-2"><%= conversation.ai_messages.last&.content&.truncate(80) || 'No messages' %></p>
+                  </div>
+                <% end %>
+              <% end %>
+            <% else %>
+              <div class="flex flex-col items-center justify-center py-16">
+                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  <%= lucide_icon "message-circle", class: "w-10 h-10 text-muted" %>
+                </div>
+                <h3 class="text-lg font-semibold text-primary mb-1">No conversations yet</h3>
+                <%= link_to ai_chat_index_path, class: "btn-primary mt-2" do %>
+                  <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>Start Chat
+                <% end %>
+              </div>
+            <% end %>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Avg Engagement Rate</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:performance][:average_engagement_rate] %>%</span>
-          </div>
-          <div class="pt-4 border-t border-gray-200">
-            <div class="text-sm text-gray-600 mb-2">Top Performing Post</div>
-            <div class="text-sm font-medium text-gray-900 truncate"><%= @comprehensive_metrics[:performance][:top_post_title] %></div>
-          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <%= link_to ai_chat_index_path, class: "group bg-white rounded-xl p-5 shadow-sm border border-border/50 hover:shadow-lg hover:border-primary/30 transition-all" do %>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <%= lucide_icon "bot", class: "w-6 h-6 text-white" %>
+            </div>
+            <h3 class="font-semibold text-primary">AI Chat</h3>
+            <p class="text-xs text-muted">Assistant</p>
+          <% end %>
+          <%= link_to content_creation_index_path, class: "group bg-white rounded-xl p-5 shadow-sm border border-border/50 hover:shadow-lg hover:border-secondary/30 transition-all" do %>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <%= lucide_icon "sparkles", class: "w-6 h-6 text-white" %>
+            </div>
+            <h3 class="font-semibold text-primary">Create</h3>
+            <p class="text-xs text-muted">Content</p>
+          <% end %>
+          <%= link_to content_templates_path, class: "group bg-white rounded-xl p-5 shadow-sm border border-border/50 hover:shadow-lg hover:border-pink-500/30 transition-all" do %>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <%= lucide_icon "layout-template", class: "w-6 h-6 text-white" %>
+            </div>
+            <h3 class="font-semibold text-primary">Templates</h3>
+            <p class="text-xs text-muted">Library</p>
+          <% end %>
+          <%= link_to engagement_analytics_path, class: "group bg-white rounded-xl p-5 shadow-sm border border-border/50 hover:shadow-lg hover:border-green-500/30 transition-all" do %>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <%= lucide_icon "bar-chart-3", class: "w-6 h-6 text-white" %>
+            </div>
+            <h3 class="font-semibold text-primary">Analytics</h3>
+            <p class="text-xs text-muted">Insights</p>
+          <% end %>
         </div>
       </div>
 
-      <!-- Platform Analytics -->
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-          </svg>
-          Platform Analytics
-        </h2>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Most Active Platform</span>
-            <span class="text-sm font-medium text-gray-900 capitalize"><%= @comprehensive_metrics[:platform][:most_active_platform] %></span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Platforms Used</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:platform][:total_platforms_used] %></span>
-          </div>
-          <div class="pt-4 border-t border-gray-200">
-            <div class="text-sm text-gray-600 mb-2">Platform Distribution</div>
-            <% @comprehensive_metrics[:platform][:platform_distribution].each do |platform, count| %>
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-sm text-gray-700 capitalize"><%= platform %></span>
-                <span class="text-sm font-medium text-gray-900"><%= count %></span>
+      <!-- RIGHT: Thread -->
+      <div class="space-y-6">
+        <% if params[:conversation_id] && (@selected_conversation = @ai_conversations&.find_by(id: params[:conversation_id])) %>
+          <div class="bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden sticky top-24">
+            <div class="bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-3 border-b border-border/50">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                    <%= lucide_icon "message-circle", class: "w-4 h-4 text-white" %>
+                  </div>
+                  <h3 class="font-semibold text-primary text-sm"><%= @selected_conversation.title || 'Conversation' %></h3>
+                </div>
               </div>
+            </div>
+            <div class="p-4 space-y-4 max-h-[400px] overflow-y-auto bg-gray-50/30">
+              <% @selected_conversation.ai_messages.order(created_at: :asc).each do |message| %>
+                <div class="flex <%= message.role == 'user' ? 'justify-end' : 'justify-start' %>">
+                  <div class="max-w-[85%]">
+                    <div class="<%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary text-white' : 'bg-white border border-border/50' %> rounded-2xl px-4 py-3 shadow-sm">
+                      <p class="text-sm <%= message.role == 'user' ? 'text-white' : 'text-primary' %>"><%= message.content %></p>
+                    </div>
+                    <p class="text-xs text-muted mt-1 <%= message.role == 'user' ? 'text-right' : 'text-left' %>"><%= message.created_at.strftime('%b %e, %l:%M %p') %></p>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+            <div class="p-4 border-t border-border/50 bg-white">
+              <%= form_with url: respond_dashboard_path(@selected_conversation), method: :post, local: true do |f| %>
+                <div class="relative">
+                  <%= f.text_area :content, placeholder: "Type your reply...", rows: 2, class: "form-input w-full pr-12 resize-none" %>
+                  <%= f.button type: :submit, class: "absolute right-2 bottom-2 p-2 bg-primary text-white rounded-lg hover:bg-primary-dark" do %>
+                    <%= lucide_icon "send", class: "w-4 h-4" %>
+                  <% end %>
+                </div>
+              <% end %>
+              <div class="flex flex-wrap gap-2 mt-3">
+                <button class="px-3 py-1 bg-surface-elevated text-muted text-xs rounded-full hover:bg-primary/10 hover:text-primary" onclick="document.querySelector('[name=&quot;content&quot;]').value = 'Thanks!'">Thanks!</button>
+                <button class="px-3 py-1 bg-surface-elevated text-muted text-xs rounded-full hover:bg-primary/10 hover:text-primary" onclick="document.querySelector('[name=&quot;content&quot;]').value = 'Let me check'">Check</button>
+                <button class="px-3 py-1 bg-surface-elevated text-muted text-xs rounded-full hover:bg-primary/10 hover:text-primary" onclick="document.querySelector('[name=&quot;content&quot;]').value = 'Sounds good'">Good</button>
+              </div>
+            </div>
+          </div>
+        <% else %>
+          <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-8 sticky top-24">
+            <div class="flex flex-col items-center justify-center text-center">
+              <div class="w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mb-4">
+                <%= lucide_icon "message-square", class: "w-12 h-12 text-primary" %>
+              </div>
+              <h3 class="text-xl font-bold text-primary mb-2">Select a Conversation</h3>
+              <p class="text-sm text-muted mb-4">Choose a conversation to view and respond.</p>
+              <%= link_to ai_chat_index_path, class: "btn-primary" do %>
+                <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>New Chat
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Activity -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "activity", class: "w-5 h-5 text-primary" %>Recent Activity
+          </h3>
+          <div class="space-y-4">
+            <% if @scheduled_posts && @scheduled_posts.any? %>
+              <% @scheduled_posts.each do |post| %>
+                <div class="flex items-start gap-3 pb-3 border-b border-border/30 last:border-0">
+                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                    <%= lucide_icon "clock", class: "w-4 h-4 text-white" %>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-primary truncate"><%= post.title || 'Scheduled Post' %></p>
+                    <p class="text-xs text-muted"><%= post.scheduled_time&.strftime('%b %e, %l:%M %p') || 'No time' %></p>
+                  </div>
+                </div>
+              <% end %>
+            <% else %>
+              <p class="text-sm text-muted text-center py-4">No scheduled posts</p>
             <% end %>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Activity & Growth Metrics -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-      <!-- Activity Metrics -->
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <svg class="w-5 h-5 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          Recent Activity (7 days)
-        </h2>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Content Created</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:recent_content] %></span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">AI Interactions</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:recent_ai_interactions] %></span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Drafts Updated</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:recent_drafts] %></span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Posts Scheduled</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:recent_scheduled] %></span>
-          </div>
-          <div class="pt-4 border-t border-gray-200">
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-gray-600">Activity Score</span>
-              <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:activity][:activity_score] %>/100</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full" style="width: <%= @comprehensive_metrics[:activity][:activity_score] %>%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- growth metrics -->
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <svg class="w-5 h-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-          </svg>
-          Growth Trends
-        </h2>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Content Growth</span>
-            <span class="text-sm font-medium <%= @comprehensive_metrics[:growth][:content_growth] > 0 ? 'text-green-600' : 'text-red-600' %>">
-              <%= @comprehensive_metrics[:growth][:content_growth] > 0 ? '+' : '' %><%= @comprehensive_metrics[:growth][:content_growth] %>%
-            </span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">AI Usage Growth</span>
-            <span class="text-sm font-medium <%= @comprehensive_metrics[:growth][:ai_growth] > 0 ? 'text-green-600' : 'text-red-600' %>">
-              <%= @comprehensive_metrics[:growth][:ai_growth] > 0 ? '+' : '' %><%= @comprehensive_metrics[:growth][:ai_growth] %>%
-            </span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">Current Period Content</span>
-            <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:growth][:current_period_content] %></span>
-          </div>
-          <div class="pt-4 border-t border-gray-200">
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-gray-600">Progression Score</span>
-              <span class="text-sm font-medium text-gray-900"><%= @comprehensive_metrics[:growth][:progression_score] %>/100</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div class="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" style="width: <%= @comprehensive_metrics[:growth][:progression_score] %>%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Engagement Breakdown -->
-    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-        <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-        </svg>
-        Engagement Breakdown
-      </h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div class="text-center">
-          <div class="text-2xl font-bold text-red-500"><%= @comprehensive_metrics[:engagement][:total_likes] %></div>
-          <div class="text-sm text-gray-600">Likes</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-blue-500"><%= @comprehensive_metrics[:engagement][:total_comments] %></div>
-          <div class="text-sm text-gray-600">Comments</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-green-500"><%= @comprehensive_metrics[:engagement][:total_shares] %></div>
-          <div class="text-sm text-gray-600">Shares</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-purple-500"><%= @comprehensive_metrics[:engagement][:total_views] %></div>
-          <div class="text-sm text-gray-600">Views</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Trend Analysis -->
-    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-        <svg class="w-5 h-5 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-        </svg>
-        Content Creation Trends
-      </h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Best Day for Content</h3>
-          <div class="flex items-center">
-            <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span class="text-lg font-semibold text-gray-900"><%= @comprehensive_metrics[:trends][:best_day_for_content] %></span>
-          </div>
-        </div>
-        <div>
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Lowest Activity Day</h3>
-          <div class="flex items-center">
-            <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span class="text-lg font-semibold text-gray-900"><%= @comprehensive_metrics[:trends][:worst_day_for_content] %></span>
-          </div>
-        </div>
-      </div>
-    </div>
+  </div>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_31_080002) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_31_080005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -181,6 +181,23 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_080002) do
     t.string "campaign_type", default: "general"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "start_date"
+    t.date "end_date"
+    t.decimal "budget", precision: 10, scale: 2
+    t.text "target_audience"
+    t.text "platforms"
+    t.integer "content_count"
+    t.text "hashtag_set"
+    t.text "mentions"
+    t.text "content_pillars"
+    t.decimal "goal_value", precision: 10, scale: 2
+    t.text "kpis"
+    t.json "success_metrics"
+    t.json "budget_allocation"
+    t.text "brand_guidelines"
+    t.text "competitors"
+    t.text "influencer_targets"
+    t.text "key_messages"
     t.index ["user_id"], name: "index_campaigns_on_user_id"
   end
 
@@ -385,6 +402,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_080002) do
     t.integer "reach", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "views", default: 0
     t.index ["scheduled_post_id"], name: "index_performance_metrics_on_scheduled_post_id"
   end
 
@@ -537,6 +555,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_080002) do
     t.index ["user_id"], name: "index_social_accounts_on_user_id"
   end
 
+  create_table "social_accounts_campaigns", force: :cascade do |t|
+    t.bigint "campaign_id", null: false
+    t.bigint "social_account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["campaign_id", "social_account_id"], name: "idx_on_campaign_id_social_account_id_c51727054e", unique: true
+    t.index ["campaign_id"], name: "index_social_accounts_campaigns_on_campaign_id"
+    t.index ["social_account_id"], name: "index_social_accounts_campaigns_on_social_account_id"
+  end
+
   create_table "task_executions", force: :cascade do |t|
     t.bigint "scheduled_ai_task_id", null: false
     t.bigint "user_id", null: false
@@ -656,6 +684,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_080002) do
   add_foreign_key "scheduled_ai_tasks", "users"
   add_foreign_key "scheduled_posts", "users", name: "scheduled_posts_user_id_fkey"
   add_foreign_key "sessions", "users"
+  add_foreign_key "social_accounts_campaigns", "campaigns"
+  add_foreign_key "social_accounts_campaigns", "social_accounts"
   add_foreign_key "task_executions", "scheduled_ai_tasks"
   add_foreign_key "task_executions", "users"
   add_foreign_key "trigger_executions", "auto_response_triggers"

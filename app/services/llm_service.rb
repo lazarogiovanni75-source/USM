@@ -20,7 +20,7 @@ class LlmService < ApplicationService
     @prompt = prompt
     @system = system
     @options = options
-    @model = options[:model] || ENV.fetch('LLM_MODEL')
+    @model = options[:model] || ENV.fetch('CLACKY_OPENAI_MODEL') { ENV.fetch('LLM_MODEL', 'gpt-4o-mini') }
     @temperature = options[:temperature]&.to_f || 0.7
     @max_tokens = options[:max_tokens] || 4000
     @timeout = options[:timeout] || 30
@@ -253,7 +253,7 @@ class LlmService < ApplicationService
   end
 
   def prepare_http_request(stream)
-    base_url = ENV.fetch('LLM_BASE_URL')
+    base_url = ENV.fetch('CLACKY_OPENAI_BASE_URL') { ENV.fetch('LLM_BASE_URL', 'https://api.openai.com/v1') }
     uri = URI.parse("#{base_url}/chat/completions")
 
     http = Net::HTTP.new(uri.host, uri.port)
@@ -493,8 +493,10 @@ class LlmService < ApplicationService
   end
 
   def api_key
-    ENV.fetch('LLM_API_KEY') do
-      raise LlmError, "LLM_API_KEY not configured"
+    ENV.fetch('CLACKY_OPENAI_API_KEY') do
+      ENV.fetch('LLM_API_KEY') do
+        raise LlmError, "LLM_API_KEY not configured (tried CLACKY_OPENAI_API_KEY, LLM_API_KEY)"
+      end
     end
   end
 

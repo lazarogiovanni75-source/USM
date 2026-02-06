@@ -43,7 +43,7 @@ campaign1 = main_user.campaigns.create!(
   name: "Product Launch Q1",
   description: "Launching our new social media management features",
   status: "active",
-  goal: "Increase brand awareness",
+  goal: "awareness",
   campaign_type: "product_launch"
 )
 
@@ -51,16 +51,16 @@ campaign2 = main_user.campaigns.create!(
   name: "Holiday Marketing",
   description: "Holiday season promotional campaign",
   status: "active", 
-  goal: "Boost holiday sales",
-  campaign_type: "promotion"
+  goal: "conversions",
+  campaign_type: "seasonal"
 )
 
 campaign3 = user1.campaigns.create!(
   name: "Brand Awareness",
   description: "Building brand recognition across platforms",
   status: "draft",
-  goal: "Increase followers",
-  campaign_type: "awareness"
+  goal: "followers",
+  campaign_type: "brand_awareness"
 )
 
 puts "Creating social accounts..."

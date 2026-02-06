@@ -1,20 +1,20 @@
-<%= page_title_for('calendar') %>
+<% content_for :title, "Calendar" %>
 
 <div class="flex flex-col lg:flex-row gap-6" data-controller="calendar">
   <!-- Calendar Main Area -->
   <div class="flex-1">
     <!-- Calendar Navigation -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+    <div class="bg-white rounded-xl shadow-sm border border-border/50 p-4 mb-4">
       <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-4">
+        <div class="flex items-center gap-4">
           <button 
-            class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            class="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
             data-action="calendar#previousPeriod"
           >
-            <%= lucide_icon "chevron-left", class: "w-5 h-5 text-gray-600 dark:text-gray-400" %>
+            <%= lucide_icon "chevron-left", class: "w-5 h-5 text-primary" %>
           </button>
           
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white min-w-[200px] text-center">
+          <h2 class="text-lg font-bold text-primary min-w-[200px] text-center">
             <% if @current_view == 'month' %>
               <%= @current_date.strftime("%B %Y") %>
             <% elsif @current_view == 'week' %>
@@ -25,16 +25,16 @@
           </h2>
           
           <button 
-            class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            class="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
             data-action="calendar#nextPeriod"
           >
-            <%= lucide_icon "chevron-right", class: "w-5 h-5 text-gray-600 dark:text-gray-400" %>
+            <%= lucide_icon "chevron-right", class: "w-5 h-5 text-primary" %>
           </button>
         </div>
         
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-2">
           <button 
-            class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            class="px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
             data-action="calendar#goToToday"
           >
             Today
@@ -44,7 +44,7 @@
     </div>
     
     <!-- Calendar Grid -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <div class="bg-white rounded-xl shadow-sm border border-border/50">
       <div id="calendar-grid" data-calendar-target="grid">
         <%= render partial: "calendar/#{@current_view}_view", locals: { 
           current_date: @current_date, 
@@ -56,27 +56,27 @@
   </div>
   
   <!-- Sidebar -->
-  <div class="lg:w-80">
+  <div class="lg:w-80 space-y-4">
     <!-- Quick Actions -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Quick Actions</h3>
+    <div class="bg-white rounded-xl shadow-sm border border-border/50 p-4">
+      <h3 class="text-sm font-bold text-primary mb-3">Quick Actions</h3>
       <div class="space-y-2">
         <button 
-          class="w-full flex items-center px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          class="w-full flex items-center px-3 py-2 text-sm text-left text-primary hover:bg-surface-elevated rounded-lg transition-colors"
           data-action="calendar#bulkSchedule"
         >
           <%= lucide_icon "calendar-plus", class: "w-4 h-4 mr-3" %>
           Bulk Schedule Posts
         </button>
         <button 
-          class="w-full flex items-center px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          class="w-full flex items-center px-3 py-2 text-sm text-left text-primary hover:bg-surface-elevated rounded-lg transition-colors"
           data-action="calendar#importContent"
         >
           <%= lucide_icon "upload", class: "w-4 h-4 mr-3" %>
           Import Content
         </button>
         <button 
-          class="w-full flex items-center px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          class="w-full flex items-center px-3 py-2 text-sm text-left text-primary hover:bg-surface-elevated rounded-lg transition-colors"
           data-action="calendar#optimizeSchedule"
         >
           <%= lucide_icon "zap", class: "w-4 h-4 mr-3" %>
@@ -86,11 +86,11 @@
     </div>
     
     <!-- Optimal Times Suggestions -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+    <div class="bg-white rounded-xl shadow-sm border border-border/50 p-4">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Optimal Times</h3>
+        <h3 class="text-sm font-bold text-primary">Optimal Times</h3>
         <button 
-          class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+          class="text-xs text-primary hover:text-primary-dark"
           data-action="calendar#refreshOptimalTimes"
         >
           Refresh
@@ -100,22 +100,22 @@
       <div id="optimal-times-list" class="space-y-2">
         <% if @optimal_times && @optimal_times.any? %>
           <% @optimal_times.first(5).each do |suggestion| %>
-            <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div class="flex items-center justify-between p-2 bg-surface-elevated rounded-lg">
               <div class="flex-1">
-                <div class="text-xs font-medium text-gray-900 dark:text-white">
+                <div class="text-xs font-medium text-primary">
                   <%= suggestion[:platform].capitalize %>
                 </div>
-                <div class="text-xs text-gray-600 dark:text-gray-400">
+                <div class="text-xs text-muted">
                   <%= suggestion[:time].strftime("%H:%M") %>
                 </div>
               </div>
-              <div class="text-xs text-primary-600 dark:text-primary-400">
+              <div class="text-xs text-primary font-medium">
                 <%= (suggestion[:confidence] * 100).round(0) %>%
               </div>
             </div>
           <% end %>
         <% else %>
-          <p class="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+          <p class="text-xs text-muted text-center py-4">
             No suggestions available
           </p>
         <% end %>
@@ -123,24 +123,24 @@
     </div>
     
     <!-- Content Gaps -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Content Gaps</h3>
+    <div class="bg-white rounded-xl shadow-sm border border-border/50 p-4">
+      <h3 class="text-sm font-bold text-primary mb-3">Content Gaps</h3>
       
       <div id="content-gaps-list" class="space-y-2">
         <% if @content_gaps && @content_gaps.any? %>
           <% @content_gaps.first(3).each do |gap| %>
-            <div class="p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div class="p-2 bg-amber-50 border border-amber-200 rounded-lg">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <div class="text-xs font-medium text-amber-800 dark:text-amber-200">
+                  <div class="text-xs font-medium text-amber-800">
                     <%= gap[:date].strftime("%b %d") %>
                   </div>
-                  <div class="text-xs text-amber-700 dark:text-amber-300">
+                  <div class="text-xs text-amber-700">
                     <%= gap[:reason] %>
                   </div>
                 </div>
                 <button 
-                  class="text-xs text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200"
+                  class="text-xs text-amber-700 hover:text-amber-800"
                   data-action="calendar#fillGap"
                   data-gap-date="<%= gap[:date].to_date %>"
                 >
@@ -150,7 +150,7 @@
             </div>
           <% end %>
         <% else %>
-          <p class="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+          <p class="text-xs text-muted text-center py-4">
             No content gaps found
           </p>
         <% end %>
@@ -159,23 +159,22 @@
   </div>
 
   <!-- Quick Schedule Modal -->
-  <div id="quick-schedule-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Quick Schedule</h3>
-        <button 
-          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          data-action="calendar#closeModal"
-        >
-          <%= lucide_icon "x", class: "w-5 h-5" %>
-        </button>
-      </div>
-      
-      <div id="quick-schedule-content">
-        <!-- Content will be loaded dynamically -->
+  <div id="quick-schedule-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-primary">Quick Schedule</h3>
+          <button 
+            class="text-muted hover:text-primary"
+            data-action="calendar#closeModal"
+          >
+            <%= lucide_icon "x", class: "w-5 h-5" %>
+          </button>
+        </div>
+        
+        <div id="quick-schedule-content">
+        </div>
       </div>
     </div>
   </div>
-</div>
 </div>

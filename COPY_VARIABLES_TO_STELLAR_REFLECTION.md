@@ -1,4 +1,4 @@
-# Copy Variables from New_Clacky_clean to stellar-reflection
+in thde# Copy Variables from New_Clacky_clean to stellar-reflection
 
 ## Variables to Add to stellar-reflection
 

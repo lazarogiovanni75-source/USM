@@ -1,27 +1,127 @@
-<!-- Campaign Edit -->
-<div class="min-h-screen bg-gray-50">
+<% content_for :title, "Edit #{@campaign.name}" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
   <!-- Header -->
-  <div class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center py-6">
+  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+    <div class="container-xl mx-auto px-4 py-4">
+      <div class="flex items-center gap-4">
+        <%= link_to @campaign, class: "w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center hover:shadow-md transition-shadow" do %>
+          <%= lucide_icon "arrow-left", class: "w-5 h-5 text-primary" %>
+        <% end %>
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Edit Campaign</h1>
-          <p class="mt-1 text-gray-600">Update campaign information</p>
-        </div>
-        <div class="flex items-center space-x-4">
-          <%= link_to "View Campaign", campaign_path(@campaign), class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium" %>
-          <%= link_to "Back to Campaigns", campaigns_path, class: "bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium" %>
+          <h1 class="text-2xl font-bold text-primary">Edit Campaign</h1>
+          <p class="text-sm text-muted">Update your campaign settings</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-      <div class="p-6">
-        <p class="text-gray-600">Campaign edit form will be here.</p>
-      </div>
+  <div class="container-xl mx-auto px-4 py-6">
+    <div class="max-w-3xl mx-auto">
+      <%= form_with model: @campaign, class: "space-y-6" do |f| %>
+        <!-- Basic Info -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "info", class: "w-5 h-5 text-primary" %>
+            Basic Information
+          </h2>
+          <div class="space-y-4">
+            <div>
+              <%= f.label :name, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.text_field :name, class: "form-input w-full", placeholder: "Enter campaign name" %>
+            </div>
+            <div>
+              <%= f.label :description, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.text_area :description, class: "form-textarea w-full", rows: 3, placeholder: "Describe your campaign" %>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <%= f.label :status, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.select :status, Campaign.statuses.keys.map { |s| [s.titleize, s] }, {}, class: "form-select w-full" %>
+              </div>
+              <div>
+                <%= f.label :campaign_type, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.select :campaign_type, Campaign.campaign_types.keys.map { |s| [s.titleize, s] }, {}, class: "form-select w-full" %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Goals -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "target", class: "w-5 h-5 text-primary" %>
+            Goals
+          </h2>
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <%= f.label :goal, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.select :goal, Campaign.goals.keys.map { |s| [s.titleize, s] }, {}, class: "form-select w-full" %>
+              </div>
+              <div>
+                <%= f.label :goal_value, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.number_field :goal_value, class: "form-input w-full", placeholder: "Target value" %>
+              </div>
+            </div>
+            <div>
+              <%= f.label :target_audience, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.text_area :target_audience, class: "form-textarea w-full", rows: 2, placeholder: "Describe your target audience" %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline & Budget -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "calendar", class: "w-5 h-5 text-primary" %>
+            Timeline & Budget
+          </h2>
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <%= f.label :start_date, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.date_field :start_date, class: "form-input w-full" %>
+              </div>
+              <div>
+                <%= f.label :end_date, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.date_field :end_date, class: "form-input w-full" %>
+              </div>
+            </div>
+            <div>
+              <%= f.label :budget, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.number_field :budget, class: "form-input w-full", step: 0.01, placeholder: "Campaign budget" %>
+            </div>
+            <div>
+              <%= f.label :content_count, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.number_field :content_count, class: "form-input w-full", placeholder: "Number of content pieces" %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Platforms -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "share-2", class: "w-5 h-5 text-primary" %>
+            Platforms
+          </h2>
+          <div class="grid grid-cols-3 gap-3">
+            <% ['twitter', 'facebook', 'instagram', 'linkedin', 'tiktok', 'youtube'].each do |platform| %>
+              <label class="flex items-center gap-2 p-3 rounded-xl border border-border/50 hover:bg-surface-elevated cursor-pointer transition-colors">
+                <%= f.check_box :platforms, { multiple: true, class: "rounded border-border text-primary focus:ring-primary" }, platform, false %>
+                <span class="text-sm font-medium text-primary capitalize"><%= platform %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3">
+          <%= link_to "Cancel", @campaign, class: "btn-secondary" %>
+          <%= f.submit "Update Campaign", class: "btn-primary" %>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

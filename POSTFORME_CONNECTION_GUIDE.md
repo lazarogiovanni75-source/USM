@@ -125,8 +125,8 @@ PostformeAnalyticsSyncService.new.sync_all_scheduled_posts
 ```
 
 ### 4. Webhooks
-**Endpoint:** `POST /postforme_webhooks`
-**Controller:** `app/controllers/postforme_webhooks_controller.rb`
+**Endpoint:** `POST /api/v1/webhooks/postforme`
+**Controller:** `app/controllers/api/v1/postforme_webhooks_controller.rb`
 
 Receives notifications when:
 - Post is published
@@ -439,7 +439,7 @@ Your app has commented out Buffer integration:
    - Check analytics sync
 
 4. **Set Up Webhooks**
-   - Configure webhook URL in Postforme: `https://www.ultimatesocialmedia01.com/postforme_webhooks`
+   - Configure webhook URL in Postforme: `https://www.ultimatesocialmedia01.com/api/v1/webhooks/postforme`
    - Test webhook delivery
 
 5. **Enable Analytics Sync**

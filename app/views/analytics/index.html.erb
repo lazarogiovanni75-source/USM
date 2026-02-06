@@ -1,25 +1,28 @@
-<!-- Analytics & Performance Dashboard -->
-<div class="min-h-screen bg-gray-50">
+<% content_for :title, "Analytics" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
   <!-- Header -->
-  <div class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center py-6">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900">Analytics & Performance</h1>
-          <p class="mt-1 text-gray-600">Track your social media performance and engagement metrics</p>
+  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+    <div class="container-xl mx-auto px-4 py-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <%= lucide_icon "bar-chart-2", class: "w-7 h-7 text-white" %>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-primary">Analytics</h1>
+            <p class="text-sm text-muted">Track your performance metrics</p>
+          </div>
         </div>
-        <div class="flex items-center space-x-4">
-          <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        <div class="flex flex-wrap gap-3">
+          <select class="form-select bg-white border border-border/50 rounded-xl px-4 py-2 text-sm focus:ring-primary focus:border-primary">
             <option>Last 7 days</option>
             <option>Last 30 days</option>
             <option>Last 90 days</option>
             <option>This year</option>
           </select>
-          <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            <span>Export Report</span>
+          <button class="btn-secondary">
+            <%= lucide_icon "download", class: "w-4 h-4 mr-2" %>Export
           </button>
         </div>
       </div>
@@ -27,87 +30,101 @@
   </div>
 
   <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    
-    <!-- Key Metrics Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
+  <div class="container-xl mx-auto px-4 py-6">
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <%= lucide_icon "eye", class: "w-6 h-6 text-white" %>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Total Reach</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @total_reach || '125.4K' %></p>
-            <div class="flex items-center mt-1">
-              <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-              </svg>
-              <span class="text-sm text-green-600">+12.5%</span>
-            </div>
+          <div>
+            <p class="text-xs text-muted">Total Reach</p>
+            <p class="text-2xl font-bold text-primary"><%= @total_reach || '125.4K' %></p>
+            <p class="text-xs text-green-600">+12.5%</p>
           </div>
         </div>
       </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-            </svg>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center">
+            <%= lucide_icon "heart", class: "w-6 h-6 text-white" %>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Total Engagement</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @total_engagement || '18.2K' %></p>
-            <div class="flex items-center mt-1">
-              <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-              </svg>
-              <span class="text-sm text-green-600">+8.3%</span>
-            </div>
+          <div>
+            <p class="text-xs text-muted">Engagement</p>
+            <p class="text-2xl font-bold text-primary"><%= @total_engagement || '18.2K' %></p>
+            <p class="text-xs text-green-600">+8.3%</p>
           </div>
         </div>
       </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-            </svg>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+            <%= lucide_icon "percent", class: "w-6 h-6 text-white" %>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Engagement Rate</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @engagement_rate || '4.8%' %></p>
-            <div class="flex items-center mt-1">
-              <svg class="w-4 h-4 text-red-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
-              </svg>
-              <span class="text-sm text-red-600">-2.1%</span>
-            </div>
+          <div>
+            <p class="text-xs text-muted">Rate</p>
+            <p class="text-2xl font-bold text-primary"><%= @engagement_rate || '4.8%' %></p>
+            <p class="text-xs text-red-600">-2.1%</p>
           </div>
         </div>
       </div>
-
-      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div class="flex items-center">
-          <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-            </svg>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+            <%= lucide_icon "send", class: "w-6 h-6 text-white" %>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Posts Published</p>
-            <p class="text-2xl font-bold text-gray-900"><%= @posts_published || '342' %></p>
-            <div class="flex items-center mt-1">
-              <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-              </svg>
-              <span class="text-sm text-green-600">+15.7%</span>
-            </div>
+          <div>
+            <p class="text-xs text-muted">Published</p>
+            <p class="text-2xl font-bold text-primary"><%= @posts_published || '342' %></p>
+            <p class="text-xs text-green-600">+15.7%</p>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+        <h2 class="text-lg font-bold text-primary mb-4">Reach Over Time</h2>
+        <div class="h-64 bg-surface-elevated rounded-xl flex items-center justify-center">
+          <p class="text-muted">Chart visualization</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+        <h2 class="text-lg font-bold text-primary mb-4">Engagement Trends</h2>
+        <div class="h-64 bg-surface-elevated rounded-xl flex items-center justify-center">
+          <p class="text-muted">Chart visualization</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform Breakdown -->
+    <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+      <h2 class="text-lg font-bold text-primary mb-4">Platform Performance</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <% ['Twitter', 'Instagram', 'Facebook'].each do |platform| %>
+          <div class="bg-surface-elevated rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-medium text-primary"><%= platform %></span>
+              <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Active</span>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-muted">Reach</span>
+                <span class="text-primary font-medium">45.2K</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-muted">Engagement</span>
+                <span class="text-primary font-medium">5.8%</span>
+              </div>
+              <div class="h-2 bg-white rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-primary to-secondary rounded-full" style="width: 75%"></div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

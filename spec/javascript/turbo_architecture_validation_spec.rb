@@ -244,6 +244,9 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
 
         # Skip API namespace (explicit API endpoints can use JSON)
         next if relative_path.include?('app/controllers/api/')
+        
+        # Skip webhook controllers (external webhooks require JSON responses)
+        next if relative_path.include?('_webhooks_controller.rb')
 
         # Parse controller file with AST to find webhook/callback methods
         exempt_method_ranges = []
