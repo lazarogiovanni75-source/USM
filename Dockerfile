@@ -13,7 +13,8 @@ ENV RAILS_ENV="production" \
 # Check and install only missing gems (if Gemfile changed)
 # bundle check returns 0 if all gems are satisfied, otherwise install
 COPY --chown=ruby:ruby Gemfile Gemfile.lock ./
-RUN bundle check || bundle install --jobs=4 --retry=3
+RUN bundle config set --local without 'development test' && \
+    bundle check || bundle install --jobs=4 --retry=3
 
 # Check and install only missing npm packages (if package.json changed)
 COPY --chown=ruby:ruby package.json package-lock.json ./
