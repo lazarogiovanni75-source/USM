@@ -2,77 +2,76 @@ class Api::V1::VoiceController < ApplicationController
   skip_before_action :verify_authenticity_token
   before_action :set_default_headers
 
-  def generate
-    text = params[:text]
-    voice = params[:voice] || 'pNInz6obpgDQGcFmaJgB'
+  def transcribe
+    # Handle wake word detection via OpenAI Whisper
+    audio = params[:audio]
+    detect_wake_word = params[:detect_wake_word] == 'true'
+    wake_phrase = params[:wake_phrase] || 'hey autopilot'
 
-    if text.blank?
-      render json: { error: 'Text is required' }, status: :bad_request
+    if audio.blank?
+      render json: { error: 'Audio file is required' }, status: :bad_request
       return
     end
 
     begin
-      # Call Node.js voice service
-      response = HTTParty.post(
-        "#{ENV['VOICE_SERVICE_URL'] || 'http://localhost:3001'}/voice/generate",
-        body: { text: text, voice: voice }.to_json,
-        headers: {
-          'Content-Type' => 'application/json'
-        },
-        timeout: 60 # 60 second timeout
+      # Read audio file
+      audio_content = audio.read
+
+      # Call OpenAI Whisper API
+      require 'openai'
+      client = OpenAI::Client.new(
+        api_key: ENV.fetch('OPENAI_API_KEY')
       )
 
-      case response.code
-      when 200
-        # Return the audio stream
-        send_data response.body, 
-          type: 'audio/mpeg',
-          filename: "voice_#{Time.current.to_i}.mp3",
-          disposition: 'inline'
-      when 400
-        render json: JSON.parse(response.body), status: :bad_request
-      when 401
-        render json: { error: 'Voice service authentication failed' }, status: :unauthorized
-      when 422
-        render json: { error: 'Invalid voice parameters' }, status: :unprocessable_entity
-      when 500
-        render json: { error: 'Voice service error' }, status: :internal_server_error
-      else
-        render json: { error: 'Voice service unavailable' }, status: :service_unavailable
-      end
-
-    rescue Net::OpenTimeout, Net::ReadTimeout
-      render json: { error: 'Voice service timeout' }, status: :gateway_timeout
-    rescue StandardError => e
-      Rails.logger.error "Voice service error: #{e.message}"
-      render json: { error: 'Voice service connection failed' }, status: :service_unavailable
-    end
-  end
-
-  def voices
-    begin
-      response = HTTParty.get(
-        "#{ENV['VOICE_SERVICE_URL'] || 'http://localhost:3001'}/voices",
-        timeout: 30
+      response = client.audio.transcriptions(
+        model: 'whisper-1',
+        audio: audio_content,
+        language: 'en',
+        prompt: "You are transcribing voice commands for a social media AI assistant. Wake phrase is \"#{wake_phrase}\"."
       )
 
-      if response.success?
-        render json: response.body, status: :ok
-      else
-        render json: { error: 'Failed to fetch voices' }, status: :service_unavailable
+      transcribed_text = response['text']&.strip&.downcase || ''
+
+      # Check for wake word if requested
+      wake_word_detected = false
+      if detect_wake_word
+        wake_word_detected = check_wake_word(transcribed_text, wake_phrase)
       end
 
-    rescue StandardError => e
-      Rails.logger.error "Voice service error: #{e.message}"
-      render json: { error: 'Voice service connection failed' }, status: :service_unavailable
-    end
-  end
+      render json: {
+        text: response['text'],
+        wake_word_detected: wake_word_detected,
+        wake_phrase: wake_phrase,
+        detected_at: Time.current.iso8601
+      }
 
-  def health
-    render json: { status: 'ok', service: 'voice_api' }, status: :ok
+    rescue OpenAI::Error => e
+      Rails.logger.error "OpenAI Whisper API error: #{e.message}"
+      render json: { error: 'Transcription service error' }, status: :service_unavailable
+    rescue StandardError => e
+      Rails.logger.error "Transcription error: #{e.message}"
+      render json: { error: 'Failed to transcribe audio' }, status: :internal_server_error
+    end
   end
 
   private
+
+  def check_wake_word(text, wake_phrase)
+    wake_phrase_lower = wake_phrase.downcase
+    
+    # Direct match
+    return true if text.include?(wake_phrase_lower)
+    
+    # Check variations
+    variations = [
+      wake_phrase_lower.gsub(/\s+/, ''),
+      "hey #{wake_phrase_lower.gsub('hey ', '')}",
+      "okay #{wake_phrase_lower}",
+      "ok #{wake_phrase_lower}"
+    ]
+    
+    variations.any? { |v| text.include?(v) }
+  end
 
   def set_default_headers
     headers['Access-Control-Allow-Origin'] = '*'

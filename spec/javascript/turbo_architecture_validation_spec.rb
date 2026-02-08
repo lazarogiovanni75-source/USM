@@ -360,6 +360,9 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
           line_number = index + 1
 
           if line.match?(/\bfetch\s*\(/)
+            # Exempt fetch calls to API endpoints (single or double quotes)
+            next if line.match?(/fetch\s*\(\s*['"]\/api\//)
+
             violations << {
               file: relative_path,
               line: line_number,

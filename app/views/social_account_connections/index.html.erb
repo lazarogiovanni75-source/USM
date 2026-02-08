@@ -1,0 +1,169 @@
+<%# Social Account Connections Page %>
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Connect Accounts</h1>
+          <p class="mt-1 text-gray-600">Connect your social media accounts via Postforme</p>
+        </div>
+        <%= link_to social_media_dashboard_index_path, class: "btn-secondary" do %>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          View Dashboard
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- API Key Configuration -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Postforme API Key</h2>
+        <p class="text-gray-600 mb-4">Enter your Postforme API key to connect your social media accounts.</p>
+        
+        <%= form_with url: update_api_key_social_account_connections_path, method: :post, local: true do |f| %>
+          <div class="mb-4">
+            <%= f.label :api_key, "API Key", class: "block text-sm font-medium text-gray-700 mb-2" %>
+            <%= f.text_field :api_key, 
+                value: @api_key,
+                placeholder: "pfm_live_xxxxxxxxxx",
+                class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+          </div>
+          <div class="flex items-center justify-between">
+            <button type="submit" class="btn-primary">
+              Verify API Key
+            </button>
+            <span class="text-sm text-gray-500">
+              Get your API key from <a href="https://postforme.com" target="_blank" class="text-primary-600 hover:text-primary-500">postforme.com</a>
+            </span>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Available Profiles -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-gray-900">Available Profiles</h2>
+          <button id="refresh-profiles" class="btn-secondary btn-sm">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+        
+        <div id="profiles-list" class="space-y-3">
+          <p class="text-gray-500 text-center py-4">Enter your API key to see available profiles</p>
+        </div>
+      </div>
+
+      <!-- Connected Accounts -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Connected Accounts</h2>
+        
+        <% if @accounts.any? %>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Platform</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Followers</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <% @accounts.each do |account| %>
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                          <span class="text-2xl"><%= platform_icon(account.platform) %></span>
+                        </div>
+                        <div class="ml-4">
+                          <div class="text-sm font-medium text-gray-900"><%= account.name || "Unknown" %></div>
+                          <div class="text-sm text-gray-500">@<%= account.username || "N/A" %></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-100 text-primary-800">
+                        <%= account.platform.titleize %>
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <% if account.configured_for_postforme? %>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          Connected
+                        </span>
+                      <% else %>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                          Not Configured
+                        </span>
+                      <% end %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <%= number_with_delimiter(account.followers || 0) %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <% if account.configured_for_postforme? %>
+                        <%= button_to disconnect_account_social_account_connections_path(account), 
+                            method: :post,
+                            class: "text-red-600 hover:text-red-900",
+                            data: { confirm: "Are you sure you want to disconnect this account?" } do %>
+                          Disconnect
+                        <% end %>
+                      <% else %>
+                        <span class="text-gray-400">Configure API key to connect</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No accounts connected</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by entering your Postforme API key above.</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+document.addEventListener('turbo:load', function() {
+  const refreshBtn = document.getElementById('refresh-profiles');
+  
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const apiKeyInput = document.querySelector('input[name="api_key"]');
+      const apiKey = apiKeyInput ? apiKeyInput.value : '';
+      
+      if (!apiKey) {
+        return;
+      }
+      
+      // Use Turbo.visit to trigger Turbo Stream response
+      Turbo.visit('/social_account_connections/available_profiles', {
+        action: 'advance',
+        params: { api_key: apiKey }
+      });
+    });
+  }
+});
+</script>

@@ -3,7 +3,7 @@ class SoraService
   class Error < StandardError; end
 
   def initialize
-    @api_key = ENV.fetch('DEFAPI_API_KEY')
+    @api_key = ENV.fetch('REPLICATE_API_KEY', ENV.fetch('DEFAPI_API_KEY', nil))
     @base_url = 'https://api.replicate.com/v1'
   end
 

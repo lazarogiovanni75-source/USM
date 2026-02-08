@@ -10,7 +10,7 @@ class DashboardsController < ApplicationController
     @scheduled_posts = @user.scheduled_posts.order(scheduled_time: :asc).limit(10)
     @voice_commands = @user.voice_commands.order(created_at: :desc).limit(5)
     
-    # AI Conversations - Load for unified inbox
+    # AI Conversations - Load for chat log
     @ai_conversations = @user.ai_conversations.order(updated_at: :desc).limit(20)
     @ai_messages = @user.ai_messages.order(created_at: :desc).limit(50)
     
@@ -76,14 +76,14 @@ class DashboardsController < ApplicationController
       
       conversation.update!(updated_at: Time.current)
       
-      redirect_to dashboard_path(conversation_id: conversation.id), 
+      redirect_to dashboards_path(conversation_id: conversation.id), 
                   notice: 'Response sent successfully!'
     else
-      redirect_to dashboard_path(conversation_id: conversation.id), 
+      redirect_to dashboards_path(conversation_id: conversation.id), 
                   alert: 'Please enter a message to send.'
     end
   rescue ActiveRecord::RecordNotFound
-    redirect_to dashboard_path, alert: 'Conversation not found.'
+    redirect_to dashboards_path, alert: 'Conversation not found.'
   end
 
   private

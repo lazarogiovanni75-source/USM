@@ -21,4 +21,21 @@ module ApplicationHelper
       ""
     end
   end
+
+  def platform_icon(platform)
+    icons = {
+      'instagram' => '📸',
+      'twitter' => '𝕏',
+      'x' => '𝕏',
+      'facebook' => '📘',
+      'linkedin' => '💼',
+      'tiktok' => '🎵',
+      'youtube' => '▶️',
+      'pinterest' => '📌',
+      'bluebird' => '🐦',
+      'threads' => '@',
+      'general' => '📱'
+    }
+    icons[platform&.downcase] || '📱'
+  end
 end

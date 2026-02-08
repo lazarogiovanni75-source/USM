@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_31_080005) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_07_133740) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -274,6 +274,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_080005) do
     t.string "status", default: "draft"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "media_url"
     t.index ["status"], name: "index_draft_contents_on_status"
     t.index ["user_id"], name: "index_draft_contents_on_user_id"
   end
@@ -552,6 +553,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_080005) do
     t.string "buffer_access_token"
     t.string "postforme_api_key"
     t.string "postforme_profile_id"
+    t.integer "likes"
+    t.integer "views"
+    t.integer "engagement"
+    t.integer "shares"
+    t.integer "followers"
+    t.integer "new_followers"
+    t.integer "unfollowers"
+    t.integer "messages"
     t.index ["user_id"], name: "index_social_accounts_on_user_id"
   end
 
@@ -622,6 +631,21 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_080005) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  create_table "videos", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "title"
+    t.text "description"
+    t.string "status"
+    t.string "video_type"
+    t.integer "duration"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "error_message"
+    t.string "video_url"
+    t.string "prediction_url"
+    t.index ["user_id"], name: "index_videos_on_user_id"
+  end
+
   create_table "voice_commands", force: :cascade do |t|
     t.bigint "user_id"
     t.text "command", default: "Untitled"
@@ -644,6 +668,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_080005) do
     t.decimal "speed", default: "1.0"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "enabled"
     t.index ["user_id"], name: "index_voice_settings_on_user_id"
     t.index ["voice_id"], name: "index_voice_settings_on_voice_id"
   end

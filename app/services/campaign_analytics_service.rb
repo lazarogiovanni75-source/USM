@@ -113,25 +113,25 @@ class CampaignAnalyticsService
   private
 
   def calculate_total_engagements(posts)
-    posts.joins(:performance_metrics).sum(:likes) +
-    posts.joins(:performance_metrics).sum(:comments) +
-    posts.joins(:performance_metrics).sum(:shares)
+    posts.joins(:performance_metrics).sum('performance_metrics.likes') +
+    posts.joins(:performance_metrics).sum('performance_metrics.comments') +
+    posts.joins(:performance_metrics).sum('performance_metrics.shares')
   end
 
   def calculate_avg_engagement_rate(posts)
     total_engagements = calculate_total_engagements(posts)
-    total_views = posts.joins(:performance_metrics).sum(:views)
+    total_views = posts.joins(:performance_metrics).sum('performance_metrics.views')
     return 0 if total_views == 0
     (total_engagements.to_f / total_views * 100).round(2)
   end
 
   def calculate_total_reach(posts)
-    posts.joins(:performance_metrics).sum(:impressions) || 0
+    posts.joins(:performance_metrics).sum('performance_metrics.impressions') || 0
   end
 
   def get_top_performing_post(posts)
     top = posts.joins(:performance_metrics)
-              .order(Arel.sql('(likes + comments + shares) DESC'))
+              .order(Arel.sql('(performance_metrics.likes + performance_metrics.comments + performance_metrics.shares) DESC'))
               .first
     
     return nil unless top
@@ -177,9 +177,9 @@ class CampaignAnalyticsService
       stats[date.strftime('%Y-%m-%d')] = {
         date: date,
         posts: day_posts.count,
-        engagements: day_posts.joins(:performance_metrics).sum(:likes) +
-                    day_posts.joins(:performance_metrics).sum(:comments) +
-                    day_posts.joins(:performance_metrics).sum(:shares)
+        engagements: day_posts.joins(:performance_metrics).sum('performance_metrics.likes') +
+                    day_posts.joins(:performance_metrics).sum('performance_metrics.comments') +
+                    day_posts.joins(:performance_metrics).sum('performance_metrics.shares')
       }
     end
     
@@ -251,9 +251,9 @@ class CampaignAnalyticsService
       
       next if day_posts.empty?
       
-      engagements = day_posts.joins(:performance_metrics).sum(:likes) +
-                   day_posts.joins(:performance_metrics).sum(:comments) +
-                   day_posts.joins(:performance_metrics).sum(:shares)
+      engagements = day_posts.joins(:performance_metrics).sum('performance_metrics.likes') +
+                   day_posts.joins(:performance_metrics).sum('performance_metrics.comments') +
+                   day_posts.joins(:performance_metrics).sum('performance_metrics.shares')
       
       hourly_stats[day] = {
         day: Date::DAYNAMES[day],

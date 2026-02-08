@@ -8,6 +8,7 @@ class AiChatController < ApplicationController
   end
   
   def show
+    @conversations = current_user.ai_conversations.order(updated_at: :desc).limit(10)
     @conversation = current_user.ai_conversations.find(params[:id])
     @messages = @conversation.ai_messages.order(created_at: :asc)
   end

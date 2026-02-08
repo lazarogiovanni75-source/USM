@@ -15,6 +15,20 @@ Rails.application.routes.draw do
   resources :buffer_analytics, only: [:index] do
     get :sync, on: :collection
   end
+  # Social Media Dashboard
+  resources :social_media_dashboard, only: [:index] do
+    post :sync_all, on: :collection
+    get :available_profiles, on: :collection
+  end
+  # Social Account Connections
+  resources :social_account_connections, only: [:index] do
+    post :update_api_key, on: :collection
+    get :available_profiles, on: :collection
+    post :connect_profile, on: :collection
+    post :disconnect_account, on: :member
+    post :share_to_social_media, on: :collection
+  end
+
   # End routes for buffer_analytics
 
   # PWA routes
@@ -27,9 +41,14 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       # Voice API endpoints
-      post 'voice/generate', to: 'voice#generate'
-      get 'voices', to: 'voice#voices'
+      post 'voice/transcribe', to: 'voice#transcribe'
       get 'voice/health', to: 'voice#health'
+      
+      # AI Chat API endpoints
+      post 'ai_chat/send_message', to: 'ai_chat#send_message'
+      post 'ai_chat/create_conversation', to: 'ai_chat#create_conversation'
+      get 'ai_chat/conversations', to: 'ai_chat#conversations'
+      get 'ai_chat/messages/:conversation_id', to: 'ai_chat#messages'
     end
   end
 
@@ -276,7 +295,6 @@ Rails.application.routes.draw do
   # AI Autopilot Automation System
   resources :ai_autopilot, only: [:index] do
     collection do
-      get 'status'
       post 'toggle'
       post 'generate_content'
       post 'schedule_post'
@@ -323,7 +341,6 @@ Rails.application.routes.draw do
   # AI Autopilot routes
   resources :ai_autopilot, only: [:index] do
     collection do
-      get 'status'
       post 'toggle'
       post 'generate_content'
       post 'schedule_post'

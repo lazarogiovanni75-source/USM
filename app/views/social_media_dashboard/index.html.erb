@@ -1,0 +1,70 @@
+<!-- Social Media Dashboard -->
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Social Media Dashboard</h1>
+          <p class="mt-1 text-gray-600">View all your social media metrics in one place</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="text-sm text-gray-500"><%= @connected_count %>/9 platforms connected</span>
+          <button class="btn-secondary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Overall Stats Summary -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500">Total Followers</p>
+        <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@totals[:followers]) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500">Total Likes</p>
+        <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@totals[:likes]) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500">Total Views</p>
+        <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@totals[:views]) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500">Engagement</p>
+        <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@totals[:engagement]) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500">Shares</p>
+        <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@totals[:shares]) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-green-600">New Followers</p>
+        <p class="text-2xl font-bold text-green-600">+<%= number_with_delimiter(@totals[:new_followers]) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-red-600">Unfollowers</p>
+        <p class="text-2xl font-bold text-red-600">-<%= number_with_delimiter(@totals[:unfollowers]) %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500">Messages/DM</p>
+        <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@totals[:messages]) %></p>
+      </div>
+    </div>
+
+    <!-- Platform Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @platforms_data.each do |platform| %>
+        <%= render 'platform_card', platform: platform %>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -137,8 +137,7 @@ module FlexibleRouteHelpers
   end
 end
 
-# Patch ActionDispatch::Routing::UrlFor to include our flexible helpers
-# This makes it work everywhere: controllers, views, helpers, console, tests
+# Patched to include our flexible helpers
 Rails.application.config.to_prepare do
   ActionDispatch::Routing::UrlFor.prepend(FlexibleRouteHelpers)
 end

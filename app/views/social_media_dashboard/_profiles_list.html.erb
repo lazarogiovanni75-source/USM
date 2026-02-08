@@ -1,0 +1,26 @@
+<% if error %>
+  <p class="text-red-500 text-center py-4"><%= error %></p>
+<% elsif profiles.blank? %>
+  <p class="text-gray-500 text-center py-4">No profiles found. Please check your API key.</p>
+<% else %>
+  <% profiles.each do |profile| %>
+    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl"><%= profile[:icon] || '📱' %></span>
+        <div>
+          <p class="font-medium text-gray-900"><%= profile[:name] || profile[:username] %></p>
+          <p class="text-sm text-gray-500"><%= (profile[:platform] || '').titleize %> - <%= profile[:followers] || 0 %> followers</p>
+        </div>
+      </div>
+      <%= button_to "Connect",
+            social_media_dashboard_connect_profile_path,
+            method: :post,
+            params: {
+              api_key: params[:api_key],
+              profile_id: profile[:id],
+              platform: profile[:platform] || 'unknown'
+            },
+            class: "btn-primary btn-sm" %>
+    </div>
+  <% end %>
+<% end %>

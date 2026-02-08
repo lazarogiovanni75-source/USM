@@ -82,7 +82,7 @@
         <!-- AI Content Ideas -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Content Ideas</h3>
-          <p class="text-sm text-gray-600 mb-4">Generate creative content ideas using GPT-4o Mini</p>
+          <p class="text-sm text-gray-600 mb-4">Generate creative content ideas using GPT-5o Mini</p>
           <form action="/content_creation/generate_ideas" method="post" class="space-y-4">
             <%= csrf_meta_tags %>
             <div>
@@ -100,12 +100,7 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Number of Ideas</label>
-              <select name="count" class="form-select w-full">
-                <option value="3">3 ideas</option>
-                <option value="5">5 ideas</option>
-                <option value="10">10 ideas</option>
-              </select>
+              <p class="text-sm text-gray-600 mb-4">Generate creative content ideas using GPT-5o Mini (3 ideas per request)</p>
             </div>
             <button type="submit" class="btn-secondary w-full">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,6 +134,32 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
               </svg>
               Generate Image
+            </button>
+          </form>
+        </div>
+
+        <!-- AI Video Generation (Sora) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Video Generation</h3>
+          <p class="text-sm text-gray-600 mb-4">Create videos with Sora via Replicate</p>
+          <form action="/content_creation/generate_video" method="post" class="space-y-4">
+            <%= csrf_meta_tags %>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Video Description</label>
+              <textarea name="prompt" rows="3" class="form-input w-full" placeholder="Describe the video you want..." required></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+              <select name="duration" class="form-select w-full">
+                <option value="5s">5 seconds</option>
+                <option value="10s">10 seconds</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary w-full">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              Generate Video
             </button>
           </form>
         </div>
@@ -182,6 +203,44 @@
       <!-- Main Content Area -->
       <div class="lg:col-span-3 space-y-6">
         
+        <%# Video Preview Section - shows the latest generated video %>
+        <% video_draft = @latest_video_draft || (params[:video_draft_id] ? current_user.draft_contents.find_by(id: params[:video_draft_id]) : nil) %>
+        <% if video_draft && video_draft.media_url.present? %>
+          <div class="bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl shadow-lg overflow-hidden">
+            <div class="p-4 border-b border-white/20">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-white">Your Generated Video</h2>
+                <span class="text-white/80 text-sm"><%= video_draft.updated_at.strftime('%b %d, %H:%M') %></span>
+              </div>
+            </div>
+            <div class="p-6">
+              <div class="relative rounded-lg overflow-hidden bg-black shadow-xl">
+                <video controls class="w-full" poster="">
+                  <source src="<%= video_draft.media_url %>" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              <div class="mt-4 flex items-center justify-between">
+                <p class="text-white/90 text-sm truncate"><%= video_draft.title %></p>
+                <div class="flex space-x-3">
+                  <a href="<%= video_draft.media_url %>" download class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    Download
+                  </a>
+                  <button onclick="copyVideoUrl('<%= video_draft.media_url %>')" class="bg-white text-purple-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/90 transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                    </svg>
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
         <!-- Recent Drafts -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100">
           <div class="p-6 border-b border-gray-100">
@@ -294,3 +353,22 @@
     </div>
   </div>
 </div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+function copyVideoUrl(url) {
+  navigator.clipboard.writeText(url).then(function() {
+    alert('Video URL copied to clipboard!');
+  }, function(err) {
+    console.error('Could not copy text: ', err);
+    // Fallback
+    var textArea = document.createElement('textarea');
+    textArea.value = url;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert('Video URL copied to clipboard!');
+  });
+}
+</script>

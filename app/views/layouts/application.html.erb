@@ -3,12 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#a172f3">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="turbo-cache-control" content="no-cache">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#a172f3">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="user-id" content="<%= current_user&.id || 'anonymous' %>">
+    <meta name="user-signed-in" content="<%= user_signed_in? %>">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="renderer" content="webkit">
     <meta http-equiv="cleartype" content="on">

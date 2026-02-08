@@ -79,7 +79,7 @@ class ContentTemplatesController < ApplicationController
     end
   end
   
-  def process
+  def process_template
     @template = ContentTemplate.find(params[:id])
     
     variables = params[:variables] || {}

@@ -1,68 +1,97 @@
-<!-- AI Chat Assistant -->
-<div class="min-h-screen bg-gray-50">
+"<!-- AI Chat Assistant with Tabs -->
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated relative overflow-hidden" data-controller="ai-chat" data-ai-chat-conversation-id-value="<%= @current_conversation&.id %>">
+  <!-- Decorative Background -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-20 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute top-40 right-20 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+  </div>
+
   <!-- Header -->
-  <div class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="bg-white/60 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 relative">
+    <div class="container-xl mx-auto px-4">
       <div class="flex justify-between items-center py-4">
-        <div class="flex items-center space-x-4">
-          <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-            </svg>
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+            <%= lucide_icon "bot", class: "w-6 h-6 text-white" %>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">AI Assistant</h1>
-            <p class="text-sm text-gray-600">Your intelligent marketing companion</p>
+            <h1 class="text-2xl font-bold text-primary">AI Assistant</h1>
+            <p class="text-sm text-muted">Your intelligent marketing companion</p>
           </div>
         </div>
-        <div class="flex items-center space-x-3">
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-            <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-            AI Online
-          </span>
-          <button id="new-chat-btn" class="btn-primary">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
+        <div class="flex items-center gap-3">
+          <!-- Voice Command Button - Green AI Button -->
+          <button id="voice-command-btn" 
+                  class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                  data-controller="voice-command-toggle"
+                  data-action="voice-command-toggle#toggleVoice">
+            <%= lucide_icon "mic", class: "w-5 h-5" %>
+            <span class="font-medium">AI Voice</span>
+            <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+          </button>
+          <button id="new-chat-btn" class="btn-primary" data-action="ai-chat#createNewConversation">
+            <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>
             New Chat
           </button>
         </div>
+      </div>
+      
+      <!-- Tabs -->
+      <div class="flex gap-2 pb-4 overflow-x-auto">
+        <button class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-xl shadow-lg whitespace-nowrap"
+                data-action="ai-chat#showAutopilot">
+          <%= lucide_icon "bot", class: "w-4 h-4" %>
+          Autopilot
+        </button>
+        <%= link_to ai_chat_index_path, class: "flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-xl hover:bg-white transition-all whitespace-nowrap #{controller_name == 'ai_chat' ? 'bg-gradient-to-r from-primary to-secondary text-white' : ''}" do %>
+          <%= lucide_icon "message-circle", class: "w-4 h-4" %>
+          Chat
+        <% end %>
+        <%= link_to content_creation_index_path, class: "flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-xl hover:bg-white transition-all whitespace-nowrap #{controller_name == 'content_creation' ? 'bg-gradient-to-r from-primary to-secondary text-white' : ''}" do %>
+          <%= lucide_icon "sparkles", class: "w-4 h-4" %>
+          Content
+        <% end %>
+        <%= link_to scheduled_posts_path, class: "flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-xl hover:bg-white transition-all whitespace-nowrap #{controller_name == 'scheduled_posts' ? 'bg-gradient-to-r from-primary to-secondary text-white' : ''}" do %>
+          <%= lucide_icon "calendar", class: "w-4 h-4" %>
+          Scheduled
+        <% end %>
       </div>
     </div>
   </div>
 
   <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <div class="container-xl mx-auto px-4 py-6 relative">
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       
       <!-- Sidebar: Conversations List -->
       <div class="lg:col-span-1">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Chats</h2>
-          <div id="conversations-list" class="space-y-2">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-4 sticky top-40">
+          <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "history", class: "w-5 h-5" %>
+            Recent Chats
+          </h2>
+          <div id="conversations-list" class="space-y-2 max-h-[500px] overflow-y-auto" data-ai-chat-target="conversationList">
             <% if @conversations.any? %>
               <% @conversations.each do |conversation| %>
-                <div class="conversation-item p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors" data-conversation-id="<%= conversation.id %>">
+                <%= link_to ai_chat_path(conversation), class: "conversation-item block p-3 rounded-xl hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 cursor-pointer transition-all border border-transparent hover:border-primary/20 #{params[:id].to_i == conversation.id ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/30' : ''}" do %>
                   <div class="flex items-center justify-between">
                     <div class="flex-1 min-w-0">
-                      <p class="text-sm font-medium text-gray-900 truncate"><%= conversation.title %></p>
-                      <p class="text-xs text-gray-500"><%= conversation.session_type.titleize %></p>
+                      <p class="text-sm font-semibold text-primary truncate"><%= conversation.title || 'Untitled Chat' %></p>
+                      <p class="text-xs text-muted"><%= time_ago_in_words(conversation.updated_at) %> ago</p>
                     </div>
-                    <div class="ml-2 flex-shrink-0">
-                      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                      </svg>
+                    <div class="ml-2">
+                      <%= lucide_icon "chevron-right", class: "w-4 h-4 text-muted" %>
                     </div>
                   </div>
-                </div>
+                <% end %>
               <% end %>
             <% else %>
               <div class="text-center py-8">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No conversations yet</h3>
-                <p class="mt-1 text-sm text-gray-500">Start a new conversation to get help with your marketing.</p>
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mx-auto mb-3">
+                  <%= lucide_icon "message-square", class: "w-8 h-8 text-primary" %>
+                </div>
+                <h3 class="text-sm font-medium text-primary mb-1">No conversations yet</h3>
+                <p class="text-xs text-muted">Start a new chat to get help</p>
               </div>
             <% end %>
           </div>
@@ -71,72 +100,100 @@
 
       <!-- Main Chat Area -->
       <div class="lg:col-span-3">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-[600px] flex flex-col">
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 h-[600px] flex flex-col overflow-hidden">
           
           <!-- Chat Messages -->
-          <div id="chat-messages" class="flex-1 p-6 overflow-y-auto">
+          <div id="chat-messages" class="flex-1 p-6 overflow-y-auto" data-ai-chat-target="messagesContainer">
             <% if @messages.any? %>
               <% @messages.each do |message| %>
                 <div class="message <%= message.role %> mb-4 flex <%= message.role == 'user' ? 'justify-end' : 'justify-start' %>">
-                  <div class="flex <%= message.role == 'user' ? 'flex-row-reverse' : 'flex-row' %> items-start space-x-3 max-w-3xl">
+                  <div class="flex <%= message.role == 'user' ? 'flex-row-reverse' : 'flex-row' %> items-start gap-3 max-w-3xl">
                     <div class="flex-shrink-0">
-                      <div class="w-8 h-8 rounded-full flex items-center justify-center <%= message.role == 'user' ? 'bg-blue-500' : 'bg-gradient-to-r from-purple-500 to-blue-500' %>">
+                      <div class="w-10 h-10 rounded-xl flex items-center justify-center <%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary' : 'bg-gradient-to-br from-green-500 to-emerald-500' %>">
                         <% if message.role == 'user' %>
-                          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                          </svg>
+                          <%= lucide_icon "user", class: "w-5 h-5 text-white" %>
                         <% else %>
-                          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                          </svg>
+                          <%= lucide_icon "bot", class: "w-5 h-5 text-white" %>
                         <% end %>
                       </div>
                     </div>
                     <div class="<%= message.role == 'user' ? 'text-right' : 'text-left' %>">
-                      <div class="inline-block p-3 rounded-2xl <%= message.role == 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900' %>">
+                      <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary text-white' : 'bg-white border border-border/50 text-primary' %> shadow-sm">
                         <p class="text-sm"><%= message.content %></p>
                       </div>
-                      <p class="text-xs text-gray-500 mt-1"><%= message.created_at.strftime('%H:%M') %></p>
+                      <p class="text-xs text-muted mt-1"><%= message.created_at.strftime('%H:%M') %></p>
                     </div>
                   </div>
                 </div>
               <% end %>
             <% else %>
-              <div class="text-center py-12">
-                <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                  </svg>
+              <!-- Empty State -->
+              <div class="flex flex-col items-center justify-center h-full">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-4 shadow-lg">
+                  <%= lucide_icon "sparkles", class: "w-10 h-10 text-primary" %>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">AI Marketing Assistant</h3>
-                <p class="text-gray-600 mb-4">Ask me anything about content creation</p>
-                <div class="flex flex-wrap justify-center gap-2">
-                  <button class="quick-prompt px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700" data-prompt="Help me create a social media strategy for my new product launch">New Product Launch Strategy</button>
-                  <button class="quick-prompt px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700" data-prompt="Generate engaging content ideas for Instagram posts">Instagram Content Ideas</button>
-                  <button class="quick-prompt px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700" data-prompt="Help me optimize my existing campaigns for better engagement">Campaign Optimization</button>
+                <h3 class="text-xl font-bold text-primary mb-2">AI Marketing Assistant</h3>
+                <p class="text-muted text-center max-w-md mb-6">Ask me anything about content creation, scheduling, or marketing strategy</p>
+                <div class="flex flex-wrap justify-center gap-2" data-ai-chat-target="quickPrompts">
+                  <button class="quick-prompt px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                          data-prompt="Help me create a social media strategy for my new product launch">
+                    New Product Launch
+                  </button>
+                  <button class="quick-prompt px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                          data-prompt="Generate engaging content ideas for Instagram posts">
+                    Instagram Ideas
+                  </button>
+                  <button class="quick-prompt px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                          data-prompt="Help me optimize my existing campaigns for better engagement">
+                    Optimize Campaigns
+                  </button>
                 </div>
               </div>
             <% end %>
           </div>
 
-          <!-- Chat Input -->
-          <div class="border-t border-gray-200 p-4">
-            <form id="chat-form" class="flex space-x-3">
-              <div class="flex-1">
+          <!-- Chat Input with Submit Button -->
+          <div class="border-t border-border/50 p-4 bg-white/50 backdrop-blur-sm">
+            <form id="chat-form" class="flex gap-3" data-ai-chat-target="form">
+              <div class="flex-1 relative">
                 <textarea id="message-input" 
-                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none" 
+                         class="w-full px-4 py-3 pr-12 bg-white border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none shadow-sm"
                          rows="1" 
-                         placeholder="Type your message... (Press Enter to send)"></textarea>
+                         placeholder="Type your message..." data-ai-chat-target="input"></textarea>
+                <!-- Submit Button -->
+                <button type="submit" id="send-btn" class="absolute right-2 bottom-2 p-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all" data-ai-chat-target="sendBtn">
+                  <%= lucide_icon "send", class: "w-5 h-5" %>
+                </button>
               </div>
-              <button type="submit" id="send-btn" class="btn-primary px-6 py-3" disabled>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                </svg>
-              </button>
             </form>
+            <p class="text-xs text-muted mt-2 text-center">Press Enter to send or click the button â¢ AI responses are generated by GPT-5o-mini</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Voice Command Modal -->
+<div id="voice-command-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center" data-controller="voice-command-toggle">
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+  <div class="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all scale-95 opacity-0">
+    <div class="text-center">
+      <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg animate-pulse">
+        <%= lucide_icon "mic", class: "w-12 h-12 text-white" %>
+      </div>
+      <h2 class="text-2xl font-bold text-primary mb-2">AI Voice Autopilot</h2>
+      <p class="text-muted mb-6">Speak your commands to create campaigns, generate content, and manage your social media</p>
+      
+      <div class="bg-surface-elevated rounded-2xl p-4 mb-6 min-h-[100px]">
+        <p id="voice-transcript" class="text-primary text-lg">Listening...</p>
+      </div>
+      
+      <button class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all" data-action="voice-command-toggle#closeModal">
+        Close Voice Command
+      </button>
+    </div>
+  </div>
+</div>
+
+"

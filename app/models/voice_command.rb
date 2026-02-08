@@ -11,6 +11,7 @@ class VoiceCommand < ApplicationRecord
   enum command_type: {
     create_campaign: 'create_campaign',
     generate_content: 'generate_content',
+    generate_video: 'generate_video',
     schedule_post: 'schedule_post',
     analyze_performance: 'analyze_performance',
     general_inquiry: 'general_inquiry'
@@ -20,6 +21,7 @@ class VoiceCommand < ApplicationRecord
   
   # Use existing field names
   alias_attribute :command_text, :transcribed_text
+  alias_attribute :transcript, :transcribed_text
   
   private
   

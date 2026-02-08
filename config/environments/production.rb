@@ -111,7 +111,8 @@ Rails.application.configure do
   config.hosts = [
     "ultimatesocialmedia01.com",     # Allow requests from your custom domain
     /.*\.ultimatesocialmedia01\.com/, # Allow requests from subdomains like `www.ultimatesocialmedia01.com`
-    /.*\.railway\.app/                # Allow Railway provided domain
+    /.*\.railway\.app/,                # Allow Railway provided domain
+    /.*\.clackyai\.app/                 # Allow Clacky deployment domain
   ]
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }

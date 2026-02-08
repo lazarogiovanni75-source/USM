@@ -5,12 +5,18 @@ class ContentCreationController < ApplicationController
     @drafts = current_user.draft_contents.order(updated_at: :desc)
     @suggestions = current_user.content_suggestions.order(created_at: :desc).limit(10)
     @templates = ContentTemplate.where(is_active: true).order(category: :asc)
+    # Get the most recent video draft with a video URL for inline preview
+    @latest_video_draft = current_user.draft_contents
+      .where(content_type: 'video')
+      .where.not(media_url: nil)
+      .order(updated_at: :desc)
+      .first
   end
 
   def generate_ideas
     topic = params[:topic]
     platform = params[:platform] || 'general'
-    count = (params[:count] || 5).to_i
+    count = 3 # Fixed at 3 ideas per request
 
     prompt = "Generate #{count} creative content ideas for #{platform} about '#{topic}'. "\
              "Return as a JSON array with objects containing 'title' and 'description' fields. "\
@@ -38,10 +44,10 @@ class ContentCreationController < ApplicationController
         )
       end
 
-      redirect_to content_creation_path, notice: "#{ideas.count} content ideas generated!"
+      redirect_to content_creation_index_path, notice: "#{ideas.count} content ideas generated!"
     rescue => e
       Rails.logger.error "Content Ideas Error: #{e.message}"
-      redirect_to content_creation_path, alert: 'Failed to generate ideas. Please try again.'
+      redirect_to content_creation_index_path, alert: 'Failed to generate ideas. Please try again.'
     end
   end
 
@@ -59,16 +65,32 @@ class ContentCreationController < ApplicationController
           content: prompt,
           content_type: 'image',
           platform: 'general',
-          status: 'draft'
+          status: 'draft',
+          media_url: result['output']
         )
 
-        redirect_to draft_path(draft), notice: 'Image generation started!'
+        redirect_to draft_path(draft), notice: 'Image generated successfully!'
+      elsif result['urls']&.present?
+        # Prediction started, save with prediction URL for polling
+        draft = current_user.draft_contents.create!(
+          title: "Image - #{prompt[0..50]}",
+          content: prompt,
+          content_type: 'image',
+          platform: 'general',
+          status: 'draft',
+          media_url: nil
+        )
+
+        # Start polling job
+        SoraPollJob.perform_later(draft.id, result['urls']['get'])
+
+        redirect_to draft_path(draft), notice: 'Image generation started! Check back in a few moments.'
       else
-        redirect_to content_creation_path, alert: 'Failed to start image generation.'
+        redirect_to content_creation_index_path, alert: 'Failed to start image generation.'
       end
     rescue => e
       Rails.logger.error "Image Generation Error: #{e.message}"
-      redirect_to content_creation_path, alert: 'Image generation failed. Please check your Replicate API key.'
+      redirect_to content_creation_index_path, alert: 'Image generation failed. Please check your Replicate API key.'
     end
   end
 
@@ -79,23 +101,39 @@ class ContentCreationController < ApplicationController
     begin
       result = SoraService.new.generate_video(prompt: prompt, duration: duration)
 
-      if result['output'].present? || result['id'].present?
+      if result['output'].present?
         # Save as a draft with video
         draft = current_user.draft_contents.create!(
           title: "Video - #{prompt[0..50]}",
           content: prompt,
           content_type: 'video',
           platform: 'general',
-          status: 'draft'
+          status: 'draft',
+          media_url: result['output']
         )
 
-        redirect_to draft_path(draft), notice: 'Video generation started!'
+        redirect_to content_creation_index_path(video_draft_id: draft.id), notice: 'Video generated successfully!'
+      elsif result['urls']&.present?
+        # Prediction started, save with prediction URL for polling
+        draft = current_user.draft_contents.create!(
+          title: "Video - #{prompt[0..50]}",
+          content: prompt,
+          content_type: 'video',
+          platform: 'general',
+          status: 'draft',
+          media_url: nil
+        )
+
+        # Start polling job
+        SoraPollJob.perform_later(draft.id, result['urls']['get'])
+
+        redirect_to content_creation_index_path(video_draft_id: draft.id), notice: 'Video generation started! Check back in a few moments.'
       else
-        redirect_to content_creation_path, alert: 'Failed to start video generation.'
+        redirect_to content_creation_index_path, alert: 'Failed to start video generation.'
       end
     rescue => e
       Rails.logger.error "Video Generation Error: #{e.message}"
-      redirect_to content_creation_path, alert: 'Video generation failed. Please check your Replicate API key.'
+      redirect_to content_creation_index_path, alert: 'Video generation failed. Please check your Replicate API key.'
     end
   end
 
@@ -199,7 +237,7 @@ class ContentCreationController < ApplicationController
     redirect_to content_path(content)
   rescue => e
     Rails.logger.error "Publish Error: #{e.message}"
-    redirect_to content_creation_path, alert: "Failed to publish: #{e.message}"
+    redirect_to content_creation_index_path, alert: "Failed to publish: #{e.message}"
   end
 
   def schedule_content
