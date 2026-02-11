@@ -1,6 +1,12 @@
 class SocialAccount < ApplicationRecord
   belongs_to :user
 
+  # Alias for account_name to provide a name method
+  alias_attribute :name, :account_name
+
+  # No username column - use account_name as fallback
+  alias_attribute :username, :account_name
+
   # Postforme integration fields
   validates :postforme_profile_id, presence: true, if: -> { postforme_api_key.present? }
   validates :postforme_api_key, presence: true, if: -> { postforme_profile_id.present? }

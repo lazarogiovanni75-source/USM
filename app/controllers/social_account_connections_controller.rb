@@ -22,12 +22,11 @@ class SocialAccountConnectionsController < ApplicationController
     service = PostformeService.new(api_key)
 
     begin
-      profiles = service.profiles
+      response = service.social_accounts
+      profiles = response['data'] || response
 
       if profiles.present?
-        # Save API key to user's settings (you may want to add this field to User model)
         session[:postforme_api_key] = api_key
-
         redirect_to social_account_connections_path,
                    notice: 'API key verified! You can now connect your social accounts.'
       else
@@ -45,16 +44,32 @@ class SocialAccountConnectionsController < ApplicationController
 
     unless api_key.present?
       @error = 'API key is required'
-      render :profiles_error
+      render turbo_stream: turbo_stream.replace(
+        'profiles-list',
+        partial: 'social_account_connections/profiles_list',
+        locals: { profiles: [], error: @error }
+      )
       return
     end
 
     begin
       @profiles = @service.fetch_available_profiles(api_key)
-      render :available_profiles
+      render turbo_stream: turbo_stream.replace(
+        'profiles-list',
+        partial: 'social_account_connections/profiles_list',
+        locals: { profiles: @profiles, error: nil }
+      )
+    rescue PostformeService::PostformeError => e
+      Rails.logger.error("[SocialAccountConnections] Error fetching profiles: #{e.message}")
+      @error = "Failed to fetch profiles: #{e.message}"
+      render turbo_stream: turbo_stream.replace(
+        'profiles-list',
+        partial: 'social_account_connections/profiles_list',
+        locals: { profiles: [], error: @error }
+      )
     rescue StandardError => e
       Rails.logger.error("[SocialAccountConnections] Error fetching profiles: #{e.message}")
-      @error = 'Failed to fetch profiles. Please check your API key.'
+      @error = "Failed to fetch profiles: #{e.message}"
       render turbo_stream: turbo_stream.replace(
         'profiles-list',
         partial: 'social_account_connections/profiles_list',
@@ -91,19 +106,17 @@ class SocialAccountConnectionsController < ApplicationController
       if existing_account
         # Update existing account
         existing_account.update!(
-          name: profile[:name],
-          postforme_api_key: api_key,
-          username: profile[:username]
+          account_name: profile[:name],
+          postforme_api_key: api_key
         )
         message = 'Account updated successfully!'
       else
         # Create new account
         current_user.social_accounts.create!(
-          name: profile[:name],
+          account_name: profile[:name],
           platform: platform,
           postforme_api_key: api_key,
-          postforme_profile_id: profile_id,
-          username: profile[:username]
+          postforme_profile_id: profile_id
         )
         message = 'Account connected successfully!'
       end
@@ -170,23 +183,27 @@ class SocialAccountConnectionsController < ApplicationController
     begin
       service = PostformeService.new(social_account.postforme_api_key)
 
-      # Prepare content text
-      text = draft.content.presence || draft.title
+      # Prepare content text (caption)
+      caption = draft.content.presence || draft.title
 
       # Prepare media if available
       options = {}
       if draft.media_url.present?
-        options[:media] = { url: draft.media_url }
+        options[:media] = [{ url: draft.media_url }]
       end
 
-      # Post to Postforme
-      response = service.create_post(social_account.postforme_profile_id, text, options.merge(now: true))
+      # Post to Postforme using new API format
+      response = service.create_post(
+        [social_account.postforme_profile_id],
+        caption,
+        options.merge(now: true)
+      )
 
-      if response.present? && (response['success'] || response['post'] || response['id'])
+      if response.present? && (response['success'] || response['data'] || response['post'] || response['id'])
         # Create a record of this share
         content = current_user.contents.create!(
           title: draft.title,
-          body: text,
+          body: caption,
           content_type: draft.content_type,
           platform: social_account.platform,
           status: 'published'
@@ -196,7 +213,7 @@ class SocialAccountConnectionsController < ApplicationController
         draft.update(status: 'published')
 
         # Extract Postforme post ID if available
-        postforme_post_id = response.dig('post', 'id') || response.dig('id') || response['data']&.dig('id')
+        postforme_post_id = response.dig('data', 'id') || response.dig('post', 'id') || response.dig('id')
 
         redirect_to draft_path(draft), notice: "Successfully posted to #{social_account.name || social_account.platform.titleize}!"
       else

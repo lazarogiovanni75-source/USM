@@ -22,7 +22,12 @@ import VoiceFloatController from "./voice_float_controller"
 import VoiceCommandToggleController from "./voice_command_toggle_controller"
 import VideoProgressController from "./video_progress_controller"
 import AiChatController from "./ai_chat_controller"
+import AiVoiceChatController from "./ai_voice_chat_controller"
+import VoiceToggleController from "./voice_toggle_controller"
+import ResponseTestController from "./response_test_controller"
+import AiMarketingStrategyController from "./ai_marketing_strategy_controller"
 import DashboardAutopilotController from "./dashboard_autopilot_controller"
+import SocialAccountConnectionsController from "./social_account_connections_controller"
 
 const application = Application.start()
 
@@ -48,6 +53,11 @@ application.register("voice-float", VoiceFloatController)
 application.register("voice-command-toggle", VoiceCommandToggleController)
 application.register("video-progress", VideoProgressController)
 application.register("ai-chat", AiChatController)
+application.register("ai-voice-chat", AiVoiceChatController)
+application.register("voice-toggle", VoiceToggleController)
+application.register("response-test", ResponseTestController)
+application.register("ai-marketing-strategy", AiMarketingStrategyController)
 application.register("dashboard-autopilot", DashboardAutopilotController)
+application.register("social-account-connections", SocialAccountConnectionsController)
 
 window.Stimulus = application

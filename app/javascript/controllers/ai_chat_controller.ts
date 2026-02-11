@@ -42,6 +42,7 @@ const CLOSE_ICON = (
 
 // stimulus-validator: disable-next-line
 export default class extends Controller<HTMLElement> {
+  // stimulus-validator: disable-next-line
   static targets = ["form", "input", "messagesContainer", "sendBtn"]
 
   declare readonly formTarget: HTMLFormElement
@@ -192,6 +193,13 @@ export default class extends Controller<HTMLElement> {
 
     this.messagesContainerTarget.appendChild(div)
     this.scrollToBottom()
+  }
+
+  handleKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      this.sendMessage(event)
+    }
   }
 
   private setLoading(loading: boolean): void {

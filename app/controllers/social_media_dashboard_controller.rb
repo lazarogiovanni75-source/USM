@@ -18,7 +18,7 @@ class SocialMediaDashboardController < ApplicationController
       if account&.configured_for_postforme?
         # Fetch real metrics from Postforme
         metrics = @dashboard_service.fetch_account_metrics(account)
-        metrics[:name] = account.name || metrics[:name] || platform.titleize
+        metrics[:name] = account.account_name || metrics[:name] || platform.titleize
         metrics
       else
         # Account not connected to Postforme
@@ -90,5 +90,14 @@ class SocialMediaDashboardController < ApplicationController
       @error = 'Failed to fetch profiles. Please check your API key.'
       render :profiles_error
     end
+  end
+
+  def connect_profile
+    # Redirect to the social_account_connections controller for profile connection
+    redirect_to social_account_connections_connect_profile_path(
+      api_key: params[:api_key],
+      profile_id: params[:profile_id],
+      platform: params[:platform]
+    )
   end
 end

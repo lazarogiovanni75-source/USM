@@ -56,33 +56,29 @@ class ContentCreationController < ApplicationController
     size = params[:size] || '1024x1024'
 
     begin
-      result = SoraService.new.generate_image(prompt: prompt, size: size)
+      # Use new GPT-Image-1.5 API
+      result = DefapiService.new.generate_gpt_image(
+        prompt: prompt,
+        model: 'openai/gpt-image-1.5',
+        size: size,
+        quality: 'high',
+        output_format: 'png'
+      )
 
-      if result['output'].present?
-        # Save as a draft with image
+      if result['task_id'].present?
+        # Save as a draft with task_id for polling
         draft = current_user.draft_contents.create!(
           title: "Image - #{prompt[0..50]}",
           content: prompt,
           content_type: 'image',
           platform: 'general',
-          status: 'draft',
-          media_url: result['output']
+          status: 'pending',
+          media_url: nil,
+          metadata: { 'task_id' => result['task_id'], 'api_version' => 'gpt-image-1.5' }
         )
 
-        redirect_to draft_path(draft), notice: 'Image generated successfully!'
-      elsif result['urls']&.present?
-        # Prediction started, save with prediction URL for polling
-        draft = current_user.draft_contents.create!(
-          title: "Image - #{prompt[0..50]}",
-          content: prompt,
-          content_type: 'image',
-          platform: 'general',
-          status: 'draft',
-          media_url: nil
-        )
-
-        # Start polling job
-        SoraPollJob.perform_later(draft.id, result['urls']['get'])
+        # Start polling job with gpt_image_status
+        ImagePollJob.perform_later(draft.id, result['task_id'])
 
         redirect_to draft_path(draft), notice: 'Image generation started! Check back in a few moments.'
       else
@@ -90,50 +86,67 @@ class ContentCreationController < ApplicationController
       end
     rescue => e
       Rails.logger.error "Image Generation Error: #{e.message}"
-      redirect_to content_creation_index_path, alert: 'Image generation failed. Please check your Replicate API key.'
+      redirect_to content_creation_index_path, alert: "Image generation failed: #{e.message}"
     end
   end
 
   def generate_video
     prompt = params[:prompt]
-    duration = params[:duration] || '5s'
 
     begin
-      result = SoraService.new.generate_video(prompt: prompt, duration: duration)
+      # Validate prompt
+      if prompt.blank? || prompt.length < 10
+        raise ArgumentError, 'Please provide a more detailed prompt (at least 10 characters)'
+      end
 
-      if result['output'].present?
-        # Save as a draft with video
+      defapi_service = DefapiService.new
+      
+      # Check if configured
+      unless defapi_service.configured?
+        raise StandardError, 'Video generation API is not configured. Please check your API keys.'
+      end
+
+      # Use Sora 2 Pro API with default settings
+      result = defapi_service.generate_video(
+        prompt: prompt,
+        duration: '25',
+        aspect_ratio: '16:9',
+        model: 'sora-2-pro'
+      )
+
+      if result['task_id'].present?
+        # Save as a draft with task_id for polling
         draft = current_user.draft_contents.create!(
           title: "Video - #{prompt[0..50]}",
           content: prompt,
           content_type: 'video',
           platform: 'general',
-          status: 'draft',
-          media_url: result['output']
-        )
-
-        redirect_to content_creation_index_path(video_draft_id: draft.id), notice: 'Video generated successfully!'
-      elsif result['urls']&.present?
-        # Prediction started, save with prediction URL for polling
-        draft = current_user.draft_contents.create!(
-          title: "Video - #{prompt[0..50]}",
-          content: prompt,
-          content_type: 'video',
-          platform: 'general',
-          status: 'draft',
-          media_url: nil
+          status: 'pending',
+          media_url: nil,
+          metadata: { 'task_id' => result['task_id'], 'api_version' => 'sora-2-pro' }
         )
 
         # Start polling job
-        SoraPollJob.perform_later(draft.id, result['urls']['get'])
+        SoraPollJob.perform_later(draft.id, result['task_id'])
 
-        redirect_to content_creation_index_path(video_draft_id: draft.id), notice: 'Video generation started! Check back in a few moments.'
+        redirect_to draft_path(draft), notice: 'Video generation started! Check back in a few moments.'
       else
-        redirect_to content_creation_index_path, alert: 'Failed to start video generation.'
+        # Check if there's an error in the result
+        error_msg = result['error'] || result['message'] || 'Failed to start video generation. The API may be busy or unavailable.'
+        Rails.logger.error "[ContentCreation] Video generation failed to return task_id: #{result.inspect}"
+        redirect_to content_creation_index_path, alert: error_msg
       end
+    rescue DefapiService::AuthenticationError => e
+      Rails.logger.error "[ContentCreation] DefAPI Authentication Error: #{e.message}"
+      redirect_to content_creation_index_path, alert: 'Video generation authentication failed. Please check your API configuration.'
+    rescue DefapiService::Error => e
+      Rails.logger.error "[ContentCreation] DefAPI Error: #{e.message}"
+      redirect_to content_creation_index_path, alert: "Video generation error: #{e.message}"
+    rescue ArgumentError => e
+      redirect_to content_creation_index_path, alert: e.message
     rescue => e
-      Rails.logger.error "Video Generation Error: #{e.message}"
-      redirect_to content_creation_index_path, alert: 'Video generation failed. Please check your Replicate API key.'
+      Rails.logger.error "[ContentCreation] Video Generation Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+      redirect_to content_creation_index_path, alert: "Video generation failed: #{e.message}"
     end
   end
 
@@ -267,44 +280,35 @@ class ContentCreationController < ApplicationController
     # Generate sample content without AI backend
     sample_content = case platform
     when 'instagram'
-      "â¨ #{topic}
+      "✨ #{topic}
 
-Here's something special for you! ð«
+Here's something special for you! 💫
 
-# #{topic.gsub(' ', '').underscore} #SocialMedia #ContentCreation"
+#content #socialmedia #{topic.downcase.gsub(/\s+/, '#')}"
     when 'twitter'
-      "#{topic}. What's your thoughts? ð
+      "🧵 #{topic}
 
-#{(1..3).map { |i| "##{topic.gsub(' ', '').underscore}#{i}" }.join(' ')}"
-    when 'facebook'
-      "We're excited to share about #{topic}!
+#{topic.capitalize} is changing everything. Here's what you need to know 👇
 
-Have you tried this yet? Let us know in the comments below! ð"
+#{topic.capitalize} #trending"
     when 'linkedin'
-      "#{topic}
+      "💡 Insight on #{topic}
 
-In today's fast-paced world, staying ahead means adapting to new trends.
+After deep analysis, here's what I found:
 
-Key takeaways:
-â¢ Embrace change
-â¢ Stay consistent
-â¢ Focus on quality
+1. #{topic.capitalize} is evolving
+2. Early adopters see 3x results
+3. The key is consistency
 
-What are your thoughts?
+What's your experience with #{topic}?
 
-# #{topic.gsub(' ', '').underscore} #ProfessionalGrowth"
-    when 'tiktok'
-      "POV: You just discovered #{topic} ð¬
-
-#fyp # #{topic.gsub(' ', '').underscore} #viral"
+#ProfessionalDevelopment #{topic.capitalize}"
     else
-      "#{topic}
+      "📝 #{topic}
 
-Create engaging content that resonates with your audience.
+Check out this new content about #{topic}!
 
-- Be authentic
-- Stay consistent
-- Engage with your community"
+#content #socialmedia"
     end
 
     draft = current_user.draft_contents.create!(
@@ -315,28 +319,44 @@ Create engaging content that resonates with your audience.
       status: 'draft'
     )
 
-    redirect_to draft_path(draft), notice: 'Content generated (sample)'
+    redirect_to draft_path(draft), notice: 'Content generated successfully (sample)'
   end
 
   def call_llm_service(prompt, platform)
-    system_prompt = "You are a social media content expert. Create engaging, platform-appropriate content.\n\nPlatform-specific guidelines:\n- Instagram: Use emojis, hashtags, line breaks. Include call-to-action.\n- Twitter: Keep under 280 characters, use relevant hashtags.\n- Facebook: Longer posts okay, encourage engagement.\n- LinkedIn: Professional tone, use bullet points for key takeaways.\n- TikTok: Trendy, casual, use relevant hashtags.\n- YouTube: Descriptive, engaging, include timestamps if relevant."
+    # Build context-aware prompt based on platform
+    platform_guidance = case platform
+    when 'instagram'
+      'Keep it visually engaging, use minimal hashtags (max 5), conversational tone, include call-to-action'
+    when 'twitter'
+      'Concise and punchy, max 280 characters, engaging hooks, relevant hashtags (2-3 max)'
+    when 'linkedin'
+      'Professional yet approachable, data-driven insights, thought leadership style, industry relevant hashtags'
+    when 'tiktok'
+      'Trendy, Gen Z friendly, conversational, viral-style hooks, includes trending sounds reference'
+    when 'youtube'
+      'Engaging title-style hook, description with timestamps, call-to-action for engagement'
+    else
+      'Engaging and platform-appropriate content'
+    end
 
-    begin
-      content = LlmService.call(
-        prompt: prompt,
-        system: system_prompt,
-        temperature: 0.7,
-        max_tokens: 1000
-      )
+    enhanced_prompt = "#{prompt}
 
-      if content.present?
-        { success: true, content: content }
-      else
-        { success: false, content: nil }
-      end
-    rescue => e
-      Rails.logger.error "LLM Service Error: #{e.message}"
-      { success: false, content: nil }
+Platform guidelines: #{platform_guidance}
+
+Please return only the content body without any introduction or explanation."
+
+    # Use LlmService (supports OpenAI, Gemini, DeepSeek)
+    response = LlmService.call(
+      prompt: enhanced_prompt,
+      system: "You are an expert social media content creator. Create engaging, platform-optimized content.",
+      temperature: 0.8,
+      max_tokens: 1000
+    )
+
+    if response[:success] && response[:content].present?
+      { success: true, content: response[:content] }
+    else
+      { success: false, error: response[:error] || 'LLM generation failed' }
     end
   end
 end

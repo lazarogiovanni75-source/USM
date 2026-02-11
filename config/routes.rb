@@ -19,6 +19,7 @@ Rails.application.routes.draw do
   resources :social_media_dashboard, only: [:index] do
     post :sync_all, on: :collection
     get :available_profiles, on: :collection
+    post :connect_profile, on: :collection
   end
   # Social Account Connections
   resources :social_account_connections, only: [:index] do
@@ -29,6 +30,22 @@ Rails.application.routes.draw do
     post :share_to_social_media, on: :collection
   end
 
+  # Social Posts Management
+  resources :social_posts do
+    member do
+      post 'share_now'
+      get 'results'
+      get 'analytics'
+      get 'preview'
+    end
+    collection do
+      get 'list'
+    end
+  end
+
+  # Social Account Feeds
+  get 'social_account_feeds/:account_id', to: 'social_posts#account_feed', as: :social_account_feed
+
   # End routes for buffer_analytics
 
   # PWA routes
@@ -36,6 +53,9 @@ Rails.application.routes.draw do
   get '/service-worker.js', to: 'pwa#service_worker', defaults: { format: :js }
   # Root path
   root "home#index"
+
+  # Dashboard route (singular)
+  get 'dashboard', to: 'dashboards#index'
 
   # API routes
   namespace :api do
@@ -166,6 +186,15 @@ Rails.application.routes.draw do
     collection do
       post 'send_message'
       post 'suggest_content'
+    end
+  end
+  
+  # AI Marketing Strategy Analyzer
+  resources :ai_marketing_strategy, only: [:index] do
+    collection do
+      post 'analyze'
+      post 'generate_report'
+      post 'ask_ai'
     end
   end
   

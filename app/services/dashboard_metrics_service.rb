@@ -66,12 +66,12 @@ class DashboardMetricsService
     # Performance from scheduled posts and engagement metrics
     posts_with_metrics = @user.scheduled_posts.joins(:performance_metrics).where('posted_at >= ?', period_start)
     
-    total_engagement = posts_with_metrics.sum(Arel.sql('likes + comments + shares')) || 0
+    total_engagement = posts_with_metrics.sum(Arel.sql('performance_metrics.likes + performance_metrics.comments + performance_metrics.shares')) || 0
     # Calculate average engagement rate from reach
     total_reach = posts_with_metrics.sum(:reach) || 1
     average_engagement_rate = total_reach > 0 ? (total_engagement.to_f / total_reach * 100).round(2) : 0
-    top_performing_post = posts_with_metrics.order(Arel.sql('(likes + comments + shares) DESC')).first
-    worst_performing_post = posts_with_metrics.order(Arel.sql('(likes + comments + shares) ASC')).first
+    top_performing_post = posts_with_metrics.order(Arel.sql('(performance_metrics.likes + performance_metrics.comments + performance_metrics.shares) DESC')).first
+    worst_performing_post = posts_with_metrics.order(Arel.sql('(performance_metrics.likes + performance_metrics.comments + performance_metrics.shares) ASC')).first
     
     # Calculate performance score (0-100)
     if posts_with_metrics.any?
@@ -134,7 +134,7 @@ class DashboardMetricsService
       engagement = @user.scheduled_posts.joins(:performance_metrics, :social_account)
                             .where('posted_at >= ?', period_start)
                             .where(social_accounts: { platform: platform })
-                            .sum(Arel.sql('likes + comments + shares'))
+                            .sum(Arel.sql('performance_metrics.likes + performance_metrics.comments + performance_metrics.shares'))
       post_count = @user.scheduled_posts.joins(:social_account)
                         .where('posted_at >= ?', period_start)
                         .where(social_accounts: { platform: platform })
@@ -252,7 +252,7 @@ class DashboardMetricsService
       return rand(65..85) # Default score for users with no posts
     end
     
-    total_engagement = posts.sum(Arel.sql('likes + comments + shares'))
+    total_engagement = posts.sum(Arel.sql('performance_metrics.likes + performance_metrics.comments + performance_metrics.shares'))
     total_reach = posts.sum(:reach) || 1
     avg_engagement_rate = total_reach > 0 ? (total_engagement.to_f / total_reach * 100).round(2) : 0
     

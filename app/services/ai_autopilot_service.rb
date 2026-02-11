@@ -26,9 +26,11 @@ class AiAutopilotService < ApplicationService
 
   def process_voice_command
     command_text = @command.command_text.downcase
+    Rails.logger.info "AI Autopilot: Processing voice command: '#{command_text}'"
 
     # Determine command type based on keywords
     command_type = determine_command_type(command_text)
+    Rails.logger.info "AI Autopilot: Determined command type: '#{command_type}'"
 
     @command.update!(command_type: command_type)
 
@@ -52,13 +54,13 @@ class AiAutopilotService < ApplicationService
   def determine_command_type(text)
     if text.include?('video') || text.include?('generate video') || text.include?('make a video') || text.include?('create video')
       'generate_video'
-    elsif text.include?('campaign') || text.include?('new')
+    elsif text.include?('campaign') || text.include?('new campaign') || text.include?('create campaign')
       'create_campaign'
-    elsif text.include?('content') || text.include?('post') || text.include?('generate') || text.include?('create post')
+    elsif text.include?('content') || text.include?('post') || text.include?('generate') || text.include?('create post') || text.include?('write')
       'generate_content'
     elsif text.include?('schedule') || text.include?('post')
       'schedule_post'
-    elsif text.include?('analytics') || text.include?('performance') || text.include?('stats')
+    elsif text.include?('analytics') || text.include?('performance') || text.include?('stats') || text.include?('analyze')
       'analyze_performance'
     else
       'general_inquiry'
@@ -236,23 +238,32 @@ class AiAutopilotService < ApplicationService
 
   def generate_ai_response(prompt)
     # Generate AI response using OpenAI or similar
+    api_key = ENV.fetch('OPENAI_API_KEY', '') || ENV.fetch('LLM_API_KEY', '')
+    
+    if api_key.nil? || api_key.empty?
+      Rails.logger.error "AI Autopilot: No OpenAI API key available"
+      return "I can help you create campaigns, generate content, schedule posts, and more. Try saying something like 'create a campaign' or 'generate a post about summer sale'."
+    end
+
     client = OpenAI::Client.new(
-      access_token: ENV.fetch('OPENAI_API_KEY', '')
+      access_token: api_key,
+      uri_base: 'https://api.openai.com/v1'
     )
 
     response = client.chat(
       parameters: {
-        model: 'gpt-5o-mini',
+        model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are an AI assistant for social media management. Help users with their social media strategy, content creation, and campaign management.' },
+          { role: 'system', content: 'You are an AI assistant for social media management. Help users with their social media strategy, content creation, and campaign management. Keep responses brief and actionable.' },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 300
+        max_tokens: 150
       }
     )
 
     response.dig('choices', 0, 'message', 'content') || "I'm here to help with your social media needs!"
-  rescue StandardError
-    "I'm here to help! Try saying 'create a video about my new product' or 'generate content about promotions'."
+  rescue StandardError => e
+    Rails.logger.error "AI Autopilot response error: #{e.message}"
+    "I understood your request. You can ask me to create campaigns, generate content, schedule posts, or analyze performance."
   end
 end

@@ -1,112 +1,169 @@
 # frozen_string_literal: true
 
 # Service for posting content via Postforme API
-# Replaces Buffer integration for direct social media posting/scheduling
+# Self-hosted Postforme instance
 #
-# Postforme API Documentation: https://postforme.com/api/docs
+# API Documentation: https://api.postforme.dev/docs
 class PostformeService
-  BASE_URL = 'https://postforme.com/api/v1'
+  BASE_URL = 'https://api.postforme.dev/v1'
   TIMEOUT = 30
 
   def initialize(api_key = nil)
     @api_key = api_key || fetch_api_key
   end
 
-  # Post content to a social media profile
-  # @param profile_id [String] Social profile ID
-  # @param text [String] Content text to post
-  # @param options [Hash] Additional options (media, scheduled_at, etc.)
-  # @return [Hash] API response
-  def create_post(profile_id, text, options = {})
-    payload = build_payload(profile_id, text, options)
-    post_request('/posts', payload)
+  # ==================== Social Accounts ====================
+
+  # Get list of connected social accounts
+  # @param platforms [Array] Optional array of platforms to filter
+  # @return [Hash] API response with 'data' key containing array of accounts
+  def social_accounts(platforms = [])
+    params = platforms&.map { |p| "platform=#{p}" }&.join('&')
+    endpoint = params.present? ? "/social-accounts?#{params}" : '/social-accounts'
+    get_request(endpoint)
   end
 
-  # Schedule a post for later
-  # @param profile_id [String] Social profile ID
-  # @param text [String] Content text
-  # @param scheduled_at [Time] When to post
-  # @param options [Hash] Additional options
-  # @return [Hash] API response
-  def schedule_post(profile_id, text, scheduled_at, options = {})
-    payload = build_payload(profile_id, text, options.merge(scheduled_at: scheduled_at))
-    post_request('/posts/schedule', payload)
+  # Get a single social account by ID
+  def social_account(account_id)
+    get_request("/social-accounts/#{account_id}")
   end
 
-  # Get list of profiles for the authenticated account
-  # @return [Array] List of profiles
-  def profiles
-    get_request('/profiles')
+  # Generate an OAuth URL for connecting an account
+  def auth_url(platform)
+    post_request('/social-accounts/auth-url', { platform: platform })
   end
 
-  # Get specific profile details
-  # @param profile_id [String] Profile ID
-  # @return [Hash] Profile details
-  def profile(profile_id)
-    get_request("/profiles/#{profile_id}")
+  # Disconnect a social account
+  def disconnect_account(account_id)
+    post_request("/social-accounts/#{account_id}/disconnect", {})
   end
 
-  # Get pending posts for a profile
-  # @param profile_id [String] Profile ID
-  # @return [Array] List of pending posts
-  def pending_posts(profile_id)
-    get_request("/profiles/#{profile_id}/posts/pending")
-  end
+  # ==================== Social Posts ====================
 
-  # Get sent/published posts for a profile
-  # @param profile_id [String] Profile ID
-  # @return [Array] List of sent posts
-  def sent_posts(profile_id)
-    get_request("/profiles/#{profile_id}/posts/sent")
-  end
-
-  # Delete a scheduled post
-  # @param post_id [String] Post ID to delete
-  # @return [Hash] API response
-  def delete_post(post_id)
-    delete_request("/posts/#{post_id}")
-  end
-
-  # Share a scheduled post immediately
-  # @param post_id [String] Post ID
-  # @return [Hash] API response
-  def share_now(post_id)
-    post_request("/posts/#{post_id}/share", {})
-  end
-
-  # Get post details by ID
-  # @param post_id [String] Post ID
-  # @return [Hash] Post details
-  def post(post_id)
-    get_request("/posts/#{post_id}")
-  end
-
-  # Get analytics for a specific post
-  # @param post_id [String] Post ID
-  # @return [Hash] Analytics data (clicks, impressions, engagement)
-  def post_analytics(post_id)
-    get_request("/posts/#{post_id}/analytics")
-  end
-
-  # Get analytics for a profile (aggregated)
-  # @param profile_id [String] Profile ID
-  # @param start_date [String] ISO8601 date
-  # @param end_date [String] ISO8601 date
-  # @return [Hash] Aggregated analytics
-  def profile_analytics(profile_id, start_date = nil, end_date = nil)
-    endpoint = "/profiles/#{profile_id}/analytics"
+  # List all posts with pagination
+  # @param options [Hash] Options for pagination and filtering
+  # @option options [Integer] :limit Number of posts per page (default: 20)
+  # @option options [Integer] :offset Pagination offset
+  # @return [Hash] API response with 'data' and 'meta' keys
+  def list_posts(options = {})
     params = []
-    params << "start_date=#{start_date}" if start_date.present?
-    params << "end_date=#{end_date}" if end_date.present?
-
-    if params.any?
-      get_request("#{endpoint}?#{params.join('&')}")
-    else
-      get_request(endpoint)
-    end
+    params << "limit=#{options[:limit]}" if options[:limit].present?
+    params << "offset=#{options[:offset]}" if options[:offset].present?
+    endpoint = "/social-posts#{params.any? ? "?#{params.join('&')}" : ''}"
+    get_request(endpoint)
   end
 
-  # Check if service is configured
+  # Create a new post
+  # @param social_account_ids [Array] Array of social account IDs to post to
+  # @param caption [String] Post caption/text
+  # @param options [Hash] Additional options
+  # @option options [Array] :media Array of media objects [{ url: string }]
+  # @option options [Time, String] :scheduled_at When to schedule the post
+  # @option options [Boolean] :now Whether to post immediately (true) or schedule
+  def create_post(social_account_ids, caption, options = {})
+    payload = {
+      caption: caption,
+      social_accounts: Array(social_account_ids)
+    }
+    payload[:media] = Array(options[:media]) if options[:media].present?
+    payload[:scheduled_at] = format_scheduled_at(options[:scheduled_at]) if options[:scheduled_at].present?
+    payload[:now] = true if options[:now] == true
+    post_request('/social-posts', payload)
+  end
+
+  # Get a single post by ID
+  def get_post(post_id)
+    get_request("/social-posts/#{post_id}")
+  end
+
+  # Update an existing post
+  def update_post(post_id, updates)
+    put_request("/social-posts/#{post_id}", updates)
+  end
+
+  # Delete a post
+  def delete_post(post_id)
+    delete_request("/social-posts/#{post_id}")
+  end
+
+  # Schedule a post for a specific time
+  def schedule_post(social_account_ids, caption, scheduled_at, options = {})
+    create_post(social_account_ids, caption, options.merge(scheduled_at: scheduled_at))
+  end
+
+  # Share a post immediately
+  def share_now(post_id)
+    post_request("/social-posts/#{post_id}/share", {})
+  end
+
+  # Preview what a post will look like for each account
+  def preview_post(post_id)
+    post_request("/social-post-previews", { social_post_id: post_id })
+  end
+
+  # ==================== Social Post Results ====================
+
+  # Get results for posts (published/failed)
+  def post_results(post_id = nil)
+    endpoint = post_id ? "/social-post-results/#{post_id}" : '/social-post-results'
+    get_request(endpoint)
+  end
+
+  # Get analytics for a post
+  def post_analytics(post_id)
+    get_request("/social-posts/#{post_id}/analytics")
+  end
+
+  # ==================== Social Account Feeds ====================
+
+  # Get feed for a social account with optional metrics
+  # @param account_id [String] Social account ID
+  # @param expand_metrics [Boolean] Whether to include metrics
+  def account_feed(account_id, expand_metrics: false)
+    endpoint = "/social-account-feeds/#{account_id}"
+    endpoint += "?expand=metrics" if expand_metrics
+    get_request(endpoint)
+  end
+
+  # ==================== Media ====================
+
+  # Create an upload URL for media files
+  # @return [Hash] { upload_url: string, media_url: string }
+  def create_upload_url
+    post_request('/media/create-upload-url', {})
+  end
+
+  # ==================== Webhooks ====================
+
+  # List all webhooks
+  def list_webhooks
+    get_request('/webhooks')
+  end
+
+  # Get a single webhook
+  def get_webhook(webhook_id)
+    get_request("/webhooks/#{webhook_id}")
+  end
+
+  # Create a new webhook
+  # @param url [String] URL to receive webhook payloads
+  # @param events [Array] Array of event types to subscribe to
+  def create_webhook(url, events)
+    post_request('/webhooks', { url: url, events: Array(events) })
+  end
+
+  # Update a webhook
+  def update_webhook(webhook_id, updates)
+    patch_request("/webhooks/#{webhook_id}", updates)
+  end
+
+  # Delete a webhook
+  def delete_webhook(webhook_id)
+    delete_request("/webhooks/#{webhook_id}")
+  end
+
+  # ==================== Utility ====================
+
   def configured?
     @api_key.present?
   end
@@ -121,49 +178,32 @@ class PostformeService
         Rails.application.config_for(:application)['POSTFORME_API_KEY']
     end
   rescue KeyError
-    Rails.logger.warn('[PostformeService] API key not configured. Set POSTFORME_API_KEY in environment.')
+    Rails.logger.warn('[PostformeService] API key not configured.')
     nil
-  end
-
-  def build_payload(profile_id, text, options)
-    payload = {
-      api_key: api_key,
-      profile_id: profile_id,
-      content: text
-    }
-
-    if options[:media].present?
-      payload[:media] = options[:media]
-    end
-
-    if options[:scheduled_at].present?
-      payload[:scheduled_at] = format_scheduled_at(options[:scheduled_at])
-    end
-
-    payload[:now] = true if options[:now] == true
-    payload[:share_now] = true if options[:share_now] == true
-
-    payload
   end
 
   def format_scheduled_at(time)
     case time
-    when String
-      time
-    when Time, DateTime, ActiveSupport::TimeWithZone
-      time.iso8601
-    else
-      nil
+    when String then time
+    when Time, DateTime, ActiveSupport::TimeWithZone then time.iso8601
+    else nil
     end
+  end
+
+  def headers
+    {
+      'Content-Type' => 'application/json',
+      'Authorization' => "Bearer #{api_key}"
+    }
   end
 
   def post_request(endpoint, payload)
     url = "#{BASE_URL}#{endpoint}"
     Rails.logger.info("[PostformeService] POST #{url}")
-
     begin
-      response = HTTParty.post(url, body: payload, timeout: TIMEOUT)
+      response = HTTParty.post(url, body: payload.to_json, headers: headers, timeout: TIMEOUT)
       log_response(response)
+      log_body(response)
       handle_response(response)
     rescue HTTParty::Error => e
       log_error(e)
@@ -181,12 +221,58 @@ class PostformeService
   end
 
   def get_request(endpoint)
-    url = "#{BASE_URL}#{endpoint}?api_key=#{api_key}"
+    url = "#{BASE_URL}#{endpoint}"
     Rails.logger.info("[PostformeService] GET #{url}")
-
     begin
-      response = HTTParty.get(url, timeout: TIMEOUT)
+      response = HTTParty.get(url, headers: headers, timeout: TIMEOUT)
       log_response(response)
+      log_body(response)
+      handle_response(response)
+    rescue HTTParty::Error => e
+      log_error(e)
+      raise PostformeError, "HTTParty error: #{e.message}"
+    rescue Net::OpenTimeout, Net::ReadTimeout, Net::WriteTimeout => e
+      log_error(e)
+      raise PostformeError, "Connection timeout: #{e.message}"
+    rescue SocketError, Errno::ECONNREFUSED => e
+      log_error(e)
+      raise PostformeError, "Connection refused: #{e.message}"
+    rescue StandardError => e
+      log_error(e)
+      raise PostformeError, "Unknown error: #{e.message}"
+    end
+  end
+
+  def put_request(endpoint, payload)
+    url = "#{BASE_URL}#{endpoint}"
+    Rails.logger.info("[PostformeService] PUT #{url}")
+    begin
+      response = HTTParty.put(url, body: payload.to_json, headers: headers, timeout: TIMEOUT)
+      log_response(response)
+      log_body(response)
+      handle_response(response)
+    rescue HTTParty::Error => e
+      log_error(e)
+      raise PostformeError, "HTTParty error: #{e.message}"
+    rescue Net::OpenTimeout, Net::ReadTimeout, Net::WriteTimeout => e
+      log_error(e)
+      raise PostformeError, "Connection timeout: #{e.message}"
+    rescue SocketError, Errno::ECONNREFUSED => e
+      log_error(e)
+      raise PostformeError, "Connection refused: #{e.message}"
+    rescue StandardError => e
+      log_error(e)
+      raise PostformeError, "Unknown error: #{e.message}"
+    end
+  end
+
+  def patch_request(endpoint, payload)
+    url = "#{BASE_URL}#{endpoint}"
+    Rails.logger.info("[PostformeService] PATCH #{url}")
+    begin
+      response = HTTParty.patch(url, body: payload.to_json, headers: headers, timeout: TIMEOUT)
+      log_response(response)
+      log_body(response)
       handle_response(response)
     rescue HTTParty::Error => e
       log_error(e)
@@ -204,11 +290,10 @@ class PostformeService
   end
 
   def delete_request(endpoint)
-    url = "#{BASE_URL}#{endpoint}?api_key=#{api_key}"
+    url = "#{BASE_URL}#{endpoint}"
     Rails.logger.info("[PostformeService] DELETE #{url}")
-
     begin
-      response = HTTParty.delete(url, timeout: TIMEOUT)
+      response = HTTParty.delete(url, headers: headers, timeout: TIMEOUT)
       log_response(response)
       handle_response(response)
     rescue HTTParty::Error => e
@@ -249,7 +334,11 @@ class PostformeService
   end
 
   def log_response(response)
-    Rails.logger.debug("[PostformeService] Response: #{response.code}")
+    Rails.logger.info("[PostformeService] Response code: #{response.code}")
+  end
+
+  def log_body(response)
+    Rails.logger.debug("[PostformeService] Response body: #{response.body}")
   end
 
   def log_error(exception)

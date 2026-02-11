@@ -1,0 +1,168 @@
+<div class="container-lg">
+  <div class="page-header">
+    <h1 class="page-title">Social Posts</h1>
+    <%= link_to new_social_post_path, class: "btn btn-primary btn-md" do %>
+      <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>
+      New Post
+    <% end %>
+  </div>
+
+  <div id="social-posts-filters" class="card card-flat mb-6">
+    <div class="card-body">
+      <div class="flex items-center gap-4">
+        <div class="form-group mb-0" style="flex: 1;">
+          <%= form_with url: list_social_posts_path, method: :get, data: { turbo_stream: true } do |f| %>
+            <%= f.text_field :search, placeholder: "Search posts...", class: "form-input" %>
+          <% end %>
+        </div>
+        <div class="flex gap-2">
+          <%= form_with url: list_social_posts_path, method: :get, 
+                        data: { turbo_stream: true } do |f| %>
+            <%= f.hidden_field :limit, value: 20 %>
+            <%= f.hidden_field :offset, value: 0 %>
+            <%= f.button type: :submit, class: "btn btn-secondary btn-sm", 
+                         formaction: list_social_posts_path do %>
+              <%= lucide_icon "refresh-cw", class: "w-4 h-4" %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="social-posts-list" class="card">
+    <div class="card-header">
+      <h2 class="card-title">All Posts</h2>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-neutral">
+          <%= @meta[:total] || 0 %> total
+        </span>
+      </div>
+    </div>
+    <div class="card-body">
+      <% if @error %>
+        <div class="alert alert-danger">
+          <%= @error %>
+        </div>
+      <% elsif @posts.blank? %>
+        <div class="empty-state">
+          <%= lucide_icon "file-text", class: "w-12 h-12 text-muted" %>
+          <h3 class="mt-4 text-lg font-medium">No posts yet</h3>
+          <p class="mt-2 text-muted">Create your first social post to get started.</p>
+          <%= link_to new_social_post_path, class: "btn btn-primary mt-4" do %>
+            <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>
+            Create Post
+          <% end %>
+        </div>
+      <% else %>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Caption</th>
+                <th>Platforms</th>
+                <th>Status</th>
+                <th>Scheduled</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @posts.each do |post| %>
+                <tr>
+                  <td>
+                    <div class="max-w-md">
+                      <p class="truncate"><%= post['caption']&.truncate(50) || '-' %></p>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="flex gap-1">
+                      <% (post['accounts'] || []).each do |account| %>
+                        <span class="badge badge-secondary badge-sm">
+                          <%= account['platform']&.titleize || 'Unknown' %>
+                        </span>
+                      <% end %>
+                    </div>
+                  </td>
+                  <td>
+                    <% if post['published'] == true %>
+                      <span class="badge badge-success">Published</span>
+                    <% elsif post['scheduled_at'].present? %>
+                      <span class="badge badge-warning">Scheduled</span>
+                    <% else %>
+                      <span class="badge badge-neutral">Draft</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if post['scheduled_at'].present? %>
+                      <%= Time.parse(post['scheduled_at']).strftime("%b %d, %Y %H:%M") rescue post['scheduled_at'] %>
+                    <% elsif post['created_at'].present? %>
+                      <span class="text-muted"><%= Time.parse(post['created_at']).strftime("%b %d, %Y") rescue '-' %></span>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-1">
+                      <%= link_to social_post_path(post['id']), class: "btn btn-ghost btn-sm", title: "View" do %>
+                        <%= lucide_icon "eye", class: "w-4 h-4" %>
+                      <% end %>
+                      <% if post['scheduled_at'].present? && !post['published'] %>
+                        <%= button_to share_now_social_post_path(post['id']), 
+                                      method: :post,
+                                      class: "btn btn-ghost btn-sm", 
+                                      title: "Share Now" do %>
+                          <%= lucide_icon "send", class: "w-4 h-4" %>
+                        <% end %>
+                      <% end %>
+                      <%= button_to social_post_path(post['id']), 
+                                    method: :delete,
+                                    class: "btn btn-ghost btn-sm text-danger",
+                                    title: "Delete",
+                                    data: { confirm: "Are you sure you want to delete this post?" } do %>
+                        <%= lucide_icon "trash-2", class: "w-4 h-4" %>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if @meta[:total].to_i > @meta[:limit].to_i %>
+          <div class="pagination-wrapper mt-4">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-muted">
+                Showing <%= @posts.size %> of <%= @meta[:total] %> posts
+              </p>
+              <div class="flex gap-2">
+                <% if @meta[:offset].to_i > 0 %>
+                  <%= form_with url: list_social_posts_path, method: :get, 
+                                data: { turbo_stream: true } do |f| %>
+                    <%= f.hidden_field :limit, value: @meta[:limit] %>
+                    <%= f.hidden_field :offset, value: [@meta[:offset].to_i - @meta[:limit].to_i, 0].max %>
+                    <%= f.button type: :submit, class: "btn btn-secondary btn-sm" do %>
+                      <%= lucide_icon "chevron-left", class: "w-4 h-4 mr-1" %>
+                      Previous
+                    <% end %>
+                  <% end %>
+                <% end %>
+                <% if @meta[:offset].to_i + @meta[:limit].to_i < @meta[:total].to_i %>
+                  <%= form_with url: list_social_posts_path, method: :get, 
+                                data: { turbo_stream: true } do |f| %>
+                    <%= f.hidden_field :limit, value: @meta[:limit] %>
+                    <%= f.hidden_field :offset, value: @meta[:offset].to_i + @meta[:limit].to_i %>
+                    <%= f.button type: :submit, class: "btn btn-secondary btn-sm" do %>
+                      Next
+                      <%= lucide_icon "chevron-right", class: "w-4 h-4 ml-1" %>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

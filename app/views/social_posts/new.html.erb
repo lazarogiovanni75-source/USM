@@ -1,0 +1,89 @@
+<div class="container-lg">
+  <div class="page-header">
+    <div class="flex items-center gap-4">
+      <%= link_to social_posts_path, class: "btn btn-ghost btn-sm" do %>
+        <%= lucide_icon "arrow-left", class: "w-4 h-4" %>
+      <% end %>
+      <h1 class="page-title">New Social Post</h1>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <%= form_with url: social_posts_path, method: :post, 
+                    data: { turbo_stream: true } do |f| %>
+        
+        <div class="form-group">
+          <%= f.label :caption, "Caption", class: "form-label" %>
+          <%= f.text_area :caption, rows: 4, class: "form-textarea", 
+                          placeholder: "Write your post caption...", required: true %>
+          <p class="form-help">This text will be posted to all selected social accounts.</p>
+        </div>
+
+        <div class="form-group mt-4">
+          <%= f.label :social_account_ids, "Select Accounts", class: "form-label" %>
+          <% if @accounts.any? %>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+              <% @accounts.each do |account| %>
+                <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-surface-elevated transition-colors">
+                  <%= check_box_tag "social_account_ids[]", account.postforme_profile_id, false, 
+                                    id: "account_#{account.id}" %>
+                  <div class="flex items-center gap-2">
+                    <% platform_icon = case account.platform.downcase
+                                        when 'instagram' then 'instagram'
+                                        when 'facebook' then 'facebook'
+                                        when 'twitter', 'x' then 'twitter'
+                                        when 'linkedin' then 'linkedin'
+                                        when 'tiktok' then 'video'
+                                        else 'share-2'
+                                        end %>
+                    <%= lucide_icon platform_icon, class: "w-5 h-5 text-muted" %>
+                    <div>
+                      <p class="font-medium"><%= account.name || account.username %></p>
+                      <p class="text-sm text-muted"><%= account.platform.titleize %></p>
+                    </div>
+                  </div>
+                </label>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="alert alert-warning">
+              <%= lucide_icon "alert-triangle", class: "w-5 h-5 mr-2" %>
+              No connected social accounts. 
+              <%= link_to "Connect accounts first", social_account_connections_path %>.
+            </div>
+          <% end %>
+        </div>
+
+        <div class="form-group mt-4">
+          <%= f.label :media_urls, "Media URLs (optional)", class: "form-label" %>
+          <%= f.text_field :media_urls, class: "form-input", 
+                           placeholder: "https://example.com/image.jpg, https://example.com/video.mp4" %>
+          <p class="form-help">Comma-separated list of media URLs to attach.</p>
+        </div>
+
+        <div class="form-group mt-4">
+          <%= f.label :scheduled_at, "Schedule (optional)", class: "form-label" %>
+          <%= f.datetime_field :scheduled_at, class: "form-input",
+                                min: DateTime.now.strftime("%Y-%m-%dT%H:%M") %>
+          <p class="form-help">Leave empty to post immediately.</p>
+        </div>
+
+        <div class="form-group mt-4">
+          <label class="flex items-center gap-2">
+            <%= check_box_tag :schedule_only, "true", false, class: "toggle" %>
+            <span class="text-sm">Schedule only (don't publish immediately)</span>
+          </label>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <%= f.submit "Create Post", class: "btn btn-primary", 
+                       disabled: !@accounts.any? %>
+          <%= link_to social_posts_path, class: "btn btn-secondary" do %>
+            Cancel
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

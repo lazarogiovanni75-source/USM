@@ -11,491 +11,545 @@ interface VoiceCommandEvent {
   content?: any
 }
 
-// Voice Float Controller - Handles the floating AI voice button
-// Uses Turbo Stream architecture for frontend-backend interactions
-export default class VoiceFloatController extends Controller {
-  // Modal element reference (dynamically created)
-  private modalElement: HTMLElement | null = null
+// WAV encoder using Web Audio API - generates proper WAV files
+class WAVEncoder {
+  samples: Float32Array[] = []
+  sampleRate: number = 48000
+  numChannels: number = 1
 
-  private recognition: any = null
+  addChannelData(channelData: Float32Array): void {
+    this.samples.push(new Float32Array(channelData))
+  }
+
+  encode(): Blob {
+    const totalSamples = this.samples.reduce((sum, s) => sum + s.length, 0)
+    const interleaved = new Float32Array(totalSamples)
+    let offset = 0
+    for (const channel of this.samples) {
+      interleaved.set(channel, offset)
+      offset += channel.length
+    }
+
+    const bytesPerSample = 2
+    const blockAlign = this.numChannels * bytesPerSample
+    const byteRate = this.sampleRate * blockAlign
+    const dataSize = totalSamples * bytesPerSample
+    const fileSize = 44 + dataSize
+
+    const buffer = new ArrayBuffer(fileSize)
+    const view = new DataView(buffer)
+
+    this.writeString(view, 0, "RIFF")
+    view.setUint32(4, fileSize - 8, true)
+    this.writeString(view, 8, "WAVE")
+    this.writeString(view, 12, "fmt ")
+    view.setUint32(16, 16, true)
+    view.setUint16(20, 1, true)
+    view.setUint16(22, this.numChannels, true)
+    view.setUint32(24, this.sampleRate, true)
+    view.setUint32(28, byteRate, true)
+    view.setUint16(32, blockAlign, true)
+    view.setUint16(34, 16, true)
+    this.writeString(view, 36, "data")
+    view.setUint32(40, dataSize, true)
+
+    let pos = 44
+    for (let i = 0; i < interleaved.length; i++) {
+      const sample = Math.max(-1, Math.min(1, interleaved[i]))
+      const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF
+      view.setInt16(pos, intSample, true)
+      pos += 2
+    }
+
+    return new Blob([buffer], { type: "audio/wav" })
+  }
+
+  private writeString(view: DataView, offset: number, str: string): void {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i))
+    }
+  }
+
+  reset(): void {
+    this.samples = []
+  }
+}
+
+// Voice Float Controller - Handles the floating AI voice button
+export default class VoiceFloatController extends Controller {
+  private modalElement: HTMLElement | null = null
   private isListening: boolean = false
-  private isProcessing: boolean = false
   private channel: any = null
   private currentTranscript: string = ""
-  private mediaRecorder: MediaRecorder | null = null
-  private audioChunks: Blob[] = []
-  private stream: MediaStream | null = null
+  private audioContext: AudioContext | null = null
+  private mediaStream: MediaStream | null = null
+  private analyser: AnalyserNode | null = null
+  private processor: ScriptProcessorNode | null = null
+  private wavEncoder: WAVEncoder | null = null
+  private recordingStartTime: number = 0
   private recordingInterval: ReturnType<typeof setInterval> | null = null
-  private wakeWordEnabled: boolean = false
-  private wakePhrase: string = "hey autopilot"
+  private wakePhrase: string = "hey Otto"
+  private processingAudio: boolean = false
 
   connect(): void {
-    console.log("VoiceFloat controller connected")
+    console.log("[VoiceFloat] Controller connected")
     this.loadWakeWordSettings()
     this.ensureModalStructure()
   }
 
   disconnect(): void {
-    console.log("VoiceFloat controller disconnected")
+    console.log("[VoiceFloat] Controller disconnected")
     this.stopListening()
-    this.stopWakeWordDetection()
   }
 
   private loadWakeWordSettings(): void {
-    const saved = localStorage.getItem('wake_word_enabled')
-    this.wakeWordEnabled = saved === 'true'
-    const savedPhrase = localStorage.getItem('wake_phrase')
+    const savedPhrase = localStorage.getItem("wake_phrase")
     if (savedPhrase) {
       this.wakePhrase = savedPhrase.toLowerCase()
     }
   }
 
-  toggle(event?: Event) {
+  toggle(event?: Event): void {
     event?.preventDefault()
+    console.log("[VoiceFloat] Toggle called, isListening=", this.isListening)
     if (this.isListening) {
       this.stopListening()
+      this.closeModal()
     } else {
       this.openModal()
     }
   }
 
-  openModal() {
+  openModal(): void {
+    console.log("[VoiceFloat] Opening modal")
     this.ensureModalStructure()
+
     if (this.modalElement) {
-      this.modalElement.classList.remove('hidden')
+      this.modalElement.classList.remove("hidden")
+      this.modalElement.classList.add("flex")
+    } else {
+      console.error("[VoiceFloat] Modal element is null!")
     }
+
     this.initializeActionCable()
-    requestAnimationFrame(() => {
-      if (this.modalElement) {
-        this.modalElement.classList.add('flex')
-      }
-      setTimeout(() => {
-        this.startListening()
-      }, 300)
-    })
+
+    setTimeout(() => {
+      this.startWebAudioRecording()
+    }, 500)
   }
 
-  closeModal() {
+  closeModal(): void {
+    console.log("[VoiceFloat] Closing modal")
     this.stopListening()
-    this.stopWakeWordDetection()
     if (this.channel) {
       this.channel.unsubscribe()
       this.channel = null
     }
     if (this.modalElement) {
-      this.modalElement.classList.add('hidden')
-      this.modalElement.classList.remove('flex')
+      this.modalElement.classList.add("hidden")
+      this.modalElement.classList.remove("flex")
     }
   }
 
-  private getCurrentUserId(): string {
-    // Try to get userId from various sources
-    // 1. Check if voice-command interface exists with user-id
-    const voiceCommand = document.querySelector('[data-voice-command-user-id-value]')
-    if (voiceCommand) {
-      const userId = voiceCommand.getAttribute('data-voice-command-user-id-value')
-      if (userId) return userId
-    }
-    
-    // 2. Check if any element has user-id data attribute
-    const userIdElement = document.querySelector('[data-user-id]')
-    if (userIdElement) {
-      const userId = userIdElement.getAttribute('data-user-id')
-      if (userId) return userId
-    }
-    
-    // 3. Check meta tag (common pattern for authenticated apps)
-    const userIdMeta = document.querySelector('meta[name="user-id"]')
-    if (userIdMeta) {
-      return userIdMeta.getAttribute('content') || 'anonymous'
-    }
-    
-    // 4. Default to authenticated stream (user must be logged in)
-    return 'authenticated'
-  }
+  private initializeActionCable(): void {
+    this.updateConnectionStatus("connecting", "Connecting...")
 
-  private initializeActionCable() {
-    const userId = this.getCurrentUserId()
-    // For authenticated users, use voice_interaction_{userId}
-    // For demo/unauthenticated, use a shared stream
-    const streamName = userId !== 'anonymous' && userId !== 'authenticated' 
-      ? `voice_interaction_${userId}` 
-      : 'voice_interaction_demo'
-    
+    if (!(window as any).ActionCable) {
+      console.error("[VoiceFloat] ActionCable not available")
+      this.updateConnectionStatus("error", "ActionCable not available")
+      return
+    }
+
+    // Don't create duplicate subscriptions
+    if (this.channel) {
+      console.log("[VoiceFloat] Channel already exists, reusing")
+      this.updateConnectionStatus("connected", "Connected")
+      return
+    }
+
     this.channel = (window as any).ActionCable.createConsumer().subscriptions.create(
-      { channel: 'VoiceInteractionChannel', stream_name: streamName },
+      { channel: "VoiceInteractionChannel", stream_name: "voice_interaction_demo" },
       {
         connected: () => {
-          console.log('Voice channel connected to:', streamName)
-          if (userId === 'authenticated') {
-            console.log('Authenticated connection established (userId from session)')
-          }
+          console.log("[VoiceFloat] Channel connected")
+          this.updateConnectionStatus("connected", "Connected")
         },
-        disconnected: () => console.log('Voice channel disconnected'),
+        disconnected: () => {
+          console.log("[VoiceFloat] Channel disconnected")
+          this.updateConnectionStatus("error", "Disconnected")
+        },
         received: (data: VoiceCommandEvent) => this.handleChannelMessage(data)
       }
     )
   }
 
   private handleChannelMessage(data: VoiceCommandEvent): void {
+    console.log("[VoiceFloat] Received message:", data)
+
     switch (data.type) {
-      case 'command-received':
-        this.updateTranscript(`Processing: ${data.command_text}`)
-        break
-      case 'command-completed':
+      case "command-completed":
         this.hideLoading()
-        this.updateTranscript(data.response_text || 'Command completed!')
-        this.showResult(data.response_text || 'Success!', data.command_type)
-        this.isProcessing = false
+        this.updateTranscript(data.response_text || "Command completed!")
+        this.showResult(data.response_text || "Success!", data.command_type)
         break
-      case 'command-failed':
+      case "command-failed":
         this.hideLoading()
-        this.updateTranscript(`Error: ${data.error || 'Command failed'}`)
-        this.isProcessing = false
         break
-      case 'video-generated':
+      case "video-generated":
         this.hideLoading()
-        this.updateTranscript('Video generated successfully!')
-        this.showResult('Video created!', 'video_generation', data.video)
-        this.isProcessing = false
+        this.updateTranscript("Video generated successfully!")
+        this.showResult("Video created!", "video_generation", data.video)
         break
-      case 'content-generated':
+      case "content-generated":
         this.hideLoading()
-        this.updateTranscript('Content generated successfully!')
-        this.showResult('Content created!', 'content_generation', data.content)
-        this.isProcessing = false
+        this.updateTranscript("Content generated successfully!")
+        this.showResult("Content created!", "content_generation", data.content)
         break
     }
   }
 
-  private ensureModalStructure() {
-    if (document.getElementById('voice-float-modal')) return
-    
-    // Get userId from existing data attributes or check auth status
-    const userId = this.getCurrentUserId()
-    
-    const modal = document.createElement('div')
-    modal.id = 'voice-float-modal'
-    modal.setAttribute('data-voice-float-user-id-value', userId)
-    modal.className = "hidden fixed inset-0 z-[100] flex items-center justify-center"
-    modal.innerHTML = `
-      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"
-           data-action="click->voice-float#closeModal"></div>
-      <div class="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4
-                  transform transition-all scale-95 opacity-0 voice-modal-content">
-        <div class="text-center">
-          <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500
-                      to-emerald-500 flex items-center justify-center shadow-lg animate-pulse
-                      voice-icon-container">
-            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor"
-                 viewBox="0 0 24 24" id="voice-icon">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z">
-              </path>
-            </svg>
-          </div>
-          <h2 class="text-2xl font-bold text-primary mb-2">AI Voice Autopilot</h2>
-          <p class="text-gray-600 mb-6">
-            Speak your commands to create campaigns, generate content, and manage your social media
-          </p>
-          <div class="bg-gray-50 rounded-2xl p-4 mb-6 min-h-[100px] flex items-center justify-center">
-            <p class="voice-transcript text-primary text-lg" id="voice-transcript">
-              Click to start speaking...
-            </p>
-          </div>
-          <div class="bg-blue-50 rounded-xl p-3 mb-6 text-left hidden" id="result-container">
-            <p class="text-sm font-medium text-blue-900 mb-1">Result:</p>
-            <p class="text-sm text-blue-700" id="result-text"></p>
-          </div>
-          <div class="bg-yellow-50 rounded-xl p-3 mb-6 text-left hidden" id="loading-container">
-            <p class="text-sm text-yellow-700 flex items-center">
-              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-600" fill="none"
-                   viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                        stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                </path>
-              </svg>
-              Processing your command...
-            </p>
-          </div>
-          <button class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white
-                        font-semibold rounded-xl shadow-lg"
-                  data-action="voice-float#closeModal">
-            Close Voice Command
-          </button>
-        </div>
-      </div>
-    `
-    document.body.appendChild(modal)
-    this.modalElement = modal
-    setTimeout(() => {
-      modal.querySelector('.voice-modal-content')?.classList.remove('scale-95', 'opacity-0')
-      modal.querySelector('.voice-modal-content')?.classList.add('scale-100', 'opacity-100')
-    }, 10)
-  }
-
-  private startListening() {
-    this.startWakeWordDetection()
-  }
-
-  private async startWakeWordDetection(): Promise<void> {
-    if (!('MediaRecorder' in window) || !navigator.mediaDevices) {
-      this.updateTranscript('Voice recording not supported')
-      console.error('MediaRecorder or navigator.mediaDevices not available')
-      return
-    }
-    
-    console.log('Requesting microphone access...')
+  private async startWebAudioRecording(): Promise<void> {
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: { 
-          echoCancellation: true, 
-          noiseSuppression: true, 
+      console.log("[VoiceFloat] Requesting microphone access")
+      this.updateTranscript("Accessing microphone...")
+
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
           autoGainControl: true,
-          channelCount: 1
+          channelCount: 1,
+          sampleRate: 48000
         }
       })
-      console.log('Microphone access granted')
+
+      console.log("[VoiceFloat] Microphone access granted")
+      this.updateConnectionStatus("connected", "Ready")
+      this.updateTranscript('Listening... Say "Hey Otto"!')
       this.isListening = true
-      this.updateTranscript('Listening... Speak your command!')
-      
-      // Use opus codec for better quality if available
-      const mimeType = MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') 
-        ? 'audio/ogg;codecs=opus'
-        : 'audio/webm'
-      
-      console.log('Using mimeType:', mimeType)
-      
-      this.mediaRecorder = new MediaRecorder(this.stream, { mimeType, audioBitsPerSecond: 128000 })
-      this.audioChunks = []
-      
-      // Always collect data - don't check size here
-      // Store handlers for auto-restart
-      const onDataAvailable = (event: any) => {
-        if (event.data.size > 0) {
-          console.log(`Audio chunk received: ${event.data.size} bytes`)
-          this.audioChunks.push(event.data)
-        }
+
+      this.audioContext = new AudioContext({ sampleRate: 48000 })
+      const source = this.audioContext.createMediaStreamSource(this.mediaStream)
+
+      this.analyser = this.audioContext.createAnalyser()
+      this.analyser.fftSize = 256
+      source.connect(this.analyser)
+
+      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1)
+      this.wavEncoder = new WAVEncoder()
+      this.wavEncoder.sampleRate = this.audioContext.sampleRate
+
+      this.processor.onaudioprocess = (e) => {
+        if (!this.isListening) return
+        const inputData = e.inputBuffer.getChannelData(0)
+        this.wavEncoder?.addChannelData(inputData)
       }
-      
-      const onError = (event: any) => {
-        console.error('MediaRecorder error:', event.error)
-      }
-      
-      const onStop = () => {
-        console.log('MediaRecorder stopped, restarting...')
-        if (this.isListening && this.stream) {
-          try {
-            this.mediaRecorder = new MediaRecorder(this.stream, { mimeType, audioBitsPerSecond: 128000 })
-            this.mediaRecorder.ondataavailable = onDataAvailable
-            this.mediaRecorder.onerror = onError
-            this.mediaRecorder.onstop = onStop
-            this.mediaRecorder.start(500)
-            console.log('MediaRecorder restarted')
-          } catch (_e) {
-            console.log('Failed to restart MediaRecorder')
-          }
-        }
-      }
-      
-      this.mediaRecorder.ondataavailable = onDataAvailable
-      this.mediaRecorder.onerror = onError
-      this.mediaRecorder.onstop = onStop
-      
-      // Start with 500ms timeslice
-      this.mediaRecorder.start(500)
-      console.log('MediaRecorder started (auto-restart enabled)')
-      
-      // Process buffered audio
+
+      source.connect(this.processor)
+      this.processor.connect(this.audioContext.destination)
+
+      this.recordingStartTime = Date.now()
       this.recordingInterval = setInterval(() => {
-        if (this.isListening && this.audioChunks.length > 0) {
-          this.processAudioWithWhisper()
-        }
+        this.checkRecordingDuration()
       }, 1000)
-      
-      this.updateIconState('listening')
+
     } catch (error) {
-      console.error('Failed to start audio recording:', error)
-      this.updateTranscript('Microphone access denied')
-      this.isListening = false
+      console.error("[VoiceFloat] Microphone error:", error)
+      this.updateConnectionStatus("error", "Microphone access denied")
     }
   }
 
-  private stopWakeWordDetection(): void {
+  private checkRecordingDuration(): void {
+    if (!this.isListening) return
+
+    const duration = Date.now() - this.recordingStartTime
+
+    if (duration > 10000) {
+      console.log("[VoiceFloat] Auto-stopping recording after 10 seconds")
+      this.processWavAudio()
+    }
+  }
+
+  private processWavAudio(): void {
+    if (!this.wavEncoder || this.processingAudio) return
+
+    this.processingAudio = true
+    const samplesLength = this.wavEncoder.samples.length
+    console.log(`[VoiceFloat] Processing ${samplesLength} audio chunks`)
+
+    if (samplesLength > 0) {
+      this.sendToWhisper(this.wavEncoder.encode())
+    } else {
+      this.processingAudio = false
+    }
+  }
+
+  private sendToWhisper(audioBlob: Blob): void {
+    console.log(`[VoiceFloat] Sending ${audioBlob.size} bytes to Whisper`)
+
+    const formData = new FormData()
+    formData.append("audio", audioBlob, "audio.wav")
+    formData.append("detect_wake_word", "true")
+    formData.append("wake_phrase", this.wakePhrase)
+
+    this.updateTranscript("Transcribing...")
+    this.showLoading()
+
+    fetch("/api/v1/voice/transcribe", {
+      method: "POST",
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(`Transcription failed: ${response.status} - ${text}`)
+          })
+        }
+        return response.json()
+      })
+      .then(data => {
+        this.hideLoading()
+        this.processingAudio = false
+
+        if (data.error) {
+          console.error("[VoiceFloat] Server error:", data.error)
+          this.restartListening()
+          return
+        }
+
+        console.log("[VoiceFloat] Whisper transcribed:", data.text)
+        console.log("[VoiceFloat] AI response:", data.ai_response)
+
+        if (data.text && data.text.trim().length > 0) {
+          this.updateTranscript(data.text)
+
+          // Show AI response if available
+          if (data.ai_response) {
+            console.log("[VoiceFloat] Showing AI response:", data.ai_response)
+            this.showAiResponse(data.ai_response)
+          }
+        }
+
+        // Restart listening for next command
+        this.restartListening()
+      })
+      .catch(error => {
+        console.error("[VoiceFloat] Transcription error:", error)
+        this.hideLoading()
+        this.processingAudio = false
+        this.restartListening()
+      })
+  }
+
+  private stopListening(): void {
+    console.log("[VoiceFloat] Stopping listening")
     this.isListening = false
-    
+
     if (this.recordingInterval) {
       clearInterval(this.recordingInterval)
       this.recordingInterval = null
     }
-    
-    // Process any remaining audio before stopping
-    if (this.audioChunks.length > 0) {
-      console.log(`Processing final ${this.audioChunks.length} chunks before stopping`)
-      this.processAudioWithWhisper()
+
+    // Only process remaining audio if modal is still visible (not during cleanup)
+    // This prevents infinite loops when closeModal() calls stopListening()
+    if (this.wavEncoder && this.wavEncoder.samples.length > 0 && this.modalElement && !this.modalElement.classList.contains("hidden")) {
+      this.sendToWhisper(this.wavEncoder.encode())
     }
-    
-    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-      try {
-        this.mediaRecorder.stop()
-        console.log('MediaRecorder stopped successfully')
-      } catch (_e) {
-        console.log('Error stopping MediaRecorder')
+
+    if (this.processor) {
+      this.processor.disconnect()
+      this.processor = null
+    }
+
+    if (this.analyser) {
+      this.analyser.disconnect()
+      this.analyser = null
+    }
+
+    if (this.audioContext && this.audioContext.state !== "closed") {
+      this.audioContext.close()
+      this.audioContext = null
+    }
+
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop())
+      this.mediaStream = null
+    }
+
+    this.wavEncoder = null
+  }
+
+  private restartListening(): void {
+    console.log("[VoiceFloat] Restarting listening for next command")
+
+    // Reset recording state
+    this.processingAudio = false
+    this.recordingStartTime = Date.now()
+
+    // Create fresh audio context and encoder
+    if (!this.audioContext || this.audioContext.state === "closed") {
+      this.audioContext = new AudioContext({ sampleRate: 48000 })
+    }
+
+    this.wavEncoder = new WAVEncoder()
+    this.wavEncoder.sampleRate = this.audioContext.sampleRate
+
+    // Reconnect audio nodes
+    if (this.mediaStream) {
+      const source = this.audioContext.createMediaStreamSource(this.mediaStream)
+      this.analyser = this.audioContext.createAnalyser()
+      this.analyser.fftSize = 256
+      source.connect(this.analyser)
+
+      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1)
+      this.processor.onaudioprocess = (e) => {
+        if (!this.isListening) return
+        const inputData = e.inputBuffer.getChannelData(0)
+        this.wavEncoder?.addChannelData(inputData)
       }
-      this.mediaRecorder = null
-    }
-    
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop())
-      this.stream = null
-    }
-  }
-
-  private stopListening() {
-    this.stopWakeWordDetection()
-    this.updateIconState('idle')
-  }
-
-  private processAudioWithWhisper(): void {
-    if (this.audioChunks.length === 0) return
-    
-    // Combine all chunks into one audio blob
-    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' })
-    this.audioChunks = []
-    
-    console.log(`Sending audio to Whisper: ${audioBlob.size} bytes`)
-    
-    // Process audio regardless of size - Whisper handles silence well
-    if (audioBlob.size < 100) {
-      console.log('Audio too small, keeping for next cycle')
-      return
+      source.connect(this.processor)
+      this.processor.connect(this.audioContext.destination)
     }
 
-    const formData = new FormData()
-    formData.append('audio', audioBlob, 'audio.webm')
-    formData.append('detect_wake_word', 'true')
-    formData.append('wake_phrase', this.wakePhrase)
+    // Start the recording interval again
+    this.recordingInterval = setInterval(() => {
+      this.checkRecordingDuration()
+    }, 1000)
 
-    // Use fetch for API endpoint - exempt from Turbo Stream requirements
-    fetch('/api/v1/voice/transcribe', {
-      method: 'POST',
-      body: formData
-    })
-      .then(response => {
-        console.log('Whisper API response status:', response.status)
-        if (!response.ok) throw new Error(`Transcription failed: ${response.status}`)
-        return response.json()
-      })
-      .then(data => {
-        console.log('Whisper response:', data)
-        if (data.text && data.text.trim().length > 0) {
-          const cleanTranscript = data.text.replace(/^\s*[a-z]+\s*/i, '').trim()
-          console.log('Clean transcript:', cleanTranscript)
-          this.updateTranscript(cleanTranscript)
-          
-          if (data.wake_word_detected) {
-            console.log('Wake word detected!')
-            this.onWakeWordDetected()
-          }
-          
-          // Process any transcript, not just long ones
-          if (cleanTranscript.length > 0) {
-            console.log('Processing command:', cleanTranscript)
-            this.processCommand(cleanTranscript)
-          }
-        } else {
-          console.log('No speech detected in audio')
-        }
-      })
-      .catch(error => {
-        console.error('Audio processing error:', error)
-      })
+    this.isListening = true
+    this.updateConnectionStatus("connected", "Ready")
+    this.updateTranscript('Listening... Say "Hey Otto"!')
   }
 
   private onWakeWordDetected(): void {
-    console.log('Wake word detected!')
-    const iconContainer = document.getElementById('voice-icon-container')
-    if (iconContainer) {
-      iconContainer.classList.remove('animate-pulse')
-      void iconContainer.offsetWidth
-      iconContainer.classList.add('animate-pulse')
-    }
-    this.playActivationSound()
+    console.log("[VoiceFloat] Wake word detected!")
+    this.updateTranscript("Wake word detected!")
   }
 
-  private playActivationSound(): void {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-      const oscillator = audioContext.createOscillator()
-      const gainNode = audioContext.createGain()
-      oscillator.connect(gainNode)
-      gainNode.connect(audioContext.destination)
-      oscillator.frequency.setValueAtTime(880, audioContext.currentTime)
-      oscillator.type = 'sine'
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
-      oscillator.start()
-      oscillator.stop(audioContext.currentTime + 0.3)
-    } catch (_e) { /* ignore sound errors */ }
-  }
+  private processCommand(text: string): void {
+    console.log("[VoiceFloat] Processing command:", text)
 
-  private updateIconState(state: 'listening' | 'processing' | 'idle') {
-    const iconContainer = document.getElementById('voice-icon-container')
-    const icon = document.getElementById('voice-icon')
-    if (!iconContainer || !icon) return
-    iconContainer.classList.remove('animate-pulse', 'bg-yellow-500', 'bg-green-500')
-    const pathListening = '<path stroke-linecap="round" stroke-linejoin="round" ' +
-      'stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>'
-    const pathProcessing = '<path stroke-linecap="round" stroke-linejoin="round" ' +
-      'stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
-    if (state === 'listening') {
-      iconContainer.classList.add('animate-pulse', 'bg-green-500')
-      icon.innerHTML = pathListening
-    } else if (state === 'processing') {
-      iconContainer.classList.add('animate-pulse', 'bg-yellow-500')
-      icon.innerHTML = pathProcessing
-    } else {
-      iconContainer.classList.add('bg-green-500')
-      icon.innerHTML = pathListening
-    }
-  }
-
-  private updateTranscript(text: string) {
-    const el = document.getElementById('voice-transcript')
-    if (el) el.textContent = text
-    if (text.toLowerCase().includes('wake word') ||
-        text.toLowerCase().includes('hey autopilot')) {
-      this.onWakeWordDetected()
-    }
-  }
-
-  private processCommand(transcript: string) {
-    this.currentTranscript = transcript
-    this.isProcessing = true
-    this.showLoading()
     if (this.channel) {
-      // Send command to ActionCable for processing by AiAutopilotService
-      this.channel.perform('process_voice_command', { command_text: transcript })
+      this.channel.send({
+        type: "voice_command",
+        command_text: text
+      })
     }
   }
 
-  private showLoading() {
-    document.getElementById('loading-container')?.classList.remove('hidden')
-    this.updateIconState('processing')
-  }
-
-  private hideLoading() {
-    document.getElementById('loading-container')?.classList.add('hidden')
-  }
-
-  private showResult(text: string, _commandType?: string, _result?: any) {
-    const container = document.getElementById('result-container')
-    const resultText = document.getElementById('result-text')
-    if (container && resultText) {
-      resultText.textContent = text
-      container.classList.remove('hidden')
+  private updateTranscript(text: string): void {
+    const el = document.getElementById("voice-transcript")
+    if (el) {
+      el.textContent = text
+      console.log("[VoiceFloat] Updated transcript to:", text)
+    } else {
+      console.error("[VoiceFloat] Could not find voice-transcript element!")
     }
+    this.currentTranscript = text
+  }
+
+  private updateConnectionStatus(status: string, message: string): void {
+    const el = document.getElementById("voice-connection-status")
+    if (el) {
+      el.textContent = message
+      el.className = `connection-status ${status}`
+    }
+  }
+
+  private showLoading(): void {
+    const el = document.getElementById("voice-loading")
+    if (el) el.classList.remove("hidden")
+  }
+
+  private hideLoading(): void {
+    const el = document.getElementById("voice-loading")
+    if (el) el.classList.add("hidden")
+  }
+
+  private showResult(message: string, type?: string, data?: any): void {
+    const el = document.getElementById("voice-result")
+    if (el) {
+      el.textContent = message
+      el.classList.remove("hidden")
+    }
+  }
+
+  private showAiResponse(text: string): void {
+    const el = document.getElementById("voice-ai-response")
+    if (el) {
+      el.innerHTML = text.replace(/\n/g, "<br>")
+      el.classList.remove("hidden")
+      console.log("[VoiceFloat] AI response shown:", text)
+    } else {
+      console.error("[VoiceFloat] Could not find voice-ai-response element!")
+    }
+  }
+
+  private showDebugInfo(data: any): void {
+    const debugEl = document.getElementById("voice-debug")
+    if (debugEl) {
+      debugEl.classList.remove("hidden")
+      debugEl.innerHTML = `<pre class="text-xs overflow-auto max-h-32">${JSON.stringify(data, null, 2)}</pre>`
+    }
+  }
+
+  private ensureModalStructure(): void {
+    console.log("[VoiceFloat] Ensuring modal structure")
+
+    const existingModal = document.getElementById("voice-modal")
+    if (existingModal) {
+      console.log("[VoiceFloat] Modal already exists")
+      this.modalElement = existingModal as HTMLElement
+      return
+    }
+
+    console.log("[VoiceFloat] Creating new modal")
+
+    const modal = document.createElement("div")
+    modal.id = "voice-modal"
+    modal.className = "hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+    modal.innerHTML = `
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">AI Voice Assistant</h3>
+          <button id="voice-close-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div id="voice-connection-status" class="connection-status idle text-sm text-gray-500 mb-4">
+          Connecting...
+        </div>
+        <div class="flex flex-col items-center justify-center py-4">
+          <div id="voice-transcript" class="text-lg text-gray-700 dark:text-gray-300 text-center min-h-[3rem] mb-4 w-full font-medium">
+            Initializing...
+          </div>
+          <div id="voice-loading" class="hidden flex items-center justify-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          </div>
+          <div id="voice-ai-response" class="hidden mt-4 p-4 bg-green-50 dark:bg-green-900/30 border
+            border-green-200 dark:border-green-700 rounded-lg text-sm
+            text-gray-700 dark:text-gray-300 w-full text-left">
+          </div>
+          <div id="voice-debug" class="hidden mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 border
+            border-yellow-200 dark:border-yellow-700 rounded-lg text-xs
+            text-gray-700 dark:text-gray-300 w-full text-left font-mono">
+          </div>
+          <div id="voice-result" class="hidden mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm w-full"></div>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(modal)
+
+    const closeBtn = document.getElementById("voice-close-btn")
+    closeBtn?.addEventListener("click", () => this.closeModal())
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) this.closeModal()
+    })
+
+    this.modalElement = modal
   }
 }

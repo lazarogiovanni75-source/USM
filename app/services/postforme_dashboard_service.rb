@@ -62,22 +62,21 @@ class PostformeDashboardService
   # @return [Array] List of available profiles
   def fetch_available_profiles(api_key)
     service = PostformeService.new(api_key)
-    profiles = service.profiles
+    response = service.social_accounts
 
-    Array(profiles).map do |profile|
+    Array(response['data'] || response).map do |account|
       {
-        id: profile['id'],
-        name: profile['name'] || profile['username'] || profile['handle'],
-        platform: map_platform(profile['service'] || profile['type']),
-        username: profile['username'] || profile['handle'],
-        avatar_url: profile['avatar'] || profile['avatar_url'],
-        followers: profile['followers'] || profile['follower_count'],
+        id: account['id'],
+        name: account['name'] || account['username'] || account['handle'],
+        platform: map_platform(account['platform']),
+        username: account['username'] || account['handle'],
+        avatar_url: account['avatar'] || account['avatar_url'],
+        followers: account['followers'] || account['follower_count'],
         connected: false
       }
     end
   rescue PostformeService::PostformeError => e
-    Rails.logger.error("[PostformeDashboard] Error fetching profiles: #{e.message}")
-    []
+    raise e
   end
 
   # Sync metrics from Postforme to SocialAccount

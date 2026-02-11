@@ -68,6 +68,9 @@ class AiChatController < ApplicationController
     @user_message = user_message
     @ai_message = ai_message
     @insights = insights
+    
+    # Use Turbo Stream for partial updates
+    render "send_message.turbo_stream.erb"
   end
   
   def suggest_content

@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 # Sora 2 HD Service for Image/Video Generation via Replicate
 class SoraService
   class Error < StandardError; end
 
   def initialize
-    @api_key = ENV.fetch('REPLICATE_API_KEY', ENV.fetch('DEFAPI_API_KEY', nil))
+    @api_key = fetch_api_key
     @base_url = 'https://api.replicate.com/v1'
   end
 
@@ -46,12 +48,26 @@ class SoraService
     http.use_ssl = true
     response = http.request(request)
 
-    raise Error, "Failed to get prediction: #{response.body}" unless response.success?
+    raise Error, "Failed to get prediction: #{response.body}" unless response.code.to_i.between?(200, 299)
 
     JSON.parse(response.body)
   end
 
+  def configured?
+    @api_key.present?
+  end
+
   private
+
+  def fetch_api_key
+    ENV.fetch('REPLICATE_API_KEY') do
+      Rails.application.config.x.replicate_api_key ||
+        Rails.application.config_for(:application)['REPLICATE_API_KEY']
+    end
+  rescue KeyError
+    Rails.logger.warn('[SoraService] API key not configured.')
+    nil
+  end
 
   def make_request(method, path, body)
     uri = URI.parse("#{@base_url}#{path}")
@@ -73,7 +89,7 @@ class SoraService
 
     response = http.request(request)
 
-    unless response.success?
+    unless response.code.to_i.between?(200, 299)
       raise Error, "API request failed: #{response.code} - #{response.body}"
     end
 
