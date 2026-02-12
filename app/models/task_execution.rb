@@ -1,9 +1,6 @@
 class TaskExecution < ApplicationRecord
-  belongs_to :scheduled_ai_task, foreign_key: :task_id
+  belongs_to :scheduled_ai_task
   belongs_to :user
-  
-  # Serialized fields
-  serialize :execution_data, JSON
   
   # Enums
   enum status: { executed: 'executed', failed: 'failed', cancelled: 'cancelled' }

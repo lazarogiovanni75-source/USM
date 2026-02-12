@@ -62,7 +62,9 @@ Rails.application.routes.draw do
     namespace :v1 do
       # Voice API endpoints
       post 'voice/transcribe', to: 'voice#transcribe'
+      post 'voice/stream', to: 'voice_stream#transcribe_and_stream'
       get 'voice/health', to: 'voice#health'
+      get 'voice/stream/health', to: 'voice_stream#health'
       
       # AI Chat API endpoints
       post 'ai_chat/send_message', to: 'ai_chat#send_message'
@@ -312,8 +314,8 @@ Rails.application.routes.draw do
   # Auto Response Triggers System
   resources :auto_response_triggers, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
     member do
-      post 'toggle'
-      post 'test'
+      post 'toggle_status'
+      post 'test_trigger'
     end
     collection do
       get 'templates'
@@ -359,11 +361,17 @@ Rails.application.routes.draw do
   # Scheduled AI Tasks System
   resources :scheduled_ai_tasks, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
     member do
-      post 'execute'
-      post 'toggle'
+      post 'execute_now'
+      post 'toggle_status'
+      post 'pause_task'
+      post 'resume_task'
     end
     collection do
       get 'history'
+      post 'execute_all_due'
+      post 'bulk_actions'
+      get 'results'
+      post 'create_from_template'
     end
   end
   

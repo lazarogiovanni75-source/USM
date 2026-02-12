@@ -1,9 +1,6 @@
 class AiTaskResult < ApplicationRecord
   belongs_to :user
   
-  # Serialized fields
-  serialize :result_data, JSON
-  
   # Enums
   enum task_type: {
     content_generation: 'content_generation',

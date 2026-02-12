@@ -55,10 +55,10 @@ class TrendDetectionService
 
   # Detect engagement trends
   def detect_engagement_trends
-    metrics = PerformanceMetric.joins(:content)
-                             .where(contents: { user_id: @user.id })
+    metrics = PerformanceMetric.joins(:scheduled_post => :content)
+                             .where(scheduled_posts: { user_id: @user.id })
                              .where('performance_metrics.created_at >= ?', @analysis_days.days.ago)
-                             .group('DATE(created_at)')
+                             .group(Arel.sql('DATE(performance_metrics.created_at)'))
                              .sum(:engagement_rate)
     
     if metrics.size < 2
@@ -89,25 +89,25 @@ class TrendDetectionService
 
   # Detect platform performance trends
   def detect_platform_trends
-    metrics = PerformanceMetric.joins(:content)
-                             .where(contents: { user_id: @user.id })
+    metrics = PerformanceMetric.joins(:scheduled_post => [:content, :social_account])
+                             .where(scheduled_posts: { user_id: @user.id })
                              .where('performance_metrics.created_at >= ?', @analysis_days.days.ago)
-                             .group(:platform)
+                             .group('social_accounts.platform')
                              .sum(:engagement_rate)
     
     platform_trends = []
     platforms = metrics.keys
     
     platforms.each do |platform|
-      recent_metrics = PerformanceMetric.joins(:content)
-                                      .where(contents: { user_id: @user.id })
-                                      .where(performance_metrics: { platform: platform })
+      recent_metrics = PerformanceMetric.joins(:scheduled_post => [:content, :social_account])
+                                      .where(scheduled_posts: { user_id: @user.id })
+                                      .where(social_accounts: { platform: platform })
                                       .where('performance_metrics.created_at >= ?', @analysis_days.days.ago)
                                       .average(:engagement_rate)
       
-      older_metrics = PerformanceMetric.joins(:content)
-                                      .where(contents: { user_id: @user.id })
-                                      .where(performance_metrics: { platform: platform })
+      older_metrics = PerformanceMetric.joins(:scheduled_post => [:content, :social_account])
+                                      .where(scheduled_posts: { user_id: @user.id })
+                                      .where(social_accounts: { platform: platform })
                                       .where(performance_metrics: { created_at: (2 * @analysis_days).days.ago..@analysis_days.days.ago })
                                       .average(:engagement_rate)
       
@@ -128,11 +128,11 @@ class TrendDetectionService
 
   # Detect optimal posting time trends
   def detect_timing_trends
-    posts = @user.contents.published
-                .joins(:performance_metrics)
-                .where('contents.created_at >= ?', @analysis_days.days.ago)
-                .group('EXTRACT(hour FROM contents.created_at)')
-                .average(:engagement_rate)
+    posts = PerformanceMetric.joins(:scheduled_post => :content)
+                            .where(scheduled_posts: { user_id: @user.id })
+                            .where('scheduled_posts.posted_at >= ?', @analysis_days.days.ago)
+                            .group(Arel.sql('EXTRACT(hour FROM scheduled_posts.posted_at)'))
+                            .average(:engagement_rate)
     
     timing_trends = []
     posts.each do |hour, avg_engagement|

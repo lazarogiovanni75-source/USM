@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Unset conflicting environment variables that override config
+ENV.delete('CLACKY_LLM_API_KEY')
+ENV.delete('CLACKY_LLM_BASE_URL')
+
 # Change to script's parent directory (backend/)
 Dir.chdir(File.expand_path('..', __dir__))
 

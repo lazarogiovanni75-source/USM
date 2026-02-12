@@ -122,6 +122,12 @@ class User < ApplicationRecord
   has_many :engagement_metrics, dependent: :destroy
   has_many :trend_analyses, dependent: :destroy
   has_many :buffer_analytics, through: :scheduled_posts
+  
+  # Automation features
+  has_many :auto_response_triggers, dependent: :destroy
+  has_many :scheduled_ai_tasks, dependent: :destroy
+  has_many :trigger_executions, dependent: :destroy
+  has_many :task_executions, dependent: :destroy
 
   # OAuth methods
   def self.from_omniauth(auth)

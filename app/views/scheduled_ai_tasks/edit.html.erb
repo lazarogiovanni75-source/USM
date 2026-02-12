@@ -1,0 +1,102 @@
+<% content_for :title, "Edit AI Task" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated py-8">
+  <div class="container-xl mx-auto px-4">
+    <!-- Header -->
+    <div class="mb-6">
+      <%= link_to scheduled_ai_tasks_path, class: "inline-flex items-center text-sm text-muted hover:text-primary transition-colors mb-4" do %>
+        <%= lucide_icon "arrow-left", class: "w-4 h-4 mr-2" %>
+        Back to AI Tasks
+      <% end %>
+      <h1 class="text-3xl font-bold text-primary">Edit Task: <%= @task.name %></h1>
+      <p class="text-muted mt-2">Update your scheduled AI task settings</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+      <%= form_with model: @task, url: scheduled_ai_task_path(@task), method: :patch, local: true, class: "space-y-6" do |f| %>
+        <!-- Name -->
+        <div>
+          <%= f.label :name, "Task Name", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.text_field :name, class: "form-input w-full", placeholder: "e.g., Daily Content Generation" %>
+          <% if @task.errors[:name].any? %>
+            <p class="mt-1 text-sm text-red-600"><%= @task.errors[:name].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <%= f.label :description, "Description", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.text_area :description, rows: 3, class: "form-input w-full", placeholder: "Describe what this task does..." %>
+        </div>
+
+        <!-- Task Type -->
+        <div>
+          <%= f.label :task_type, "Task Type", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.select :task_type, 
+              ScheduledAiTask.task_types.keys.map { |k| [k.titleize, k] },
+              {},
+              class: "form-input w-full" %>
+          <% if @task.errors[:task_type].any? %>
+            <p class="mt-1 text-sm text-red-600"><%= @task.errors[:task_type].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Schedule Type -->
+        <div>
+          <%= f.label :schedule_type, "Schedule Type", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.select :schedule_type,
+              ScheduledAiTask.schedule_types.keys.map { |k| [k.titleize, k] },
+              {},
+              class: "form-input w-full" %>
+          <% if @task.errors[:schedule_type].any? %>
+            <p class="mt-1 text-sm text-red-600"><%= @task.errors[:schedule_type].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Next Run At -->
+        <div>
+          <%= f.label :next_run_at, "Next Run Time", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.datetime_field :next_run_at, class: "form-input w-full" %>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <%= f.label :status, "Status", class: "block text-sm font-medium text-primary mb-2" %>
+          <div class="flex items-center gap-4">
+            <label class="inline-flex items-center">
+              <%= f.radio_button :status, 'active', class: "form-radio" %>
+              <span class="ml-2 text-sm text-primary">Active</span>
+            </label>
+            <label class="inline-flex items-center">
+              <%= f.radio_button :status, 'paused', class: "form-radio" %>
+              <span class="ml-2 text-sm text-primary">Paused</span>
+            </label>
+            <label class="inline-flex items-center">
+              <%= f.radio_button :status, 'inactive', class: "form-radio" %>
+              <span class="ml-2 text-sm text-primary">Inactive</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Configuration (Advanced) -->
+        <div class="border-t border-border/30 pt-6">
+          <h3 class="text-lg font-medium text-primary mb-4">Advanced Configuration</h3>
+          
+          <div>
+            <%= f.label :config, "Task Configuration (JSON)", class: "block text-sm font-medium text-primary mb-2" %>
+            <%= f.text_area :config, value: @task.config.to_json, rows: 6, class: "form-input w-full font-mono text-sm" %>
+            <p class="mt-1 text-xs text-muted">Custom configuration as JSON object</p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 pt-4">
+          <%= f.submit "Update Task", class: "btn-primary" %>
+          <%= link_to "Cancel", scheduled_ai_tasks_path, class: "btn-secondary" %>
+          <%= button_to "Delete", scheduled_ai_task_path(@task), method: :delete, data: { confirm: "Are you sure?" }, class: "btn-danger ml-auto" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

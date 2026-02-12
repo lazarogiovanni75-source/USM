@@ -86,38 +86,41 @@ class EngagementAnalyticsService
   end
   
   def get_content_type_performance(days = 30)
-    # Analyze performance by content type/category
+    # Analyze performance by content type
     metrics = PerformanceMetric.joins(:scheduled_post => :content)
                               .where(scheduled_posts: { user_id: @user.id })
                               .where('scheduled_posts.posted_at >= ?', days.days.ago)
                               .where('scheduled_posts.posted_at <= ?', Time.current)
-    
-    category_stats = {}
-    Content.categories.keys.each do |category|
-      category_metrics = metrics.where(contents: { category: category })
-      next if category_metrics.empty?
-      
-      total_engagements = category_metrics.sum(:likes) + category_metrics.sum(:comments) + category_metrics.sum(:shares)
-      post_count = category_metrics.count
+
+    # Get distinct content types from the data
+    content_types = metrics.joins(:scheduled_post => :content).distinct.pluck('contents.content_type').compact
+
+    type_stats = {}
+    content_types.each do |type|
+      type_metrics = metrics.joins(:scheduled_post => :content).where(contents: { content_type: type })
+      next if type_metrics.empty?
+
+      total_engagements = type_metrics.sum(:likes) + type_metrics.sum(:comments) + type_metrics.sum(:shares)
+      post_count = type_metrics.count
       avg_engagement = post_count > 0 ? total_engagements.to_f / post_count : 0
-      
-      category_stats[category] = {
+
+      type_stats[type] = {
         post_count: post_count,
         avg_engagement: avg_engagement,
         total_engagements: total_engagements,
-        avg_likes: post_count > 0 ? category_metrics.sum(:likes).to_f / post_count : 0,
-        avg_comments: post_count > 0 ? category_metrics.sum(:comments).to_f / post_count : 0,
-        avg_shares: post_count > 0 ? category_metrics.sum(:shares).to_f / post_count : 0
+        avg_likes: post_count > 0 ? type_metrics.sum(:likes).to_f / post_count : 0,
+        avg_comments: post_count > 0 ? type_metrics.sum(:comments).to_f / post_count : 0,
+        avg_shares: post_count > 0 ? type_metrics.sum(:shares).to_f / post_count : 0
       }
     end
-    
+
     # Sort by average engagement
-    sorted_categories = category_stats.sort_by { |category, stats| -stats[:avg_engagement] }
-    
+    sorted_types = type_stats.sort_by { |type, stats| -stats[:avg_engagement] }
+
     {
-      category_stats: category_stats,
-      top_categories: sorted_categories.first(5),
-      recommendations: generate_category_recommendations(sorted_categories)
+      type_stats: type_stats,
+      top_types: sorted_types.first(5),
+      recommendations: generate_type_recommendations(sorted_types)
     }
   end
   
@@ -171,18 +174,18 @@ class EngagementAnalyticsService
   def get_content_suggestions
     # Generate content suggestions based on performance data
     suggestions = []
-    
-    # Get best performing categories
-    category_performance = get_content_type_performance
-    top_category = category_performance[:top_categories].first
-    
-    if top_category
+
+    # Get best performing content types
+    type_performance = get_content_type_performance
+    top_type = type_performance[:top_types].first
+
+    if top_type
       suggestions << {
-        type: 'category_focus',
-        title: 'Focus on Your Top-Performing Category',
-        description: "Your #{top_category[0]} content performs best with #{top_category[1][:avg_engagement].round(1)} average engagements. Consider creating more #{top_category[0]} content.",
+        type: 'content_type_focus',
+        title: 'Focus on Your Top-Performing Content Type',
+        description: "Your #{top_type[0]} content performs best with #{top_type[1][:avg_engagement].round(1)} average engagements. Consider creating more #{top_type[0]} content.",
         action: 'create_content',
-        data: { category: top_category[0] }
+        data: { content_type: top_type[0] }
       }
     end
     
@@ -218,16 +221,29 @@ class EngagementAnalyticsService
   private
   
   def get_platform_breakdown(metrics)
-    metrics.joins(:scheduled_post)
-           .group('scheduled_posts.platform')
-           .sum(:likes, :comments, :shares, :views)
-           .transform_keys(&:capitalize)
+    results = metrics.joins(:scheduled_post => :social_account)
+                     .group('social_accounts.platform')
+                     .select('social_accounts.platform,
+                              SUM(performance_metrics.likes) as total_likes,
+                              SUM(performance_metrics.comments) as total_comments,
+                              SUM(performance_metrics.shares) as total_shares,
+                              SUM(performance_metrics.views) as total_views')
+
+    results.each_with_object({}) do |row, hash|
+      platform = row.platform.capitalize
+      hash[platform] = {
+        likes: row.total_likes.to_i,
+        comments: row.total_comments.to_i,
+        shares: row.total_shares.to_i,
+        views: row.total_views.to_i
+      }
+    end
   end
   
   def get_top_performing_posts(metrics)
-    metrics.joins(:scheduled_post => :content)
-           .select('performance_metrics.*, contents.title, scheduled_posts.platform')
-           .order('(likes + comments + shares) DESC')
+    metrics.joins(:scheduled_post => [:content, :social_account])
+           .select('performance_metrics.*, contents.title, social_accounts.platform')
+           .order(Arel.sql('(performance_metrics.likes + performance_metrics.comments + performance_metrics.shares) DESC'))
            .limit(5)
            .map do |metric|
              {
@@ -304,18 +320,18 @@ class EngagementAnalyticsService
     recommendations
   end
   
-  def generate_category_recommendations(sorted_categories)
-    return [] if sorted_categories.empty?
+  def generate_type_recommendations(sorted_types)
+    return [] if sorted_types.empty?
     
     recommendations = []
     
-    top_category = sorted_categories.first
-    worst_category = sorted_categories.last
+    top_type = sorted_types.first
+    worst_type = sorted_types.last
     
-    recommendations << "Your #{top_category[0]} content performs best. Consider creating more #{top_category[0]} content."
+    recommendations << "Your #{top_type[0]} content performs best. Consider creating more #{top_type[0]} content."
     
-    if worst_category[1][:avg_engagement] < top_category[1][:avg_engagement] * 0.5
-      recommendations << "Consider reducing #{worst_category[0]} content or improving your approach to this category."
+    if worst_type[1][:avg_engagement] < top_type[1][:avg_engagement] * 0.5
+      recommendations << "Consider reducing #{worst_type[0]} content or improving your approach to this type."
     end
     
     recommendations

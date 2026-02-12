@@ -1,14 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
-// VoiceCommandEvent interface for ActionCable messages
-interface VoiceCommandEvent {
-  type: string
-  command_text?: string
-  response_text?: string
-  command_type?: string
+// Voice streaming event interface for ActionCable messages
+interface VoiceStreamEvent {
+  type: 'chunk' | 'complete' | 'error'
+  chunk?: string
+  content?: string
   error?: string
-  video?: any
-  content?: any
+  conversation_id?: number
 }
 
 // WAV encoder using Web Audio API - generates proper WAV files
@@ -75,7 +73,7 @@ class WAVEncoder {
   }
 }
 
-// Voice Float Controller - Handles the floating AI voice button
+// Voice Float Controller - Handles the floating AI voice button with streaming
 export default class VoiceFloatController extends Controller {
   private modalElement: HTMLElement | null = null
   private isListening: boolean = false
@@ -90,11 +88,28 @@ export default class VoiceFloatController extends Controller {
   private recordingInterval: ReturnType<typeof setInterval> | null = null
   private wakePhrase: string = "hey Otto"
   private processingAudio: boolean = false
+  private wakeWordEnabled: boolean = false
+
+  // Streaming state
+  private streamChannelName: string | null = null
+  private currentConversationId: number | null = null
+  private streamingResponse: string = ""
+  private currentUserId: number | null = null
 
   connect(): void {
     console.log("[VoiceFloat] Controller connected")
     this.loadWakeWordSettings()
+    this.loadUserId()
     this.ensureModalStructure()
+  }
+
+  private loadUserId(): void {
+    const userIdMeta = document.querySelector('meta[name="user-id"]')
+    if (userIdMeta) {
+      const userId = userIdMeta.getAttribute('content')
+      this.currentUserId = userId && userId !== 'anonymous' ? parseInt(userId, 10) : null
+      console.log(`[VoiceFloat] User ID loaded: ${this.currentUserId}`)
+    }
   }
 
   disconnect(): void {
@@ -107,6 +122,9 @@ export default class VoiceFloatController extends Controller {
     if (savedPhrase) {
       this.wakePhrase = savedPhrase.toLowerCase()
     }
+    const wakeEnabled = localStorage.getItem("wake_word_enabled")
+    this.wakeWordEnabled = wakeEnabled === "true"
+    console.log(`[VoiceFloat] Wake word settings: phrase="${this.wakePhrase}", enabled=${this.wakeWordEnabled}`)
   }
 
   toggle(event?: Event): void {
@@ -131,8 +149,6 @@ export default class VoiceFloatController extends Controller {
       console.error("[VoiceFloat] Modal element is null!")
     }
 
-    this.initializeActionCable()
-
     setTimeout(() => {
       this.startWebAudioRecording()
     }, 500)
@@ -152,60 +168,78 @@ export default class VoiceFloatController extends Controller {
   }
 
   private initializeActionCable(): void {
-    this.updateConnectionStatus("connecting", "Connecting...")
-
     if (!(window as any).ActionCable) {
       console.error("[VoiceFloat] ActionCable not available")
-      this.updateConnectionStatus("error", "ActionCable not available")
       return
     }
 
-    // Don't create duplicate subscriptions
     if (this.channel) {
       console.log("[VoiceFloat] Channel already exists, reusing")
-      this.updateConnectionStatus("connected", "Connected")
       return
     }
 
+    // Use the stream_name from server response
+    const streamName = this.streamChannelName || `voice_chat_${this.currentUserId || 0}`
+    
+    console.log(`[VoiceFloat] Subscribing to ActionCable stream: ${streamName}`)
+    console.log("[VoiceFloat] Channel will receive messages on this stream")
+
     this.channel = (window as any).ActionCable.createConsumer().subscriptions.create(
-      { channel: "VoiceInteractionChannel", stream_name: "voice_interaction_demo" },
+      { channel: "VoiceChatChannel", stream_name: streamName },
       {
         connected: () => {
-          console.log("[VoiceFloat] Channel connected")
-          this.updateConnectionStatus("connected", "Connected")
+          console.log("[VoiceFloat] ✅ Streaming channel connected to:", streamName)
         },
         disconnected: () => {
-          console.log("[VoiceFloat] Channel disconnected")
-          this.updateConnectionStatus("error", "Disconnected")
+          console.log("[VoiceFloat] ❌ Streaming channel disconnected")
         },
-        received: (data: VoiceCommandEvent) => this.handleChannelMessage(data)
+        received: (data: VoiceStreamEvent) => {
+          console.log("[VoiceFloat] 📨 Raw message received from ActionCable:", data)
+          this.handleStreamMessage(data)
+        }
       }
     )
   }
 
-  private handleChannelMessage(data: VoiceCommandEvent): void {
-    console.log("[VoiceFloat] Received message:", data)
+  private handleStreamMessage(data: VoiceStreamEvent): void {
+    console.log("[VoiceFloat] Stream message received. Type:", data.type, "Full data:", data)
 
     switch (data.type) {
-      case "command-completed":
-        this.hideLoading()
-        this.updateTranscript(data.response_text || "Command completed!")
-        this.showResult(data.response_text || "Success!", data.command_type)
+      case 'chunk':
+        console.log("[VoiceFloat] Processing chunk:", data.chunk)
+        this.handleStreamingChunk(data.chunk || '')
         break
-      case "command-failed":
-        this.hideLoading()
+      case 'complete':
+        console.log("[VoiceFloat] Processing complete:", data.content)
+        this.handleStreamComplete(data.content || '')
         break
-      case "video-generated":
-        this.hideLoading()
-        this.updateTranscript("Video generated successfully!")
-        this.showResult("Video created!", "video_generation", data.video)
+      case 'error':
+        console.log("[VoiceFloat] Processing error:", data.error)
+        this.handleStreamError(data.error || 'Unknown error')
         break
-      case "content-generated":
-        this.hideLoading()
-        this.updateTranscript("Content generated successfully!")
-        this.showResult("Content created!", "content_generation", data.content)
-        break
+      default:
+        console.warn("[VoiceFloat] Unknown message type:", data.type, data)
     }
+  }
+
+  private handleStreamingChunk(chunk: string): void {
+    console.log("[VoiceFloat] Adding chunk. Before length:", this.streamingResponse.length, "Chunk:", chunk)
+    this.streamingResponse += chunk
+    console.log("[VoiceFloat] After length:", this.streamingResponse.length, "Full response:", this.streamingResponse)
+    this.showStreamingResponse(this.streamingResponse)
+  }
+
+  private handleStreamComplete(content: string): void {
+    console.log("[VoiceFloat] Stream complete, total length:", content.length)
+    this.hideLoading()
+    this.streamingResponse = ""
+  }
+
+  private handleStreamError(error: string): void {
+    console.error(`[VoiceFloat] Stream error: ${error}`)
+    this.hideLoading()
+    this.updateTranscript(`Error: ${error}`)
+    this.streamingResponse = ""
   }
 
   private async startWebAudioRecording(): Promise<void> {
@@ -225,7 +259,7 @@ export default class VoiceFloatController extends Controller {
 
       console.log("[VoiceFloat] Microphone access granted")
       this.updateConnectionStatus("connected", "Ready")
-      this.updateTranscript('Listening... Say "Hey Otto"!')
+      this.updateTranscript("Listening... Speak now!")
       this.isListening = true
 
       this.audioContext = new AudioContext({ sampleRate: 48000 })
@@ -264,8 +298,8 @@ export default class VoiceFloatController extends Controller {
 
     const duration = Date.now() - this.recordingStartTime
 
-    if (duration > 10000) {
-      console.log("[VoiceFloat] Auto-stopping recording after 10 seconds")
+    if (duration > 15000) {
+      console.log("[VoiceFloat] Processing after 15 seconds of speech")
       this.processWavAudio()
     }
   }
@@ -273,29 +307,35 @@ export default class VoiceFloatController extends Controller {
   private processWavAudio(): void {
     if (!this.wavEncoder || this.processingAudio) return
 
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval)
+      this.recordingInterval = null
+    }
+
     this.processingAudio = true
     const samplesLength = this.wavEncoder.samples.length
     console.log(`[VoiceFloat] Processing ${samplesLength} audio chunks`)
 
     if (samplesLength > 0) {
-      this.sendToWhisper(this.wavEncoder.encode())
+      this.sendForStreamingTranscription(this.wavEncoder.encode())
     } else {
       this.processingAudio = false
+      this.restartListening()
     }
   }
 
-  private sendToWhisper(audioBlob: Blob): void {
-    console.log(`[VoiceFloat] Sending ${audioBlob.size} bytes to Whisper`)
+  private sendForStreamingTranscription(audioBlob: Blob): void {
+    console.log(`[VoiceFloat] Sending ${audioBlob.size} bytes for streaming transcription`)
 
     const formData = new FormData()
     formData.append("audio", audioBlob, "audio.wav")
-    formData.append("detect_wake_word", "true")
-    formData.append("wake_phrase", this.wakePhrase)
+    formData.append("detect_wake_word", this.wakeWordEnabled.toString())
+    formData.append("conversation_id", this.currentConversationId?.toString() || "")
 
     this.updateTranscript("Transcribing...")
     this.showLoading()
 
-    fetch("/api/v1/voice/transcribe", {
+    fetch("/api/v1/voice/stream", {
       method: "POST",
       body: formData
     })
@@ -308,30 +348,28 @@ export default class VoiceFloatController extends Controller {
         return response.json()
       })
       .then(data => {
-        this.hideLoading()
-        this.processingAudio = false
-
         if (data.error) {
           console.error("[VoiceFloat] Server error:", data.error)
+          this.hideLoading()
+          this.processingAudio = false
           this.restartListening()
           return
         }
 
-        console.log("[VoiceFloat] Whisper transcribed:", data.text)
-        console.log("[VoiceFloat] AI response:", data.ai_response)
+        console.log("[VoiceFloat] Streaming response:", data)
+
+        // Set up streaming channel
+        if (data.stream_name) {
+          this.streamChannelName = data.stream_name
+          this.currentConversationId = data.conversation_id
+          this.initializeActionCable()
+        }
 
         if (data.text && data.text.trim().length > 0) {
           this.updateTranscript(data.text)
-
-          // Show AI response if available
-          if (data.ai_response) {
-            console.log("[VoiceFloat] Showing AI response:", data.ai_response)
-            this.showAiResponse(data.ai_response)
-          }
         }
 
-        // Restart listening for next command
-        this.restartListening()
+        this.processingAudio = false
       })
       .catch(error => {
         console.error("[VoiceFloat] Transcription error:", error)
@@ -350,10 +388,8 @@ export default class VoiceFloatController extends Controller {
       this.recordingInterval = null
     }
 
-    // Only process remaining audio if modal is still visible (not during cleanup)
-    // This prevents infinite loops when closeModal() calls stopListening()
     if (this.wavEncoder && this.wavEncoder.samples.length > 0 && this.modalElement && !this.modalElement.classList.contains("hidden")) {
-      this.sendToWhisper(this.wavEncoder.encode())
+      this.sendForStreamingTranscription(this.wavEncoder.encode())
     }
 
     if (this.processor) {
@@ -382,59 +418,28 @@ export default class VoiceFloatController extends Controller {
   private restartListening(): void {
     console.log("[VoiceFloat] Restarting listening for next command")
 
-    // Reset recording state
     this.processingAudio = false
     this.recordingStartTime = Date.now()
+    this.streamingResponse = ""
 
-    // Create fresh audio context and encoder
-    if (!this.audioContext || this.audioContext.state === "closed") {
-      this.audioContext = new AudioContext({ sampleRate: 48000 })
+    if (this.wavEncoder) {
+      this.wavEncoder.reset()
+      this.wavEncoder.sampleRate = this.audioContext?.sampleRate || 48000
+    } else {
+      this.wavEncoder = new WAVEncoder()
+      this.wavEncoder.sampleRate = this.audioContext?.sampleRate || 48000
     }
 
-    this.wavEncoder = new WAVEncoder()
-    this.wavEncoder.sampleRate = this.audioContext.sampleRate
-
-    // Reconnect audio nodes
-    if (this.mediaStream) {
-      const source = this.audioContext.createMediaStreamSource(this.mediaStream)
-      this.analyser = this.audioContext.createAnalyser()
-      this.analyser.fftSize = 256
-      source.connect(this.analyser)
-
-      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1)
-      this.processor.onaudioprocess = (e) => {
-        if (!this.isListening) return
-        const inputData = e.inputBuffer.getChannelData(0)
-        this.wavEncoder?.addChannelData(inputData)
-      }
-      source.connect(this.processor)
-      this.processor.connect(this.audioContext.destination)
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval)
     }
-
-    // Start the recording interval again
     this.recordingInterval = setInterval(() => {
       this.checkRecordingDuration()
     }, 1000)
 
     this.isListening = true
     this.updateConnectionStatus("connected", "Ready")
-    this.updateTranscript('Listening... Say "Hey Otto"!')
-  }
-
-  private onWakeWordDetected(): void {
-    console.log("[VoiceFloat] Wake word detected!")
-    this.updateTranscript("Wake word detected!")
-  }
-
-  private processCommand(text: string): void {
-    console.log("[VoiceFloat] Processing command:", text)
-
-    if (this.channel) {
-      this.channel.send({
-        type: "voice_command",
-        command_text: text
-      })
-    }
+    this.updateTranscript("Listening... Speak now!")
   }
 
   private updateTranscript(text: string): void {
@@ -466,30 +471,17 @@ export default class VoiceFloatController extends Controller {
     if (el) el.classList.add("hidden")
   }
 
-  private showResult(message: string, type?: string, data?: any): void {
-    const el = document.getElementById("voice-result")
-    if (el) {
-      el.textContent = message
-      el.classList.remove("hidden")
-    }
-  }
-
-  private showAiResponse(text: string): void {
+  private showStreamingResponse(text: string): void {
+    console.log("[VoiceFloat] showStreamingResponse called. Text length:", text.length)
+    console.log("[VoiceFloat] Text content:", text)
     const el = document.getElementById("voice-ai-response")
+    console.log("[VoiceFloat] Element found:", !!el, "Element:", el)
     if (el) {
       el.innerHTML = text.replace(/\n/g, "<br>")
       el.classList.remove("hidden")
-      console.log("[VoiceFloat] AI response shown:", text)
+      console.log("[VoiceFloat] ✅ Element updated! Classes:", el.className, "innerHTML length:", el.innerHTML.length)
     } else {
-      console.error("[VoiceFloat] Could not find voice-ai-response element!")
-    }
-  }
-
-  private showDebugInfo(data: any): void {
-    const debugEl = document.getElementById("voice-debug")
-    if (debugEl) {
-      debugEl.classList.remove("hidden")
-      debugEl.innerHTML = `<pre class="text-xs overflow-auto max-h-32">${JSON.stringify(data, null, 2)}</pre>`
+      console.error("[VoiceFloat] ❌ ERROR: voice-ai-response element NOT FOUND in DOM!")
     }
   }
 
@@ -518,6 +510,30 @@ export default class VoiceFloatController extends Controller {
             </svg>
           </button>
         </div>
+        
+        <!-- Wake Word Toggle -->
+        <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div class="flex items-center space-x-3">
+            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">Wake Word</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Say "${this.wakePhrase}" to activate</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="wake-word-toggle" class="sr-only peer"
+              ${this.wakeWordEnabled ? 'checked' : ''}>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4
+              peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full
+              peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px]
+              after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full
+              after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+          </label>
+        </div>
+        
         <div id="voice-connection-status" class="connection-status idle text-sm text-gray-500 mb-4">
           Connecting...
         </div>
@@ -532,10 +548,6 @@ export default class VoiceFloatController extends Controller {
             border-green-200 dark:border-green-700 rounded-lg text-sm
             text-gray-700 dark:text-gray-300 w-full text-left">
           </div>
-          <div id="voice-debug" class="hidden mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 border
-            border-yellow-200 dark:border-yellow-700 rounded-lg text-xs
-            text-gray-700 dark:text-gray-300 w-full text-left font-mono">
-          </div>
           <div id="voice-result" class="hidden mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm w-full"></div>
         </div>
       </div>
@@ -545,6 +557,15 @@ export default class VoiceFloatController extends Controller {
 
     const closeBtn = document.getElementById("voice-close-btn")
     closeBtn?.addEventListener("click", () => this.closeModal())
+
+    // Wake word toggle handler
+    const wakeToggle = document.getElementById("wake-word-toggle")
+    wakeToggle?.addEventListener("change", (e) => {
+      const target = e.target as HTMLInputElement
+      this.wakeWordEnabled = target.checked
+      localStorage.setItem("wake_word_enabled", this.wakeWordEnabled.toString())
+      console.log(`[VoiceFloat] Wake word ${this.wakeWordEnabled ? "enabled" : "disabled"}`)
+    })
 
     modal.addEventListener("click", (e) => {
       if (e.target === modal) this.closeModal()

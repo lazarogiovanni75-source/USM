@@ -5,10 +5,6 @@ class AutoResponseTrigger < ApplicationRecord
   validates :trigger_type, presence: true
   validates :response_type, presence: true
   
-  # Serialized fields
-  serialize :conditions, Array
-  serialize :config, JSON
-  
   # Enums
   enum status: { active: 'active', inactive: 'inactive' }
   enum trigger_type: { 

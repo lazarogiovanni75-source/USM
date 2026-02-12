@@ -5,9 +5,6 @@ class ScheduledAiTask < ApplicationRecord
   validates :task_type, presence: true
   validates :schedule_type, presence: true
   
-  # Serialized fields
-  serialize :config, JSON
-  
   # Enums
   enum status: { active: 'active', inactive: 'inactive', paused: 'paused' }
   enum task_type: {
@@ -33,6 +30,10 @@ class ScheduledAiTask < ApplicationRecord
   
   def active?
     status == 'active'
+  end
+  
+  def due?
+    active? && next_run_at.present? && next_run_at <= Time.current
   end
   
   def recurring?

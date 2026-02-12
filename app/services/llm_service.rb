@@ -20,7 +20,7 @@ class LlmService < ApplicationService
     @prompt = prompt
     @system = system
     @options = options
-    @model = options[:model] || ENV.fetch('CLACKY_OPENAI_MODEL') { ENV.fetch('LLM_MODEL', 'gpt-5o-mini') }
+    @model = options[:model] || ENV.fetch('CLACKY_OPENAI_MODEL') { ENV.fetch('LLM_MODEL', 'gpt-4o-mini') }
     @temperature = options[:temperature]&.to_f || 0.7
     @max_tokens = options[:max_tokens] || 4000
     @timeout = options[:timeout] || 30
@@ -494,8 +494,10 @@ class LlmService < ApplicationService
 
   def api_key
     ENV.fetch('CLACKY_OPENAI_API_KEY') do
-      ENV.fetch('LLM_API_KEY') do
-        raise LlmError, "LLM_API_KEY not configured (tried CLACKY_OPENAI_API_KEY, LLM_API_KEY)"
+      ENV.fetch('OPENAI_API_KEY') do
+        ENV.fetch('LLM_API_KEY') do
+          raise LlmError, "LLM_API_KEY not configured (tried CLACKY_OPENAI_API_KEY, OPENAI_API_KEY, LLM_API_KEY)"
+        end
       end
     end
   end

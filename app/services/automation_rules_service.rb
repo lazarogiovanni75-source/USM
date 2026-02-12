@@ -26,7 +26,8 @@ class AutomationRulesService
         results << result
         
         # Log the execution
-        rule.rule_executions.create!(
+        AutomationRuleExecution.create!(
+          automation_rule: rule,
           trigger_data: trigger_data,
           status: result[:success] ? 'executed' : 'failed',
           execution_details: result
@@ -162,8 +163,9 @@ class AutomationRulesService
 
   # Get rule execution statistics
   def get_rule_statistics(days = 30)
-    executions = @user.rule_executions
-                    .where('created_at >= ?', days.days.ago)
+    executions = AutomationRuleExecution.joins(:automation_rule)
+                    .where(automation_rules: { user_id: @user.id })
+                    .where('automation_rule_executions.created_at >= ?', days.days.ago)
                     .group(:status)
                     .count
     

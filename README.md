@@ -1,4 +1,4 @@
-stripe webhookhello everything is showing green everything pastcloselyclosely over these 6 shelloa9creenshotscreenshots. is already at 3000 of those variables were already in there lipfm_live_4NJHWqt7cUTpmVkXAqxCRa# ClackyAI Rails7 starter
+stripe webhookhello everything is showing green EVERYTHING pastcloselyclosely over these 6 shelloa9creenshotscreenshots. is already at 3000 of those variables were already in there lipfm_live_4NJHWqt7cUTpmVkXAqxCRa# ClackyAI Rails7 starter
 
 The template for ClackyAI
 

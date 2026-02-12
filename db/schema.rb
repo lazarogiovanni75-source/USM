@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_10_115100) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -87,6 +87,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_10_115100) do
     t.integer "tokens_used"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "message_type", default: "text"
     t.index ["ai_conversation_id"], name: "index_ai_messages_on_ai_conversation_id"
     t.index ["role"], name: "index_ai_messages_on_role"
   end
@@ -139,6 +140,19 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_10_115100) do
     t.index ["response_type"], name: "index_auto_responses_on_response_type"
     t.index ["status"], name: "index_auto_responses_on_status"
     t.index ["user_id"], name: "index_auto_responses_on_user_id"
+  end
+
+  create_table "automation_rule_executions", force: :cascade do |t|
+    t.bigint "automation_rule_id", null: false
+    t.jsonb "trigger_data", default: {}
+    t.string "status", default: "pending"
+    t.jsonb "execution_details", default: {}
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["automation_rule_id"], name: "index_automation_rule_executions_on_automation_rule_id"
+    t.index ["created_at"], name: "index_automation_rule_executions_on_created_at"
+    t.index ["status"], name: "index_automation_rule_executions_on_status"
   end
 
   create_table "automation_rules", force: :cascade do |t|
@@ -702,6 +716,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_10_115100) do
   add_foreign_key "auto_responses", "contents"
   add_foreign_key "auto_responses", "response_templates"
   add_foreign_key "auto_responses", "users"
+  add_foreign_key "automation_rule_executions", "automation_rules"
   add_foreign_key "content_suggestions", "draft_contents"
   add_foreign_key "content_template_variables", "content_templates"
   add_foreign_key "postforme_analytics", "scheduled_posts"

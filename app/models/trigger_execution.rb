@@ -1,10 +1,6 @@
 class TriggerExecution < ApplicationRecord
-  belongs_to :auto_response_trigger, foreign_key: :trigger_id
+  belongs_to :auto_response_trigger
   belongs_to :user
-  
-  # Serialized fields
-  serialize :engagement_data, JSON
-  serialize :response_data, JSON
   
   # Enums
   enum status: { executed: 'executed', failed: 'failed', skipped: 'skipped' }
