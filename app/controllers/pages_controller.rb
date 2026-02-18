@@ -6,7 +6,8 @@ class PagesController < ApplicationController
 
 
   def pricing
-    # Write your real logic here
+    @plans = SubscriptionPlan.all.order(:price_cents)
+    @current_subscription = current_user&.user_subscriptions&.active&.first if user_signed_in?
   end
 
 

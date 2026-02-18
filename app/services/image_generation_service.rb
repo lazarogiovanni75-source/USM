@@ -1,127 +1,133 @@
-# Image Generation Service
-class ImageGenerationService < ApplicationService
+# frozen_string_literal: true
+
+# Image Generation Service with Primary/Secondary Fallback
+# Primary: Defapi/GPT-Image-1.5 (https://api.defapi.org)
+# Secondary: OpenAI/GPT-Image-1.0 (direct API)
+class ImageGenerationService
   class ImageGenerationError < StandardError; end
-  class TimeoutError < ImageGenerationError; end
-  class ApiError < ImageGenerationError; end
+  class ServiceUnavailableError < ImageGenerationError; end
 
-  def initialize(prompt:, **options)
-    @prompt = prompt
-    @options = options
-    @base_url = options[:base_url] || ENV.fetch('LLM_BASE_URL')
-    @model = options[:model] || ENV.fetch('IMAGE_GEN_MODEL')
-    @size = options[:size] || ENV.fetch('IMAGE_GEN_SIZE', '1024x1024')
-    @timeout = options[:timeout] || 60 # Image generation may take longer
-    @images = normalize_images(options[:images])
+  # Generate image with primary/secondary fallback
+  #
+  # @param prompt [String] Text prompt for image
+  # @param size [String] Image size
+  # @param quality [String] Image quality
+  # @return [Hash] Result with task_id and metadata
+  #
+  def self.generate_image(prompt:, size: '1024x1024', quality: 'high')
+    # Try primary service (Defapi GPT-Image-1.5)
+    result = try_primary_image(prompt: prompt, size: size, quality: quality)
+    return result if result[:success]
+
+    # Try secondary service (OpenAI GPT-Image-1.0)
+    result = try_secondary_image(prompt: prompt, size: size, quality: quality)
+    return result if result[:success]
+
+    # Both services failed
+    raise ServiceUnavailableError, "Image generation services unavailable. Primary: Defapi failed. Secondary: OpenAI failed."
   end
 
-  # Generate image(s) and return result
-  # Returns: { images: [base64_data_urls] }
-  def call
-    raise ImageGenerationError, "Prompt cannot be blank" if @prompt.blank?
-
-    response = make_http_request
-    images = extract_images(response)
-
-    raise ImageGenerationError, "No images in response" if images.empty?
-
-    { images: images }
-  rescue => e
-    Rails.logger.error("Image Generation Error: #{e.class} - #{e.message}")
-    raise
-  end
-
-  # Class method shortcut
-  class << self
-    def call(prompt:, **options)
-      new(prompt: prompt, **options).call
+  # Get image task status
+  def self.get_status(task_id, service: nil)
+    service_obj = service_to_object(service)
+    
+    if service_obj.is_a?(DefapiService)
+      service_obj.gpt_image_status(task_id)
+    else
+      # OpenAI generates synchronously, so no polling needed
+      { 'status' => 'success', 'output' => task_id }
     end
   end
 
-  private
+  # Edit an existing image (placeholder - creates new variation)
+  def self.edit_image(image_url:, prompt:)
+    # Note: OpenAI GPT-Image-1 doesn't support editing, only generation
+    # For now, we'll generate a new image based on the prompt
+    # In production, you could use inpainting with DALL-E 2 or similar
+    { success: false, error: "Image editing requires DALL-E 2 API. Please generate a new image instead." }
+  end
 
-  def make_http_request
-    require 'net/http'
-    require 'uri'
-    require 'json'
+  def self.try_primary_image(prompt:, size:, quality:)
+    Rails.logger.info "[ImageGeneration] Trying primary service: Defapi/GPT-Image-1.5"
+    
+    service = DefapiService.new
+    
+    unless service.configured?
+      Rails.logger.warn "[ImageGeneration] Primary service not configured"
+      return { success: false, error: "Defapi not configured" }
+    end
 
-    uri = URI.parse("#{@base_url}/chat/completions")
+    begin
+      result = service.generate_gpt_image(
+        prompt: prompt,
+        model: 'openai/gpt-image-1.5',
+        size: size,
+        quality: quality,
+        output_format: 'png'
+      )
 
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = (uri.scheme == 'https')
-    http.read_timeout = @timeout
-    http.open_timeout = 10
-
-    request = Net::HTTP::Post.new(uri.path)
-    request["Content-Type"] = "application/json"
-    request["Authorization"] = "Bearer #{api_key}"
-
-    messages = []
-    if @images.present?
-      content = [{ type: "text", text: @prompt.to_s }]
-      @images.each do |img|
-        content << { type: "image_url", image_url: { url: img } }
+      if result['task_id'].present?
+        Rails.logger.info "[ImageGeneration] Primary service succeeded - task_id: #{result['task_id']}"
+        {
+          success: true,
+          task_id: result['task_id'],
+          service: 'defapi',
+          metadata: { model: 'gpt-image-1.5', size: size, quality: quality }
+        }
+      else
+        Rails.logger.error "[ImageGeneration] Primary service returned no task_id"
+        { success: false, error: result['error'] || 'Failed to start generation' }
       end
-      messages << { role: "user", content: content }
-    else
-      messages << { role: "user", content: @prompt }
-    end
-
-    body = {
-      model: @model,
-      messages: messages,
-      size: @size
-    }
-    body[:modalities] = ["text", "image"]
-
-    request.body = body.to_json
-
-    response = http.request(request)
-
-    case response.code.to_i
-    when 200
-      JSON.parse(response.body)
-    when 429
-      raise ApiError, "Rate limit exceeded"
-    when 500..599
-      raise ApiError, "Server error: #{response.code}"
-    else
-      raise ApiError, "API error: #{response.code} - #{response.body}"
-    end
-  rescue Net::ReadTimeout
-    raise TimeoutError, "Request timed out after #{@timeout}s"
-  rescue JSON::ParserError => e
-    raise ApiError, "Invalid JSON response: #{e.message}"
-  end
-
-  def extract_images(response)
-    # response format supported:
-    # 1. { choices: [{ message: { images: [{ image_url: { url: "..." } }] } }] }
-    # 2. { choices: [{ message: { content: "..." } }] }
-    message = response.dig("choices", 0, "message")
-    return [] unless message
-
-    if message["images"] && message["images"].is_a?(Array)
-      # 1. directly extract images array URLs
-      message["images"]
-        .map { |img| img.dig("image_url", "url") }
-        .compact
-    elsif message["content"].is_a?(String)
-      # 2. try to extract possible image URLs from content (supports Markdown and plain URLs)
-      message["content"].scan(%r{data:image/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+}) rescue []
-    else
-      []
+    rescue => e
+      Rails.logger.error "[ImageGeneration] Primary service error: #{e.message}"
+      { success: false, error: e.message }
     end
   end
 
-  def api_key
-    ENV.fetch('LLM_API_KEY') do
-      raise ImageGenerationError, "LLM_API_KEY not configured"
+  def self.try_secondary_image(prompt:, size:, quality:)
+    Rails.logger.info "[ImageGeneration] Trying secondary service: OpenAI/GPT-Image-1.0"
+    
+    service = OpenaiImageService.new
+    
+    unless service.configured?
+      Rails.logger.warn "[ImageGeneration] Secondary service not configured"
+      return { success: false, error: "OpenAI not configured" }
+    end
+
+    begin
+      result = service.generate_gpt_image(
+        prompt: prompt,
+        size: size,
+        quality: quality
+      )
+
+      if result['output'].present?
+        Rails.logger.info "[ImageGeneration] Secondary service succeeded"
+        {
+          success: true,
+          task_id: result['output'],
+          service: 'openai',
+          output_url: result['output'],
+          metadata: { model: 'gpt-image-1', size: size, quality: quality }
+        }
+      else
+        Rails.logger.error "[ImageGeneration] Secondary service returned no output"
+        { success: false, error: 'Failed to generate image' }
+      end
+    rescue => e
+      Rails.logger.error "[ImageGeneration] Secondary service error: #{e.message}"
+      { success: false, error: e.message }
     end
   end
 
-  def normalize_images(images)
-    return [] if images.blank?
-    list = images.is_a?(Array) ? images.compact : [images].compact
-    list.map(&:to_s).reject(&:blank?)
+  def self.service_to_object(service_name)
+    case service_name
+    when 'defapi'
+      DefapiService.new
+    when 'openai'
+      OpenaiImageService.new
+    else
+      DefapiService.new
+    end
   end
 end

@@ -1,0 +1,249 @@
+<div class="max-w-4xl mx-auto" data-controller="policy-settings">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900"><%= lucide_icon "shield", class: "w-6 h-6 inline-block mr-2" %>Execution Policies</h1>
+    <p class="text-gray-600 mt-1">Configure how AI executes tasks on your behalf</p>
+  </div>
+
+  <div class="space-y-6" data-controller="policy-settings">
+    <%= form_with model: @policy, url: policy_settings_path, method: :patch, data: { policy_settings_target: "form" } do |f| %>
+    
+    <!-- Risk Threshold -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="text-lg font-semibold">Risk Threshold</h2>
+      </div>
+      <div class="card-body">
+        <p class="text-sm text-gray-600 mb-4">Set the default behavior for tool execution based on risk level.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <label class="policy-option <%= 'selected' if @policy.risk_threshold == :low %>">
+            <input type="radio" name="risk_threshold" value="low" <%= 'checked' if @policy.risk_threshold == :low %> class="sr-only">
+            <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-primary transition-colors">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                <span class="font-medium">Autonomous</span>
+              </div>
+              <p class="text-xs text-gray-500">Auto-execute low & medium risk tasks. Confirm high risk.</p>
+            </div>
+          </label>
+          
+          <label class="policy-option">
+            <input type="radio" name="risk_threshold" value="medium" <%= 'checked' if @policy.risk_threshold == :medium %> class="sr-only">
+            <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-primary transition-colors">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <span class="font-medium">Supervised</span>
+              </div>
+              <p class="text-xs text-gray-500">Auto-execute low risk only. Confirm medium & high risk.</p>
+            </div>
+          </label>
+          
+          <label class="policy-option">
+            <input type="radio" name="risk_threshold" value="high" <%= 'checked' if @policy.risk_threshold == :high %> class="sr-only">
+            <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-primary transition-colors">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                <span class="font-medium">Strict</span>
+              </div>
+              <p class="text-xs text-gray-500">Confirm all tool executions. Maximum safety.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auto-Approval Settings -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="text-lg font-semibold">Auto-Approval</h2>
+      </div>
+      <div class="card-body space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Low Risk Tasks</p>
+            <p class="text-sm text-gray-500">Auto-execute read operations, analytics, content ideas</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="auto_approve_low_risk" class="sr-only peer" <%= 'checked' if @policy.get(:auto_approve_low_risk) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Medium Risk Tasks</p>
+            <p class="text-sm text-gray-500">Auto-execute content creation, scheduling, image generation</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="auto_approve_medium_risk" class="sr-only peer" <%= 'checked' if @policy.get(:auto_approve_medium_risk) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cost Controls -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="text-lg font-semibold">Cost Controls</h2>
+      </div>
+      <div class="card-body space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Cost-Based Approval</p>
+            <p class="text-sm text-gray-500">Require confirmation for expensive operations</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="cost_auto_approve" class="sr-only peer" <%= 'checked' if @policy.get(:cost_auto_approve) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Approval Threshold</label>
+          <div class="flex items-center gap-2">
+            <span class="text-gray-500">$</span>
+            <input type="number" name="cost_approval_threshold" value="<%= @policy.get(:cost_approval_threshold) || 50 %>" min="0" step="10" class="form-input w-24">
+            <span class="text-sm text-gray-500">cents</span>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Require confirmation if cost exceeds this amount</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Execution Limits -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="text-lg font-semibold">Execution Limits</h2>
+      </div>
+      <div class="card-body space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Runaway Protection</p>
+            <p class="text-sm text-gray-500">Prevent excessive AI tool calls</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="enable_runaway_protection" class="sr-only peer" <%= 'checked' if @policy.get(:enable_runaway_protection) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Daily Tool Call Limit</label>
+            <input type="number" name="max_daily_tool_calls" value="<%= @policy.get(:max_daily_tool_calls) || 50 %>" min="1" class="form-input">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Monthly Cost Limit</label>
+            <div class="flex items-center">
+              <span class="text-gray-500 mr-1">$</span>
+              <input type="number" name="max_monthly_cost_cents" value="<%= (@policy.get(:max_monthly_cost_cents) || 5000) / 100.0 %>" min="1" step="10" class="form-input">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature Toggles -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="text-lg font-semibold">Features</h2>
+      </div>
+      <div class="card-body space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Voice Commands</p>
+            <p class="text-sm text-gray-500">Enable voice input via microphone</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="enable_voice_commands" class="sr-only peer" <%= 'checked' if @policy.feature_enabled?(:voice_commands) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Scheduled Tasks</p>
+            <p class="text-sm text-gray-500">Enable recurring AI tasks (daily, weekly)</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="enable_scheduled_tasks" class="sr-only peer" <%= 'checked' if @policy.feature_enabled?(:scheduled_tasks) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Auto-Posting</p>
+            <p class="text-sm text-gray-500">Allow AI to post without confirmation</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="enable_auto_posting" class="sr-only peer" <%= 'checked' if @policy.feature_enabled?(:auto_posting) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="text-lg font-semibold">Notifications</h2>
+      </div>
+      <div class="card-body space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Medium Risk Notifications</p>
+            <p class="text-sm text-gray-500">Notify when medium risk tasks execute</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="notify_on_medium_risk" class="sr-only peer" <%= 'checked' if @policy.get(:notify_on_medium_risk) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">High Risk Notifications</p>
+            <p class="text-sm text-gray-500">Notify when high risk tasks execute</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="notify_on_high_risk" class="sr-only peer" <%= 'checked' if @policy.get(:notify_on_high_risk) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Error Notifications</p>
+            <p class="text-sm text-gray-500">Notify when task execution fails</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="notify_on_error" class="sr-only peer" <%= 'checked' if @policy.get(:notify_on_error) %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-between">
+      <button type="button" class="btn btn-secondary" data-action="click->policy-settings#reset">
+        <%= lucide_icon "refresh-cw", class: "w-4 h-4 mr-2" %>
+        Reset to Defaults
+      </button>
+      <%= f.submit class: "btn btn-primary" do %>
+        <%= lucide_icon "save", class: "w-4 h-4 mr-2" %>
+        Save Changes
+      <% end %>
+    </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.policy-option.selected .border-2 {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-bg);
+}
+</style>

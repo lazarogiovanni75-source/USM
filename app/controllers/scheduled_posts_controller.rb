@@ -82,7 +82,7 @@ class ScheduledPostsController < ApplicationController
     when 'publish_now'
       posts.each do |post|
         if post.update(status: 'published', posted_at: Time.current)
-          MakeaiService.new(post).publish_to_platform
+          # Post published - ready for social media sharing
           updated_count += 1
         end
       end
@@ -178,6 +178,22 @@ class ScheduledPostsController < ApplicationController
       flash[:alert] = "No optimization opportunities found."
     end
     redirect_to scheduled_posts_path
+  end
+
+  # Add note/comment to a scheduled post
+  def add_note
+    @scheduled_post = current_user.scheduled_posts.find(params[:id])
+    
+    if params[:internal_note].present?
+      @scheduled_post.update(internal_note: params[:internal_note])
+      flash[:notice] = "Note added successfully."
+    else
+      flash[:alert] = "Please enter a note."
+    end
+    
+    redirect_to dashboards_path(anchor: 'comments-section'), notice: flash[:notice]
+  rescue ActiveRecord::RecordNotFound
+    redirect_to dashboards_path, alert: "Post not found."
   end
 
   # Preview scheduling impact

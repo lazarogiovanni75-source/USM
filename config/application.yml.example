@@ -74,3 +74,8 @@ LLM_MODEL: '<%= ENV.fetch("CLACKY_LLM_MODEL", 'gemini-2.5-flash') %>'
 IMAGE_GEN_MODEL: '<%= ENV.fetch("CLACKY_IMAGE_GEN_MODEL", "gemini-2.5-flash-image") %>'
 IMAGE_GEN_SIZE: '<%= ENV.fetch("CLACKY_IMAGE_GEN_SIZE", "1024x1024") %>'
 # Image Generation Service Configuration end
+
+# Stripe Configuration
+STRIPE_PUBLISHABLE_KEY: <%= ENV["CLACKY_STRIPE_PUBLISHABLE_KEY"] %>
+STRIPE_SECRET_KEY: <%= ENV["CLACKY_STRIPE_SECRET_KEY"] %>
+STRIPE_WEBHOOK_SECRET: <%= ENV["CLACKY_STRIPE_WEBHOOK_SECRET"] %>

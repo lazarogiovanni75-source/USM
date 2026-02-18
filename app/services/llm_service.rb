@@ -16,9 +16,10 @@ class LlmService < ApplicationService
   class ApiError < LlmError; end
   class ToolExecutionError < LlmError; end
 
-  def initialize(prompt:, system: nil, **options)
+  def initialize(prompt:, system: nil, messages: nil, **options)
     @prompt = prompt
     @system = system
+    @provided_messages = messages || []  # Pre-provided conversation history
     @options = options
     @model = options[:model] || ENV.fetch('CLACKY_OPENAI_MODEL') { ENV.fetch('LLM_MODEL', 'gpt-4o-mini') }
     @temperature = options[:temperature]&.to_f || 0.7
@@ -361,6 +362,9 @@ class LlmService < ApplicationService
   # Build initial messages from prompt, system, and images
   def build_initial_messages
     return if @messages.present? # Already built
+
+    # Add pre-provided conversation history
+    @messages.concat(@provided_messages) if @provided_messages.present?
 
     @messages << { role: "system", content: @system } if @system.present?
 

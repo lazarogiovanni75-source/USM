@@ -2,6 +2,63 @@ class Api::V1::VoiceController < ApplicationController
   skip_before_action :verify_authenticity_token
   before_action :set_default_headers
 
+  # Simple text-based voice response (for browser speech recognition)
+  def chat
+    text = params[:text]
+    stream_name = params[:stream_name] || "voice_chat_#{current_user&.id || 'anon'}"
+
+    if text.blank?
+      render json: { error: 'Text is required' }, status: :bad_request
+      return
+    end
+
+    begin
+      # Generate AI response
+      api_key = ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
+      llm_model = Rails.application.config_for(:application)['LLM_MODEL'] || 'gpt-4o-mini'
+
+      system_prompt = <<~PROMPT
+        You are a helpful AI voice assistant for a marketing platform.
+        Keep responses friendly, concise (1-3 sentences), and conversational.
+        Help with: marketing campaigns, social media content, scheduling, performance analysis.
+      PROMPT
+
+      uri = URI.parse('https://api.openai.com/v1/chat/completions')
+      body = {
+        model: llm_model,
+        messages: [
+          { role: "system", content: system_prompt.strip },
+          { role: "user", content: text }
+        ],
+        max_tokens: 300,
+        temperature: 0.7
+      }.to_json
+
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.open_timeout = 15
+      http.read_timeout = 30
+
+      request = Net::HTTP::Post.new(uri.path)
+      request['Authorization'] = "Bearer #{api_key}"
+      request['Content-Type'] = 'application/json'
+      request.body = body
+
+      response = http.request(request)
+
+      if response.is_a?(Net::HTTPSuccess)
+        result = JSON.parse(response.body)
+        ai_response = result.dig('choices', 0, 'message', 'content')
+        render json: { response: ai_response }
+      else
+        render json: { error: "AI error: #{response.code}" }, status: :bad_request
+      end
+    rescue => e
+      Rails.logger.error "Voice chat error: #{e.message}"
+      render json: { error: e.message }, status: :internal_server_error
+    end
+  end
+
   def transcribe
     audio = params[:audio]
     detect_wake_word = params[:detect_wake_word] == 'true'
@@ -42,7 +99,7 @@ class Api::V1::VoiceController < ApplicationController
       require 'net/http'
       require 'uri'
 
-      api_key = ENV.fetch('OPENAI_API_KEY')
+      api_key = ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
       uri = URI.parse('https://api.openai.com/v1/audio/transcriptions')
       boundary = "----RubyMultipartBoundary#{SecureRandom.hex(16)}"
 
@@ -199,7 +256,9 @@ class Api::V1::VoiceController < ApplicationController
 
   def generate_ai_response(text)
     # Use OpenAI to generate intelligent, contextual responses
-    api_key = ENV.fetch('OPENAI_API_KEY')
+    api_key = ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
+    # Use configured LLM model (default: gpt-4o-mini)
+    llm_model = Rails.application.config_for(:application)['LLM_MODEL'] || 'gpt-4o-mini'
     uri = URI.parse('https://api.openai.com/v1/chat/completions')
 
     system_prompt = <<~PROMPT
@@ -221,7 +280,7 @@ class Api::V1::VoiceController < ApplicationController
     PROMPT
 
     body = {
-      model: "gpt-3.5-turbo",
+      model: llm_model,
       messages: [
         { role: "system", content: system_prompt.strip },
         { role: "user", content: "User said: \"#{text}\". Respond helpfully." }

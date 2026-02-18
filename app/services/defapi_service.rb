@@ -25,7 +25,7 @@ class DefapiService
   # @param image [String, optional] Reference image URL for image-to-video (max 1)
   #
   def generate_video(prompt:,
-                     duration: '25',
+                     duration: '10',
                      aspect_ratio: '16:9',
                      model: 'sora-2-pro',
                      image: nil)
@@ -176,13 +176,10 @@ class DefapiService
   private
 
   def fetch_api_key
-    ENV.fetch('DEFAPI_API_KEY') do
+    ENV['DEFAPI_API_KEY'] ||
+      ENV['CLACKY_DEFAPI_API_KEY'] ||
       Rails.application.config.x.defapi_api_key ||
-        Rails.application.config_for(:application)['DEFAPI_API_KEY']
-    end
-  rescue KeyError
-    Rails.logger.warn('[DefapiService] API key not configured.')
-    nil
+      Rails.application.config_for(:application)['DEFAPI_API_KEY']
   end
 
   def post_request(endpoint, body)

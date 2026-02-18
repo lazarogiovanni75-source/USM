@@ -40,7 +40,29 @@ class CampaignsController < ApplicationController
         @campaign.social_account_ids = params[:social_account_ids]
       end
       
-      if params[:template_id].present?
+      # Handle AI Workflow if prompt provided
+      if params[:ai_prompt].present?
+        begin
+          result = WorkflowService.new(current_user).create_content_with_media(
+            content_text: params[:ai_prompt],
+            generate_image: params[:generate_image].to_i == 1,
+            generate_video: params[:generate_video].to_i == 1,
+            post_now: params[:post_now].to_i == 1,
+            scheduled_at: params[:scheduled_at].present? ? params[:scheduled_at] : nil,
+            social_account_ids: params[:social_account_ids] || [],
+            campaign_id: @campaign.id
+          )
+          
+          if result[:success]
+            flash[:notice] = "Campaign created! #{result[:message]}"
+          else
+            flash[:warning] = "Campaign created but AI workflow failed: #{result[:error]}"
+          end
+        rescue => e
+          Rails.logger.error("AI Workflow Error: #{e.message}")
+          flash[:warning] = "Campaign created but AI workflow encountered an error."
+        end
+      elsif params[:template_id].present?
         generate_content_from_template(params[:template_id])
       end
       

@@ -118,24 +118,31 @@ class PostWebhookJob < ApplicationJob
 
   def extract_media(content)
     return nil if content.nil?
-    return nil if content.media_urls.blank?
 
-    media_urls = content.media_urls
-    return nil if media_urls.empty?
+    # First check media_urls (JSON array - preferred)
+    if content.respond_to?(:media_urls) && content.media_urls.present?
+      media_urls = content.media_urls
+      return nil if media_urls.empty?
 
-    media = {}
-
-    case media_urls
-    when String
-      parsed = JSON.parse(media_urls)
-      media[:url] = parsed['urls']&.first || parsed.first if parsed.present?
-    when Array
-      media[:url] = media_urls.first if media_urls.present?
-    when Hash
-      media[:url] = media_urls['urls']&.first || media_urls.values.first if media_urls.present?
+      media = {}
+      case media_urls
+      when String
+        parsed = JSON.parse(media_urls)
+        media[:url] = parsed['urls']&.first || parsed.first if parsed.present?
+      when Array
+        media[:url] = media_urls.first if media_urls.present?
+      when Hash
+        media[:url] = media_urls['urls']&.first || media_urls.values.first if media_urls.present?
+      end
+      return media.present? ? media : nil
     end
 
-    media.present? ? media : nil
+    # Fallback to media_url (singular string)
+    if content.respond_to?(:media_url) && content.media_url.present?
+      return { url: content.media_url }
+    end
+
+    nil
   end
 
   def response_success?(response)

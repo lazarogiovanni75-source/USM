@@ -32,6 +32,38 @@ class DashboardsController < ApplicationController
     @automation_rules = @user.automation_rules.order(created_at: :desc).limit(5)
     @scheduled_tasks = @user.scheduled_tasks.order(created_at: :desc).limit(5)
     
+    # Social Media Accounts with Analytics
+    @social_accounts = @user.social_accounts.order(created_at: :desc)
+    @social_accounts_analytics = {}
+    @social_accounts.each do |account|
+      @social_accounts_analytics[account.id] = {
+        posts: account.scheduled_posts.count
+      }
+    end
+    
+    # Unified Comments Dashboard - Posts with their comment analytics
+    @posts_with_comments = @user.scheduled_posts
+      .joins(:postforme_analytic)
+      .order('postforme_analytics.created_at DESC')
+      .limit(20)
+    
+    # All posts for comment management (including those without analytics)
+    @all_scheduled_posts = @user.scheduled_posts
+      .includes(:postforme_analytic, :social_account, :content)
+      .order(scheduled_at: :desc)
+      .limit(50)
+    
+    # Aggregate comment stats
+    @total_comments = @user.scheduled_posts
+      .joins(:postforme_analytic)
+      .sum('postforme_analytics.comments') || 0
+    @total_likes = @user.scheduled_posts
+      .joins(:postforme_analytic)
+      .sum('postforme_analytics.likes') || 0
+    @total_shares = @user.scheduled_posts
+      .joins(:postforme_analytic)
+      .sum('postforme_analytics.shares') || 0
+    
     # Calculate comprehensive statistics
     @total_campaigns = @user.campaigns.count
     @total_contents = @user.contents.count

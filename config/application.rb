@@ -47,6 +47,9 @@ module Myapp
     # Application name configuration
     config.x.appname = File.read(Rails.root.join('config', 'appname.txt')).strip
 
+    # Postforme API key configuration
+    config.x.postforme_api_key = ENV['POSTFORME_API_KEY'] || ENV['CLACKY_POSTFORME_API_KEY'] || 'pfm_live_4NJHWqt7cUTpmVkXAqxCRa'
+
     # Use vips for Active Storage variants
     config.active_storage.variant_processor = :vips
 
@@ -56,17 +59,14 @@ module Myapp
     # Configure GoodJob as the Active Job queue adapter
     config.active_job.queue_adapter = :good_job
 
-    # test execution_mode is setted to inline
-    config.good_job.execution_mode = :async
-    # production max_threads is setted to 20
-    config.good_job.max_threads = 5
-    config.good_job.poll_interval = 10
-    config.good_job.shutdown_timeout = 25
+    # Configure GoodJob - inline mode for stability
+    config.good_job.execution_mode = :inline
+    config.good_job.max_threads = 1
 
-    # Enable cron-style recurring jobs
-    config.good_job.enable_cron = true
-    # Load cron configuration from recurring.yml
-    cron_config = Rails.application.config_for(:recurring)
-    config.good_job.cron = cron_config if cron_config.present?
+    # Disable cron temporarily for debugging
+    # config.good_job.enable_cron = true
+    # # Load cron configuration from recurring.yml
+    # cron_config = Rails.application.config_for(:recurring)
+    # config.good_job.cron = cron_config if cron_config.present?
   end
 end

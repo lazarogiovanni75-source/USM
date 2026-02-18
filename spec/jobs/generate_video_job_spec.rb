@@ -7,20 +7,19 @@ RSpec.describe GenerateVideoJob, type: :job do
       user = create(:user)
       video = create(:video, user: user)
 
-      # Stub the SoraService to avoid real API calls
-      sora_service_double = instance_double(SoraService)
-      allow(SoraService).to receive(:new).and_return(sora_service_double)
+      # Stub the PoyoService to avoid real API calls
+      poyo_service_double = instance_double(PoyoService)
+      allow(PoyoService).to receive(:new).and_return(poyo_service_double)
 
-      # Return the prediction URL on first call (generate_video)
-      allow(sora_service_double).to receive(:generate_video).and_return(
-        'status' => 'succeeded',
-        'output' => 'http://example.com/video.mp4',
-        'urls' => { 'get' => 'http://example.com/prediction/123' }
+      # Return the task_id on first call (generate_video)
+      allow(poyo_service_double).to receive(:generate_video).and_return(
+        'task_id' => 'task-123',
+        'output' => nil
       )
 
-      # Return succeeded status immediately (avoid polling loop)
-      allow(sora_service_double).to receive(:get_prediction).and_return(
-        'status' => 'succeeded',
+      # Return success status immediately (avoid polling loop)
+      allow(poyo_service_double).to receive(:task_status).and_return(
+        'status' => 'success',
         'output' => 'http://example.com/video.mp4'
       )
 

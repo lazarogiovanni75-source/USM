@@ -49,8 +49,8 @@ app.use(sanitizeInput);
 
 // API configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const DEFAPI_API_KEY = process.env.DEFAPI_API_KEY;
-const DEFAPI_BASE_URL = 'https://api.deeinf.com/v1';
+const POYO_API_KEY = process.env.POYO_API_KEY || process.env.DEFAPI_API_KEY;
+const POYO_BASE_URL = 'https://api.poyo.ai';
 
 // =====================
 // MONITORING ENDPOINTS
@@ -268,24 +268,31 @@ app.post('/video/start',
   asyncHandler(async (req, res) => {
     const { prompt, userName = 'Anonymous', userEmail = 'anonymous@example.com' } = req.body;
     
-    if (!DEFAPI_API_KEY) {
-      throw new AppError('DefAPI API key not configured', 503, 'SERVICE_UNAVAILABLE');
+    if (!POYO_API_KEY) {
+      throw new AppError('PoYo AI API key not configured', 503, 'SERVICE_UNAVAILABLE');
     }
 
     try {
       const response = await axios.post(
-        `${DEFAPI_BASE_URL}/video/generate`,
-        { prompt },
+        `${POYO_BASE_URL}/api/generate/submit`,
+        {
+          model: 'sora-2',
+          input: {
+            prompt: prompt,
+            duration: 15,
+            aspect_ratio: '16:9'
+          }
+        },
         {
           headers: {
-            'Authorization': `Bearer ${DEFAPI_API_KEY}`,
+            'Authorization': `Bearer ${POYO_API_KEY}`,
             'Content-Type': 'application/json'
           },
           timeout: 30000
         }
       );
 
-      const jobId = response.data.job_id || response.data.id;
+      const jobId = response.data.data.task_id;
       
       // Save job to database (if connected)
       try {
@@ -316,22 +323,24 @@ app.get('/video/status/:jobId',
   asyncHandler(async (req, res) => {
     const { jobId } = req.params;
     
-    if (!DEFAPI_API_KEY) {
-      throw new AppError('DefAPI API key not configured', 503, 'SERVICE_UNAVAILABLE');
+    if (!POYO_API_KEY) {
+      throw new AppError('PoYo AI API key not configured', 503, 'SERVICE_UNAVAILABLE');
     }
 
     try {
       const response = await axios.get(
-        `${DEFAPI_BASE_URL}/video/status/${jobId}`,
+        `${POYO_BASE_URL}/api/task/${jobId}`,
         {
           headers: {
-            'Authorization': `Bearer ${DEFAPI_API_KEY}`
+            'Authorization': `Bearer ${POYO_API_KEY}`
           },
           timeout: 10000
         }
       );
 
-      const { status, video_url } = response.data;
+      const taskData = response.data.data;
+      const status = taskData.status === 'finished' ? 'completed' : taskData.status;
+      const video_url = taskData.result?.video_url || null;
       
       // Update database if video is complete
       if (status === 'completed' && video_url) {

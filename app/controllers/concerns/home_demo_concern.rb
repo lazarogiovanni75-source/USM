@@ -2,11 +2,9 @@ module HomeDemoConcern
   extend ActiveSupport::Concern
 
   included do
-    # Only handle demo page in development environment
-    if Rails.env.development?
-      skip_before_action :check_pending_migrations, if: -> { should_render_demo? }, raise: false
-      before_action :check_demo_mode, only: [:index]
-    end
+    # Handle demo page in both development and production
+    skip_before_action :check_pending_migrations, if: -> { should_render_demo? }, raise: false
+    before_action :check_demo_mode, only: [:index]
   end
 
   private
@@ -25,9 +23,8 @@ module HomeDemoConcern
   end
 
   def should_render_demo?
-    return false unless Rails.env.development?
-
-    File.exist?(demo_template_path) && !File.exist?(index_template_path)
+    # Check for demo template - show demo page regardless of index.html.erb existence
+    File.exist?(demo_template_path)
   end
 
   def demo_template_path

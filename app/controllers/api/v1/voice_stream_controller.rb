@@ -16,6 +16,7 @@ class Api::V1::VoiceStreamController < ApplicationController
     audio = params[:audio]
     conversation_id = params[:conversation_id]
     detect_wake_word = params[:detect_wake_word] == 'true'
+    early_trigger = params[:early_trigger] == 'true'
 
     if audio.blank?
       render json: { error: 'Audio file is required' }, status: :bad_request
@@ -39,7 +40,8 @@ class Api::V1::VoiceStreamController < ApplicationController
       # Transcribe using OpenAI Whisper
       transcribed_text = transcribe_audio(processed_audio)
       if transcribed_text.blank?
-        render json: { error: 'Could not transcribe audio' }, status: :bad_request
+        # No speech detected - return silently
+        render json: { text: '', status: 'no_speech' }
         return
       end
 
@@ -57,14 +59,22 @@ class Api::V1::VoiceStreamController < ApplicationController
         conversation_id: conversation_id
       )
 
+      # Generate streaming channel name FIRST
+      stream_name = VoiceConversationService.conversation_channel(current_user.id, voice_service.conversation.id)
+
       # Get conversation history BEFORE adding the new message
       conversation_history = get_conversation_history(voice_service)
 
       # Add user message to conversation
       voice_service.add_user_message(transcribed_text)
 
-      # Generate streaming channel name
-      stream_name = VoiceConversationService.conversation_channel(current_user.id, voice_service.conversation.id)
+      # Broadcast confirmation that command was received (for TTS)
+      ActionCable.server.broadcast(stream_name, {
+        type: 'command-received',
+        transcript: transcribed_text,
+        message: "I heard: #{transcribed_text}. Processing your request...",
+        timestamp: Time.current
+      })
 
       # Build the prompt for LLM
       prompt = voice_service.build_prompt_for_llm(transcribed_text)
@@ -77,7 +87,8 @@ class Api::V1::VoiceStreamController < ApplicationController
         conversation_id: voice_service.conversation.id,
         user_id: current_user.id,
         conversation_history: conversation_history,
-        wake_word_detected: wake_word_detected
+        wake_word_detected: wake_word_detected,
+        stream_tts: true  # Enable TTS streaming
       )
 
       render json: {
@@ -85,7 +96,8 @@ class Api::V1::VoiceStreamController < ApplicationController
         conversation_id: voice_service.conversation.id,
         stream_name: stream_name,
         status: 'streaming_started',
-        wake_word_detected: wake_word_detected
+        wake_word_detected: wake_word_detected,
+        early_trigger: early_trigger
       }
 
     rescue StandardError => e

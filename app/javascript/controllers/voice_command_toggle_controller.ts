@@ -1,92 +1,169 @@
-declare global {
-  interface Window {
-    SpeechRecognition?: any
-    webkitSpeechRecognition?: any
-  }
-}
 import { Controller } from "@hotwired/stimulus"
 
-// Voice Command Toggle Controller - Handles the voice command modal in AI Chat
-export default class VoiceCommandToggleController extends Controller {
+export default class VoiceCommandToggleController extends Controller<HTMLElement> {
   private recognition: any = null
-  private transcriptEl: HTMLElement | null = null
-  private isRecording: boolean = false
+  private isListening: boolean = false
 
-  connect() {
-    // this.element is the modal itself since data-controller is on the modal div
-    this.transcriptEl = this.element.querySelector('#voice-transcript')
+  connect(): void {
+    console.log('🎤 Voice: Controller connected')
   }
 
-  toggleVoice(event?: Event) {
-    event?.preventDefault()
-    this.openModal()
+  disconnect(): void {
+    this.stopListening()
   }
 
-  openModal() {
-    this.element.classList.remove('hidden')
-    // Trigger animation
-    setTimeout(() => {
-      this.element.querySelector('.relative')?.classList.remove('scale-95', 'opacity-0')
-      this.element.querySelector('.relative')?.classList.add('scale-100', 'opacity-100')
-    }, 10)
-    // Start voice recognition
-    this.startRecognition()
-  }
-
-  closeModal(event?: Event) {
-    event?.preventDefault?.()
-    this.element.querySelector('.relative')?.classList.remove('scale-100', 'opacity-100')
-    this.element.querySelector('.relative')?.classList.add('scale-95', 'opacity-0')
-    setTimeout(() => {
-      this.element.classList.add('hidden')
-    }, 200)
-    if (this.recognition) {
-      this.recognition.stop()
-      this.recognition = null
+  toggle(): void {
+    console.log('🎤 Voice: Toggle clicked, isListening:', this.isListening)
+    
+    if (this.isListening) {
+      this.stopListening()
+    } else {
+      this.startListening()
     }
   }
 
-  private startRecognition() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      this.updateTranscript('Voice recognition not supported in this browser')
+  private startListening(): void {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      console.error('🎤 Voice: Not supported - browser does not have SpeechRecognition')
       return
     }
 
-    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition
-    this.recognition = new SpeechRecognitionClass()
-    this.recognition.continuous = true
+    // Create fresh instance each time - REQUIRED for restart to work
+    this.recognition = new SpeechRecognition()
+    this.recognition.continuous = false
     this.recognition.interimResults = true
+    this.recognition.lang = 'en-US'
+
+    this.isListening = true
+    this.updateUI(true)
+
+    this.recognition.onstart = () => {
+      console.log('🎤 Voice: Started listening')
+    }
 
     this.recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0])
-        .map((result: any) => result.transcript)
-        .join('')
-      this.updateTranscript(transcript || 'Listening...')
+      let final = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          final += event.results[i][0].transcript
+        }
+      }
+      if (final) {
+        console.log('🎤 Voice: Heard:', final)
+        this.showTranscript(final)
+        this.sendToAI(final)
+      }
     }
 
     this.recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error)
-      const errorMessages: Record<string, string> = {
-        'no-speech': 'No speech detected. Please try again and speak clearly.',
-        'audio-capture': 'No microphone found. Please check your microphone.',
-        'not-allowed': 'Microphone permission denied. Please allow microphone access.',
-        'network': 'Network error. Please check your connection.',
-        'aborted': 'Speech recognition aborted. Please try again.',
-        'language-not-supported': 'English language not supported in this browser.',
-        'service-not-allowed': 'Speech recognition service not allowed.'
-      }
-      const errorMessage = errorMessages[event.error] || `Error: ${event.error}`
-      this.updateTranscript(errorMessage)
-      this.isRecording = false
+      console.log('🎤 Voice: Error:', event.error)
+      this.isListening = false
+      this.updateUI(false)
     }
 
-    this.recognition.start()
+    this.recognition.onend = () => {
+      console.log('🎤 Voice: Ended, auto-restarting...')
+      this.isListening = false
+      this.updateUI(false)
+      
+      // Auto-restart for continuous conversation
+      setTimeout(() => {
+        if (!this.isListening) {
+          console.log('🎤 Voice: Auto-restarting...')
+          this.startListening()
+        }
+      }, 500)
+    }
+
+    try {
+      this.recognition.start()
+    } catch (e: any) {
+      console.log('🎤 Voice: Start error:', e.message)
+      this.isListening = false
+      this.updateUI(false)
+    }
   }
 
-  private updateTranscript(text: string) {
-    if (this.transcriptEl) {
-      this.transcriptEl.textContent = text
+  private stopListening(): void {
+    this.isListening = false
+    if (this.recognition) {
+      try {
+        this.recognition.stop()
+      } catch (e) {
+        // Ignore errors when stopping
+      }
     }
+    this.updateUI(false)
+  }
+
+  private showTranscript(text: string): void {
+    const display = document.getElementById('voice-transcript-display')
+    const el = document.getElementById('voice-transcript')
+    if (display && el) {
+      display.classList.remove('hidden')
+      el.textContent = text
+    }
+  }
+
+  private updateUI(listening: boolean): void {
+    const btn = this.element as HTMLButtonElement
+    const status = document.getElementById('voice-status')
+    
+    if (listening) {
+      btn.classList.add('bg-red-500', 'animate-pulse')
+      btn.classList.remove('bg-green-500')
+      if (status) status.textContent = 'Listening...'
+    } else {
+      btn.classList.remove('bg-red-500', 'animate-pulse')
+      btn.classList.add('bg-green-500')
+      if (status) status.textContent = ''
+    }
+  }
+
+  private async sendToAI(text: string): Promise<void> {
+    this.updateStatus('Thinking...')
+    
+    try {
+      const res = await fetch('/api/v1/voice/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      })
+      
+      const data = await res.json()
+      
+      if (data.response) {
+        this.showResponse(data.response)
+      } else if (data.error) {
+        this.updateStatus(`Error: ${data.error}`)
+      }
+    } catch (e) {
+      console.error('🎤 Voice: API error:', e)
+      this.updateStatus('Error')
+    }
+  }
+
+  private showResponse(text: string): void {
+    const display = document.getElementById('voice-response-display')
+    const el = document.getElementById('voice-response-text')
+    if (display && el) {
+      display.classList.remove('hidden')
+      el.textContent = text
+    }
+    this.updateStatus('')
+  }
+
+  private updateStatus(text: string): void {
+    const el = document.getElementById('voice-status')
+    if (el) el.textContent = text
+  }
+
+  closeModal(): void {
+    const display = document.getElementById('voice-transcript-display')
+    const responseDisplay = document.getElementById('voice-response-display')
+    if (display) display.classList.add('hidden')
+    if (responseDisplay) responseDisplay.classList.add('hidden')
+    this.stopListening()
   }
 }

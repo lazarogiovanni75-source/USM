@@ -1,5 +1,6 @@
 class SocialAccount < ApplicationRecord
   belongs_to :user
+  has_many :scheduled_posts, dependent: :destroy
 
   # Alias for account_name to provide a name method
   alias_attribute :name, :account_name

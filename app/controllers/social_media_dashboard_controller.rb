@@ -16,10 +16,31 @@ class SocialMediaDashboardController < ApplicationController
       account = @social_accounts.find { |a| a.platform == platform }
 
       if account&.configured_for_postforme?
-        # Fetch real metrics from Postforme
+        # Fetch real metrics from Postforme, fallback to local if API fails
         metrics = @dashboard_service.fetch_account_metrics(account)
-        metrics[:name] = account.account_name || metrics[:name] || platform.titleize
-        metrics
+        
+        if metrics[:connected]
+          # Postforme succeeded - use API data
+          metrics[:name] = account.account_name || metrics[:name] || platform.titleize
+          metrics
+        else
+          # Postforme API failed - fallback to local stored metrics
+          {
+            platform: platform,
+            name: account.account_name || platform.titleize,
+            connected: false,
+            account: account,
+            followers: account.followers || 0,
+            likes: account.likes || 0,
+            views: account.views || 0,
+            engagement: account.engagement || 0,
+            shares: account.shares || 0,
+            new_followers: account.new_followers || 0,
+            unfollowers: account.unfollowers || 0,
+            messages: account.messages || 0,
+            error: metrics[:error]
+          }
+        end
       else
         # Account not connected to Postforme
         {

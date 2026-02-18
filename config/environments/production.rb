@@ -17,8 +17,8 @@ Rails.application.configure do
   # key such as config/credentials/production.key. This key is used to decrypt credentials (and other encrypted files).
   # config.require_master_key = true
 
-  # Disable serving static files from `public/`, relying on NGINX/Apache to do so instead.
-  # config.public_file_server.enabled = false
+  # Enable serving static files
+  config.public_file_server.enabled = true
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
@@ -82,9 +82,8 @@ Rails.application.configure do
   # config.active_job.queue_adapter = :resque
   # config.active_job.queue_name_prefix = "myapp_production"
 
-  # Configure GoodJob for production
-  config.good_job.execution_mode = :async
-  config.good_job.max_threads = 20
+  # Disable GoodJob async mode for production stability
+  config.good_job.execution_mode = :inline
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
@@ -107,13 +106,8 @@ Rails.application.configure do
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
 
-  # Enable DNS rebinding protection and other `Host` header attacks.
-  config.hosts = [
-    "ultimatesocialmedia01.com",     # Allow requests from your custom domain
-    /.*\.ultimatesocialmedia01\.com/, # Allow requests from subdomains like `www.ultimatesocialmedia01.com`
-    /.*\.railway\.app/,                # Allow Railway provided domain
-    /.*\.clackyai\.app/                 # Allow Clacky deployment domain
-  ]
+  # Disable host authorization temporarily for testing
+  config.host_authorization = { exclude: ->(request) { true } }
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 end

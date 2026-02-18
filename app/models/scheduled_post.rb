@@ -3,6 +3,7 @@ class ScheduledPost < ApplicationRecord
   belongs_to :social_account
   belongs_to :user
   has_many :performance_metrics, dependent: :destroy
+  has_one :postforme_analytic, dependent: :destroy
 
   after_create :trigger_make_webhook
 

@@ -35,7 +35,7 @@ const readinessCheck = async (req, res) => {
     server: 'ok',
     database: 'unknown',
     openai: 'unknown',
-    defapi: 'unknown'
+    poyo: 'unknown'
   };
 
   // Check database
@@ -48,7 +48,7 @@ const readinessCheck = async (req, res) => {
 
   // Check API keys
   checks.openai = process.env.OPENAI_API_KEY ? 'configured' : 'not_configured';
-  checks.defapi = process.env.DEFAPI_API_KEY ? 'configured' : 'not_configured';
+  checks.poyo = (process.env.POYO_API_KEY || process.env.DEFAPI_API_KEY) ? 'configured' : 'not_configured';
 
   // Overall status
   const isReady = checks.server === 'ok' && 
@@ -106,7 +106,7 @@ const metricsCheck = async (req, res) => {
     environment: {
       node_env: process.env.NODE_ENV || 'development',
       has_openai_key: !!process.env.OPENAI_API_KEY,
-      has_defapi_key: !!process.env.DEFAPI_API_KEY,
+      has_poyo_key: !!(process.env.POYO_API_KEY || process.env.DEFAPI_API_KEY),
       allowed_origins: process.env.ALLOWED_ORIGINS || 'not_set'
     },
     timestamp: new Date().toISOString()

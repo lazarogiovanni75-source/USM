@@ -28,6 +28,9 @@ import ResponseTestController from "./response_test_controller"
 import AiMarketingStrategyController from "./ai_marketing_strategy_controller"
 import DashboardAutopilotController from "./dashboard_autopilot_controller"
 import SocialAccountConnectionsController from "./social_account_connections_controller"
+import CampaignWorkflowController from "./campaign_workflow_controller"
+import ContinuousVoiceController from "./continuous_voice_controller"
+import PolicySettingsController from "./policy_settings_controller"
 
 const application = Application.start()
 
@@ -59,5 +62,8 @@ application.register("response-test", ResponseTestController)
 application.register("ai-marketing-strategy", AiMarketingStrategyController)
 application.register("dashboard-autopilot", DashboardAutopilotController)
 application.register("social-account-connections", SocialAccountConnectionsController)
+application.register("campaign-workflow", CampaignWorkflowController)
+application.register("continuous-voice", ContinuousVoiceController)
+application.register("policy-settings", PolicySettingsController)
 
 window.Stimulus = application

@@ -24,37 +24,97 @@ class PostformeDashboardService
   # Fetch metrics for a social account from Postforme
   # @param account [SocialAccount]
   # @return [Hash] Metrics data
+  # Fetch metrics for a social account from Postforme
+  # @param account [SocialAccount]
+  # @return [Hash] Metrics data
   def fetch_account_metrics(account)
     return empty_metrics unless account.configured_for_postforme?
 
     begin
       profile_id = account.postforme_profile_id
-      profile_data = postforme_service.profile(profile_id)
-      analytics_data = postforme_service.profile_analytics(profile_id)
-
+      
+      # Get account profile data
+      profile_data = postforme_service(account).social_account(profile_id)
+      
+      # Get metrics from recent posts (aggregate)
+      metrics_data = postforme_service(account).account_metrics(profile_id)
+      
+      # Extract metrics from posts
+      post_metrics = extract_post_metrics(metrics_data)
+      
       {
         connected: true,
         platform: account.platform,
-        name: profile_data['name'] || profile_data['username'] || account.platform.titleize,
+        name: profile_data['username'] || profile_data['name'] || account.account_name || account.platform.titleize,
         profile_id: profile_id,
-        followers: extract_followers(profile_data, analytics_data),
-        likes: extract_metric(analytics_data, 'likes'),
-        views: extract_metric(analytics_data, 'views') || extract_metric(analytics_data, 'impressions'),
-        engagement: extract_metric(analytics_data, 'engagement'),
-        shares: extract_metric(analytics_data, 'shares'),
-        new_followers: extract_metric(analytics_data, 'new_followers') || extract_metric(analytics_data, 'follower_growth'),
-        unfollowers: extract_metric(analytics_data, 'unfollowers') || 0,
-        messages: extract_metric(analytics_data, 'messages') || extract_metric(analytics_data, 'dm_count'),
-        posts_count: profile_data['posts_count'] || profile_data['post_count'] || 0,
+        followers: account.followers || 0,  # Use stored value or fallback
+        likes: post_metrics[:likes],
+        views: post_metrics[:views],
+        engagement: post_metrics[:engagement],
+        shares: post_metrics[:shares],
+        new_followers: 0,  # Postforme doesn't track this
+        unfollowers: 0,   # Postforme doesn't track this
+        messages: 0,      # Postforme doesn't track this
+        posts_count: post_metrics[:posts_count],
         last_synced: Time.current
       }
     rescue PostformeService::PostformeError => e
       Rails.logger.error("[PostformeDashboard] API error for account #{account.id}: #{e.message}")
-      empty_metrics.merge(connected: false, error: e.message)
+      # Fallback to stored metrics when API fails
+      fallback_metrics(account)
     rescue StandardError => e
       Rails.logger.error("[PostformeDashboard] Error fetching metrics: #{e.message}")
-      empty_metrics.merge(connected: false, error: 'Failed to fetch metrics')
+      # Fallback to stored metrics when any error occurs
+      fallback_metrics(account)
     end
+  end
+
+  # Fallback to stored metrics when Postforme API fails
+  def fallback_metrics(account)
+    {
+      connected: false,
+      platform: account.platform,
+      name: account.account_name || account.platform.titleize,
+      profile_id: account.postforme_profile_id,
+      followers: account.followers || 0,
+      likes: account.likes || 0,
+      views: account.views || 0,
+      engagement: account.engagement || 0,
+      shares: account.shares || 0,
+      new_followers: account.new_followers || 0,
+      unfollowers: account.unfollowers || 0,
+      messages: account.messages || 0,
+      posts_count: 0,
+      last_synced: account.metrics_synced_at,
+      error: 'Using cached metrics'
+    }
+  end
+
+  # Extract metrics from posts array
+  def extract_post_metrics(metrics_data)
+    posts = metrics_data['data'] || metrics_data || []
+    
+    total_likes = 0
+    total_views = 0
+    total_engagement = 0
+    total_shares = 0
+    posts_count = posts.length
+    
+    posts.each do |post|
+      post_metrics = post['metrics'] || {}
+      total_likes += post_metrics['likes'].to_i
+      total_views += post_metrics['views'].to_i
+      total_engagement += post_metrics['total_interactions'].to_i
+      total_shares += post_metrics['shares'].to_i
+    end
+    
+    {
+      likes: total_likes,
+      views: total_views,
+      engagement: total_engagement,
+      shares: total_shares,
+      posts_count: posts_count
+    }
   end
 
   # Fetch all profiles from Postforme (for account connection)
@@ -147,12 +207,11 @@ class PostformeDashboardService
 
   attr_reader :social_account
 
-  def postforme_service
-    return @postforme_service if @postforme_service
+  def postforme_service(account = nil)
+    account ||= social_account
+    return nil unless account&.configured_for_postforme?
 
-    return nil unless social_account&.configured_for_postforme?
-
-    @postforme_service = PostformeService.new(social_account.postforme_api_key)
+    PostformeService.new(account.postforme_api_key)
   end
 
   def empty_metrics

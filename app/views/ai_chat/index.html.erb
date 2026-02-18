@@ -49,7 +49,7 @@
         <button class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-xl shadow-lg whitespace-nowrap"
                 data-action="ai-chat#showAutopilot">
           <%= lucide_icon "bot", class: "w-4 h-4" %>
-          Autopilot
+          Otto-Pilot
         </button>
         <%= link_to ai_chat_index_path, class: "flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-xl hover:bg-white transition-all whitespace-nowrap #{controller_name == 'ai_chat' ? 'bg-gradient-to-r from-primary to-secondary text-white' : ''}" do %>
           <%= lucide_icon "message-circle", class: "w-4 h-4" %>
@@ -112,6 +112,16 @@
           
           <!-- Chat Messages -->
           <div id="chat-messages" class="flex-1 p-6 overflow-y-auto" data-ai-chat-target="messagesContainer">
+            <!-- Voice Transcript Display -->
+            <div id="voice-transcript-display" class="hidden mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+              <p class="text-sm text-green-700 font-medium mb-1">🎤 You said:</p>
+              <p id="voice-transcript" class="text-primary"></p>
+            </div>
+            <!-- Voice Response Display -->
+            <div id="voice-response-display" class="hidden mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+              <p class="text-sm text-blue-700 font-medium mb-1">🤖 AI:</p>
+              <p id="voice-response-text" class="text-primary"></p>
+            </div>
             <% if @messages.any? %>
               <% @messages.each do |message| %>
                 <div class="message <%= message.role %> mb-4 flex <%= message.role == 'user' ? 'justify-end' : 'justify-start' %>">
@@ -207,11 +217,16 @@
       <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg animate-pulse">
         <%= lucide_icon "mic", class: "w-12 h-12 text-white" %>
       </div>
-      <h2 class="text-2xl font-bold text-primary mb-2">AI Voice Autopilot</h2>
+      <h2 class="text-2xl font-bold text-primary mb-2">Otto-Pilot</h2>
       <p class="text-muted mb-6">Speak your commands to create campaigns, generate content, and manage your social media</p>
       
-      <div class="bg-surface-elevated rounded-2xl p-4 mb-6 min-h-[100px]">
-        <p id="voice-transcript" class="text-primary text-lg">Listening...</p>
+      <div class="bg-surface-elevated rounded-2xl p-4 mb-4 min-h-[80px]">
+        <p id="voice-transcript" class="text-primary text-lg mb-2">Listening...</p>
+        <div id="voice-response" class="hidden">
+          <p class="text-xs text-muted mb-1">AI Response:</p>
+          <p id="voice-response-text" class="text-primary text-sm"></p>
+        </div>
+        <p id="voice-status" class="text-xs text-gray-500 mt-2"></p>
       </div>
       
       <button class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all" data-action="voice-command-toggle#closeModal">

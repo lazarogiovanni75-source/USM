@@ -83,7 +83,13 @@ class AiAutopilotService < ApplicationService
       status: 'draft'
     )
 
-    @command.update!(status: 'completed', response_text: "Created campaign: #{campaign.name}")
+    confirmation = "✅ Campaign created!\n"\
+      "📛 Name: #{campaign.name}\n"\
+      "📅 Runs: #{campaign.start_date.strftime('%B %d')} - #{campaign.end_date.strftime('%B %d, %Y')}\n"\
+      "💰 Budget: $#{campaign.budget}\n"\
+      "💡 Next: Add content or generate posts for this campaign"
+
+    @command.update!(status: 'completed', response_text: confirmation)
     campaign
   end
 
@@ -112,7 +118,13 @@ class AiAutopilotService < ApplicationService
       status: 'draft'
     )
 
-    @command.update!(status: 'completed', response_text: "Generated content: #{content.title}")
+    confirmation = "✅ Content generated!\n"\
+      "📝 Title: #{content.title}\n"\
+      "📄 Type: #{content.content_type}\n"\
+      "💾 Status: Saved as draft\n"\
+      "💡 Next: Review, edit, or schedule this content"
+
+    @command.update!(status: 'completed', response_text: confirmation)
     content
   end
 
@@ -127,13 +139,19 @@ class AiAutopilotService < ApplicationService
       description: "Video generated via voice command: #{text}",
       status: 'pending',
       video_type: 'ai_generated',
-      duration: 30
+      duration: 10
     )
 
     # Queue video generation job
     GenerateVideoJob.perform_later(video.id, topic)
 
-    @command.update!(status: 'processing', response_text: "Video generation started: #{topic}")
+    confirmation = "🎬 Video generation started!\n"\
+      "📹 Topic: #{topic}\n"\
+      "⏱ Duration: 10 seconds\n"\
+      "🔄 Status: Processing (usually 1-2 mins)\n"\
+      "💡 I'll notify you when it's ready!"
+
+    @command.update!(status: 'processing', response_text: confirmation)
     video
   end
 
@@ -141,28 +159,57 @@ class AiAutopilotService < ApplicationService
     # Parse scheduling details from voice command
     scheduled_time = Time.current + 1.hour
 
-    # Create a scheduled post
+    # Get user's available content and social account
+    latest_content = @command.user.contents.last
+    social_account = @command.user.social_accounts.first
+
+    unless latest_content && social_account
+      confirmation = "⚠️ Cannot schedule - need content and a connected social account.\n"\
+        "💡 Try: 'Generate content' first, then 'schedule post'"
+      @command.update!(status: 'completed', response_text: confirmation)
+      return nil
+    end
+
     scheduled_post = ScheduledPost.create!(
-      content: @command.user.contents.last,
-      social_account: @command.user.social_accounts.first,
+      content: latest_content,
+      social_account: social_account,
       scheduled_at: scheduled_time,
       status: 'scheduled'
     )
 
-    @command.update!(status: 'completed', response_text: "Scheduled post for #{scheduled_time}")
+    confirmation = "📅 Post scheduled!\n"\
+      "🕐 When: #{scheduled_time.strftime('%B %d at %I:%M %p')}\n"\
+      "📱 Platform: #{social_account.platform.titleize}\n"\
+      "📝 Content: #{latest_content.title}\n"\
+      "💡 Next: Add more posts or check analytics later"
+
+    @command.update!(status: 'completed', response_text: confirmation)
     scheduled_post
   end
 
   def analyze_performance_from_voice(text)
     # Generate performance analysis
+    user = @command.user
+    total_content = user.contents.count
+    total_scheduled = user.scheduled_posts.count
+    total_campaigns = user.campaigns.count
+    published_posts = user.scheduled_posts.where(status: 'published').count
+
     analytics_data = {
-      total_posts: Content.count,
-      scheduled_posts: ScheduledPost.count,
-      campaigns: Campaign.count,
-      engagement_rate: rand(2.5..8.5).round(2)
+      total_content: total_content,
+      total_scheduled: total_scheduled,
+      total_campaigns: total_campaigns,
+      published_posts: published_posts
     }
 
-    @command.update!(status: 'completed', response_text: "Analytics: #{analytics_data.to_json}")
+    confirmation = "📊 Your Analytics:\n"\
+      "📝 Total Content: #{total_content}\n"\
+      "📅 Scheduled: #{total_scheduled}\n"\
+      "✅ Published: #{published_posts}\n"\
+      "🎯 Campaigns: #{total_campaigns}\n"\
+      "💡 Tip: Check the dashboard for detailed metrics!"
+
+    @command.update!(status: 'completed', response_text: confirmation)
     analytics_data
   end
 
@@ -194,7 +241,7 @@ class AiAutopilotService < ApplicationService
   def generate_video
     # Generate video using AI service
     topic = @video_params[:topic] || "social media content"
-    duration = @video_params[:duration] || 30
+    duration = @video_params[:duration] || 10
 
     video = Video.create!(
       user: @campaign.user,
@@ -229,11 +276,14 @@ class AiAutopilotService < ApplicationService
   def extract_topic_from_text(text)
     # Simple extraction - look for common patterns
     # In production, use NLP to extract the actual topic
+    return "social media content" if text.blank?
+    
     words = text.split
     # Remove common words and return meaningful phrase
-    stop_words = ['a', 'an', 'the', 'generate', 'create', 'make', 'video', 'content', 'post', 'about', 'for', 'to', 'please']
+    stop_words = ['a', 'an', 'the', 'generate', 'create', 'make', 'video', 'content', 'post', 'about', 'for', 'to', 'please', 'i', 'want', 'need', 'would', 'like', 'could', 'can', 'help', 'me', 'my', 'with', 'and', 'or', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'must', 'shall', 'can', 'need', 'dare', 'ought', 'used']
     topic_words = words.reject { |w| stop_words.include?(w.downcase) }
-    topic_words.first(5).join(' ')
+    result = topic_words.first(5).join(' ')
+    result.blank? ? "social media content" : result
   end
 
   def generate_ai_response(prompt)

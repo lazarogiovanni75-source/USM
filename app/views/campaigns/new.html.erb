@@ -1,4 +1,4 @@
-<% content_for :title, "New Campaign" %>
+<% content_for :title, "Create Campaign" %>
 
 <div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
   <!-- Header -->
@@ -8,9 +8,10 @@
         <%= link_to campaigns_path, class: "w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center hover:shadow-md transition-shadow" do %>
           <%= lucide_icon "arrow-left", class: "w-5 h-5 text-primary" %>
         <% end %>
+      </div>
         <div>
-          <h1 class="text-2xl font-bold text-primary">New Campaign</h1>
-          <p class="text-sm text-muted">Create a new marketing campaign</p>
+          <h1 class="text-2xl font-bold text-primary">Create Campaign</h1>
+          <p class="text-sm text-muted">Create a new marketing campaign with AI assistance</p>
         </div>
       </div>
     </div>
@@ -18,8 +19,92 @@
 
   <!-- Content -->
   <div class="container-xl mx-auto px-4 py-6">
-    <div class="max-w-3xl mx-auto">
-      <%= form_with model: @campaign, class: "space-y-6" do |f| %>
+    <div class="max-w-4xl mx-auto">
+      <div data-controller="campaign-workflow">
+        <%= form_with model: @campaign, url: campaigns_path, class: "space-y-6" do |f| %>
+        
+        <!-- AI Workflow Section - NEW -->
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 p-6">
+          <h2 class="text-lg font-bold text-primary mb-1 flex items-center gap-2">
+            <%= lucide_icon "sparkles", class: "w-5 h-5 text-green-600" %>
+            AI Campaign Wizard
+          </h2>
+          <p class="text-sm text-muted mb-4">Describe your campaign and let AI create content, images, and schedule posts automatically.</p>
+          
+          <!-- AI Prompt Input -->
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-primary mb-1">What do you want to create?</label>
+              <textarea 
+                name="ai_prompt" 
+                class="form-textarea w-full" 
+                rows="3" 
+                placeholder="e.g., Create a summer sale campaign for my fashion brand. Post about new arrivals, special discounts, and customer testimonials."
+                data-campaign-workflow-target="prompt"
+              ></textarea>
+            </div>
+            
+            <!-- AI Options -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Generate Image -->
+              <label class="flex items-center gap-3 p-4 bg-white rounded-xl border border-border/50 hover:border-green-300 cursor-pointer transition-colors">
+                <input type="checkbox" name="generate_image" value="1" class="rounded border-border text-green-600 focus:ring-green-500" data-campaign-workflow-target="generateImage">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <%= lucide_icon "image", class: "w-4 h-4 text-white" %>
+                  </div>
+                  <span class="text-sm font-medium text-primary">Generate Image</span>
+                </div>
+              </label>
+              
+              <!-- Generate Video -->
+              <label class="flex items-center gap-3 p-4 bg-white rounded-xl border border-border/50 hover:border-green-300 cursor-pointer transition-colors">
+                <input type="checkbox" name="generate_video" value="1" class="rounded border-border text-green-600 focus:ring-green-500" data-campaign-workflow-target="generateVideo">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
+                    <%= lucide_icon "video", class: "w-4 h-4 text-white" %>
+                  </div>
+                  <span class="text-sm font-medium text-primary">Generate Video</span>
+                </div>
+              </label>
+              
+              <!-- Auto-Post Now -->
+              <label class="flex items-center gap-3 p-4 bg-white rounded-xl border border-border/50 hover:border-green-300 cursor-pointer transition-colors">
+                <input type="checkbox" name="post_now" value="1" class="rounded border-border text-green-600 focus:ring-green-500" data-campaign-workflow-target="postNow" data-action="change->campaign-workflow#toggleScheduleOptions">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                    <%= lucide_icon "send", class: "w-4 h-4 text-white" %>
+                  </div>
+                  <span class="text-sm font-medium text-primary">Post Immediately</span>
+                </div>
+              </label>
+            </div>
+            
+            <!-- Schedule Option (shown when not posting now) -->
+            <div data-campaign-workflow-target="scheduleOptions" class="hidden">
+              <label class="block text-sm font-medium text-primary mb-1">Schedule for later (optional)</label>
+              <input type="datetime-local" name="scheduled_at" class="form-input w-full" data-campaign-workflow-target="scheduledAt">
+            </div>
+            
+            <!-- Social Accounts -->
+            <div>
+              <label class="block text-sm font-medium text-primary mb-1">Post to social accounts (optional)</label>
+              <% if @social_accounts.any? %>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <% @social_accounts.each do |account| %>
+                    <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-border/50 hover:border-green-300 cursor-pointer">
+                      <input type="checkbox" name="social_account_ids[]" value="<%= account.id %>" class="rounded border-border text-green-600 focus:ring-green-500">
+                      <span class="text-xs font-medium text-primary truncate"><%= account.platform.titleize %> - <%= account.username %></span>
+                    </label>
+                  <% end %>
+                </div>
+              <% else %>
+                <p class="text-sm text-muted">No social accounts connected. <%= link_to "Connect accounts", social_account_connections_path, class: "text-green-600 hover:underline" %></p>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
         <!-- Basic Info -->
         <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
           <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
@@ -119,7 +204,10 @@
         <!-- Actions -->
         <div class="flex items-center justify-end gap-3">
           <%= link_to "Cancel", campaigns_path, class: "btn-secondary" %>
-          <%= f.submit "Create Campaign", class: "btn-primary" %>
+          <button type="submit" name="create_with_ai" value="1" class="btn-primary flex items-center gap-2">
+            <%= lucide_icon "sparkles", class: "w-4 h-4" %>
+            Create with AI
+          </button>
         </div>
       <% end %>
     </div>

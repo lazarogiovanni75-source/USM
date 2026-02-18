@@ -28,6 +28,23 @@ class PostformeService
     get_request("/social-accounts/#{account_id}")
   end
 
+  # Get social account with metrics
+  # @param account_id [String]
+  # @return [Hash] Account data with metrics
+  def social_account_with_metrics(account_id)
+    get_request("/social-accounts/#{account_id}?expand=metrics")
+  end
+
+  # Get account analytics/metrics summary
+  # @param account_id [String]
+  # @return [Hash] Analytics data
+  def account_metrics(account_id)
+    get_request("/social-accounts/#{account_id}/metrics")
+  rescue PostformeService::PostformeError
+    # Fallback: try getting metrics from account feed
+    account_feed(account_id, expand_metrics: true)
+  end
+
   # Generate an OAuth URL for connecting an account
   def auth_url(platform)
     post_request('/social-accounts/auth-url', { platform: platform })

@@ -65,6 +65,15 @@ export default class extends BaseChannelController {
 
   // 🎙️ AUTO-ROUTED HANDLERS: Server sends { type: 'xxx' } → calls handleXxx(data)
   //
+  // Handle status update from voice command processing
+  protected handleStatus(data: any): void {
+    console.log('Voice status update:', data)
+    const status = document.getElementById('voice-status')
+    if (status) {
+      status.textContent = data.message || 'Processing...'
+    }
+  }
+
   // Handle voice command completion
   protected handleCommandCompleted(data: any): void {
     console.log('Voice command completed:', data)
@@ -77,5 +86,35 @@ export default class extends BaseChannelController {
     console.log('Voice command failed:', data)
     // Update UI to show command failure status
     // This could trigger an error message or retry prompt
+  }
+
+  // Handle streaming chunk from voice command processing
+  protected handleChunk(data: any): void {
+    console.log('Voice chunk received:', data)
+    // Update UI with streaming content
+    const display = document.getElementById('voice-transcript')
+    if (display && data.content) {
+      display.textContent = data.content
+    }
+  }
+
+  // Handle voice command completion
+  protected handleComplete(data: any): void {
+    console.log('Voice command complete:', data)
+    // Update UI to show final result
+    const responseDisplay = document.getElementById('voice-response-display')
+    const responseText = document.getElementById('voice-response-text')
+    if (responseDisplay && responseText && data.response) {
+      responseDisplay.classList.remove('hidden')
+      responseText.textContent = data.response
+    }
+  }
+
+  // Handle voice command error
+  protected handleError(data: any): void {
+    console.log('Voice command error:', data)
+    // Update UI to show error
+    const status = document.getElementById('voice-status')
+    if (status) status.textContent = data.error || 'An error occurred'
   }
 }

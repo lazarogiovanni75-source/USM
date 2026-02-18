@@ -98,7 +98,7 @@
                     <div class="flex items-center space-x-4 mt-1 text-sm text-gray-500">
                       <span class="capitalize"><%= account.platform %></span>
                       <span>•</span>
-                      <span><%= account.followers_count %> followers</span>
+                      <span><%= account.followers || 0 %> followers</span>
                       <span>•</span>
                       <span class="<%= account.active ? 'text-green-600' : 'text-gray-400' %>">
                         <%= account.active ? 'Active' : 'Inactive' %>

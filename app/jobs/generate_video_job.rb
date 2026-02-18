@@ -5,18 +5,27 @@ class GenerateVideoJob < ApplicationJob
     video = Video.find(video_id)
     user = video.user
 
+    # Validate topic - use default if empty or nil
+    topic = topic.presence || "social media content"
+
     # Update video status to processing
     video.update!(status: 'processing')
 
-    # Generate video using SoraService
-    sora_service = SoraService.new
-    response = sora_service.generate_video(prompt: topic, duration: '5s')
+    # Generate video using PoyoService (Sora 2 Pro)
+    poyo_service = PoyoService.new
+    response = poyo_service.generate_video(
+      prompt: topic,
+      duration: '10',
+      aspect_ratio: '16:9',
+      model: 'sora-2-pro'
+    )
 
-    # Store the prediction URL for status checking
+    # Store the task_id for status checking
+    task_id = response['task_id']
     video.update!(
       status: 'processing',
-      video_url: response['output'] || response['urls']&.dig('get'),
-      prediction_url: response['urls']&.dig('get')
+      video_url: nil,
+      prediction_url: task_id
     )
 
     # Broadcast progress update
@@ -30,8 +39,8 @@ class GenerateVideoJob < ApplicationJob
       }
     )
 
-    # Poll for completion (simplified approach)
-    wait_for_completion(video, sora_service)
+    # Poll for completion
+    wait_for_completion(video, poyo_service, task_id)
 
   rescue StandardError => e
     video&.update!(status: 'failed', error_message: e.message)
@@ -50,8 +59,8 @@ class GenerateVideoJob < ApplicationJob
 
   private
 
-  def wait_for_completion(video, sora_service)
-    max_attempts = 60 # 5 minutes max
+  def wait_for_completion(video, poyo_service, task_id)
+    max_attempts = 120 # 10 minutes max for 10s videos
     attempt = 0
 
     while attempt < max_attempts
@@ -59,52 +68,50 @@ class GenerateVideoJob < ApplicationJob
       attempt += 1
 
       begin
-        if video.prediction_url
-          status_response = sora_service.get_prediction(video.prediction_url)
-          status = status_response['status']
+        status_response = poyo_service.task_status(task_id)
+        status = status_response['status']
 
-          case status
-          when 'succeeded'
-            video.update!(
-              status: 'completed',
-              video_url: status_response['output']
-            )
+        case status
+        when 'success'
+          video.update!(
+            status: 'completed',
+            video_url: status_response['output']
+          )
 
-            ActionCable.server.broadcast(
-              "video_progress_#{video.id}",
-              {
-                type: 'video-completed',
-                video_id: video.id,
-                video_url: video.video_url,
-                message: 'Video generated successfully!'
-              }
-            )
-            return
-          when 'failed', 'error'
-            error_msg = status_response['error'] || 'Video generation failed'
-            video.update!(status: 'failed', error_message: error_msg)
+          ActionCable.server.broadcast(
+            "video_progress_#{video.id}",
+            {
+              type: 'video-completed',
+              video_id: video.id,
+              video_url: video.video_url,
+              message: 'Video generated successfully!'
+            }
+          )
+          return
+        when 'failed', 'error'
+          error_msg = status_response['error'] || 'Video generation failed'
+          video.update!(status: 'failed', error_message: error_msg)
 
-            ActionCable.server.broadcast(
-              "video_progress_#{video.id}",
-              {
-                type: 'video-error',
-                video_id: video.id,
-                error: error_msg
-              }
-            )
-            return
-          else
-            # Still processing
-            ActionCable.server.broadcast(
-              "video_progress_#{video.id}",
-              {
-                type: 'video-progress',
-                video_id: video.id,
-                status: status,
-                message: "Processing... (#{attempt * 5}s)"
-              }
-            )
-          end
+          ActionCable.server.broadcast(
+            "video_progress_#{video.id}",
+            {
+              type: 'video-error',
+              video_id: video.id,
+              error: error_msg
+            }
+          )
+          return
+        else
+          # Still processing (pending, in_progress, starting, etc.)
+          ActionCable.server.broadcast(
+            "video_progress_#{video.id}",
+            {
+              type: 'video-progress',
+              video_id: video.id,
+              status: status,
+              message: "Processing... (#{attempt * 5}s)"
+            }
+          )
         end
       rescue StandardError => e
         # Continue polling on transient errors

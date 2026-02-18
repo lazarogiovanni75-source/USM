@@ -4,13 +4,40 @@
     <div class="mb-8">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">AI Autopilot</h1>
-          <p class="mt-2 text-gray-600">Voice-activated AI assistant for managing your social media</p>
+          <h1 class="text-3xl font-bold text-gray-900">Otto-Pilot</h1>
+          <p class="mt-2 text-gray-600">Voice-activated Otto assistant for managing your social media</p>
         </div>
         <div class="flex items-center space-x-4">
           <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
             <%= current_user.voice_settings.first&.enabled? ? 'Active' : 'Inactive' %>
           </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Overview - Moved from Voice Commands page -->
+    <div class="bg-white shadow rounded-lg mb-6">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Command Overview</h3>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600"><%= @voice_commands.where(command_type: 'create_campaign').count %></div>
+            <div class="text-sm text-gray-500">Campaign Commands</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-green-600"><%= @voice_commands.where(command_type: 'generate_content').count %></div>
+            <div class="text-sm text-gray-500">Content Commands</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-purple-600"><%= @voice_commands.where(command_type: 'schedule_post').count %></div>
+            <div class="text-sm text-gray-500">Schedule Commands</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-orange-600"><%= @voice_commands.where(command_type: 'general_inquiry').count %></div>
+            <div class="text-sm text-gray-500">General Inquiries</div>
+          </div>
         </div>
       </div>
     </div>
@@ -35,12 +62,12 @@
               </svg>
               Voice Command Center
             </h2>
-            <p class="text-purple-100 text-sm mt-1">Click the microphone and speak your commands</p>
+            <p class="text-purple-100 text-sm mt-1">Click the microphone and speak your commands. Say "Hey Otto" to activate.</p>
           </div>
           
           <!-- Voice Interface Body -->
           <div class="p-6">
-            <%= render 'shared/voice_command_interface' %>
+            <%= render 'shared/continuous_voice_interface' %>
           </div>
         </div>
 

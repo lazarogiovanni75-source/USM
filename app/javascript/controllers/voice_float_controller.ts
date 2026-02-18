@@ -2,10 +2,12 @@ import { Controller } from "@hotwired/stimulus"
 
 // Voice streaming event interface for ActionCable messages
 interface VoiceStreamEvent {
-  type: 'chunk' | 'complete' | 'error'
+  type: 'chunk' | 'complete' | 'error' | 'command-received'
   chunk?: string
   content?: string
   error?: string
+  message?: string
+  transcript?: string
   conversation_id?: number
 }
 
@@ -96,7 +98,11 @@ export default class VoiceFloatController extends Controller {
   private streamingResponse: string = ""
   private currentUserId: number | null = null
 
+  // Auto-restart listening after processing
+  private autoRestartEnabled: boolean = true
+
   connect(): void {
+    this.autoRestartEnabled = true
     console.log("[VoiceFloat] Controller connected")
     this.loadWakeWordSettings()
     this.loadUserId()
@@ -205,6 +211,10 @@ export default class VoiceFloatController extends Controller {
     console.log("[VoiceFloat] Stream message received. Type:", data.type, "Full data:", data)
 
     switch (data.type) {
+      case 'command-received':
+        console.log("[VoiceFloat] Command received:", data.message)
+        this.handleCommandReceived(data.message || '')
+        break
       case 'chunk':
         console.log("[VoiceFloat] Processing chunk:", data.chunk)
         this.handleStreamingChunk(data.chunk || '')
@@ -222,6 +232,14 @@ export default class VoiceFloatController extends Controller {
     }
   }
 
+  private handleCommandReceived(message: string): void {
+    console.log("[VoiceFloat] Handling command received confirmation")
+    // Speak the confirmation that we heard the command
+    if (message && message.trim().length > 0) {
+      this.speakResponse(message)
+    }
+  }
+
   private handleStreamingChunk(chunk: string): void {
     console.log("[VoiceFloat] Adding chunk. Before length:", this.streamingResponse.length, "Chunk:", chunk)
     this.streamingResponse += chunk
@@ -233,6 +251,14 @@ export default class VoiceFloatController extends Controller {
     console.log("[VoiceFloat] Stream complete, total length:", content.length)
     this.hideLoading()
     this.streamingResponse = ""
+    
+    // Speak the AI response
+    if (content && content.trim().length > 0) {
+      this.speakResponse(content)
+    } else {
+      // If no content, just restart listening
+      this.restartListening()
+    }
   }
 
   private handleStreamError(error: string): void {
@@ -375,6 +401,7 @@ export default class VoiceFloatController extends Controller {
         console.error("[VoiceFloat] Transcription error:", error)
         this.hideLoading()
         this.processingAudio = false
+        // Restart listening on error too
         this.restartListening()
       })
   }
@@ -440,6 +467,57 @@ export default class VoiceFloatController extends Controller {
     this.isListening = true
     this.updateConnectionStatus("connected", "Ready")
     this.updateTranscript("Listening... Speak now!")
+  }
+
+  // Text-to-Speech: Speak the AI response
+  // Strip emojis and problematic characters before speaking
+  private stripEmojis(text: string): string {
+    // Remove emojis and problematic Unicode characters
+    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/gu
+    return text.replace(emojiRegex, '').trim()
+  }
+
+  private async speakResponse(text: string): Promise<void> {
+    if (!('speechSynthesis' in window)) {
+      console.log("[VoiceFloat] Text-to-speech not supported")
+      return
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel()
+
+    // Strip emojis and problematic characters before speaking
+    const cleanText = this.stripEmojis(text)
+    
+    if (!cleanText || cleanText.length === 0) {
+      console.log("[VoiceFloat] No text to speak after removing emojis")
+      if (this.autoRestartEnabled) {
+        this.restartListening()
+      }
+      return
+    }
+
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    utterance.lang = 'en-US'
+    utterance.rate = 1.0
+    utterance.pitch = 1.0
+
+    utterance.onend = () => {
+      console.log("[VoiceFloat] Speech complete, restarting listening")
+      if (this.autoRestartEnabled) {
+        setTimeout(() => this.restartListening(), 500)
+      }
+    }
+
+    utterance.onerror = (e) => {
+      console.log("[VoiceFloat] Speech error:", e)
+      if (this.autoRestartEnabled) {
+        this.restartListening()
+      }
+    }
+
+    console.log(`[VoiceFloat] Speaking response: ${cleanText.substring(0, 50)}...`)
+    window.speechSynthesis.speak(utterance)
   }
 
   private updateTranscript(text: string): void {

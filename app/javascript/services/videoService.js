@@ -1,23 +1,22 @@
 // Video Generation Service
+// Calls Defapi Service for video generation
 
-// Video Generation Service - Calls Railway backend (Shotstack)
 class VideoService {
   constructor() {
-    this.baseUrl = 'https://backend-api-production-00f5.up.railway.app';
+    this.baseUrl = '/content_creation';
   }
 
-  // Generate video using Shotstack via Railway backend
-  async generateVideo(script, options = {}) {
+  // Generate video using Defapi Service (Sora 2 Pro)
+  async generateVideo(script) {
     try {
-      const response = await fetch(`${this.baseUrl}/api/video/generate`, {
+      const response = await fetch(`${this.baseUrl}/generate_video`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content || ''
         },
-        body: JSON.stringify({
-          script: script,
-          voiceUrl: options.voiceUrl || null,
-          style: options.style || 'social'
+        body: new URLSearchParams({
+          prompt: script
         })
       });
 
@@ -28,9 +27,8 @@ class VideoService {
       const data = await response.json();
       return {
         success: true,
-        renderId: data.renderId,
-        message: data.message,
-        status: 'processing' // Video is being rendered
+        message: data.notice || 'Video generation started',
+        status: 'processing'
       };
     } catch (error) {
       console.error('Video generation error:', error);
@@ -38,58 +36,9 @@ class VideoService {
     }
   }
 
-  // Generate video with voice-over
-  async generateVideoWithVoice(script, voiceBlob) {
-    try {
-      // First, upload voice file or get URL
-      const voiceUrl = await this.uploadVoiceFile(voiceBlob);
-      
-      // Generate video with voice
-      return await this.generateVideo(script, {
-        voiceUrl: voiceUrl,
-        style: 'social'
-      });
-    } catch (error) {
-      console.error('Video with voice generation error:', error);
-      throw new Error(`Failed to generate video with voice: ${error.message}`);
-    }
-  }
-
-  // Upload voice file (simplified - you might want to use a proper file hosting service)
-  async uploadVoiceFile() {
-    // In a real implementation, you'd upload this to a file hosting service
-    // For now, we'll return a placeholder URL
-    const timestamp = Date.now();
-    return `https://your-storage-service.com/audio/${timestamp}.mp3`;
-  }
-
   // Create video from text content
-  async createTextVideo(textContent, style = 'modern') {
-    const script = `Create a video showing: ${textContent}`;
-    return this.generateVideo(script, { style });
-  }
-
-  // Check video render status (would need to implement this endpoint)
-  async checkRenderStatus(renderId) {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/video/status/${renderId}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to check render status: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return {
-        renderId: renderId,
-        status: data.status,
-        progress: data.progress,
-        videoUrl: data.videoUrl,
-        completed: data.status === 'done'
-      };
-    } catch (error) {
-      console.error('Check render status error:', error);
-      throw new Error(`Failed to check render status: ${error.message}`);
-    }
+  async createTextVideo(textContent) {
+    return this.generateVideo(textContent);
   }
 }
 

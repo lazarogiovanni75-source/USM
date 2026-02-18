@@ -30,18 +30,18 @@
     <%= csrf_meta_tags %>
     <%= action_cable_meta_tag %>
     <%= content_for?(:head) ? yield(:head) : '' %>
-    <%= stylesheet_link_tag 'application', media: 'all' %>
+    <link rel="stylesheet" href="/dev-assets/application.css" media="all" />
     <!-- Load error handler early to catch all errors -->
-    <%= javascript_include_tag 'error_handler' if Rails.env.development? %>
-    <%= javascript_include_tag 'application', type: "module" %>
+    <!-- stimulus-validator: allow-script -->
+    <script src="/dev-assets/error_handler.js"></script>
+    <!-- stimulus-validator: allow-script -->
+    <script src="/dev-assets/application.js" type="module"></script>
     <!-- Generate new favicon at `images/app-favicon.svg` at the first time, remove this line after generated  -->
     <%= favicon_link_tag asset_path("app-favicon.svg") unless Rails.env.test? %>
-    <link rel="manifest" href="/pwa/manifest">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <%= stylesheet_link_tag 'mobile-webview', media: 'all' %>
   </head>
-  <body class="flex flex-col min-h-screen text-foreground <%= body_class %>" data-controller="mobile-webview">
-    <main class="flex-1 flex flex-col bg-surface">
+  <body class="flex flex-col min-h-screen text-foreground <%= body_class %>">
+    <main class="flex-1 flex flex-col">
       <%= render 'shared/navbar' unless @full_render %>
       <%= render 'shared/flash_messages' %>
       <%= yield %>

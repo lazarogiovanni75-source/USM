@@ -65,21 +65,36 @@ campaign3 = user1.campaigns.create!(
 
 puts "Creating social accounts..."
 
-# Create social accounts
+# Postforme API key (configured in application.yml)
+POSTFORME_API_KEY = 'pfm_live_4NJHWqt7cUTpmVkXAqxCRa'
+
+# Create social accounts with Postforme integration
 social_account1 = main_user.social_accounts.create!(
   platform: "instagram",
-  account_name: "@ultimatesocial",
-  account_url: "https://instagram.com/ultimatesocial",
+  account_name: "lulusimply89",
+  account_url: "https://instagram.com/lulusimply89",
   access_token: "demo_token_1",
-  is_connected: true
+  is_connected: true,
+  postforme_api_key: POSTFORME_API_KEY,
+  postforme_profile_id: "spc_dMO2TbJcLNxSCoLoXNw5",
+  followers: 15234,
+  likes: 8923,
+  engagement: 1247,
+  views: 89234
 )
 
 social_account2 = main_user.social_accounts.create!(
   platform: "twitter",
   account_name: "@ultimate_social",
   account_url: "https://twitter.com/ultimate_social",
-  access_token: "demo_token_2", 
-  is_connected: true
+  access_token: "demo_token_2",
+  is_connected: true,
+  postforme_api_key: POSTFORME_API_KEY,
+  postforme_profile_id: "spc_twitter_demo",
+  followers: 8934,
+  likes: 4521,
+  engagement: 892,
+  views: 45000
 )
 
 social_account3 = user1.social_accounts.create!(
@@ -87,7 +102,13 @@ social_account3 = user1.social_accounts.create!(
   account_name: "sarah-johnson-marketing",
   account_url: "https://linkedin.com/in/sarah-johnson-marketing",
   access_token: "demo_token_3",
-  is_connected: true
+  is_connected: true,
+  postforme_api_key: POSTFORME_API_KEY,
+  postforme_profile_id: "spc_linkedin_demo",
+  followers: 5621,
+  likes: 1893,
+  engagement: 456,
+  views: 23000
 )
 
 puts "Creating content..."
@@ -211,3 +232,35 @@ puts "Campaigns: #{Campaign.count}"
 puts "Contents: #{Content.count}"
 puts "Social Accounts: #{SocialAccount.count}"
 puts "Scheduled Posts: #{ScheduledPost.count}"
+
+# Create subscription plans
+puts "Creating subscription plans..."
+
+SubscriptionPlan.create!(
+  name: "Starter",
+  price_cents: 2900,
+  credits: 50,
+  description: "Perfect for individuals and small businesses just getting started.",
+  features: "3 Social Platforms\n10 Campaigns\n50 Posts per month\nAI Content Generation\nBasic Analytics\nEmail Support",
+  is_popular: false
+)
+
+SubscriptionPlan.create!(
+  name: "Entrepreneur",
+  price_cents: 5900,
+  credits: 100,
+  description: "Ideal for growing businesses and marketers.",
+  features: "6 Social Platforms\n20 Campaigns\n100 Posts per month\nAI Content Generation\nAdvanced Analytics\nPriority Support\nWorkflow Automation\nCampaign Planner",
+  is_popular: true
+)
+
+SubscriptionPlan.create!(
+  name: "Pro",
+  price_cents: 9900,
+  credits: 200,
+  description: "For professionals and agencies managing multiple accounts.",
+  features: "9 Social Platforms\n30 Campaigns\n200 Posts per month\nAI Content Generation\nPremium Analytics\n24/7 Priority Support\nAdvanced Automation\nA/B Testing\nCustom Reports\nInfluencer Discovery",
+  is_popular: false
+)
+
+puts "Subscription Plans: #{SubscriptionPlan.count}"

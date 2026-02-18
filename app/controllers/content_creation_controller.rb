@@ -56,34 +56,54 @@ class ContentCreationController < ApplicationController
     size = params[:size] || '1024x1024'
 
     begin
-      # Use new GPT-Image-1.5 API
-      result = DefapiService.new.generate_gpt_image(
+      # Use unified service with primary/secondary fallback
+      result = ImageGenerationService.generate_image(
         prompt: prompt,
-        model: 'openai/gpt-image-1.5',
         size: size,
-        quality: 'high',
-        output_format: 'png'
+        quality: 'high'
       )
 
-      if result['task_id'].present?
-        # Save as a draft with task_id for polling
-        draft = current_user.draft_contents.create!(
-          title: "Image - #{prompt[0..50]}",
-          content: prompt,
-          content_type: 'image',
-          platform: 'general',
-          status: 'pending',
-          media_url: nil,
-          metadata: { 'task_id' => result['task_id'], 'api_version' => 'gpt-image-1.5' }
-        )
+      if result[:success]
+        service = result[:service]
+        model = result.dig(:metadata, :model) || 'gpt-image-1.5'
+        
+        if result[:output_url]
+          # Secondary service (OpenAI DALL-E) returns URL directly
+          draft = current_user.draft_contents.create!(
+            title: "Image - #{prompt[0..50]}",
+            content: prompt,
+            content_type: 'image',
+            platform: 'general',
+            status: 'completed',
+            media_url: result[:output_url],
+            metadata: { 'service' => service, 'model' => model }
+          )
+          
+          redirect_to draft_path(draft), notice: 'Image generated successfully!'
+        else
+          # Primary service (Defapi) returns task_id for polling
+          draft = current_user.draft_contents.create!(
+            title: "Image - #{prompt[0..50]}",
+            content: prompt,
+            content_type: 'image',
+            platform: 'general',
+            status: 'pending',
+            media_url: nil,
+            metadata: { 
+              'task_id' => result[:task_id], 
+              'service' => service, 
+              'model' => model 
+            }
+          )
 
-        # Start polling job with gpt_image_status
-        ImagePollJob.perform_later(draft.id, result['task_id'])
-
-        redirect_to draft_path(draft), notice: 'Image generation started! Check back in a few moments.'
+          ImagePollJob.perform_later(draft.id, result[:task_id])
+          redirect_to draft_path(draft), notice: 'Image generation started! Check back in a few moments.'
+        end
       else
-        redirect_to content_creation_index_path, alert: 'Failed to start image generation.'
+        redirect_to content_creation_index_path, alert: "Image generation failed: #{result[:error]}"
       end
+    rescue ImageGenerationService::ServiceUnavailableError => e
+      redirect_to content_creation_index_path, alert: e.message
     rescue => e
       Rails.logger.error "Image Generation Error: #{e.message}"
       redirect_to content_creation_index_path, alert: "Image generation failed: #{e.message}"
@@ -99,22 +119,17 @@ class ContentCreationController < ApplicationController
         raise ArgumentError, 'Please provide a more detailed prompt (at least 10 characters)'
       end
 
-      defapi_service = DefapiService.new
-      
-      # Check if configured
-      unless defapi_service.configured?
-        raise StandardError, 'Video generation API is not configured. Please check your API keys.'
-      end
-
-      # Use Sora 2 Pro API with default settings
-      result = defapi_service.generate_video(
+      # Use unified service with primary/secondary fallback
+      result = VideoGenerationService.generate_video(
         prompt: prompt,
-        duration: '25',
-        aspect_ratio: '16:9',
-        model: 'sora-2-pro'
+        duration: '10',
+        aspect_ratio: '16:9'
       )
 
-      if result['task_id'].present?
+      if result[:success]
+        service = result[:service]
+        model = result.dig(:metadata, :model) || 'sora-2-pro'
+        
         # Save as a draft with task_id for polling
         draft = current_user.draft_contents.create!(
           title: "Video - #{prompt[0..50]}",
@@ -123,24 +138,32 @@ class ContentCreationController < ApplicationController
           platform: 'general',
           status: 'pending',
           media_url: nil,
-          metadata: { 'task_id' => result['task_id'], 'api_version' => 'sora-2-pro' }
+          metadata: { 
+            'task_id' => result[:task_id], 
+            'service' => service, 
+            'model' => model,
+            'duration' => result.dig(:metadata, :duration),
+            'aspect_ratio' => result.dig(:metadata, :aspect_ratio)
+          }
         )
 
         # Start polling job
-        SoraPollJob.perform_later(draft.id, result['task_id'])
+        SoraPollJob.perform_later(draft.id, result[:task_id], service)
 
         redirect_to draft_path(draft), notice: 'Video generation started! Check back in a few moments.'
       else
-        # Check if there's an error in the result
-        error_msg = result['error'] || result['message'] || 'Failed to start video generation. The API may be busy or unavailable.'
-        Rails.logger.error "[ContentCreation] Video generation failed to return task_id: #{result.inspect}"
+        error_msg = result[:error] || 'Failed to start video generation. The API may be busy or unavailable.'
+        Rails.logger.error "[ContentCreation] Video generation failed: #{error_msg}"
         redirect_to content_creation_index_path, alert: error_msg
       end
-    rescue DefapiService::AuthenticationError => e
-      Rails.logger.error "[ContentCreation] DefAPI Authentication Error: #{e.message}"
+    rescue VideoGenerationService::ServiceUnavailableError => e
+      Rails.logger.error "[ContentCreation] Video service unavailable: #{e.message}"
+      redirect_to content_creation_index_path, alert: e.message
+    rescue PoyoService::AuthenticationError => e
+      Rails.logger.error "[ContentCreation] Poyo.ai Authentication Error: #{e.message}"
       redirect_to content_creation_index_path, alert: 'Video generation authentication failed. Please check your API configuration.'
-    rescue DefapiService::Error => e
-      Rails.logger.error "[ContentCreation] DefAPI Error: #{e.message}"
+    rescue PoyoService::Error => e
+      Rails.logger.error "[ContentCreation] Poyo.ai Error: #{e.message}"
       redirect_to content_creation_index_path, alert: "Video generation error: #{e.message}"
     rescue ArgumentError => e
       redirect_to content_creation_index_path, alert: e.message
@@ -148,6 +171,23 @@ class ContentCreationController < ApplicationController
       Rails.logger.error "[ContentCreation] Video Generation Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
       redirect_to content_creation_index_path, alert: "Video generation failed: #{e.message}"
     end
+  end
+
+  def edit_image
+    draft_id = params[:draft_id]
+    edit_prompt = params[:edit_prompt]
+
+    draft = current_user.draft_contents.find(draft_id)
+
+    if draft.media_url.blank?
+      redirect_to content_creation_index_path, alert: 'No image found for this draft'
+      return
+    end
+
+    # Note: Image editing is limited - show message
+    redirect_to content_creation_index_path, alert: 'Image editing requires DALL-E 2 API. Please generate a new image instead.'
+  rescue ActiveRecord::RecordNotFound
+    redirect_to content_creation_index_path, alert: 'Draft not found'
   end
 
   def create_draft

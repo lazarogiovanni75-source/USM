@@ -29,7 +29,6 @@ export default class extends Controller<HTMLElement> {
     channelName: String
   }
 
-  // Declare your targets and values
   declare readonly voiceButtonTarget: HTMLButtonElement
   declare readonly transcriptionContainerTarget: HTMLElement
   declare readonly commandHistoryTarget: HTMLElement
@@ -41,8 +40,10 @@ export default class extends Controller<HTMLElement> {
 
   private isRecording = false
   private isProcessing = false
+  private shouldKeepListening = false
   private recognition: any
   private channel: any
+  private restartTimeout: any = null
 
   connect(): void {
     console.log("VoiceCommand connected")
@@ -52,23 +53,33 @@ export default class extends Controller<HTMLElement> {
 
   disconnect(): void {
     console.log("VoiceCommand disconnected")
+    if (this.restartTimeout) {
+      clearTimeout(this.restartTimeout)
+    }
     if (this.recognition) {
-      this.recognition.stop()
+      try {
+        this.recognition.stop()
+      } catch (e) {
+        console.log('Recognition already stopped')
+      }
     }
     if (this.channel) {
       this.channel.unsubscribe()
     }
   }
 
-  // Voice recognition initialization
   private initializeVoiceRecognition(): void {
-    if ('webkitSpeechRecognition' in window) {
-      this.recognition = new (window as any).webkitSpeechRecognition()
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      this.recognition = new SpeechRecognition()
       this.recognition.continuous = true
       this.recognition.interimResults = true
       this.recognition.lang = 'en-US'
+      this.recognition.maxAlternatives = 1
 
       this.recognition.onstart = () => {
+        this.isRecording = true
+        this.shouldKeepListening = true
         this.updateMicrophoneStatus('Listening...', 'listening')
       }
 
@@ -77,19 +88,66 @@ export default class extends Controller<HTMLElement> {
       }
 
       this.recognition.onerror = (event: any) => {
-        this.handleSpeechError(event)
+        console.error('Speech recognition error:', event.error)
+        
+        const nonFatalErrors = ['no-speech', 'aborted', 'audio-capture', 'network', 'not-allowed']
+        
+        if (nonFatalErrors.includes(event.error)) {
+          if (this.shouldKeepListening && !this.isProcessing) {
+            this.scheduleRestart()
+          }
+          return
+        }
+        
+        this.updateMicrophoneStatus(`Error: ${event.error}`, 'error')
+        this.isRecording = false
+        this.shouldKeepListening = false
       }
 
       this.recognition.onend = () => {
-        this.updateMicrophoneStatus('Click to speak', 'idle')
-        this.isRecording = false
+        console.log('Speech recognition ended, shouldKeepListening:', this.shouldKeepListening)
+        
+        if (this.shouldKeepListening && !this.isProcessing) {
+          // Restart immediately - no delay
+          this.scheduleRestart()
+        } else {
+          this.updateMicrophoneStatus('Click to speak', 'idle')
+          this.isRecording = false
+        }
       }
     } else {
-      this.updateMicrophoneStatus('Voice recognition not supported', 'error')
+      this.updateMicrophoneStatus('Voice not supported', 'error')
     }
   }
 
-  // ActionCable initialization
+  private scheduleRestart(): void {
+    if (this.restartTimeout) {
+      clearTimeout(this.restartTimeout)
+    }
+    
+    // Restart as fast as possible
+    this.restartTimeout = setTimeout(() => {
+      try {
+        this.recognition.start()
+        this.isRecording = true
+        this.updateMicrophoneStatus('Listening...', 'listening')
+      } catch (e) {
+        console.error('Failed to restart:', e)
+        // Try again after short delay
+        this.restartTimeout = setTimeout(() => {
+          try {
+            this.recognition.start()
+            this.isRecording = true
+            this.updateMicrophoneStatus('Listening...', 'listening')
+          } catch (e2) {
+            console.error('Failed to restart on second try:', e2)
+            this.updateMicrophoneStatus('Click to speak', 'idle')
+          }
+        }, 200)
+      }
+    }, 50) // Very short delay
+  }
+
   private initializeActionCable(): void {
     const channelName = this.channelNameValue || `voice_interaction_${this.userIdValue}`
     this.channel = (window as any).ActionCable.createConsumer().subscriptions.create(
@@ -108,7 +166,6 @@ export default class extends Controller<HTMLElement> {
     )
   }
 
-  // Handle speech recognition results
   private handleSpeechResult(event: any): void {
     let interimTranscript = ''
     let finalTranscript = ''
@@ -122,25 +179,27 @@ export default class extends Controller<HTMLElement> {
       }
     }
 
-    // Update transcription display
     if (interimTranscript) {
       this.updateTranscription(finalTranscript, interimTranscript)
     }
 
-    // If we have final transcript, process the command
     if (finalTranscript) {
+      console.log('Final transcript received:', finalTranscript)
+      this.stopRecognitionForProcessing()
       this.processVoiceCommand(finalTranscript.trim())
     }
   }
 
-  // Handle speech recognition errors
-  private handleSpeechError(event: any): void {
-    console.error('Speech recognition error:', event.error)
-    this.updateMicrophoneStatus(`Error: ${event.error}`, 'error')
+  private stopRecognitionForProcessing(): void {
+    this.shouldKeepListening = false
+    try {
+      this.recognition.stop()
+    } catch (e) {
+      console.log('Recognition already stopped')
+    }
     this.isRecording = false
   }
 
-  // Update transcription display
   private updateTranscription(final: string, interim: string): void {
     const transcription = this.transcriptionContainerTarget
     transcription.innerHTML = `
@@ -151,7 +210,6 @@ export default class extends Controller<HTMLElement> {
     `
   }
 
-  // Process voice command
   private processVoiceCommand(commandText: string): void {
     if (this.isProcessing) return
     
@@ -159,7 +217,6 @@ export default class extends Controller<HTMLElement> {
     this.showLoading()
     this.updateMicrophoneStatus('Processing...', 'processing')
     
-    // Send command to server
     if (this.channel) {
       this.channel.perform('process_voice_command', {
         command_text: commandText
@@ -167,7 +224,6 @@ export default class extends Controller<HTMLElement> {
     }
   }
 
-  // Handle ActionCable messages
   private handleChannelMessage(data: VoiceCommandEvent): void {
     console.log('Received channel message:', data)
     
@@ -180,199 +236,188 @@ export default class extends Controller<HTMLElement> {
         this.updateCommandHistory(data.command_text!, 'Completed')
         this.updateAIResponse(data.response_text!, data.result, data.command_type!)
         this.isProcessing = false
+        this.autoRestartListening()
         break
       case 'command-failed':
         this.hideLoading()
         this.updateCommandHistory(data.command_text!, 'Failed')
         this.showError(data.error!)
         this.isProcessing = false
+        this.updateMicrophoneStatus('Click to speak', 'idle')
         break
       case 'content-generated':
-        this.updateAIResponse('Content generated successfully!', data.content, 'content_generated')
+        this.updateAIResponse('Content generated!', data.content, 'content_generated')
+        this.isProcessing = false
+        this.autoRestartListening()
         break
       case 'campaign-created':
-        this.updateAIResponse('Campaign created successfully!', data.campaign, 'campaign_created')
+        this.updateAIResponse('Campaign created!', data.campaign, 'campaign_created')
+        this.isProcessing = false
+        this.autoRestartListening()
         break
       case 'generation-error':
       case 'campaign-error':
         this.showError(data.error!)
+        this.isProcessing = false
+        this.updateMicrophoneStatus('Click to speak', 'idle')
         break
     }
   }
 
-  // Update command history
-  private updateCommandHistory(command: string, status: string): void {
-    const historyItem = document.createElement('div')
-    historyItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2'
-    historyItem.innerHTML = `
-      <div class="flex-1">
-        <div class="text-sm font-medium text-gray-900">"${command}"</div>
-        <div class="text-xs text-gray-500">${new Date().toLocaleTimeString()}</div>
-      </div>
-      <div class="px-2 py-1 text-xs rounded-full ${
-  status === 'Completed' ? 'bg-green-100 text-green-800' :
-    status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
-      status === 'Failed' ? 'bg-red-100 text-red-800' :
-        'bg-gray-100 text-gray-800'
-}">
-        ${status}
-      </div>
-    `
+  private autoRestartListening(): void {
+    this.updateMicrophoneStatus('Restarting...', 'processing')
     
-    this.commandHistoryTarget.prepend(historyItem)
+    // Immediate restart after response
+    this.restartTimeout = setTimeout(() => {
+      try {
+        this.recognition.start()
+        this.shouldKeepListening = true
+        this.isRecording = true
+        this.updateMicrophoneStatus('Listening...', 'listening')
+        console.log('Auto-restarted listening after response')
+      } catch (e) {
+        console.error('Failed to auto-restart:', e)
+        this.updateMicrophoneStatus('Click to speak', 'idle')
+      }
+    }, 300)
   }
 
-  // Update AI response display
-  private updateAIResponse(response: string, result: any, commandType: string): void {
-    const responseContainer = this.aiResponseContainerTarget
-    responseContainer.innerHTML = `
-      <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <div class="flex items-center mb-4">
-          <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mr-3">
-            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900">AI Autopilot Response</h3>
-        </div>
-        
-        <div class="text-gray-700 mb-4">${response}</div>
-        
-        ${this.formatCommandResult(result, commandType)}
-        
-        <div class="mt-4 pt-4 border-t border-gray-100">
-          <div class="text-xs text-gray-500">
-            Command Type: <span class="font-medium">${commandType.replace('_', ' ')}</span>
-          </div>
-        </div>
-      </div>
-    `
-  }
-
-  // Format command result based on type
-  private formatCommandResult(result: any, commandType: string): string {
-    if (!result) return ''
-    
-    switch (commandType) {
-      case 'content_generated':
-        if (result.title) {
-          return `
-            <div class="bg-gray-50 p-4 rounded-lg mt-4">
-              <h4 class="font-medium text-gray-900 mb-2">Generated Content:</h4>
-              <p class="text-sm text-gray-600">${result.title}</p>
-              ${result.body ? `<p class="text-sm text-gray-600 mt-2">${result.body}</p>` : ''}
-              ${result.platform ? `<span class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded mt-2">${result.platform}</span>` : ''}
-            </div>
-          `
-        }
-        break
-      case 'campaign_created':
-        if (result.name) {
-          return `
-            <div class="bg-gray-50 p-4 rounded-lg mt-4">
-              <h4 class="font-medium text-gray-900 mb-2">New Campaign:</h4>
-              <p class="text-sm text-gray-600">${result.name}</p>
-              ${result.description ? `<p class="text-sm text-gray-600 mt-2">${result.description}</p>` : ''}
-              <div class="flex items-center mt-3 space-x-4">
-                ${result.budget ? `<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">$${result.budget}</span>` : ''}
-                ${result.status ? `<span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">${result.status}</span>` : ''}
-              </div>
-            </div>
-          `
-        }
-        break
+  private updateMicrophoneStatus(message: string, status: string): void {
+    const statusEl = this.microphoneStatusTarget
+    if (statusEl) {
+      statusEl.textContent = message
+      statusEl.className = `text-xs mt-1 ${
+        status === 'listening' ? 'text-green-600' :
+          status === 'processing' ? 'text-blue-600' :
+            status === 'error' ? 'text-red-600' :
+              'text-gray-500'
+      }`
     }
-    
-    return `
-      <div class="bg-gray-50 p-4 rounded-lg mt-4">
-        <pre class="text-sm text-gray-600 whitespace-pre-wrap">${JSON.stringify(result, null, 2)}</pre>
-      </div>
-    `
   }
 
-  // Show loading state
   private showLoading(): void {
-    this.loadingIndicatorTarget.classList.remove('hidden')
+    const loading = this.loadingIndicatorTarget
+    if (loading) loading.classList.remove('hidden')
   }
 
-  // Hide loading state
   private hideLoading(): void {
-    this.loadingIndicatorTarget.classList.add('hidden')
+    const loading = this.loadingIndicatorTarget
+    if (loading) loading.classList.add('hidden')
   }
 
-  // Show error message
-  private showError(error: string): void {
-    const errorContainer = this.aiResponseContainerTarget
-    errorContainer.innerHTML = `
-      <div class="bg-red-50 border border-red-200 rounded-lg p-6">
-        <div class="flex items-center">
-          <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <div>
-            <h3 class="text-lg font-semibold text-red-800">Error</h3>
-            <p class="text-red-700">${error}</p>
-          </div>
+  private updateCommandHistory(text: string, status: string): void {
+    const history = this.commandHistoryTarget
+    if (history) {
+      const entry = document.createElement('div')
+      entry.className = 'border-b py-2 text-sm'
+      entry.innerHTML = `
+        <div class="flex justify-between">
+          <span class="font-medium">${text}</span>
+          <span class="${status === 'Completed' ? 'text-green-600' : status === 'Failed' ? 'text-red-600' : 'text-yellow-600'}">${status}</span>
         </div>
-      </div>
-    `
-  }
-
-  // Update microphone status
-  private updateMicrophoneStatus(status: string, state: string): void {
-    this.microphoneStatusTarget.textContent = status
-    this.microphoneStatusTarget.className = `text-sm font-medium ${
-      state === 'listening' ? 'text-green-600' :
-        state === 'processing' ? 'text-blue-600' :
-          state === 'error' ? 'text-red-600' :
-            'text-gray-600'
-    }`
-  }
-
-  // Action methods
-  toggleRecording(): void {
-    if (!this.recognition) return
-    
-    if (this.isRecording) {
-      this.recognition.stop()
-      this.isRecording = false
-    } else {
-      this.recognition.start()
-      this.isRecording = true
+      `
+      history.insertBefore(entry, history.firstChild)
     }
+  }
+
+  private updateAIResponse(text: string, result: any, commandType: string): void {
+    const container = this.aiResponseContainerTarget
+    if (container) {
+      let resultHtml = ''
+      
+      if (commandType === 'campaign_created' && result) {
+        resultHtml = `
+          <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+            <strong>Campaign:</strong> ${result.name || 'Unnamed'}<br>
+            <strong>Status:</strong> ${result.status || 'draft'}
+          </div>
+        `
+      } else if (commandType === 'content_generated' && result) {
+        resultHtml = `
+          <div class="mt-2 p-2 bg-blue-50 rounded text-sm">
+            <strong>Content created:</strong> ${result.title || 'Untitled'}
+          </div>
+        `
+      }
+      
+      container.innerHTML = `
+        <div class="p-3 bg-gray-50 rounded-lg">
+          <div class="text-sm text-gray-800">${text}</div>
+          ${resultHtml}
+        </div>
+      `
+    }
+  }
+
+  private showError(message: string): void {
+    const container = this.aiResponseContainerTarget
+    if (container) {
+      container.innerHTML = `
+        <div class="p-3 bg-red-50 rounded-lg">
+          <div class="text-sm text-red-800">Error: ${message}</div>
+        </div>
+      `
+    }
+  }
+
+  // Public method - toggle voice recording
+  toggleVoice(): void {
+    if (this.isRecording) {
+      this.stopRecognition()
+    } else {
+      this.startRecognition()
+    }
+  }
+
+  private startRecognition(): void {
+    if (!this.recognition) {
+      this.updateMicrophoneStatus('Voice not supported', 'error')
+      return
+    }
+    
+    try {
+      this.shouldKeepListening = true
+      this.recognition.start()
+      this.updateMicrophoneStatus('Starting...', 'processing')
+    } catch (e) {
+      console.error('Failed to start recognition:', e)
+      this.updateMicrophoneStatus('Click to speak', 'idle')
+    }
+  }
+
+  private stopRecognition(): void {
+    this.shouldKeepListening = false
+    try {
+      this.recognition.stop()
+    } catch (e) {
+      console.log('Recognition already stopped')
+    }
+    this.isRecording = false
+    this.updateMicrophoneStatus('Click to speak', 'idle')
   }
 
   clearHistory(): void {
-    this.commandHistoryTarget.innerHTML = ''
-    this.aiResponseContainerTarget.innerHTML = ''
-    this.transcriptionContainerTarget.innerHTML = ''
+    const history = this.commandHistoryTarget
+    if (history) {
+      history.innerHTML = ''
+    }
+  }
+
+  toggleRecording(): void {
+    if (this.isRecording) {
+      this.stopRecognition()
+    } else {
+      this.startRecognition()
+    }
   }
 
   generateQuickContent(): void {
-    if (this.channel) {
-      this.channel.perform('generate_content', {
-        content_type: 'post',
-        platform: 'general'
-      })
-    }
+    const commandText = 'generate content about marketing'
+    this.processVoiceCommand(commandText)
   }
 
   createQuickCampaign(): void {
-    if (this.channel) {
-      const campaignData = {
-        name: 'Quick Campaign',
-        description: 'Campaign created via voice command',
-        target_audience: 'General Audience',
-        budget: 1000,
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      }
-      
-      this.channel.perform('create_campaign', {
-        campaign_data: campaignData
-      })
-    }
+    const commandText = 'create campaign for social media'
+    this.processVoiceCommand(commandText)
   }
 }

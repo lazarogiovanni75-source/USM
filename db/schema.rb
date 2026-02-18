@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -102,6 +102,23 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
     t.index ["created_at"], name: "index_ai_task_results_on_created_at"
     t.index ["task_type"], name: "index_ai_task_results_on_task_type"
     t.index ["user_id"], name: "index_ai_task_results_on_user_id"
+  end
+
+  create_table "audit_executions", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "tool_name"
+    t.text "parameters"
+    t.string "status"
+    t.boolean "approved"
+    t.datetime "executed_at"
+    t.string "session_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["executed_at"], name: "index_audit_executions_on_executed_at"
+    t.index ["session_id"], name: "index_audit_executions_on_session_id"
+    t.index ["status"], name: "index_audit_executions_on_status"
+    t.index ["tool_name"], name: "index_audit_executions_on_tool_name"
+    t.index ["user_id"], name: "index_audit_executions_on_user_id"
   end
 
   create_table "auto_response_triggers", force: :cascade do |t|
@@ -275,6 +292,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
     t.json "engagement_metrics", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "media_url"
     t.index ["campaign_id"], name: "index_contents_on_campaign_id"
     t.index ["user_id"], name: "index_contents_on_user_id"
   end
@@ -408,6 +426,32 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
     t.index ["scheduled_at"], name: "index_good_jobs_on_scheduled_at", where: "(finished_at IS NULL)"
   end
 
+  create_table "orders", force: :cascade do |t|
+    t.bigint "user_id"
+    t.decimal "total", default: "0.0"
+    t.string "status", default: "pending"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_orders_on_user_id"
+  end
+
+  create_table "payments", force: :cascade do |t|
+    t.string "payable_type", null: false
+    t.bigint "payable_id", null: false
+    t.bigint "user_id"
+    t.decimal "amount"
+    t.string "currency", default: "usd"
+    t.string "status", default: "pending"
+    t.string "stripe_payment_intent_id"
+    t.string "stripe_checkout_session_id"
+    t.string "payment_method"
+    t.jsonb "metadata"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["payable_type", "payable_id"], name: "index_payments_on_payable"
+    t.index ["user_id"], name: "index_payments_on_user_id"
+  end
+
   create_table "performance_metrics", force: :cascade do |t|
     t.bigint "scheduled_post_id"
     t.integer "impressions", default: 0
@@ -529,6 +573,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
     t.datetime "last_webhook_at"
     t.string "buffer_update_id"
     t.string "postforme_post_id"
+    t.text "internal_note"
     t.index ["content_id"], name: "index_scheduled_posts_on_content_id"
     t.index ["social_account_id"], name: "index_scheduled_posts_on_social_account_id"
   end
@@ -589,6 +634,17 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
     t.index ["social_account_id"], name: "index_social_accounts_campaigns_on_social_account_id"
   end
 
+  create_table "subscription_plans", force: :cascade do |t|
+    t.string "name"
+    t.integer "price_cents"
+    t.integer "credits"
+    t.text "description"
+    t.text "features"
+    t.boolean "is_popular"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "task_executions", force: :cascade do |t|
     t.bigint "scheduled_ai_task_id", null: false
     t.bigint "user_id", null: false
@@ -628,6 +684,20 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
     t.index ["created_at"], name: "index_trigger_executions_on_created_at"
     t.index ["status"], name: "index_trigger_executions_on_status"
     t.index ["user_id"], name: "index_trigger_executions_on_user_id"
+  end
+
+  create_table "user_subscriptions", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "subscription_plan_id"
+    t.string "status", default: "pending"
+    t.datetime "started_at"
+    t.datetime "expires_at"
+    t.integer "credits_used", default: 0
+    t.string "stripe_subscription_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["subscription_plan_id"], name: "index_user_subscriptions_on_subscription_plan_id"
+    t.index ["user_id"], name: "index_user_subscriptions_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -686,6 +756,25 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_11_221600) do
     t.boolean "enabled"
     t.index ["user_id"], name: "index_voice_settings_on_user_id"
     t.index ["voice_id"], name: "index_voice_settings_on_voice_id"
+  end
+
+  create_table "workflow_steps", force: :cascade do |t|
+    t.integer "workflow_id"
+    t.string "step_type"
+    t.string "status"
+    t.integer "order"
+    t.text "output"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "workflows", force: :cascade do |t|
+    t.integer "user_id"
+    t.string "workflow_type"
+    t.string "status"
+    t.text "params"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "zapier_webhooks", force: :cascade do |t|
