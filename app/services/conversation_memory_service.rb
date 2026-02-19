@@ -1,5 +1,8 @@
 class ConversationMemoryService
   include ActionView::Helpers::TextHelper
+  require 'net/http'
+  require 'json'
+  require 'uri'
   
   # Memory context configuration
   MAX_CONTEXT_TOKENS = 4000
@@ -177,7 +180,12 @@ class ConversationMemoryService
     
     def extract_topics(messages)
       topics = []
-      message_text = messages.map(&:content).join(' ').downcase
+      # Handle both string and message object arrays
+      if messages.is_a?(Array) && messages.first.is_a?(String)
+        message_text = messages.join(' ').downcase
+      else
+        message_text = messages.map { |m| m.respond_to?(:content) ? m.content : m.to_s }.join(' ').downcase
+      end
       
       # Enhanced topic extraction with more patterns
       topic_patterns = {
@@ -203,7 +211,12 @@ class ConversationMemoryService
     
     def extract_preferences(messages)
       preferences = {}
-      message_text = messages.map(&:content).join(' ').downcase
+      # Handle both string and message object arrays
+      if messages.is_a?(Array) && messages.first.is_a?(String)
+        message_text = messages.join(' ').downcase
+      else
+        message_text = messages.map { |m| m.respond_to?(:content) ? m.content : m.to_s }.join(' ').downcase
+      end
       
       # Tone preferences
       if message_text.match?(/(?:professional|formal|business|corporate)/)
@@ -299,19 +312,20 @@ class ConversationMemoryService
     
     def call_railway_ai_api(prompt_context, conversation)
       begin
-        response = RestClient.post(
-          "#{ENV['RAILWAY_BACKEND_URL']}/api/ai/chat",
-          {
-            prompt_context: prompt_context,
-            conversation_id: conversation.id,
-            user_id: conversation.user_id
-          },
-          {
-            'Content-Type' => 'application/json',
-            'Authorization' => "Bearer #{ENV['RAILWAY_API_KEY']}"
-          }
-        )
+        uri = URI.parse("#{ENV['RAILWAY_BACKEND_URL']}/api/ai/chat")
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = uri.scheme == 'https'
         
+        request = Net::HTTP::Post.new(uri.request_uri)
+        request['Content-Type'] = 'application/json'
+        request['Authorization'] = "Bearer #{ENV['RAILWAY_API_KEY']}"
+        request.body = {
+          prompt_context: prompt_context,
+          conversation_id: conversation.id,
+          user_id: conversation.user_id
+        }.to_json
+        
+        response = http.request(request)
         JSON.parse(response.body)
       rescue => e
         Rails.logger.error "Railway AI API Error: #{e.message}"

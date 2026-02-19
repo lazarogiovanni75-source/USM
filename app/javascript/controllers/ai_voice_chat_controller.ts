@@ -29,7 +29,8 @@ export default class AiVoiceChatController extends Controller {
     if (!SpeechRecognition) {
       console.warn('Speech recognition not supported in this browser')
       this.updateStatus('Voice not supported')
-      this.buttonTarget?.setAttribute('disabled', 'true')
+      const buttonEl = document.querySelector('[data-ai-voice-chat-target="button"]') as HTMLButtonElement;
+      buttonEl?.setAttribute('disabled', 'true')
       return
     }
     
@@ -59,20 +60,22 @@ export default class AiVoiceChatController extends Controller {
       }
       
       // Update transcript display
-      if (this.hasTarget('transcript')) {
-        this.transcriptTarget.classList.remove('hidden')
-        const statusEl = this.transcriptTarget.querySelector('[data-ai-voice-chat-target="status"]')
+      const transcriptEl = document.querySelector('[data-ai-voice-chat-target="transcript"]');
+      if (transcriptEl) {
+        transcriptEl.classList.remove('hidden')
+        const statusEl = transcriptEl.querySelector('[data-ai-voice-chat-target="status"]')
         if (statusEl) {
           statusEl.textContent = finalTranscript || interimTranscript || 'Listening...'
         }
       }
       
       // Update input field
-      if (this.hasTarget('input')) {
-        this.inputTarget.value = finalTranscript || interimTranscript
-        this.inputTarget.style.height = 'auto'
-        const inputHeight = Math.min(this.inputTarget.scrollHeight, 200)
-        this.inputTarget.style.height = `${inputHeight}px`
+      const inputEl = document.querySelector('[data-ai-voice-chat-target="input"]') as HTMLTextAreaElement;
+      if (inputEl) {
+        inputEl.value = finalTranscript || interimTranscript
+        inputEl.style.height = 'auto'
+        const inputHeight = Math.min(inputEl.scrollHeight, 200)
+        inputEl.style.height = `${inputHeight}px`
       }
       
       // If we have final transcript, submit
@@ -121,8 +124,9 @@ export default class AiVoiceChatController extends Controller {
     
     try {
       // Clear transcript display
-      if (this.hasTarget('transcript')) {
-        this.transcriptTarget.classList.add('hidden')
+      const transcriptEl = document.querySelector('[data-ai-voice-chat-target="transcript"]');
+      if (transcriptEl) {
+        transcriptEl.classList.add('hidden')
       }
       
       this.recognition.start()
@@ -165,25 +169,33 @@ export default class AiVoiceChatController extends Controller {
   }
   
   private updateUI(listening: boolean): void {
-    if (listening) {
-      this.buttonTarget.classList.add('listening', 'animate-pulse')
-      this.buttonTarget.classList.remove('bg-white/80', 'border', 'border-border/50')
-      this.buttonTarget.classList.add('bg-red-500', 'text-white')
-      this.indicatorTarget?.classList.remove('hidden')
-    } else {
-      this.buttonTarget.classList.remove('listening', 'animate-pulse', 'bg-red-500', 'text-white')
-      this.buttonTarget.classList.add('bg-white/80', 'border', 'border-border/50')
-      this.indicatorTarget?.classList.add('hidden')
+    const buttonEl = document.querySelector('[data-ai-voice-chat-target="button"]') as HTMLButtonElement;
+    const indicatorEl = document.querySelector('[data-ai-voice-chat-target="indicator"]');
+    
+    if (buttonEl) {
+      if (listening) {
+        buttonEl.classList.add('listening', 'animate-pulse')
+        buttonEl.classList.remove('bg-white/80', 'border', 'border-border/50')
+        buttonEl.classList.add('bg-red-500', 'text-white')
+      } else {
+        buttonEl.classList.remove('listening', 'animate-pulse', 'bg-red-500', 'text-white')
+        buttonEl.classList.add('bg-white/80', 'border', 'border-border/50')
+      }
+    }
+    
+    if (indicatorEl) {
+      if (listening) {
+        indicatorEl.classList.remove('hidden')
+      } else {
+        indicatorEl.classList.add('hidden')
+      }
     }
   }
   
   private updateStatus(text: string): void {
-    if (this.hasTarget('status')) {
-      this.statusTarget.textContent = text
+    const statusEl = document.querySelector('[data-ai-voice-chat-target="status"]');
+    if (statusEl) {
+      statusEl.textContent = text;
     }
-  }
-  
-  private hasTarget(name: string): boolean {
-    return (this as any).hasTarget(name)
   }
 }

@@ -2,13 +2,33 @@ import { Controller } from "@hotwired/stimulus"
 
 // Voice streaming event interface for ActionCable messages
 interface VoiceStreamEvent {
-  type: 'chunk' | 'complete' | 'error' | 'command-received'
+  type: | 'chunk' 
+        | 'complete' 
+        | 'error' 
+        | 'command-received' 
+        | 'tool_call_detected' 
+        | 'tool_execution_started' 
+        | 'tool_execution_completed' 
+        | 'tool_execution_failed' 
+        | 'assistant_token' 
+        | 'assistant_complete' 
+        | 'awaiting_confirmation'
+        | 'conversation_created'
   chunk?: string
   content?: string
   error?: string
   message?: string
   transcript?: string
   conversation_id?: number
+  execution_id?: string
+  payload?: {
+    tool?: string
+    arguments?: Record<string, any>
+    result?: any
+    error?: string
+    requiresConfirmation?: boolean
+    confirmed?: boolean
+  }
 }
 
 // WAV encoder using Web Audio API - generates proper WAV files
@@ -93,7 +113,6 @@ export default class VoiceFloatController extends Controller {
   private wakeWordEnabled: boolean = false
 
   // Streaming state
-  private streamChannelName: string | null = null
   private currentConversationId: number | null = null
   private streamingResponse: string = ""
   private currentUserId: number | null = null
@@ -155,6 +174,10 @@ export default class VoiceFloatController extends Controller {
       console.error("[VoiceFloat] Modal element is null!")
     }
 
+    // Subscribe to ActionCable channels BEFORE starting to listen
+    // This ensures we don't miss any messages that arrive while processing
+    this.initializeActionCable()
+
     setTimeout(() => {
       this.startWebAudioRecording()
     }, 500)
@@ -179,49 +202,74 @@ export default class VoiceFloatController extends Controller {
       return
     }
 
-    if (this.channel) {
-      console.log("[VoiceFloat] Channel already exists, reusing")
-      return
-    }
+    // Subscribe to user-specific channel for receiving AI responses
+    // The backend broadcasts to voice_chat_{user_id}_{conversation_id}
+    const channelName = `voice_chat_${this.currentUserId || 0}`
+    console.log(`[VoiceFloat] Subscribing to channel: ${channelName}`)
 
-    // Use the stream_name from server response
-    const streamName = this.streamChannelName || `voice_chat_${this.currentUserId || 0}`
-    
-    console.log(`[VoiceFloat] Subscribing to ActionCable stream: ${streamName}`)
-    console.log("[VoiceFloat] Channel will receive messages on this stream")
-
-    this.channel = (window as any).ActionCable.createConsumer().subscriptions.create(
-      { channel: "VoiceChatChannel", stream_name: streamName },
-      {
-        connected: () => {
-          console.log("[VoiceFloat] ✅ Streaming channel connected to:", streamName)
-        },
-        disconnected: () => {
-          console.log("[VoiceFloat] ❌ Streaming channel disconnected")
-        },
-        received: (data: VoiceStreamEvent) => {
-          console.log("[VoiceFloat] 📨 Raw message received from ActionCable:", data)
-          this.handleStreamMessage(data)
+    // Only create subscription if we don't have one
+    if (!this.channel) {
+      this.channel = (window as any).ActionCable.createConsumer().subscriptions.create(
+        { channel: "VoiceChatChannel", stream_name: channelName },
+        {
+          connected: () => {
+            console.log("[VoiceFloat] ✅ Channel connected:", channelName)
+          },
+          disconnected: () => {
+            console.log("[VoiceFloat] ❌ Channel disconnected")
+          },
+          received: (data: VoiceStreamEvent) => {
+            console.log("[VoiceFloat] 📨 Message received:", data.type)
+            this.handleStreamMessage(data)
+          }
         }
-      }
-    )
+      )
+    }
   }
 
   private handleStreamMessage(data: VoiceStreamEvent): void {
     console.log("[VoiceFloat] Stream message received. Type:", data.type, "Full data:", data)
 
     switch (data.type) {
+      case 'conversation_created':
+        console.log("[VoiceFloat] Conversation created:", data.conversation_id)
+        if (data.conversation_id) {
+          this.currentConversationId = data.conversation_id
+        }
+        break
       case 'command-received':
         console.log("[VoiceFloat] Command received:", data.message)
         this.handleCommandReceived(data.message || '')
         break
+      case 'assistant_token':
       case 'chunk':
-        console.log("[VoiceFloat] Processing chunk:", data.chunk)
-        this.handleStreamingChunk(data.chunk || '')
+        console.log("[VoiceFloat] Processing chunk:", data.content || data.chunk)
+        this.handleStreamingChunk(data.content || data.chunk || '')
         break
+      case 'assistant_complete':
       case 'complete':
         console.log("[VoiceFloat] Processing complete:", data.content)
         this.handleStreamComplete(data.content || '')
+        break
+      case 'tool_call_detected':
+        console.log("[VoiceFloat] Tool call detected:", data.payload?.tool)
+        this.handleToolCallDetected(data.payload?.tool || '', data.payload?.arguments || {})
+        break
+      case 'tool_execution_started':
+        console.log("[VoiceFloat] Tool execution started:", data.payload?.tool)
+        this.handleToolExecutionStarted(data.payload?.tool || '')
+        break
+      case 'tool_execution_completed':
+        console.log("[VoiceFloat] Tool execution completed:", data.payload?.tool, data.payload?.result)
+        this.handleToolExecutionCompleted(data.payload?.tool || '', data.payload?.result)
+        break
+      case 'tool_execution_failed':
+        console.log("[VoiceFloat] Tool execution failed:", data.payload?.error)
+        this.handleToolExecutionFailed(data.payload?.tool || '', data.payload?.error || 'Unknown error')
+        break
+      case 'awaiting_confirmation':
+        console.log("[VoiceFloat] Awaiting confirmation:", data.payload?.tool)
+        this.handleAwaitingConfirmation(data.payload?.tool || '')
         break
       case 'error':
         console.log("[VoiceFloat] Processing error:", data.error)
@@ -266,6 +314,52 @@ export default class VoiceFloatController extends Controller {
     this.hideLoading()
     this.updateTranscript(`Error: ${error}`)
     this.streamingResponse = ""
+  }
+
+  // Tool execution handlers
+  private handleToolCallDetected(tool: string, args: Record<string, any>): void {
+    console.log(`[VoiceFloat] Tool detected: ${tool}`, args)
+    this.showToolExecutionStatus(`Executing: ${tool}...`)
+  }
+
+  private handleToolExecutionStarted(tool: string): void {
+    console.log(`[VoiceFloat] Tool started: ${tool}`)
+    this.showToolExecutionStatus(`Running ${tool}...`)
+  }
+
+  private handleToolExecutionCompleted(tool: string, result: any): void {
+    console.log(`[VoiceFloat] Tool completed: ${tool}`, result)
+    let message = `Completed: ${tool}`
+    if (result?.message) {
+      message = result.message
+    } else if (result?.status === 'success') {
+      message = `${tool} executed successfully!`
+    }
+    this.showToolExecutionStatus(message)
+    
+    // Speak the result
+    this.speakResponse(message)
+  }
+
+  private handleToolExecutionFailed(tool: string, error: string): void {
+    console.log(`[VoiceFloat] Tool failed: ${tool}`, error)
+    const message = `Failed to execute ${tool}: ${error}`
+    this.showToolExecutionStatus(message)
+    this.speakResponse(message)
+  }
+
+  private handleAwaitingConfirmation(tool: string): void {
+    console.log(`[VoiceFloat] Awaiting confirmation for: ${tool}`)
+    this.showToolExecutionStatus(`Please confirm: ${tool}`)
+    this.speakResponse(`Do you want me to ${tool}? Please say yes or no.`)
+  }
+
+  private showToolExecutionStatus(message: string): void {
+    const statusEl = document.getElementById('voice-status')
+    if (statusEl) {
+      statusEl.textContent = message
+      statusEl.classList.add('text-orange-600')
+    }
   }
 
   private async startWebAudioRecording(): Promise<void> {
@@ -384,13 +478,12 @@ export default class VoiceFloatController extends Controller {
 
         console.log("[VoiceFloat] Streaming response:", data)
 
-        // Set up streaming channel
-        if (data.stream_name) {
-          this.streamChannelName = data.stream_name
+        // Update conversation ID if provided
+        if (data.conversation_id) {
           this.currentConversationId = data.conversation_id
-          this.initializeActionCable()
         }
 
+        // Display user transcript
         if (data.text && data.text.trim().length > 0) {
           this.updateTranscript(data.text)
         }

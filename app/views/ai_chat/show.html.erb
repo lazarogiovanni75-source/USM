@@ -23,15 +23,6 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <!-- Simple Voice Button - no modal needed -->
-          <button id="voice-toggle-btn"
-                  class="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all"
-                  data-controller="voice-command-toggle"
-                  data-action="voice-command-toggle#toggle">
-            <%= lucide_icon "mic", class: "w-5 h-5" %>
-            <span class="font-medium">Voice</span>
-            <span id="voice-status" class="text-xs text-white/70"></span>
-          </button>
           <%= link_to ai_chat_index_path, class: "btn-primary" do %>
             <%= lucide_icon "message-circle", class: "w-4 h-4 mr-2" %>
             All Chats

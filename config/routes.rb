@@ -90,6 +90,9 @@ Rails.application.routes.draw do
   # Dashboard route (singular)
   get 'dashboard', to: 'dashboards#index'
 
+  # Webhooks
+  post 'webhooks/postforme', to: 'webhooks/postforme_webhooks#receive'
+
   # API routes
   namespace :api do
     namespace :v1 do
@@ -112,6 +115,18 @@ Rails.application.routes.draw do
       post 'workflows', to: 'workflows#create'
       get 'workflows', to: 'workflows#index'
       get 'workflows/:id', to: 'workflows#show'
+
+      # Campaign Health API endpoints
+      get 'campaign_health', to: 'campaign_health#index'
+      get 'campaign_health/:id', to: 'campaign_health#show'
+
+      # Agency Dashboard API endpoints
+      get 'agency/dashboard', to: 'agency#dashboard'
+      get 'agency/clients/:id', to: 'agency#client'
+      get 'agency/campaigns', to: 'agency#campaigns'
+      get 'agency/trending', to: 'agency#trending'
+      get 'agency/viral-context', to: 'agency#viral_context'
+      get 'agency/costs', to: 'agency#costs'
     end
   end
 
@@ -163,6 +178,17 @@ Rails.application.routes.draw do
     patch 'password/change', to: 'accounts#update_password'
   end
 
+  # Agency Dashboard routes
+  namespace :agency do
+    root "dashboard#index"
+    get 'dashboard', to: 'dashboard#index'
+    get 'dashboard/client/:id', to: 'dashboard#client', as: :client_dashboard
+    get 'dashboard/campaigns', to: 'dashboard#campaigns', as: :agency_campaigns
+    get 'dashboard/trending', to: 'dashboard#trending', as: :agency_trending
+    get 'dashboard/trending/:client_id', to: 'dashboard#trending', as: :client_trending
+    get 'dashboard/costs', to: 'dashboard#costs', as: :agency_costs
+  end
+
   # Policy Settings
   resources :policy_settings, only: [:index, :update] do
     collection do
@@ -196,6 +222,9 @@ Rails.application.routes.draw do
       get 'export'
     end
   end
+  
+  # Client routes
+  resources :clients
   resources :contents do
     member do
       get 'preview'
@@ -293,6 +322,7 @@ Rails.application.routes.draw do
     member do
       post 'convert_to_content'
       post 'duplicate'
+      post 'retry_video_status'
     end
     collection do
       post 'bulk_actions'

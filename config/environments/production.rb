@@ -27,9 +27,9 @@ Rails.application.configure do
   # config.action_dispatch.x_sendfile_header = "X-Sendfile" # for Apache
   # config.action_dispatch.x_sendfile_header = "X-Accel-Redirect" # for NGINX
 
-  # Store uploaded files locally (Railway persistent storage)
-  # Change to :storage_bucket if S3 credentials are configured
-  config.active_storage.service = :local
+  # Store uploaded files in S3 (configure via CLACKY_STORAGE_BUCKET_* variables)
+# Falls back to local storage if S3 not configured
+config.active_storage.service = (ENV["CLACKY_STORAGE_BUCKET_NAME"].present? && ENV["CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID"].present?) ? :amazon : :local
 
   # Mount Action Cable outside main process or domain.
   config.action_cable.disable_request_forgery_protection = true

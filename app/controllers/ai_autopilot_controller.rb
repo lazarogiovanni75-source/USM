@@ -13,7 +13,8 @@ class AiAutopilotController < ApplicationController
     else
       voice_setting.save(enabled: true)
     end
-    redirect_to ai_autopilot_index_path, notice: "AI Autopilot #{voice_setting.enabled? ? 'enabled' : 'disabled'}"
+    
+    redirect_to dashboards_path, notice: voice_setting.enabled? ? "AI Autopilot enabled" : "AI Autopilot disabled"
   end
   
   def generate_content

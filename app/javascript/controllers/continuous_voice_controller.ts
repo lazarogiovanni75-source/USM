@@ -1,16 +1,32 @@
 import { Controller } from "@hotwired/stimulus"
 import consumer from "../channels/consumer"
 
-// ChatGPT-style continuous voice controller
-// Uses MediaRecorder to capture continuous audio, sends to backend for transcription
-// Implements early GPT trigger on pause detection (>700ms of silence)
+// Voice State Machine States
+type VoiceState = 
+  | 'IDLE'
+  | 'LISTENING'
+  | 'TRANSCRIBING'
+  | 'GENERATING'
+  | 'AWAITING_CONFIRMATION'
+  | 'EXECUTING_TOOL'
+  | 'SPEAKING'
 
+// Standardized Event Types from Backend
 interface VoiceEvent {
   type: string
-  text?: string
-  ai_response?: string
-  wake_word_detected?: boolean
-  error?: string
+  conversation_id?: string
+  execution_id?: string
+  timestamp?: number
+  payload: {
+    content?: string
+    text?: string
+    tool?: string
+    arguments?: Record<string, any>
+    result?: any
+    error?: string
+    requiresConfirmation?: boolean
+    confirmed?: boolean
+  }
 }
 
 export default class extends Controller<HTMLElement> {
@@ -36,23 +52,41 @@ export default class extends Controller<HTMLElement> {
   private mediaRecorder: MediaRecorder | null = null
   private audioChunks: Blob[] = []
   private stream: MediaStream | null = null
-  private isRecording = false
-  private isProcessing = false
   private audioContext: AudioContext | null = null
   private analyser: AnalyserNode | null = null
   private cableSubscription: any = null
   
+  // State Machine
+  private state: VoiceState = 'IDLE'
+  private stateHistory: VoiceState[] = []
+
   // Pause detection for early GPT trigger
   private lastAudioTime = 0
   private silenceTimer: ReturnType<typeof setTimeout> | null = null
-  private silenceThreshold = 700 // ms of silence before triggering
-  private minChunkDuration = 300 // minimum ms of audio before sending
+  private silenceThreshold = 700
+  private minChunkDuration = 300
   private pendingAudio: Blob[] = []
   private isTranscribing = false
 
+  // Execution tracking
+  private currentExecutionId: string | null = null
+  private pendingConfirmation: { tool: string; args: Record<string, any>; executionId: string } | null = null
+
+  // Allowed state transitions
+  private readonly stateTransitions: Record<VoiceState, VoiceState[]> = {
+    'IDLE': ['LISTENING'],
+    'LISTENING': ['TRANSCRIBING', 'IDLE'],
+    'TRANSCRIBING': ['GENERATING', 'LISTENING', 'IDLE'],
+    'GENERATING': ['AWAITING_CONFIRMATION', 'EXECUTING_TOOL', 'SPEAKING', 'LISTENING', 'IDLE'],
+    'AWAITING_CONFIRMATION': ['EXECUTING_TOOL', 'LISTENING', 'IDLE'],
+    'EXECUTING_TOOL': ['SPEAKING', 'GENERATING', 'LISTENING', 'IDLE'],
+    'SPEAKING': ['LISTENING', 'IDLE']
+  }
+
   connect(): void {
     console.log("ContinuousVoice controller connected")
-    this.updateStatus("Click microphone to start", "idle")
+    this.setState('IDLE')
+    this.updateStatusUI()
     this.subscribeToCable()
   }
 
@@ -61,65 +95,280 @@ export default class extends Controller<HTMLElement> {
     this.cableSubscription?.unsubscribe()
   }
 
-  private subscribeToCable(): void {
-    const streamName = `voice_interaction_${this.userIdValue}`
-    this.cableSubscription = consumer.subscriptions.create(streamName, {
-      received: (data: any) => {
-        this.handleCableMessage(data)
-      }
-    })
-    console.log("Subscribed to voice channel:", streamName)
+  // State Machine Methods
+  private canTransitionTo(newState: VoiceState): boolean {
+    return this.stateTransitions[this.state]?.includes(newState) || false
   }
 
-  private handleCableMessage(data: any): void {
+  private setState(newState: VoiceState): void {
+    if (this.state === newState) return
+
+    const oldState = this.state
+    console.log(`[VoiceState] ${oldState} -> ${newState}`)
+
+    this.stateHistory.push(this.state)
+    if (this.stateHistory.length > 10) {
+      this.stateHistory.shift()
+    }
+
+    this.state = newState
+    this.updateStatusUI()
+  }
+
+  private isLocked(): boolean {
+    return ['TRANSCRIBING', 'GENERATING', 'AWAITING_CONFIRMATION', 'EXECUTING_TOOL', 'SPEAKING'].includes(this.state)
+  }
+
+  private updateStatusUI(): void {
+    const statusMessages: Record<VoiceState, string> = {
+      'IDLE': 'Click microphone to start',
+      'LISTENING': '🎙️ Listening...',
+      'TRANSCRIBING': '⏳ Transcribing...',
+      'GENERATING': '🤔 Thinking...',
+      'AWAITING_CONFIRMATION': '❓ Awaiting confirmation...',
+      'EXECUTING_TOOL': '⚙️ Executing task...',
+      'SPEAKING': '🔊 Speaking...'
+    }
+
+    const statusColors: Record<VoiceState, string> = {
+      'IDLE': 'text-gray-500',
+      'LISTENING': 'text-green-600',
+      'TRANSCRIBING': 'text-blue-600',
+      'GENERATING': 'text-purple-600',
+      'AWAITING_CONFIRMATION': 'text-yellow-600',
+      'EXECUTING_TOOL': 'text-orange-600',
+      'SPEAKING': 'text-blue-600'
+    }
+
+    this.statusTarget.textContent = statusMessages[this.state]
+    this.statusTarget.className = `text-sm mt-2 ${statusColors[this.state]}`
+
+    // Update voice button visual state
+    this.voiceButtonTarget.classList.toggle('recording', this.state === 'LISTENING')
+    this.voiceButtonTarget.classList.toggle('processing', ['TRANSCRIBING', 'GENERATING', 'EXECUTING_TOOL'].includes(this.state))
+    this.voiceButtonTarget.disabled = this.isLocked()
+  }
+
+  // Cable Subscription
+  private subscribeToCable(): void {
+    // Use proper ActionCable subscription format with channel class
+    this.cableSubscription = consumer.subscriptions.create(
+      { channel: "VoiceInteractionChannel", user_id: this.userIdValue },
+      {
+        received: (data: any) => {
+          this.handleCableMessage(data)
+        }
+      }
+    )
+    console.log("Subscribed to voice channel: VoiceInteractionChannel for user", this.userIdValue)
+  }
+
+  // Handle standardized event contract
+  private handleCableMessage(data: VoiceEvent): void {
+    console.log('[VoiceEvent]', data.type, data.payload)
+
     switch (data.type) {
-      case 'chunk':
-        // Handle streaming text response
-        this.appendToResponse(data.content || '')
+      case 'transcript_partial':
+        this.handleTranscriptPartial(data.payload)
         break
-      case 'complete':
-        // Handle final response
-        this.finishResponse(data.response || data.content || '')
+      case 'transcript_final':
+        this.handleTranscriptFinal(data.payload)
         break
-      case 'command-received':
-        this.updateStatus("Processing...", "processing")
+      case 'assistant_token':
+        this.handleAssistantToken(data.payload)
+        break
+      case 'assistant_complete':
+        this.handleAssistantComplete(data.payload)
+        break
+      case 'tool_call_detected':
+        this.handleToolCallDetected(data.execution_id!, data.payload)
+        break
+      case 'awaiting_confirmation':
+        this.handleAwaitingConfirmation(data.execution_id!, data.payload)
+        break
+      case 'confirmation_received':
+        this.handleConfirmationReceived(data.payload)
+        break
+      case 'tool_execution_started':
+        this.handleToolExecutionStarted(data.payload)
+        break
+      case 'tool_execution_completed':
+        this.handleToolExecutionCompleted(data.payload)
+        break
+      case 'tool_execution_failed':
+        this.handleToolExecutionFailed(data.payload)
+        break
+      case 'execution_cancelled':
+        this.handleExecutionCancelled(data.payload)
         break
       case 'error':
-        this.updateStatus(`Error: ${data.error}`, "error")
+        this.handleError(data.payload)
         break
-      case 'status-update':
-        this.updateStatus(data.status || 'Processing...', 'processing')
-        break
+      default:
+        console.warn('[VoiceEvent] Unknown type:', data.type)
     }
   }
 
-  private appendToResponse(text: string): void {
-    const responseEl = this.responseTarget.querySelector('.response-content')
-    if (responseEl) {
-      responseEl.textContent += text
+  // Event Handlers
+  private handleTranscriptPartial(payload: VoiceEvent['payload']): void {
+    if (payload.text) {
+      this.transcriptionTarget.innerHTML = `<div class="text-gray-500">${payload.text}</div>`
     }
   }
 
-  private finishResponse(text: string): void {
+  private handleTranscriptFinal(payload: VoiceEvent['payload']): void {
+    if (payload.text) {
+      this.transcriptionTarget.innerHTML = `<div class="text-lg font-medium text-gray-900">${payload.text}</div>`
+    }
+    this.setState('GENERATING')
+  }
+
+  private handleAssistantToken(payload: VoiceEvent['payload']): void {
+    if (payload.content) {
+      const responseEl = this.responseTarget.querySelector('.response-content')
+      if (responseEl) {
+        responseEl.textContent += payload.content
+      } else {
+        this.responseTarget.innerHTML = `<div class="response-content text-gray-800"></div>`
+        const newEl = this.responseTarget.querySelector('.response-content')
+        if (newEl) newEl.textContent = payload.content
+      }
+    }
+  }
+
+  private handleAssistantComplete(payload: VoiceEvent['payload']): void {
+    this.currentExecutionId = null
+    this.setState('SPEAKING')
+    
+    // After speaking, go back to listening
+    setTimeout(() => {
+      if (this.state === 'SPEAKING') {
+        this.setState('LISTENING')
+        if (!this.isRecording) {
+          this.startRecording()
+        }
+      }
+    }, 2000)
+  }
+
+  private handleToolCallDetected(executionId: string, payload: VoiceEvent['payload']): void {
+    this.currentExecutionId = executionId
+    this.setState('EXECUTING_TOOL')
+    
+    // Show tool being executed
     this.responseTarget.innerHTML = `
-      <div class="response-content p-4 bg-blue-50 rounded-lg">
-        <div class="text-gray-800">${text}</div>
+      <div class="p-3 bg-blue-50 rounded-lg">
+        <div class="text-sm text-blue-600">⚙️ Executing: ${payload.tool}</div>
       </div>
     `
-    this.updateStatus("🎙️ Listening...", "listening")
   }
 
-  async toggleRecording() {
-    if (this.isRecording) {
-      this.stopRecording()
+  private handleAwaitingConfirmation(executionId: string, payload: VoiceEvent['payload']): void {
+    this.setState('AWAITING_CONFIRMATION')
+    this.pendingConfirmation = {
+      tool: payload.tool || '',
+      args: payload.arguments || {},
+      executionId
+    }
+
+    // Show confirmation dialog
+    this.responseTarget.innerHTML = `
+      <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <div class="text-yellow-800 font-medium">Confirm: ${payload.tool}?</div>
+        <div class="text-sm text-yellow-600 mt-1">Say "yes" to confirm or "no" to cancel</div>
+      </div>
+    `
+  }
+
+  private handleConfirmationReceived(payload: VoiceEvent['payload']): void {
+    if (payload.confirmed) {
+      this.setState('EXECUTING_TOOL')
     } else {
+      this.setState('LISTENING')
+      this.pendingConfirmation = null
+    }
+  }
+
+  private handleToolExecutionStarted(payload: VoiceEvent['payload']): void {
+    this.setState('EXECUTING_TOOL')
+    this.responseTarget.innerHTML += `
+      <div class="text-sm text-gray-500 mt-2">▶️ Started: ${payload.tool}</div>
+    `
+  }
+
+  private handleToolExecutionCompleted(payload: VoiceEvent['payload']): void {
+    // Show result
+    const result = payload.result
+    let resultHtml = ''
+    
+    if (result.status === 'success') {
+      resultHtml = `
+        <div class="mt-3 p-3 bg-green-50 rounded-lg">
+          <div class="text-green-800">✅ ${result.message}</div>
+          ${result.data?.image_url ? `<img src="${result.data.image_url}" class="mt-2 rounded-lg max-w-xs" />` : ''}
+          ${result.data?.video_id ? `<div class="text-sm text-green-600 mt-1">Video ID: ${result.data.video_id}</div>` : ''}
+          ${result.data?.post_id ? `<div class="text-sm text-green-600 mt-1">Post ID: ${result.data.post_id}</div>` : ''}
+        </div>
+      `
+    } else {
+      resultHtml = `
+        <div class="mt-3 p-3 bg-red-50 rounded-lg">
+          <div class="text-red-800">❌ ${result.error || result.message}</div>
+        </div>
+      `
+    }
+
+    this.responseTarget.innerHTML += resultHtml
+    
+    // Continue to next tool or finish
+    this.setState('GENERATING')
+  }
+
+  private handleToolExecutionFailed(payload: VoiceEvent['payload']): void {
+    this.responseTarget.innerHTML += `
+      <div class="mt-3 p-3 bg-red-50 rounded-lg">
+        <div class="text-red-800">❌ Failed: ${payload.error}</div>
+      </div>
+    `
+    this.setState('LISTENING')
+  }
+
+  private handleExecutionCancelled(payload: VoiceEvent['payload']): void {
+    this.pendingConfirmation = null
+    this.currentExecutionId = null
+    this.setState('LISTENING')
+  }
+
+  private handleError(payload: VoiceEvent['payload']): void {
+    this.responseTarget.innerHTML = `
+      <div class="p-3 bg-red-50 rounded-lg">
+        <div class="text-red-800">Error: ${payload.error}</div>
+      </div>
+    `
+    this.setState('IDLE')
+  }
+
+  // Recording Methods
+  async toggleRecording() {
+    if (this.isLocked()) {
+      console.log('[VoiceState] Cannot toggle - locked in', this.state)
+      return
+    }
+
+    if (this.state === 'LISTENING') {
+      this.stopRecording()
+    } else if (this.state === 'IDLE') {
       await this.startRecording()
     }
   }
 
   async startRecording() {
+    if (!this.canTransitionTo('LISTENING')) {
+      console.log('[VoiceState] Cannot start recording from', this.state)
+      return
+    }
+
     try {
-      // Get microphone access
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -128,13 +377,11 @@ export default class extends Controller<HTMLElement> {
         } 
       })
 
-      // Set up audio analysis for visual feedback
       this.audioContext = new AudioContext()
       this.analyser = this.audioContext.createAnalyser()
       const source = this.audioContext.createMediaStreamSource(this.stream)
       source.connect(this.analyser)
 
-      // Create MediaRecorder for continuous recording
       this.mediaRecorder = new MediaRecorder(this.stream, {
         mimeType: 'audio/webm;codecs=opus'
       })
@@ -145,8 +392,6 @@ export default class extends Controller<HTMLElement> {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data)
           this.lastAudioTime = Date.now()
-          
-          // Check if we should send for early processing
           this.checkForSilence()
         }
       }
@@ -155,22 +400,16 @@ export default class extends Controller<HTMLElement> {
         this.processAudio()
       }
 
-      // Start recording with smaller time slices for better latency
-      this.mediaRecorder.start(300) // Collect chunks every 300ms for near-real-time processing
-      this.isRecording = true
-      
-      // Reset pause detection
+      this.mediaRecorder.start(300)
+      this.setState('LISTENING')
       this.lastAudioTime = Date.now()
       this.pendingAudio = []
-      
-      this.updateStatus("🎙️ Listening...", "listening")
-      this.voiceButtonTarget.classList.add('recording')
       
       console.log("Started continuous recording")
       
     } catch (error: any) {
       console.error("Failed to start recording:", error)
-      this.updateStatus(`Error: ${error.message}`, "error")
+      this.handleError({ error: error.message })
     }
   }
 
@@ -189,52 +428,50 @@ export default class extends Controller<HTMLElement> {
       this.audioContext = null
     }
 
-    this.isRecording = false
-    this.voiceButtonTarget.classList.remove('recording')
-    this.updateStatus("Click to speak", "idle")
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer)
+      this.silenceTimer = null
+    }
+
+    if (this.state === 'LISTENING') {
+      this.setState('IDLE')
+    }
   }
 
   private checkForSilence(): void {
-    // Clear existing timer
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer)
     }
     
-    // Set timer to detect silence
     this.silenceTimer = setTimeout(() => {
       const silenceDuration = Date.now() - this.lastAudioTime
       
-      // If we've had enough silence and have audio, process it
       if (silenceDuration >= this.silenceThreshold && this.audioChunks.length > 0) {
-        this.processAudio(true) // true = early trigger
+        this.processAudio(true)
       }
     }, this.silenceThreshold)
   }
 
   private async processAudio(isEarlyTrigger = false) {
-    // Don't process if already processing
-    if (this.isProcessing || this.isTranscribing) {
+    if (this.isLocked()) {
+      console.log('[VoiceState] Skipping processAudio - locked in', this.state)
       return
     }
 
     if (this.audioChunks.length === 0) {
-      // Restart recording if we were recording
-      if (this.isRecording) {
+      if (this.state === 'LISTENING') {
         setTimeout(() => this.startRecording(), 100)
       }
       return
     }
 
-    this.isProcessing = true
-    this.updateStatus("⏳ Processing...", "processing")
+    this.setState('TRANSCRIBING')
 
-    // Combine audio chunks
     const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' })
     this.audioChunks = []
     this.pendingAudio = []
 
     try {
-      // Send to backend for transcription
       const formData = new FormData()
       formData.append('audio', audioBlob, 'audio.webm')
       formData.append('detect_wake_word', 'false')
@@ -253,53 +490,55 @@ export default class extends Controller<HTMLElement> {
       const data = await response.json()
 
       if (data.error) {
-        this.updateStatus(`Error: ${data.error}`, "error")
+        this.handleError({ error: data.error })
       } else if (data.text) {
-        // Show transcription
         this.transcriptionTarget.innerHTML = `
           <div class="text-lg font-medium text-gray-900">${data.text}</div>
         `
-
-        // Clear previous response for new one
         this.responseTarget.innerHTML = ''
-
-        // Status will be updated by ActionCable messages
-        if (!data.stream_name) {
-          // Fallback if no streaming
-          if (data.ai_response) {
-            this.responseTarget.innerHTML = `
-              <div class="p-4 bg-blue-50 rounded-lg">
-                <div class="text-gray-800">${data.ai_response}</div>
-              </div>
-            `
-          }
-          this.updateStatus("🎙️ Listening...", "listening")
-        }
-      } else {
-        this.updateStatus("🎙️ Listening...", "listening")
+        this.setState('GENERATING')
       }
 
     } catch (error: any) {
       console.error("Transcription error:", error)
-      this.updateStatus(`Error: ${error.message}`, "error")
+      this.handleError({ error: error.message })
     }
 
-    this.isProcessing = false
-
     // Restart recording for continuous conversation
-    if (this.isRecording) {
-      setTimeout(() => this.startRecording(), 100)
+    if (this.state !== 'IDLE') {
+      setTimeout(() => {
+        if (!this.isRecording && this.state !== 'IDLE') {
+          this.startRecording()
+        }
+      }, 100)
     }
   }
 
-  private updateStatus(message: string, status: string) {
-    this.statusTarget.textContent = message
-    this.statusTarget.className = `text-sm mt-2 ${
-      status === 'listening' ? 'text-green-600' :
-        status === 'processing' ? 'text-blue-600' :
-          status === 'error' ? 'text-red-600' :
-            'text-gray-500'
-    }`
+  // Handle yes/no for confirmation
+  handleConfirmation(confirmed: boolean): void {
+    if (this.state !== 'AWAITING_CONFIRMATION') {
+      console.log('[VoiceState] No pending confirmation')
+      return
+    }
+
+    if (confirmed) {
+      this.setState('EXECUTING_TOOL')
+    } else {
+      this.setState('LISTENING')
+      this.pendingConfirmation = null
+    }
+  }
+
+  // Cancel current execution
+  cancel(): void {
+    if (this.isLocked()) {
+      this.setState('IDLE')
+      this.stopRecording()
+    }
+  }
+
+  private get isRecording(): boolean {
+    return this.mediaRecorder?.state === 'recording'
   }
 
   private getCSRFToken(): string {

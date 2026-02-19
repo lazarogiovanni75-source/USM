@@ -19,24 +19,41 @@ class PoyoService
   # API Documentation: https://api.poyo.ai
   #
   # @param prompt [String] Text prompt describing the video to generate
-  # @param duration [String] Video duration ("5", "10", or "15")
+  # @param duration [Integer] Video duration (10 or 15 seconds)
   # @param aspect_ratio [String] Aspect ratio ("16:9" default or "9:16" for vertical)
-  # @param model [String] Model identifier
+  # @param model [String] Model identifier ("sora-2" or "sora-2-private")
   # @param callback_url [String] Webhook URL to call when video is ready
+  # @param style [String] Video style (thanksgiving, comic, news, selfie, nostalgic, anime)
+  # @param storyboard [Boolean] Enable storyboard for finer control
+  # @param image_urls [Array] Image URLs for image-to-video generation
   #
   def generate_video(prompt:,
-                     duration: '10',
+                     duration: 10,
                      aspect_ratio: '16:9',
                      model: nil,
-                     callback_url: nil)
-    # Use correct Poyo.ai API format with input wrapper
+                     callback_url: nil,
+                     style: nil,
+                     storyboard: nil,
+                     image_urls: nil)
+    # Validate duration (must be 10 or 15)
+    duration_value = duration.to_i
+    duration_value = 10 unless [10, 15].include?(duration_value)
+
+    # Build input payload
+    input = {
+      prompt: prompt,
+      duration: duration_value,
+      aspect_ratio: aspect_ratio
+    }
+
+    # Add optional parameters
+    input[:style] = style if style.present?
+    input[:storyboard] = storyboard if storyboard.present?
+    input[:image_urls] = image_urls if image_urls.present? && image_urls.is_a?(Array) && image_urls.any?
+
     body = {
       model: model || 'sora-2',
-      input: {
-        prompt: prompt,
-        duration: duration.to_i,
-        aspect_ratio: aspect_ratio
-      }
+      input: input
     }
 
     # Add callback URL if provided
@@ -62,19 +79,48 @@ class PoyoService
 
   # Get generation task status
   def task_status(task_id)
-    result = get_request("/api/task/#{task_id}")
+    # Use correct endpoint: /api/generate/status/{task_id}
+    result = get_request("/api/generate/status/#{task_id}")
     
-    Rails.logger.debug "[PoyoService] Task status response: #{result.inspect}"
+    Rails.logger.info "[PoyoService] Task status response: #{result.inspect}"
     
-    # Handle nested data response format
-    data = result['data'] || result
+    # Handle response - API wraps everything in 'data' key
+    response_data = result
+    response_data = result['data'] if result.is_a?(Hash) && result['data'].present?
+    
+    # Parse status from response
+    status = response_data['status'] || 'unknown'
+    
+    # Get output/video URL from files array
+    output = nil
+    if response_data['files'].present? && response_data['files'].is_a?(Array)
+      video_file = response_data['files'].find { |f| f['file_type'] == 'video' } || response_data['files'].first
+      output = video_file['file_url'] if video_file
+    end
+    
+    # Fallback: try direct fields
+    output ||= response_data['video_url']
+    output ||= response_data['url']
+    output ||= response_data['output']
+    
+    # Get error message if present
+    error = response_data['error_message'] || response_data['error']
+    
+    Rails.logger.info "[PoyoService] Parsed status: #{status}, output: #{output ? output[0..50] : 'nil'}, error: #{error}"
     
     {
-      'status' => data['status'],
-      'output' => data.dig('result', 'video_url') || data['video_url'],
-      'progress' => data['progress'],
-      'error' => data.dig('error', 'message') || data['error']
+      'status' => status,
+      'output' => output,
+      'progress' => response_data['progress'],
+      'error' => error
     }
+  rescue PoyoService::Error => e
+    # If 404, return not_found so polling continues
+    if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('task not found')
+      Rails.logger.warn "[PoyoService] Task #{task_id} not found (404)"
+      return { 'status' => 'not_found', 'output' => nil, 'error' => 'Task not found' }
+    end
+    raise
   end
 
   # Get user credit balance
@@ -91,6 +137,7 @@ class PoyoService
 
   def fetch_api_key
     ENV['POYO_API_KEY'] ||
+      ENV['CLACKY_POYO_API_KEY'] ||
       ENV['DEFAPI_API_KEY'] ||
       ENV['CLACKY_DEFAPI_API_KEY'] ||
       Rails.application.config.x.poyo_api_key ||

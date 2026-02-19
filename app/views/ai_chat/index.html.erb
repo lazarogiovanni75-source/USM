@@ -27,7 +27,7 @@
         <div class="flex items-center gap-3">
           <!-- Voice Chat Button - Integrated Conversational Voice -->
           <button id="voice-chat-btn" 
-                  class="relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all <%= current_user.voice_settings.any? && current_user.voice_settings.first.enabled? ? 'bg-success text-white animate-pulse' : 'bg-white/80 backdrop-blur-sm border border-border/50 hover:bg-white' %>"
+                  class="relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all <%= current_user.voice_settings.any? && current_user.voice_settings.first.enabled? ? 'bg-success text-white' : 'bg-white/80 backdrop-blur-sm border border-border/50 hover:bg-white' %>"
                   data-action="ai-voice-chat#toggle"
                   data-ai-voice-chat-target="button"
                   title="Toggle voice chat">
@@ -208,6 +208,16 @@
     </div>
   </div>
 </div>
+
+<!-- Floating Voice Button -->
+<button id="voice-float-btn"
+        data-controller="voice-float"
+        data-action="voice-float#toggle"
+        class="fixed bottom-8 right-8 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/30 flex items-center justify-center hover:scale-110 transition-transform group">
+  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+  </svg>
+</button>
 
 <!-- Voice Command Modal -->
 <div id="voice-command-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center" data-controller="voice-command-toggle">

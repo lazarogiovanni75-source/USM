@@ -17,36 +17,62 @@
         </div>
         <div class="flex gap-2">
           <%= link_to "Edit", edit_draft_path(@draft), class: "btn-secondary" %>
+          <% if @draft.content_type.in?(['video', 'image']) && @draft.status == 'failed' %>
+            <%= button_to "Retry Checking Status", retry_video_status_draft_path(@draft), method: :post, class: "btn-warning" %>
+          <% end %>
           <%= button_to "Publish", convert_to_content_draft_path(@draft), method: :post, class: "btn-primary", data: { confirm: "Convert to published content?" } %>
         </div>
       </div>
     </div>
 
     <!-- Generated Media Display -->
-    <% if @draft.media_url.present? %>
+    <% display_url = @draft.media_display_url %>
+    <% if display_url.present? %>
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Generated Media</h2>
         <div class="flex justify-center">
           <% if @draft.content_type == 'image' %>
-            <img src="<%= @draft.media_url %>" alt="Generated Image" class="max-w-full rounded-lg shadow-md">
+            <img src="<%= display_url %>" alt="Generated Image" class="max-w-full rounded-lg shadow-md">
           <% elsif @draft.content_type == 'video' %>
-            <video src="<%= @draft.media_url %>" controls class="max-w-full rounded-lg shadow-md">
+            <video src="<%= display_url %>" controls class="max-w-full rounded-lg shadow-md">
               Your browser does not support video playback.
             </video>
           <% end %>
         </div>
         <div class="mt-4 text-center">
-          <a href="<%= @draft.media_url %>" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
+          <a href="<%= display_url %>" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
             Open in new tab ↗
           </a>
         </div>
       </div>
-    <% elsif @draft.content_type.in?(['image', 'video']) %>
+    <% elsif @draft.status == 'failed' %>
+      <div class="bg-white rounded-lg shadow-sm border border-red-200 p-6 mb-6">
+        <div class="text-center py-8">
+          <div class="text-red-500 text-5xl mb-4">⚠️</div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Generation Failed</h3>
+          <p class="text-gray-600"><%= @draft.metadata['error'] || 'An unknown error occurred during generation.' %></p>
+          <p class="text-sm text-gray-500 mt-2">This may be due to an invalid API key or the service being unavailable.</p>
+          <div class="mt-4 flex justify-center gap-4">
+            <%= button_to "Retry Checking Status", retry_video_status_draft_path(@draft), method: :post, class: "btn-secondary" %>
+            <%= link_to "Try Again", content_creation_index_path, class: "btn-primary" %>
+          </div>
+        </div>
+      </div>
+    <% elsif @draft.content_type.in?(['image', 'video']) && @draft.status == 'pending' %>
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div class="text-center py-8">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p class="text-gray-600">Media is being generated...</p>
           <p class="text-sm text-gray-500 mt-2">This may take a few moments. Refresh the page to check status.</p>
+        </div>
+      </div>
+    <% elsif @draft.content_type.in?(['image', 'video']) %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="text-center py-8">
+          <div class="text-gray-400 text-5xl mb-4">🎬</div>
+          <p class="text-gray-600">No media generated yet</p>
+          <p class="text-sm text-gray-500 mt-2">Generate media from the content creation page.</p>
+          <%= link_to "Generate Media", content_creation_index_path, class: "btn-primary mt-4" %>
         </div>
       </div>
     <% end %>
@@ -186,6 +212,13 @@
 
 <!-- stimulus-validator: allow-script -->
 <script>
+<% if @draft.content_type.in?(['video', 'image']) && @draft.status == 'pending' %>
+// Auto-refresh the page every 5 seconds while pending
+setTimeout(function() {
+  window.location.reload();
+}, 5000);
+<% end %>
+
 function analyzeDraft() {
   // Implement content analysis functionality
   alert('Content analysis feature coming soon!');

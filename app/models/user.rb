@@ -4,7 +4,25 @@ class User < ApplicationRecord
 
   has_secure_password validations: false
 
-  # Role-based Access Control
+  # Agency Staff Roles
+  AGENCY_ROLES = %w[admin editor viewer].freeze
+  validates :agency_role, inclusion: { in: AGENCY_ROLES }, if: -> { agency_role.present? }
+
+  # Agency-related associations
+  has_many :clients, dependent: :nullify
+  has_many :agency_staff_clients, class_name: 'Client', foreign_key: :agency_user_id, dependent: :nullify
+
+  # Helper methods for agency roles
+  def agency_admin? = agency_role == 'admin'
+  def agency_editor? = agency_role == 'editor'
+  def agency_viewer? = agency_role == 'viewer'
+  def agency_staff? = agency_role.present?
+  
+  def can_manage_clients?
+    agency_admin? || agency_editor?
+  end
+
+  # Role-based Access Control (existing)
   ROLES = %w[user premium moderator admin].freeze
   validates :role, inclusion: { in: ROLES }, if: -> { role.present? }
   

@@ -1,5 +1,8 @@
 class AiChatController < ApplicationController
   before_action :authenticate_user!
+  require 'net/http'
+  require 'json'
+  require 'uri'
   
   def index
     @conversations = current_user.ai_conversations.order(updated_at: :desc).limit(10)
@@ -101,21 +104,22 @@ class AiChatController < ApplicationController
   
   def call_railway_ai_api(prompt, previous_messages, context = {})
     begin
-      # Call Railway backend API
-      response = RestClient.post(
-        "#{ENV['RAILWAY_BACKEND_URL']}/api/ai/chat",
-        {
-          message: prompt,
-          conversation: previous_messages.map { |m| { role: m.role, content: m.content } },
-          context: context,
-          user_id: current_user.id
-        },
-        {
-          'Content-Type' => 'application/json',
-          'Authorization' => "Bearer #{ENV['RAILWAY_API_KEY']}"
-        }
-      )
+      # Call Railway backend API using Net::HTTP
+      uri = URI.parse("#{ENV['RAILWAY_BACKEND_URL']}/api/ai/chat")
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = uri.scheme == 'https'
       
+      request = Net::HTTP::Post.new(uri.request_uri)
+      request['Content-Type'] = 'application/json'
+      request['Authorization'] = "Bearer #{ENV['RAILWAY_API_KEY']}"
+      request.body = {
+        message: prompt,
+        conversation: previous_messages.map { |m| { role: m.role, content: m.content } },
+        context: context,
+        user_id: current_user.id
+      }.to_json
+      
+      response = http.request(request)
       JSON.parse(response.body)
     rescue => e
       Rails.logger.error "Railway AI API Error: #{e.message}"

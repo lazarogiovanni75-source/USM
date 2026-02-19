@@ -46,8 +46,13 @@ class VideoGenerationService
     end
 
     # Get the webhook URL for callbacks
+    # Handle config.x.public_host which may be OrderedOptions or nil
+    public_host = Rails.application.config.x.public_host
+    public_host = public_host.to_s if public_host.respond_to?(:to_str)
+    public_host = public_host.presence || ENV['CLACKY_PUBLIC_HOST'] || 'localhost:3000'
+    
     callback_url = Rails.application.routes.url_helpers.poyo_webhook_url(
-      host: Rails.application.config.x.public_host || ENV['CLACKY_PUBLIC_HOST'] || 'localhost:3000',
+      host: public_host,
       protocol: Rails.env.production? ? 'https' : 'http'
     )
 

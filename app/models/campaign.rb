@@ -1,20 +1,32 @@
 class Campaign < ApplicationRecord
   belongs_to :user
+  belongs_to :client, optional: true
   
   has_many :contents, dependent: :nullify
   has_many :scheduled_posts, through: :contents
   has_many :social_accounts_campaigns, dependent: :destroy
   has_many :social_accounts, through: :social_accounts_campaigns
+  has_many :tasks, class_name: 'CampaignTask', dependent: :destroy
   
   validates :name, presence: true
   validates :status, presence: true
   
-  enum status: { draft: 'draft', active: 'active', paused: 'paused', completed: 'completed', archived: 'archived' }
+  # Integer-based enum for orchestration states
+  enum status: {
+    draft: 0,
+    planning: 1,
+    scheduled: 2,
+    running: 3,
+    paused: 4,
+    completed: 5,
+    failed: 6
+  }
+  
   enum goal: { awareness: 'awareness', engagement: 'engagement', conversions: 'conversions', traffic: 'traffic', followers: 'followers' }
   enum campaign_type: { product_launch: 'product_launch', seasonal: 'seasonal', brand_awareness: 'brand_awareness', lead_generation: 'lead_generation', community_building: 'community_building', content_promo: 'content_promo', event_promo: 'event_promo', user_generated: 'user_generated' }
   
   scope :recent, -> { order(created_at: :desc) }
-  scope :active, -> { where(status: 'active') }
+  scope :active_campaigns, -> { where(status: :running) }
   scope :by_status, ->(status) { where(status: status) }
   scope :search, ->(query) { where("name ILIKE ? OR description ILIKE ?", "%#{query}%", "%#{query}%") }
   scope :current, -> { where("start_date <= ? AND end_date >= ?", Date.current, Date.current) }
@@ -26,6 +38,50 @@ class Campaign < ApplicationRecord
   serialize :kpis, Array
   
   before_validation :set_defaults, on: :create
+  before_validation :normalize_status
+  
+  after_update_commit :broadcast_status
+  
+  def normalize_status
+    return unless status.present?
+    # Convert string status to integer for backward compatibility
+    if status.is_a?(String) && status.match?(/^\d+$/)
+      self.status = status.to_i
+    elsif status.is_a?(String)
+      status_map = { 'draft' => 0, 'planning' => 1, 'scheduled' => 2, 'running' => 3, 'active' => 3, 'paused' => 4, 'completed' => 5, 'failed' => 6 }
+      self.status = status_map[status] || 0
+    end
+  end
+  
+  # Campaign orchestration methods
+  def start!
+    update!(status: :planning, started_at: Time.current)
+    Ai::Orchestrator.plan_campaign(self)
+  rescue => e
+    fail!
+    Rails.logger.error "[Campaign] Failed to start campaign #{id}: #{e.message}"
+  end
+  
+  def mark_completed!
+    update!(status: :completed, completed_at: Time.current)
+  end
+  
+  def mark_paused!
+    update!(status: :paused)
+  end
+  
+  def resume!
+    update!(status: :running)
+    Ai::Orchestrator.enqueue_tasks(self)
+  end
+  
+  def fail!
+    update!(status: :failed)
+  end
+
+  # Aliases for backward compatibility
+  alias_method :active?, :running?
+  alias_method :mark_active!, :resume!
   
   def duration_days
     return 0 unless start_date && end_date
@@ -106,12 +162,16 @@ class Campaign < ApplicationRecord
   private
   
   def set_defaults
-    self.status ||= 'draft'
+    self.status ||= 0  # draft as integer
     self.start_date ||= Date.current
     self.end_date ||= Date.current + 30.days
     self.platforms ||= []
     self.content_pillars ||= []
     self.hashtag_set ||= []
     self.mentions ||= []
+  end
+  
+  def broadcast_status
+    ActionCable.server.broadcast("campaign_#{id}", { status: status }) if saved_change_to_status?
   end
 end

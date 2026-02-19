@@ -69,12 +69,24 @@ class Api::V1::VoiceStreamController < ApplicationController
       voice_service.add_user_message(transcribed_text)
 
       # Broadcast confirmation that command was received (for TTS)
+      # Also broadcast to user-based channel for reliability
       ActionCable.server.broadcast(stream_name, {
         type: 'command-received',
         transcript: transcribed_text,
         message: "I heard: #{transcribed_text}. Processing your request...",
         timestamp: Time.current
       })
+      
+      # Also broadcast to user channel for reliability
+      user_channel = "voice_chat_#{current_user.id}"
+      unless user_channel == stream_name
+        ActionCable.server.broadcast(user_channel, {
+          type: 'command-received',
+          transcript: transcribed_text,
+          message: "I heard: #{transcribed_text}. Processing your request...",
+          timestamp: Time.current
+        })
+      end
 
       # Build the prompt for LLM
       prompt = voice_service.build_prompt_for_llm(transcribed_text)
@@ -88,7 +100,8 @@ class Api::V1::VoiceStreamController < ApplicationController
         user_id: current_user.id,
         conversation_history: conversation_history,
         wake_word_detected: wake_word_detected,
-        stream_tts: true  # Enable TTS streaming
+        stream_tts: true,  # Enable TTS streaming
+        enable_tools: true  # Enable tool execution for real task handling
       )
 
       render json: {

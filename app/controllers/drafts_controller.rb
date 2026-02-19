@@ -1,6 +1,6 @@
 class DraftsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_draft, only: %i[show edit update destroy convert_to_content duplicate]
+  before_action :set_draft, only: %i[show edit update destroy convert_to_content duplicate retry_video_status]
 
   def index
     @drafts = current_user.draft_contents.includes(:content_suggestions).order(updated_at: :desc)
@@ -97,6 +97,70 @@ class DraftsController < ApplicationController
       redirect_to draft_path(duplicated_draft), notice: 'Draft duplicated successfully.'
     else
       redirect_to draft_path(@draft), alert: 'Failed to duplicate draft.'
+    end
+  end
+
+  def retry_video_status
+    @draft = current_user.draft_contents.find(params[:id])
+    
+    # Only retry for video/image content with a task_id
+    unless @draft.content_type.in?(['video', 'image'])
+      redirect_to draft_path(@draft), alert: 'Only video/image drafts can retry status check.'
+      return
+    end
+    
+    task_id = @draft.metadata['task_id']
+    service = @draft.metadata['service'] || 'poyo'
+    
+    if task_id.blank?
+      redirect_to draft_path(@draft), alert: 'No task ID found for this draft.'
+      return
+    end
+    
+    begin
+      # Manually check the status
+      case service
+      when 'poyo'
+        status_response = PoyoService.new.task_status(task_id)
+      else
+        status_response = PoyoService.new.task_status(task_id)
+      end
+      
+      Rails.logger.info "[retry_video_status] Draft #{@draft.id}, Task #{task_id}, Status: #{status_response['status']}, Output: #{status_response['output']}"
+      
+      raw_status = status_response['status']&.downcase
+      
+      if raw_status.in?(['success', 'completed', 'done', 'finished', 'ready']) && status_response['output'].present?
+        @draft.update(
+          media_url: status_response['output'],
+          status: 'draft',
+          metadata: @draft.metadata.merge({ 'completed_at' => Time.current.to_i })
+        )
+        redirect_to draft_path(@draft), notice: 'Video found! Media URL updated.'
+      elsif raw_status.in?(['in_progress', 'pending', 'submitted', 'starting', 'processing', 'running', 'not_started'])
+        @draft.update(status: 'pending', metadata: @draft.metadata.merge({ 'error' => nil }))
+        SoraPollJob.perform_later(@draft.id, task_id, service)
+        redirect_to draft_path(@draft), notice: 'Video still processing. Will auto-refresh...'
+      elsif raw_status == 'not_found'
+        # Task expired or never existed - offer to regenerate
+        @draft.update(
+          status: 'failed', 
+          metadata: @draft.metadata.merge({ 
+            'error' => 'Task expired or not found. Would you like to generate a new video?',
+            'task_expired' => true,
+            'last_check' => Time.current.to_i
+          })
+        )
+        redirect_to draft_path(@draft), alert: 'Video task expired. Please generate a new video from the content creation page.'
+      else
+        # Still not ready or failed
+        error_msg = status_response['error'] || "Status: #{status_response['status']}"
+        @draft.update(metadata: @draft.metadata.merge({ 'error' => error_msg, 'last_check' => Time.current.to_i }))
+        redirect_to draft_path(@draft), alert: "Video not ready yet. Status: #{status_response['status']}. Error: #{error_msg}"
+      end
+    rescue => e
+      Rails.logger.error "[retry_video_status] Error: #{e.message}"
+      redirect_to draft_path(@draft), alert: "Error checking status: #{e.message}"
     end
   end
 

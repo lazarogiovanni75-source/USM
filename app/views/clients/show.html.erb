@@ -1,0 +1,170 @@
+<% content_for :title, @client.name %>
+
+<div class="container-xl">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50"><%= @client.name %></h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">Client Details</p>
+    </div>
+    <div class="flex gap-2">
+      <% if current_user.agency_staff? || current_user.admin? %>
+        <%= link_to edit_client_path(@client), class: "btn btn-outline-secondary" do %>
+          Edit
+        <% end %>
+        <%= link_to agency_client_dashboard_path(@client), class: "btn btn-primary" do %>
+          Dashboard
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Client Info -->
+    <div class="md:col-span-2 space-y-6">
+      <div class="card border border-gray-200 dark:border-gray-700">
+        <div class="card-header bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">Client Information</h3>
+        </div>
+        <div class="card-body">
+          <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
+              <dd class="mt-1">
+                <span class="badge <%= @client.active? ? 'badge-success' : 'badge-secondary' %>">
+                  <%= @client.status %>
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Plan</dt>
+              <dd class="mt-1"><span class="badge badge-info"><%= @client.plan %></span></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Contact Name</dt>
+              <dd class="mt-1 text-gray-900 dark:text-gray-50"><%= @client.contact_name || '-' %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Email</dt>
+              <dd class="mt-1 text-gray-900 dark:text-gray-50"><%= @client.email || '-' %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</dt>
+              <dd class="mt-1 text-gray-900 dark:text-gray-50"><%= @client.phone || '-' %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Budget</dt>
+              <dd class="mt-1 text-gray-900 dark:text-gray-50">
+                <%= @client.monthly_budget ? number_to_currency(@client.monthly_budget) : '-' %>
+              </dd>
+            </div>
+            <div class="md:col-span-2">
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Address</dt>
+              <dd class="mt-1 text-gray-900 dark:text-gray-50"><%= @client.address || '-' %></dd>
+            </div>
+            <div class="md:col-span-2">
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Notes</dt>
+              <dd class="mt-1 text-gray-900 dark:text-gray-50"><%= @client.notes || '-' %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Campaigns -->
+      <div class="card border border-gray-200 dark:border-gray-700">
+        <div class="card-header bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">Campaigns</h3>
+          <%= link_to new_campaign_path(client_id: @client.id), class: "btn btn-sm btn-primary" do %>
+            New Campaign
+          <% end %>
+        </div>
+        <div class="card-body p-0">
+          <% if @client.campaigns.any? %>
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+              <% @client.campaigns.each do |campaign| %>
+                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <%= link_to campaign_path(campaign), class: "font-medium text-gray-900 dark:text-gray-50 hover:text-blue-600" do %>
+                        <%= campaign.name %>
+                      <% end %>
+                      <div class="text-sm text-gray-500">
+                        <%= campaign.goal&.titleize || 'No goal' %> • <%= campaign.start_date&.strftime('%b %d') %> - <%= campaign.end_date&.strftime('%b %d') %>
+                      </div>
+                    </div>
+                    <span class="badge <%= campaign.running? ? 'badge-success' : 'badge-secondary' %>">
+                      <%= campaign.status %>
+                    </span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+              No campaigns yet
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Stats -->
+    <div class="space-y-6">
+      <div class="card border border-gray-200 dark:border-gray-700">
+        <div class="card-header bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">Statistics</h3>
+        </div>
+        <div class="card-body">
+          <div class="space-y-4">
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Total Campaigns</span>
+              <span class="font-medium text-gray-900 dark:text-gray-50"><%= @client.total_campaigns %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Active Campaigns</span>
+              <span class="font-medium text-green-600"><%= @client.active_campaigns %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Social Accounts</span>
+              <span class="font-medium text-gray-900 dark:text-gray-50"><%= @client.social_accounts.count %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Total Spent</span>
+              <span class="font-medium text-gray-900 dark:text-gray-50">
+                <%= number_to_currency(@client.total_spent) %>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trending -->
+      <div class="card border border-gray-200 dark:border-gray-700">
+        <div class="card-header bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">🔥 Top Posts</h3>
+        </div>
+        <div class="card-body p-0">
+          <% trending = Analytics::ViralDetector.get_trending_for_client(@client.id, limit: 5) %>
+          <% if trending.any? %>
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+              <% trending.each do |metric| %>
+                <div class="p-4">
+                  <p class="text-sm text-gray-900 dark:text-gray-50 line-clamp-2">
+                    <%= metric.scheduled_post.content&.truncate(80) %>
+                  </p>
+                  <div class="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                    <span>📈 <%= (metric.engagement_rate * 100).round(1) %>%</span>
+                    <span>⚡ <%= metric.share_velocity.round(2) %>/hr</span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+              No trending posts yet
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

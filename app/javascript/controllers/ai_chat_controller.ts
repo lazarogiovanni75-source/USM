@@ -95,11 +95,15 @@ export default class extends Controller<HTMLElement> {
     }
 
     const streamName = `ai_chat_${conversationId}`
-    this.cableSubscription = consumer.subscriptions.create(streamName, {
-      received: (data: any) => {
-        this.handleCableMessage(data)
+    // Use proper ActionCable subscription format with channel class
+    this.cableSubscription = consumer.subscriptions.create(
+      { channel: "AiChatChannel", conversation_id: conversationId },
+      {
+        received: (data: any) => {
+          this.handleCableMessage(data)
+        }
       }
-    })
+    )
     console.log("Subscribed to ActionCable:", streamName)
   }
 

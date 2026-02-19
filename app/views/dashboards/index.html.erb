@@ -110,24 +110,6 @@
     </div>
   </div>
 
-  <!-- Visible Floating Voice Button -->
-  <button id="voice-float-btn"
-          data-controller="voice-float"
-          data-action="voice-float#toggle"
-          class="fixed bottom-8 right-8 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 transition-transform group">
-    <svg class="w-6 h-6 text-white group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-    </svg>
-  </button>
-
-  <!-- Debug Test Button -->
-  <button id="test-response-btn"
-          data-controller="response-test"
-          data-action="response-test#dispatchTestResponse"
-          class="fixed bottom-24 right-8 z-50 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg shadow-lg hover:bg-blue-600 transition-colors cursor-pointer">
-    Test Response
-  </button>
-
   <!-- Main Content -->
   <div class="container-xl mx-auto px-4 py-6">
     <!-- Social Media Accounts Analytics Section -->
@@ -343,12 +325,18 @@
             <%= lucide_icon "zap", class: "w-5 h-5 text-primary" %>Quick Actions
           </h2>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <%= link_to ai_autopilot_index_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20 hover:from-purple-500/20 hover:to-pink-500/20 hover:border-purple-500/30 transition-all group" do %>
+            <%= button_to toggle_ai_autopilot_index_path, method: :post, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20 hover:from-purple-500/20 hover:to-pink-500/20 hover:border-purple-500/30 transition-all group relative", form: { data: { turbo_stream: true } } do %>
+              <% if current_user.voice_settings.first&.enabled? %>
+                <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
+              <% end %>
               <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                 <%= lucide_icon "bot", class: "w-6 h-6 text-white" %>
               </div>
               <span class="text-sm font-semibold text-primary text-center">Otto-Pilot</span>
-              <span class="text-xs text-muted text-center">Hands-free posting</span>
+              <span class="text-xs text-muted text-center"><%= current_user.voice_settings.first&.enabled? ? 'Active' : 'Hands-free posting' %></span>
+              <% if current_user.voice_settings.first&.enabled? %>
+                <span class="absolute top-2 right-2 text-xs text-green-600 font-medium">ON</span>
+              <% end %>
             <% end %>
 
             <%= link_to scheduled_posts_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl border border-blue-500/20 hover:from-blue-500/20 hover:to-cyan-500/20 hover:border-blue-500/30 transition-all group" do %>

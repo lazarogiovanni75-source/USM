@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_20_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -203,11 +203,41 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
     t.index ["scheduled_post_id"], name: "index_buffer_analytics_on_scheduled_post_id"
   end
 
+  create_table "campaign_tasks", force: :cascade do |t|
+    t.bigint "campaign_id", null: false
+    t.string "tool_name"
+    t.jsonb "parameters", default: {}
+    t.integer "status", default: 0, null: false
+    t.text "result"
+    t.text "error_message"
+    t.integer "priority", default: 0
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "retry_count", default: 0
+    t.text "last_error"
+    t.index ["campaign_id"], name: "index_campaign_tasks_on_campaign_id"
+    t.index ["status"], name: "index_campaign_tasks_on_status"
+  end
+
+  create_table "campaign_usages", force: :cascade do |t|
+    t.bigint "campaign_id", null: false
+    t.integer "llm_tokens", default: 0
+    t.integer "images_generated", default: 0
+    t.integer "posts_published", default: 0
+    t.integer "api_calls", default: 0
+    t.decimal "estimated_cost", precision: 10, scale: 2, default: "0.0"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["campaign_id"], name: "index_campaign_usages_on_campaign_id"
+  end
+
   create_table "campaigns", force: :cascade do |t|
     t.string "name", default: "Untitled"
     t.text "description"
     t.bigint "user_id"
-    t.string "status", default: "draft"
+    t.integer "status", default: 0
     t.string "goal"
     t.string "campaign_type", default: "general"
     t.datetime "created_at", null: false
@@ -229,7 +259,38 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
     t.text "competitors"
     t.text "influencer_targets"
     t.text "key_messages"
+    t.jsonb "strategy", default: {}
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.boolean "safe_mode", default: true
+    t.integer "failure_count", default: 0
+    t.bigint "client_id"
+    t.datetime "last_optimized_at"
+    t.integer "consecutive_decline_cycles", default: 0
+    t.integer "published_posts_count", default: 0
+    t.index ["client_id"], name: "index_campaigns_on_client_id"
+    t.index ["status"], name: "index_campaigns_on_status"
+    t.index ["strategy"], name: "index_campaigns_on_strategy", using: :gin
     t.index ["user_id"], name: "index_campaigns_on_user_id"
+  end
+
+  create_table "clients", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "contact_name"
+    t.string "email"
+    t.string "phone"
+    t.text "address"
+    t.string "status", default: "active", null: false
+    t.string "plan", default: "basic"
+    t.decimal "monthly_budget", precision: 10, scale: 2
+    t.text "notes"
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "agency_user_id"
+    t.index ["agency_user_id"], name: "index_clients_on_agency_user_id"
+    t.index ["status"], name: "index_clients_on_status"
+    t.index ["user_id"], name: "index_clients_on_user_id"
   end
 
   create_table "content_suggestions", force: :cascade do |t|
@@ -466,6 +527,31 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
     t.index ["scheduled_post_id"], name: "index_performance_metrics_on_scheduled_post_id"
   end
 
+  create_table "post_metrics", force: :cascade do |t|
+    t.string "post_type", null: false
+    t.bigint "post_id", null: false
+    t.string "platform"
+    t.bigint "social_account_id"
+    t.string "platform_post_id"
+    t.integer "impressions", default: 0
+    t.integer "likes", default: 0
+    t.integer "comments", default: 0
+    t.integer "shares", default: 0
+    t.integer "saves", default: 0
+    t.integer "clicks", default: 0
+    t.float "engagement_rate", default: 0.0
+    t.float "click_through_rate", default: 0.0
+    t.jsonb "raw_metrics", default: {}
+    t.datetime "collected_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["collected_at"], name: "index_post_metrics_on_collected_at"
+    t.index ["platform_post_id"], name: "index_post_metrics_on_platform_post_id"
+    t.index ["post_type", "post_id"], name: "index_post_metrics_on_post"
+    t.index ["post_type", "post_id"], name: "index_post_metrics_on_post_type_and_post_id"
+    t.index ["social_account_id"], name: "index_post_metrics_on_social_account_id"
+  end
+
   create_table "postforme_analytics", force: :cascade do |t|
     t.bigint "scheduled_post_id", null: false
     t.string "postforme_post_id"
@@ -621,6 +707,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
     t.integer "new_followers"
     t.integer "unfollowers"
     t.integer "messages"
+    t.string "oauth_access_token"
+    t.string "oauth_refresh_token"
+    t.datetime "oauth_expires_at"
+    t.jsonb "oauth_metadata", default: {}
+    t.string "platform_user_id"
+    t.string "platform_username"
+    t.string "encrypted_access_token"
+    t.string "encrypted_refresh_token"
+    t.bigint "client_id"
+    t.index ["client_id"], name: "index_social_accounts_on_client_id"
     t.index ["user_id"], name: "index_social_accounts_on_user_id"
   end
 
@@ -713,6 +809,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
     t.string "subscription_plan"
     t.string "subscription_status"
     t.datetime "subscription_expires_at"
+    t.string "agency_role"
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
@@ -729,6 +826,28 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
     t.string "video_url"
     t.string "prediction_url"
     t.index ["user_id"], name: "index_videos_on_user_id"
+  end
+
+  create_table "viral_metrics", force: :cascade do |t|
+    t.bigint "scheduled_post_id", null: false
+    t.bigint "campaign_id"
+    t.bigint "client_id"
+    t.decimal "engagement_rate", precision: 5, scale: 2
+    t.decimal "share_velocity", precision: 10, scale: 4
+    t.jsonb "top_hashtags", default: []
+    t.string "trend_category"
+    t.boolean "is_viral", default: false
+    t.integer "viral_rank"
+    t.datetime "detected_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["campaign_id", "detected_at"], name: "index_viral_metrics_on_campaign_id_and_detected_at"
+    t.index ["campaign_id"], name: "index_viral_metrics_on_campaign_id"
+    t.index ["client_id", "detected_at"], name: "index_viral_metrics_on_client_id_and_detected_at"
+    t.index ["client_id"], name: "index_viral_metrics_on_client_id"
+    t.index ["detected_at"], name: "index_viral_metrics_on_detected_at"
+    t.index ["is_viral"], name: "index_viral_metrics_on_is_viral"
+    t.index ["scheduled_post_id"], name: "index_viral_metrics_on_scheduled_post_id"
   end
 
   create_table "voice_commands", force: :cascade do |t|
@@ -806,6 +925,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
   add_foreign_key "auto_responses", "response_templates"
   add_foreign_key "auto_responses", "users"
   add_foreign_key "automation_rule_executions", "automation_rules"
+  add_foreign_key "campaign_tasks", "campaigns"
+  add_foreign_key "campaign_usages", "campaigns"
+  add_foreign_key "campaigns", "clients"
+  add_foreign_key "clients", "users"
+  add_foreign_key "clients", "users", column: "agency_user_id"
   add_foreign_key "content_suggestions", "draft_contents"
   add_foreign_key "content_template_variables", "content_templates"
   add_foreign_key "postforme_analytics", "scheduled_posts"
@@ -814,10 +938,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_18_081101) do
   add_foreign_key "scheduled_ai_tasks", "users"
   add_foreign_key "scheduled_posts", "users", name: "scheduled_posts_user_id_fkey"
   add_foreign_key "sessions", "users"
+  add_foreign_key "social_accounts", "clients"
   add_foreign_key "social_accounts_campaigns", "campaigns"
   add_foreign_key "social_accounts_campaigns", "social_accounts"
   add_foreign_key "task_executions", "scheduled_ai_tasks"
   add_foreign_key "task_executions", "users"
   add_foreign_key "trigger_executions", "auto_response_triggers"
   add_foreign_key "trigger_executions", "users"
+  add_foreign_key "viral_metrics", "campaigns"
+  add_foreign_key "viral_metrics", "clients"
+  add_foreign_key "viral_metrics", "scheduled_posts"
 end

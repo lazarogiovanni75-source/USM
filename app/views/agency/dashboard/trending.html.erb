@@ -1,0 +1,98 @@
+<% content_for :title, "Trending Content" %>
+
+<div class="container-xl">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50">🔥 Trending Content</h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-2">Viral posts across your clients</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex items-center gap-4 mb-6">
+    <div class="flex gap-2">
+      <%= link_to agency_trending_path, class: "btn btn-sm #{params[:client_id].nil? ? 'btn-primary' : 'btn-outline-secondary'}" do %>
+        All Clients
+      <% end %>
+      <% @dashboard_service.clients.limit(5).each do |client| %>
+        <%= link_to agency_trending_path(client_id: client.id), class: "btn btn-sm #{params[:client_id].to_i == client.id ? 'btn-primary' : 'btn-outline-secondary'}" do %>
+          <%= client.name %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Trending Posts -->
+  <div class="card border border-gray-200 dark:border-gray-700">
+    <div class="card-body p-0">
+      <% if @trending.any? %>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th class="text-left">Rank</th>
+                <th class="text-left">Content</th>
+                <th class="text-left">Platform</th>
+                <th class="text-left">Engagement</th>
+                <th class="text-left">Velocity</th>
+                <th class="text-left">Hashtags</th>
+                <th class="text-left">Campaign</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <% @trending.each do |metric| %>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td class="p-4">
+                    <span class="badge <%= metric.viral_rank <= 3 ? 'badge-warning' : 'badge-success' %>">
+                      #<%= metric.viral_rank %>
+                    </span>
+                  </td>
+                  <td class="p-4 max-w-md">
+                    <p class="text-sm text-gray-900 dark:text-gray-50 line-clamp-2">
+                      <%= metric.scheduled_post.content %>
+                    </p>
+                  </td>
+                  <td class="p-4">
+                    <span class="badge badge-info">
+                      <%= metric.scheduled_post.platform&.titleize %>
+                    </span>
+                  </td>
+                  <td class="p-4">
+                    <span class="text-green-600 font-medium">
+                      <%= (metric.engagement_rate * 100).round(2) %>%
+                    </span>
+                  </td>
+                  <td class="p-4">
+                    <span class="text-blue-600 font-medium">
+                      <%= metric.share_velocity.round(2) %>/hr
+                    </span>
+                  </td>
+                  <td class="p-4">
+                    <div class="flex flex-wrap gap-1">
+                      <% metric.top_hashtags.first(3).each do |tag| %>
+                        <span class="badge badge-secondary"><%= tag %></span>
+                      <% end %>
+                    </div>
+                  </td>
+                  <td class="p-4">
+                    <% if metric.campaign %>
+                      <%= link_to metric.campaign.name, campaign_path(metric.campaign), class: "text-blue-600 hover:underline" %>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="p-12 text-center text-gray-500 dark:text-gray-400">
+          <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+          <p class="text-lg font-medium">No trending content</p>
+          <p class="mt-2">Run some campaigns and wait for engagement data to come in</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
