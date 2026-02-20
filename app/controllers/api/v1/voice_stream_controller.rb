@@ -62,18 +62,15 @@ class Api::V1::VoiceStreamController < ApplicationController
       # Generate streaming channel name FIRST
       stream_name = VoiceConversationService.conversation_channel(current_user.id, voice_service.conversation.id)
 
-      # Get conversation history BEFORE adding the new message
-      conversation_history = get_conversation_history(voice_service)
+      # NOTE: Don't save user message here - the ConversationOrchestrator will save it
+      # This prevents duplicate messages in conversation history
 
-      # Add user message to conversation
-      voice_service.add_user_message(transcribed_text)
-
-      # Broadcast confirmation that command was received (for TTS)
-      # Also broadcast to user-based channel for reliability
+      # Show user input as text, but don't echo it back via speech
+      # Just broadcast that we received the command and show transcript
       ActionCable.server.broadcast(stream_name, {
         type: 'command-received',
         transcript: transcribed_text,
-        message: "I heard: #{transcribed_text}. Processing your request...",
+        message: '',  # Empty - don't speak anything
         timestamp: Time.current
       })
       
@@ -83,7 +80,7 @@ class Api::V1::VoiceStreamController < ApplicationController
         ActionCable.server.broadcast(user_channel, {
           type: 'command-received',
           transcript: transcribed_text,
-          message: "I heard: #{transcribed_text}. Processing your request...",
+          message: '',  # Empty - don't speak anything
           timestamp: Time.current
         })
       end
@@ -92,13 +89,14 @@ class Api::V1::VoiceStreamController < ApplicationController
       prompt = voice_service.build_prompt_for_llm(transcribed_text)
 
       # Start streaming LLM response via ActionCable
+      user_stream_name = "voice_chat_#{current_user.id}"
       VoiceStreamJob.perform_later(
         stream_name: stream_name,
+        user_stream_name: user_stream_name,
         prompt: prompt,
         system: voice_service.system_prompt,
         conversation_id: voice_service.conversation.id,
         user_id: current_user.id,
-        conversation_history: conversation_history,
         wake_word_detected: wake_word_detected,
         stream_tts: true,  # Enable TTS streaming
         enable_tools: true  # Enable tool execution for real task handling
@@ -106,6 +104,7 @@ class Api::V1::VoiceStreamController < ApplicationController
 
       render json: {
         text: transcribed_text,
+        transcript: transcribed_text,  # Include for frontend display
         conversation_id: voice_service.conversation.id,
         stream_name: stream_name,
         status: 'streaming_started',
@@ -180,12 +179,6 @@ class Api::V1::VoiceStreamController < ApplicationController
   rescue StandardError => e
     Rails.logger.error "Transcription error: #{e.message}"
     nil
-  end
-
-  def get_conversation_history(voice_service)
-    voice_service.conversation_messages.map do |msg|
-      { role: msg.role, content: msg.content }
-    end
   end
 
   def set_default_headers

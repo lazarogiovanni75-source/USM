@@ -34,6 +34,13 @@ class AiChatController < ApplicationController
     
     @conversation = current_user.ai_conversations.find(conversation_id)
     
+    # Save user message first
+    user_message = @conversation.ai_messages.create!(
+      role: 'user',
+      content: message_content,
+      message_type: 'text'
+    )
+    
     # Use enhanced conversation memory service
     ai_response = ConversationMemoryService.call_ai_with_memory(
       @conversation, 
@@ -41,20 +48,16 @@ class AiChatController < ApplicationController
       additional_context
     )
     
-    # Save the complete exchange with memory tracking
-    user_message = @conversation.ai_messages.create!(
-      role: 'user',
-      content: message_content,
-      message_type: 'text',
-      metadata: {
-        context_provided: additional_context.any?,
-        memory_updated: true
-      }
-    )
+    # Handle empty AI response
+    ai_content = ai_response[:content]
+    if ai_content.blank?
+      ai_content = "I apologize, but I'm having trouble connecting to the AI service right now. Please try again in a moment."
+    end
     
+    # Save AI response
     ai_message = @conversation.ai_messages.create!(
       role: 'assistant',
-      content: ai_response[:content],
+      content: ai_content,
       message_type: 'text',
       tokens_used: ai_response[:tokens_used] || 0,
       metadata: {

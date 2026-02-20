@@ -14,7 +14,7 @@ class AiAutopilotController < ApplicationController
       voice_setting.save(enabled: true)
     end
     
-    redirect_to dashboards_path, notice: voice_setting.enabled? ? "AI Autopilot enabled" : "AI Autopilot disabled"
+    redirect_back(fallback_location: ai_chat_index_path, notice: voice_setting.enabled? ? "Hey Otto enabled" : "Hey Otto disabled")
   end
   
   def generate_content

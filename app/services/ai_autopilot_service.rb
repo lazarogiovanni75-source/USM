@@ -222,8 +222,28 @@ class AiAutopilotService < ApplicationService
   end
 
   def generate_content
-    # Generate content for specific campaign
-    content_text = "AI-generated #{@content_type} content for #{@platform} platform"
+    # Use LlmService for actual AI content generation
+    topic = @content_type || "social media content"
+    platform = @platform || "general"
+
+    system_prompt = "You are a professional social media content creator. Generate engaging, platform-specific content that captures attention and drives engagement."
+
+    user_prompt = if @campaign
+      "Generate a #{@content_type || 'post'} for #{platform} platform for campaign: #{@campaign.name}. "\
+      "Campaign description: #{@campaign.description}. "\
+      "Target audience: #{@campaign.target_audience}. "\
+      "Make it engaging, include relevant hashtags, and a clear call-to-action."
+    else
+      "Generate an engaging #{@content_type || 'post'} for #{platform} platform. "\
+      "Include relevant hashtags and a clear call-to-action."
+    end
+
+    content_text = LlmService.new(
+      prompt: user_prompt,
+      system: system_prompt,
+      temperature: 0.8,
+      max_tokens: 500
+    ).call_blocking
 
     content = Content.create!(
       user: @campaign.user,
@@ -231,11 +251,23 @@ class AiAutopilotService < ApplicationService
       title: "AI Generated #{@content_type.titleize}",
       body: content_text,
       content_type: @content_type,
-      platform: @platform,
+      platform: platform,
       status: 'draft'
     )
 
     content
+  rescue => e
+    Rails.logger.error "[AiAutopilotService] Content generation failed: #{e.message}"
+    # Fallback content
+    Content.create!(
+      user: @campaign.user,
+      campaign: @campaign,
+      title: "AI Generated #{@content_type.titleize}",
+      body: "AI content generation is temporarily unavailable. Please try again later.",
+      content_type: @content_type,
+      platform: platform,
+      status: 'draft'
+    )
   end
 
   def generate_video

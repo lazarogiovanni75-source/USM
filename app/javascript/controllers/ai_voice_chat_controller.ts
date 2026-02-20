@@ -2,9 +2,8 @@ import { Controller } from "@hotwired/stimulus"
 
 // AI Voice Chat Controller - Uses browser's webkitSpeechRecognition
 export default class AiVoiceChatController extends Controller {
-  static targets = ["input", "button", "indicator", "status", "transcript"]
+  static targets = ["button", "indicator", "status", "transcript"]
   
-  declare readonly inputTarget: HTMLTextAreaElement
   declare readonly buttonTarget: HTMLButtonElement
   declare readonly indicatorTarget: HTMLElement
   declare readonly statusTarget: HTMLElement
@@ -154,10 +153,22 @@ export default class AiVoiceChatController extends Controller {
     this.isProcessing = true
     this.updateStatus('Processing...')
     
-    const chatForm = document.getElementById('chat-form') as HTMLFormElement
-    if (chatForm) {
-      chatForm.requestSubmit()
+    // Get the message from input
+    const inputEl = document.querySelector('[data-ai-voice-chat-target="input"]') as HTMLTextAreaElement;
+    const message = inputEl?.value?.trim();
+    
+    if (!message) {
+      this.updateStatus('No message to send')
+      this.isProcessing = false
+      return
     }
+    
+    // Get conversation ID from hidden field
+    const convIdInput = document.querySelector('input[name="conversation_id"]') as HTMLInputElement;
+    const conversationId = convIdInput?.value;
+    
+    // Call the streaming API directly
+    this.callStreamingAPI(conversationId, message)
     
     // Reset after a delay
     setTimeout(() => {
@@ -165,7 +176,69 @@ export default class AiVoiceChatController extends Controller {
       if (!this.isRecording) {
         this.updateStatus('Voice off')
       }
-    }, 2000)
+    }, 5000)
+  }
+  
+  private async callStreamingAPI(conversationId: string | undefined, message: string): Promise<void> {
+    // If no conversation ID, create a new one first
+    let convId = conversationId;
+    
+    if (!convId) {
+      try {
+        const createResponse = await fetch('/api/v1/ai_chat/create_conversation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        const createData = await createResponse.json();
+        convId = createData.conversation?.id;
+        
+        if (!convId) {
+          this.updateStatus('Failed to create conversation');
+          return;
+        }
+        
+        // Reload to get new conversation
+        window.location.href = `/ai_chat/${convId}`;
+        return;
+      } catch (e) {
+        this.updateStatus('Error creating conversation');
+        return;
+      }
+    }
+    
+    try {
+      const response = await fetch('/api/v1/ai_chat/stream_message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          conversation_id: convId,
+          message: message
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send message');
+      }
+      
+      // Clear input
+      const inputEl = document.querySelector('[data-ai-voice-chat-target="input"]') as HTMLTextAreaElement;
+      if (inputEl) {
+        inputEl.value = '';
+      }
+      
+      this.updateStatus('Processing complete');
+      
+    } catch (error: any) {
+      console.error('Voice message error:', error);
+      this.updateStatus(`Error: ${error.message}`);
+    }
   }
   
   private updateUI(listening: boolean): void {

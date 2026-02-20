@@ -8,17 +8,23 @@ class VoiceConversationService
     Your role is to:
     1. Listen to what the user says
     2. Understand their intent naturally
-    3. Respond in a friendly, conversational way
-    4. Help them with marketing tasks like:
+    3. Help them with marketing tasks like:
        - Creating marketing campaigns
-       - Generating social media content
+       - Generating social media content 
        - Scheduling posts
        - Analyzing performance
        - Answering marketing questions
     
-    Keep responses concise but helpful (1-3 sentences max for simple queries,
-    2-4 sentences for detailed responses). Use emojis sparingly.
-    Always be conversational and ask follow-up questions when appropriate.
+    IMPORTANT - Take action, don't just ask questions:
+    - When a user requests a task (like creating a campaign, video, content), ALWAYS use the available tools to complete it
+    - Don't ask endless follow-up questions - if you have enough information to proceed, DO IT
+    - Use the create_campaign tool to create campaigns
+    - Use the generate_video tool to generate videos
+    - Use the generate_content tool to create content
+    - Use the schedule_post tool to schedule posts
+    
+    Only ask ONE quick clarifying question if you're truly missing critical information.
+    Otherwise, take action and execute the user's request using tools.
   PROMPT
 
   attr_reader :conversation, :user
@@ -66,13 +72,10 @@ class VoiceConversationService
   end
 
   # Build the full prompt with conversation context
+  # NOTE: ConversationOrchestrator.build_message_history already loads history from database,
+  # so we just return the current message here. The history is NOT appended to the prompt.
   def build_prompt_for_llm(current_message)
-    history = formatted_history
-    if history.present?
-      "#{current_message}#{history}"
-    else
-      current_message
-    end
+    current_message
   end
 
   def self.conversation_channel(user_id, conversation_id)

@@ -41,28 +41,7 @@
           </div>
         </div>
         
-        <!-- Right Side: Voice Toggle + Metrics Cards -->
-        <div class="flex flex-wrap items-center gap-4">
-          <!-- Voice Toggle Switch -->
-          <div class="flex items-center gap-2 px-3 py-1.5 bg-surface-elevated rounded-lg border border-border/50" data-controller="voice-toggle" data-voice-toggle-enabled="<%= current_user.voice_settings.any? ? current_user.voice_settings.first.enabled? : false %>">
-            <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-            </svg>
-            <span class="text-xs font-medium text-muted">Voice</span>
-            <button id="voice-toggle-btn"
-                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 <%= current_user.voice_settings.any? && current_user.voice_settings.first.enabled? ? 'bg-success' : 'bg-gray-300' %>"
-                    data-action="voice-toggle#toggle"
-                    data-voice-toggle-target="button">
-              <span class="sr-only">Toggle voice</span>
-              <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ease-in-out <%= current_user.voice_settings.any? && current_user.voice_settings.first.enabled? ? 'translate-x-6' : 'translate-x-1' %>"
-                    data-voice-toggle-target="knob"></span>
-            </button>
-            <span class="text-xs" data-voice-toggle-target="label"><%= current_user.voice_settings.any? && current_user.voice_settings.first.enabled? ? 'On' : 'Off' %></span>
-            <span class="hidden" data-voice-toggle-target="indicator"></span>
-            <span class="hidden" data-voice-toggle-target="status"></span>
-          </div>
-          
-          <!-- Metrics Cards -->
+        <!-- Right Side: Metrics Cards -->
           <div class="flex flex-wrap gap-3">
           <!-- Messages -->
           <div class="group relative bg-white rounded-2xl px-5 py-3 shadow-sm border border-border/50 hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer">
@@ -325,19 +304,6 @@
             <%= lucide_icon "zap", class: "w-5 h-5 text-primary" %>Quick Actions
           </h2>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <%= button_to toggle_ai_autopilot_index_path, method: :post, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20 hover:from-purple-500/20 hover:to-pink-500/20 hover:border-purple-500/30 transition-all group relative", form: { data: { turbo_stream: true } } do %>
-              <% if current_user.voice_settings.first&.enabled? %>
-                <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
-              <% end %>
-              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <%= lucide_icon "bot", class: "w-6 h-6 text-white" %>
-              </div>
-              <span class="text-sm font-semibold text-primary text-center">Otto-Pilot</span>
-              <span class="text-xs text-muted text-center"><%= current_user.voice_settings.first&.enabled? ? 'Active' : 'Hands-free posting' %></span>
-              <% if current_user.voice_settings.first&.enabled? %>
-                <span class="absolute top-2 right-2 text-xs text-green-600 font-medium">ON</span>
-              <% end %>
-            <% end %>
 
             <%= link_to scheduled_posts_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl border border-blue-500/20 hover:from-blue-500/20 hover:to-cyan-500/20 hover:border-blue-500/30 transition-all group" do %>
               <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">

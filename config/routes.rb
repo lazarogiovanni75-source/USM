@@ -318,6 +318,7 @@ Rails.application.routes.draw do
   resources :prompt_templates, only: [:index, :create, :update, :destroy]
   
   # Draft Management System
+  get '/drafts', to: redirect('/contents')
   resources :drafts do
     member do
       post 'convert_to_content'

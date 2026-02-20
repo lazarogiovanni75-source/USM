@@ -8,6 +8,10 @@ class ContentsController < ApplicationController
     @pending_contents = @contents.where(status: 'draft')
     @approved_contents = @contents.where(status: 'approved')
     @rejected_contents = @contents.where(status: 'rejected')
+    
+    # Also fetch drafts and suggestions for unified view
+    @drafts = current_user.draft_contents.includes(:content_suggestions).order(updated_at: :desc)
+    @suggestions = current_user.content_suggestions.pending.order(created_at: :desc)
   end
 
   # GET /contents/1

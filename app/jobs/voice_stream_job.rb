@@ -163,7 +163,7 @@ class VoiceStreamJob < ApplicationJob
 
   # Process with ConversationOrchestrator
   def process_with_orchestrator(prompt:, system:, enable_tools:)
-    Rails.logger.info "[VoiceStreamJob] process_with_orchestrator called - prompt: #{prompt[0..50]}, stream_name: #{@stream_name}, conversation_id: #{@conversation_id}"
+    Rails.logger.info "[VoiceStreamJob] process_with_orchestrator called - prompt: #{prompt[0..50]}, stream_name: #{@stream_name}, user_stream_name: #{@user_stream_name}, conversation_id: #{@conversation_id}"
     
     return broadcast(type: ERROR, payload: { error: "User not found" }) unless @user_id
     return broadcast(type: ERROR, payload: { error: "Conversation not found" }) unless @conversation_id
@@ -182,25 +182,32 @@ class VoiceStreamJob < ApplicationJob
     # Also broadcast that AI is processing
     broadcast(type: 'processing', payload: { message: 'AI is thinking...' })
     
-    result = ConversationOrchestrator.run(
-      conversation_id: @conversation_id,
-      content: prompt,
-      modality: "voice",
-      system_prompt: system,
-      enable_tools: enable_tools,
-      user: user,
-      stream_name: @stream_name
-    ) do |chunk_data|
-      # chunk_data is now a Hash: { delta: "...", conversation_id: ... }
-      delta = chunk_data[:delta] || chunk_data[:content] || ""
-      response_content += delta
-      Rails.logger.info "[VoiceStreamJob] Received chunk, delta length: #{delta.length}, total: #{response_content.length}"
-      broadcast(type: ASSISTANT_TOKEN, payload: { content: delta })
+    begin
+      result = ConversationOrchestrator.run(
+        conversation_id: @conversation_id,
+        content: prompt,
+        modality: "voice",
+        system_prompt: system,
+        enable_tools: enable_tools,
+        user: user,
+        stream_name: @stream_name
+      ) do |chunk_data|
+        # chunk_data is now a Hash: { delta: "...", conversation_id: ... }
+        delta = chunk_data[:delta] || chunk_data[:content] || ""
+        response_content += delta
+        Rails.logger.info "[VoiceStreamJob] Received chunk, delta length: #{delta.length}, total: #{response_content.length}"
+        broadcast(type: ASSISTANT_TOKEN, payload: { content: delta })
+      end
+    rescue => orchestrator_error
+      Rails.logger.error "[VoiceStreamJob] Orchestrator error: #{orchestrator_error.message}"
+      Rails.logger.error orchestrator_error.backtrace.first(5).join("\n")
+      broadcast(type: ERROR, payload: { error: "AI processing failed: #{orchestrator_error.message}" })
+      return
     end
 
     # If result is nil (no block given), check if response_content was captured
     response_content ||= ""
-    Rails.logger.info "[VoiceStreamJob] Orchestrator completed, response length: #{response_content.length}"
+    Rails.logger.info "[VoiceStreamJob] Orchestrator completed, response length: #{response_content.length}, result: #{result.inspect[0..100]}"
 
     # Handle TTS playback if enabled
     handle_tts_playback(response_content) if enable_tools

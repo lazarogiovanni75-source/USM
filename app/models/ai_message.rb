@@ -1,7 +1,7 @@
 class AiMessage < ApplicationRecord
   belongs_to :ai_conversation
   
-  validates :role, presence: true, inclusion: { in: %w[user assistant system] }
+  validates :role, presence: true, inclusion: { in: %w[user assistant system tool] }
   validates :content, presence: true
   
   default_scope { order(created_at: :asc) }

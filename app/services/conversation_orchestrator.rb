@@ -108,11 +108,11 @@ class ConversationOrchestrator
     response_content = ""
 
     begin
-      # Load conversation history from ai_messages
-      history = build_message_history
-
-      # Save user message first
+      # Save user message FIRST before building history
       save_user_message
+
+      # Load conversation history from ai_messages (now includes current message)
+      history = build_message_history
 
       # Call OpenAI with streaming using Chat Completions API
       api_key = ENV.fetch('OPENAI_API_KEY', nil) || ENV.fetch('CLACKY_OPENAI_API_KEY', nil)
@@ -120,6 +120,9 @@ class ConversationOrchestrator
 
       Rails.logger.info "[ConversationOrchestrator] Streaming OpenAI with #{history.size} messages, tools: #{enable_tools}"
 
+      # First call - may return tool calls
+      tool_call_result = nil
+      
       client.chat(
         parameters: {
           model: "gpt-4o",
@@ -141,25 +144,66 @@ class ConversationOrchestrator
               Rails.logger.info "[ConversationOrchestrator] Content delta: #{delta[0..50]}..."
               response_content += delta
               block.call({ delta: delta, conversation_id: conversation_id })
-            else
-              Rails.logger.info "[ConversationOrchestrator] No content in chunk, choices[0]: #{chunk.dig('choices', 0).inspect[0..200]}"
             end
 
-            # Handle tool calls in streaming mode
+            # Check for tool calls - need to accumulate arguments
             if chunk.dig("choices", 0, "delta", "tool_calls")
               tool_calls = chunk["choices"][0]["delta"]["tool_calls"]
-              tool_calls.each do |tool_call|
-                begin
-                  tool_result = execute_tool_from_chunk(tool_call)
-                  save_tool_message(tool_result) if tool_result
-                rescue => tool_error
-                  Rails.logger.error "[ConversationOrchestrator] Tool execution failed: #{tool_error.message}"
-                end
+              tool_calls.each do |tc|
+                # Store tool call for later execution
+                tool_call_result ||= {}
+                tool_call_result[:id] = tc[:id] if tc[:id]
+                tool_call_result[:name] = tc.dig(:function, :name) if tc.dig(:function, :name)
+                tool_call_result[:arguments] ||= ""
+                tool_call_result[:arguments] += (tc.dig(:function, :arguments) || "")
               end
             end
           }
         }
       )
+
+      # If tool call detected, execute it and continue conversation
+      if tool_call_result && tool_call_result[:name].present?
+        Rails.logger.info "[ConversationOrchestrator] Tool call detected: #{tool_call_result[:name]} with args: #{tool_call_result[:arguments]}"
+        
+        # Parse arguments
+        args = JSON.parse(tool_call_result[:arguments]) rescue {}
+        
+        # Execute tool
+        tool_result = execute_tool(tool_call_result[:name], args)
+        save_tool_message(tool_result) if tool_result
+        
+        # Add tool result to messages and get final response
+        history << { role: "assistant", content: response_content }
+        history << {
+          role: "tool",
+          tool_call_id: tool_call_result[:id],
+          content: tool_result.is_a?(Hash) ? tool_result[:message] || tool_result.to_json : tool_result.to_s
+        }
+        
+        # Broadcast tool execution
+        broadcast_event('tool_execution_completed', { 
+          tool: tool_call_result[:name], 
+          result: tool_result 
+        }) if stream_name
+        
+        # Get final response from AI
+        response_content = ""
+        client.chat(
+          parameters: {
+            model: "gpt-4o",
+            messages: history,
+            temperature: 0.7,
+            stream: proc { |chunk|
+              delta = chunk.dig("choices", 0, "delta", "content")
+              if delta.present?
+                response_content += delta
+                block.call({ delta: delta, conversation_id: conversation_id })
+              end
+            }
+          }
+        )
+      end
 
       # Save final assistant response
       save_assistant_message(response_content) if response_content.present?
@@ -187,11 +231,11 @@ class ConversationOrchestrator
     response_content = ""
 
     begin
-      # Load conversation history
-      history = build_message_history
-
-      # Save user message first
+      # Save user message FIRST before building history
       save_user_message
+
+      # Load conversation history (now includes current message)
+      history = build_message_history
 
       # Call OpenAI with Chat Completions API
       api_key = ENV.fetch('OPENAI_API_KEY', nil) || ENV.fetch('CLACKY_OPENAI_API_KEY', nil)
@@ -271,13 +315,13 @@ class ConversationOrchestrator
     # Add system prompt
     messages << { role: "system", content: system_prompt }
 
-    # Add conversation history from ai_messages
+    # Add conversation history from ai_messages (includes current user message since we saved it first)
     conversation.get_recent_messages(10).each do |msg|
       messages << { role: msg.role, content: msg.content }
     end
 
-    # Add current user message
-    messages << { role: "user", content: content }
+    # Note: current user message is already saved to DB before this method is called
+    # so we don't need to manually add it here
 
     messages
   end
@@ -304,6 +348,21 @@ class ConversationOrchestrator
     result = handler.execute(tool_name, args)
 
     { tool_call_id: tool_call_id, tool_name: tool_name, result: result }
+  rescue => e
+    Rails.logger.error "[ConversationOrchestrator] Tool execution error: #{e.message}"
+    { error: e.message }
+  end
+
+  # Simple execute tool by name and args (used by new run_stream code)
+  def execute_tool(tool_name, args)
+    return { error: "No user context" } unless user
+
+    Rails.logger.info "[ConversationOrchestrator] Executing tool: #{tool_name} with args: #{args.inspect}"
+
+    handler = VoiceToolHandler.new(user: user, execution_id: @execution_id)
+    result = handler.execute(tool_name, args)
+
+    { tool_call_id: nil, tool_name: tool_name, result: result }
   rescue => e
     Rails.logger.error "[ConversationOrchestrator] Tool execution error: #{e.message}"
     { error: e.message }
@@ -396,8 +455,10 @@ class ConversationOrchestrator
     ActionCable.server.broadcast(stream_name, event)
     
     # Also broadcast to user-level channel (voice_chat_{user_id})
-    user_stream = "voice_chat_#{user&.id}" if user
-    if user_stream && user_stream != stream_name
+    # This ensures the frontend receives the response regardless of which channel it subscribed to
+    if user
+      user_stream = "voice_chat_#{user.id}"
+      # Always broadcast to user channel for voice modality to ensure frontend receives it
       ActionCable.server.broadcast(user_stream, event)
     end
   rescue => e

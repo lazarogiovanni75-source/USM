@@ -14,6 +14,7 @@ interface VoiceStreamEvent {
         | 'assistant_complete' 
         | 'awaiting_confirmation'
         | 'conversation_created'
+        | 'processing'
   chunk?: string
   content?: string
   error?: string
@@ -165,6 +166,13 @@ export default class VoiceFloatController extends Controller {
 
   openModal(): void {
     console.log("[VoiceFloat] Opening modal")
+    
+    // Clean up old subscription if exists
+    if (this.channel) {
+      this.channel.unsubscribe()
+      this.channel = null
+    }
+    
     this.ensureModalStructure()
 
     if (this.modalElement) {
@@ -228,7 +236,7 @@ export default class VoiceFloatController extends Controller {
   }
 
   private handleStreamMessage(data: VoiceStreamEvent): void {
-    console.log("[VoiceFloat] Stream message received. Type:", data.type, "Full data:", data)
+    console.log("[VoiceFloat] 📥 Message received:", data.type, "Full data:", JSON.stringify(data).substring(0, 200))
 
     switch (data.type) {
       case 'conversation_created':
@@ -236,6 +244,11 @@ export default class VoiceFloatController extends Controller {
         if (data.conversation_id) {
           this.currentConversationId = data.conversation_id
         }
+        break
+      case 'processing':
+        console.log("[VoiceFloat] AI is processing:", data.message)
+        this.showLoading()
+        this.updateTranscript(data.message || 'AI is thinking...')
         break
       case 'command-received':
         console.log("[VoiceFloat] Command received:", data.message)
@@ -248,7 +261,7 @@ export default class VoiceFloatController extends Controller {
         break
       case 'assistant_complete':
       case 'complete':
-        console.log("[VoiceFloat] Processing complete:", data.content)
+        console.log("[VoiceFloat] Processing complete, content:", data.content)
         this.handleStreamComplete(data.content || '')
         break
       case 'tool_call_detected':
@@ -282,9 +295,11 @@ export default class VoiceFloatController extends Controller {
 
   private handleCommandReceived(message: string): void {
     console.log("[VoiceFloat] Handling command received confirmation")
-    // Speak the confirmation that we heard the command
-    if (message && message.trim().length > 0) {
-      this.speakResponse(message)
+    // Show user's transcribed text in the chat UI (as user message)
+    // But DON'T speak it back - the user already knows what they said
+    const transcriptEl = document.getElementById('voice-transcript')
+    if (transcriptEl) {
+      transcriptEl.textContent = ""
     }
   }
 
@@ -296,14 +311,17 @@ export default class VoiceFloatController extends Controller {
   }
 
   private handleStreamComplete(content: string): void {
-    console.log("[VoiceFloat] Stream complete, total length:", content.length)
+    console.log("[VoiceFloat] Stream complete, content length:", content.length, "Content:", content)
     this.hideLoading()
     this.streamingResponse = ""
     
-    // Speak the AI response
+    // Show the response in the UI
     if (content && content.trim().length > 0) {
+      this.showStreamingResponse(content)
+      // Speak the AI response - this is the main voice output
       this.speakResponse(content)
     } else {
+      console.log("[VoiceFloat] No content to speak, restarting listening")
       // If no content, just restart listening
       this.restartListening()
     }
@@ -418,10 +436,25 @@ export default class VoiceFloatController extends Controller {
 
     const duration = Date.now() - this.recordingStartTime
 
+    // Auto-process after 15 seconds of recording
     if (duration > 15000) {
       console.log("[VoiceFloat] Processing after 15 seconds of speech")
       this.processWavAudio()
     }
+  }
+
+  // Check for silence/voice activity to stop recording earlier
+  private checkForSilence(): void {
+    if (!this.isListening || !this.analyser) return
+
+    const dataArray = new Uint8Array(this.analyser.frequencyBinCount)
+    this.analyser.getByteFrequencyData(dataArray)
+
+    // Calculate average volume
+    const average = dataArray.reduce((a, b) => a + b) / dataArray.length
+
+    // If very quiet (silence), we could optionally stop early
+    // For now, we'll keep the 15 second max but could add silence detection
   }
 
   private processWavAudio(): void {
@@ -481,11 +514,20 @@ export default class VoiceFloatController extends Controller {
         // Update conversation ID if provided
         if (data.conversation_id) {
           this.currentConversationId = data.conversation_id
+          console.log("[VoiceFloat] Updated conversation ID to:", this.currentConversationId)
         }
 
-        // Display user transcript
+        // Display user transcript in a separate area
         if (data.text && data.text.trim().length > 0) {
-          this.updateTranscript(data.text)
+          // Show user's input
+          this.updateTranscript("You: " + data.text)
+        }
+
+        // Clear AI response area for new response
+        const aiResponseEl = document.getElementById('voice-ai-response')
+        if (aiResponseEl) {
+          aiResponseEl.innerHTML = ""
+          aiResponseEl.classList.add("hidden")
         }
 
         this.processingAudio = false
@@ -508,9 +550,8 @@ export default class VoiceFloatController extends Controller {
       this.recordingInterval = null
     }
 
-    if (this.wavEncoder && this.wavEncoder.samples.length > 0 && this.modalElement && !this.modalElement.classList.contains("hidden")) {
-      this.sendForStreamingTranscription(this.wavEncoder.encode())
-    }
+    // Don't process audio here - this is called during restart too
+    // Just clean up resources
 
     if (this.processor) {
       this.processor.disconnect()
@@ -542,24 +583,13 @@ export default class VoiceFloatController extends Controller {
     this.recordingStartTime = Date.now()
     this.streamingResponse = ""
 
-    if (this.wavEncoder) {
-      this.wavEncoder.reset()
-      this.wavEncoder.sampleRate = this.audioContext?.sampleRate || 48000
-    } else {
-      this.wavEncoder = new WAVEncoder()
-      this.wavEncoder.sampleRate = this.audioContext?.sampleRate || 48000
-    }
+    // Clean up old audio resources if they exist
+    this.stopListening()
 
-    if (this.recordingInterval) {
-      clearInterval(this.recordingInterval)
-    }
-    this.recordingInterval = setInterval(() => {
-      this.checkRecordingDuration()
-    }, 1000)
-
-    this.isListening = true
-    this.updateConnectionStatus("connected", "Ready")
-    this.updateTranscript("Listening... Speak now!")
+    // Start fresh recording
+    setTimeout(() => {
+      this.startWebAudioRecording()
+    }, 300)
   }
 
   // Text-to-Speech: Speak the AI response
@@ -571,8 +601,12 @@ export default class VoiceFloatController extends Controller {
   }
 
   private async speakResponse(text: string): Promise<void> {
+    console.log("[VoiceFloat] speakResponse called with:", text.substring(0, 100))
+    
     if (!('speechSynthesis' in window)) {
-      console.log("[VoiceFloat] Text-to-speech not supported")
+      console.log("[VoiceFloat] Text-to-speech not supported in this browser")
+      this.updateTranscript("TTS not supported")
+      this.restartListening()
       return
     }
 
@@ -584,33 +618,52 @@ export default class VoiceFloatController extends Controller {
     
     if (!cleanText || cleanText.length === 0) {
       console.log("[VoiceFloat] No text to speak after removing emojis")
-      if (this.autoRestartEnabled) {
-        this.restartListening()
-      }
+      this.updateTranscript("No response to speak")
+      this.restartListening()
       return
     }
+
+    console.log("[VoiceFloat] Speaking clean text:", cleanText.substring(0, 50))
 
     const utterance = new SpeechSynthesisUtterance(cleanText)
     utterance.lang = 'en-US'
     utterance.rate = 1.0
     utterance.pitch = 1.0
+    
+    // Try to get a good voice
+    const voices = window.speechSynthesis.getVoices()
+    console.log("[VoiceFloat] Available voices:", voices.length)
+    const englishVoice = voices.find(v => v.lang.startsWith('en'))
+    if (englishVoice) {
+      utterance.voice = englishVoice
+      console.log("[VoiceFloat] Using voice:", englishVoice.name)
+    }
 
     utterance.onend = () => {
       console.log("[VoiceFloat] Speech complete, restarting listening")
+      this.updateTranscript("Listening... Speak now!")
       if (this.autoRestartEnabled) {
         setTimeout(() => this.restartListening(), 500)
       }
     }
 
     utterance.onerror = (e) => {
-      console.log("[VoiceFloat] Speech error:", e)
+      console.error("[VoiceFloat] Speech error:", e.error)
+      this.updateTranscript("Speech error, try again")
       if (this.autoRestartEnabled) {
         this.restartListening()
       }
     }
 
-    console.log(`[VoiceFloat] Speaking response: ${cleanText.substring(0, 50)}...`)
-    window.speechSynthesis.speak(utterance)
+    console.log("[VoiceFloat] Calling window.speechSynthesis.speak()")
+    try {
+      window.speechSynthesis.speak(utterance)
+      console.log("[VoiceFloat] speak() called successfully")
+    } catch (e) {
+      console.error("[VoiceFloat] Exception during speak():", e)
+      this.updateTranscript("Speech error")
+      this.restartListening()
+    }
   }
 
   private updateTranscript(text: string): void {
@@ -720,6 +773,13 @@ export default class VoiceFloatController extends Controller {
             text-gray-700 dark:text-gray-300 w-full text-left">
           </div>
           <div id="voice-result" class="hidden mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm w-full"></div>
+          <!-- Stop Button -->
+          <button id="voice-stop-btn" class="mt-3 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center space-x-2 w-full justify-center">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 6h12v12H6z"/>
+            </svg>
+            <span>Done Talking</span>
+          </button>
         </div>
       </div>
     `
@@ -728,6 +788,14 @@ export default class VoiceFloatController extends Controller {
 
     const closeBtn = document.getElementById("voice-close-btn")
     closeBtn?.addEventListener("click", () => this.closeModal())
+
+    // Stop button handler - closes the modal and stops all processing
+    const stopBtn = document.getElementById("voice-stop-btn")
+    stopBtn?.addEventListener("click", () => {
+      console.log("[VoiceFloat] Stop button clicked")
+      window.speechSynthesis?.cancel()
+      this.closeModal()
+    })
 
     // Wake word toggle handler
     const wakeToggle = document.getElementById("wake-word-toggle")

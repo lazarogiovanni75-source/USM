@@ -5,8 +5,8 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center py-6">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Content Review & Approval</h1>
-          <p class="mt-1 text-gray-600">Review and approve content before scheduling</p>
+          <h1 class="text-3xl font-bold text-gray-900">Drafts & Approvals</h1>
+          <p class="mt-1 text-gray-600">Manage all your content, drafts, and AI suggestions</p>
         </div>
         <div class="flex items-center space-x-4">
           <%= link_to "New Content", new_content_path, class: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2" %>
@@ -19,8 +19,26 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Tabs Navigation -->
     <div class="border-b border-gray-200 mb-8">
-      <nav class="-mb-px flex space-x-8">
-        <button data-content-index-target="tabButton" data-tab="pending" class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+      <nav class="-mb-px flex space-x-8 overflow-x-auto">
+        <button data-content-index-target="tabButton" data-tab="all" class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+          All Content
+          <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-gray-100 text-gray-800">
+            <%= @contents.count + @drafts.count %>
+          </span>
+        </button>
+        <button data-content-index-target="tabButton" data-tab="drafts" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+          Drafts
+          <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-yellow-100 text-yellow-800">
+            <%= @drafts.count %>
+          </span>
+        </button>
+        <button data-content-index-target="tabButton" data-tab="suggestions" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+          AI Suggestions
+          <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-purple-100 text-purple-800">
+            <%= @suggestions.count %>
+          </span>
+        </button>
+        <button data-content-index-target="tabButton" data-tab="pending" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
           Pending Review
           <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-yellow-100 text-yellow-800">
             <%= @pending_contents.count %>
@@ -41,8 +59,193 @@
       </nav>
     </div>
 
+    <!-- All Content Tab -->
+    <div id="all-tab" class="tab-content" data-content-index-target="tabContent">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
+          <h2 class="text-lg font-semibold text-gray-900">All Your Content</h2>
+        </div>
+        <div class="divide-y divide-gray-200">
+          <% all_items = @contents.to_a + @drafts.to_a %>
+          <% all_items = all_items.sort_by { |c| c.try(:updated_at) || c.try(:created_at) || Time.now }.reverse %>
+          <% if all_items.any? %>
+            <% all_items.each do |item| %>
+              <% is_draft = item.is_a?(Draft) %>
+              <div class="p-6 hover:bg-gray-50">
+                <div class="flex items-start space-x-4">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                          <h3 class="text-lg font-medium text-gray-900">
+                            <% if is_draft %>
+                              <%= link_to item.title || "Untitled Draft", draft_path(item), class: "hover:text-purple-600" %>
+                            <% else %>
+                              <%= link_to item.title, content_path(item), class: "hover:text-purple-600" %>
+                            <% end %>
+                          </h3>
+                          <% if is_draft %>
+                            <span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">Draft</span>
+                          <% else %>
+                            <span class="px-2 py-1 text-xs <%= item.status == 'approved' ? 'bg-green-100 text-green-800' : item.status == 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' %> rounded-full">
+                              <%= item.status.titleize %>
+                            </span>
+                          <% end %>
+                        </div>
+                        <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                          <% if is_draft %>
+                            <span><%= item.platform.titleize %></span>
+                            <span>•</span>
+                            <span><%= item.content_type.titleize %></span>
+                          <% else %>
+                            <span>Campaign: <%= item.campaign&.name || 'No Campaign' %></span>
+                            <span>•</span>
+                            <span><%= item.content_type %></span>
+                          <% end %>
+                          <span>•</span>
+                          <span><%= time_ago_in_words(item.try(:updated_at) || item.try(:created_at) || Time.now) %> ago</span>
+                        </div>
+                        <p class="mt-2 text-gray-600 text-sm">
+                          <%= truncate(strip_tags(item.try(:body) || item.try(:content) || ""), length: 200) %>
+                        </p>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <% if is_draft %>
+                          <%= link_to "View", draft_path(item), class: "text-purple-600 hover:text-purple-800 text-sm font-medium" %>
+                          <%= link_to "Edit", edit_draft_path(item), class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+                        <% else %>
+                          <%= link_to "Preview", preview_content_path(item, platform: 'instagram'), class: "text-purple-600 hover:text-purple-800 text-sm font-medium" %>
+                          <%= link_to "Edit", edit_content_path(item), class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="p-12 text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No content yet</h3>
+              <p class="mt-1 text-sm text-gray-500">Create your first piece of content to get started.</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drafts Tab -->
+    <div id="drafts-tab" class="tab-content hidden" data-content-index-target="tabContent">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+          <h2 class="text-lg font-semibold text-gray-900">Content Drafts</h2>
+          <%= link_to "New Draft", new_draft_path, class: "btn-primary" %>
+        </div>
+        <% if @drafts.any? %>
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-6">
+            <% @drafts.each do |draft| %>
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div class="p-6">
+                  <div class="flex justify-between items-start mb-4">
+                    <span class="badge badge-<%= draft.status %>"><%= draft.status.humanize %></span>
+                    <div class="flex gap-1">
+                      <%= link_to "Edit", edit_draft_path(draft), class: "text-gray-400 hover:text-gray-600" %>
+                    </div>
+                  </div>
+                  <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">
+                    <%= draft.title || "Untitled Draft" %>
+                  </h3>
+                  <p class="text-sm text-gray-600 line-clamp-3 mb-3">
+                    <%= truncate(strip_tags(draft.content), length: 120) %>
+                  </p>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <span class="badge badge-outline"><%= draft.platform.titleize %></span>
+                    <span class="badge badge-outline"><%= draft.content_type.titleize %></span>
+                    <% if draft.content_suggestions.pending.any? %>
+                      <span class="badge badge-info">
+                        <%= draft.content_suggestions.pending.count %> suggestions
+                      </span>
+                    <% end %>
+                  </div>
+                  <div class="text-xs text-gray-500 mb-4">
+                    Updated <%= time_ago_in_words(draft.updated_at) %> ago
+                  </div>
+                  <div class="flex gap-2">
+                    <%= link_to "View", draft_path(draft), class: "btn-secondary btn-sm flex-1 text-center" %>
+                    <% if draft.content_suggestions.pending.any? %>
+                      <%= link_to "Suggestions", draft_path(draft, anchor: "suggestions"), class: "btn-info btn-sm flex-1 text-center" %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No drafts</h3>
+            <p class="mt-1 text-sm text-gray-500">Create your first draft to get started.</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- AI Suggestions Tab -->
+    <div id="suggestions-tab" class="tab-content hidden" data-content-index-target="tabContent">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
+          <h2 class="text-lg font-semibold text-gray-900">AI Suggestions</h2>
+        </div>
+        <% if @suggestions.any? %>
+          <div class="divide-y divide-gray-200">
+            <% @suggestions.each do |suggestion| %>
+              <div class="p-6 hover:bg-gray-50">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                      <h3 class="font-medium text-gray-900"><%= suggestion.topic %></h3>
+                      <span class="badge badge-info"><%= suggestion.content_type.titleize %></span>
+                    </div>
+                    <p class="text-gray-600 mb-2"><%= suggestion.suggestion %></p>
+                    <div class="flex items-center gap-4 text-sm text-gray-500">
+                      <span>Confidence: <%= (suggestion.confidence * 100).round %>%</span>
+                      <span><%= time_ago_in_words(suggestion.created_at) %> ago</span>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 ml-4">
+                    <%= button_to "Accept", 
+                                  content_suggestion_path(suggestion), 
+                                  method: :patch,
+                                  params: { content_suggestion: { status: 'accepted' } },
+                                  class: "btn-sm btn-primary" %>
+                    <%= button_to "Reject", 
+                                  content_suggestion_path(suggestion), 
+                                  method: :patch,
+                                  params: { content_suggestion: { status: 'rejected' } },
+                                  class: "btn-sm btn-secondary" %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No AI suggestions</h3>
+            <p class="mt-1 text-sm text-gray-500">AI suggestions will appear here when available.</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
     <!-- Pending Content Tab -->
-    <div id="pending-tab" class="tab-content" data-content-index-target="tabContent">
+    <div id="pending-tab" class="tab-content hidden" data-content-index-target="tabContent">
       <div class="bg-white rounded-xl shadow-sm border border-gray-100">
         <div class="p-6 border-b border-gray-100">
           <div class="flex items-center justify-between">

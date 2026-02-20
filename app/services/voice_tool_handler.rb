@@ -45,22 +45,38 @@ class VoiceToolHandler
     tone = args["tone"] || "professional"
     content_type = args["content_type"] || "post"
 
+    # Get campaign or create one if needed
+    campaign = @user.campaigns.last
+    unless campaign
+      campaign = Campaign.create!(
+        user: @user,
+        name: "AI Campaign #{Time.current.strftime('%Y%m%d')}",
+        description: "Campaign created by AI for topic: #{topic}",
+        target_audience: 'General',
+        budget: 500,
+        start_date: Date.current,
+        end_date: Date.current + 30.days,
+        status: 'draft'
+      )
+    end
+
     content = AiAutopilotService.new(
       action: 'generate_content',
-      campaign: @user.campaigns.last,
+      campaign: campaign,
       content_type: content_type,
       platform: platform
     ).call
 
     {
       status: "success",
-      content: content,
+      content: content.body,
       topic: topic,
       platform: platform,
       tone: tone,
-      message: "Content generated successfully!"
+      message: "Content generated successfully!\n\n#{content.body[0..300]}#{'...' if content.body.length > 300}"
     }
   rescue => e
+    Rails.logger.error "[VoiceToolHandler] Content generation error: #{e.message}"
     { status: "error", error: e.message }
   end
 

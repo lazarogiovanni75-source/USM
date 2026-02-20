@@ -359,6 +359,43 @@ export default class extends Controller<HTMLElement> {
     return div
   }
 
+  // Text-to-Speech: Speak the AI response
+  private speakResponse(text: string): void {
+    if (!('speechSynthesis' in window)) {
+      console.log("[AIChat] Text-to-speech not supported")
+      return
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel()
+
+    // Strip emojis and problematic characters before speaking
+    const cleanText = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/gu, '').trim()
+    
+    if (!cleanText || cleanText.length === 0) {
+      return
+    }
+
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    utterance.lang = 'en-US'
+    utterance.rate = 1.0
+    utterance.pitch = 1.0
+
+    // Try to get an English voice
+    const voices = window.speechSynthesis.getVoices()
+    const englishVoice = voices.find(v => v.lang.startsWith('en'))
+    if (englishVoice) {
+      utterance.voice = englishVoice
+    }
+
+    utterance.onerror = (e) => {
+      console.log("[AIChat] Speech error:", e.error)
+    }
+
+    console.log("[AIChat] Speaking response:", cleanText.substring(0, 50))
+    window.speechSynthesis.speak(utterance)
+  }
+
   private handleComplete(data: any): void {
     this.isGenerating = false
     this.hideTypingIndicator()
@@ -374,6 +411,12 @@ export default class extends Controller<HTMLElement> {
         if (contentEl && !contentEl.innerHTML) {
           contentEl.innerHTML = this.escapeHtml(data.content)
         }
+      }
+      
+      // Speak the AI response if voice is enabled
+      const voiceBtn = document.getElementById('voice-chat-btn')
+      if (voiceBtn && voiceBtn.classList.contains('bg-success')) {
+        this.speakResponse(data.content)
       }
     }
     
