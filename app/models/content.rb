@@ -1,5 +1,5 @@
 class Content < ApplicationRecord
-  belongs_to :campaign
+  belongs_to :campaign, optional: true
   belongs_to :user
 
   has_many :scheduled_posts, dependent: :destroy

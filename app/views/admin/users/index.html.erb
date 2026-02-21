@@ -119,7 +119,18 @@
                     <%= user.created_at.strftime('%Y-%m-%d %H:%M') %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
-                    <%= link_to "View", [:admin, user], class: "btn-sm btn-outline" %>
+                    <div class="flex items-center justify-center gap-2">
+                      <%= link_to "View", [:admin, user], class: "btn-sm btn-outline" %>
+                      <% if user.verified %>
+                        <%= button_to "Unverify", unverify_admin_user_path(user), method: :post, 
+                                    class: "btn-sm btn-warning", 
+                                    data: { confirm: "Revoke access for #{user.email}?" } %>
+                      <% else %>
+                        <%= button_to "Verify", verify_admin_user_path(user), method: :post, 
+                                    class: "btn-sm btn-success", 
+                                    data: { confirm: "Approve access for #{user.email}?" } %>
+                      <% end %>
+                    </div>
                   </td>
                 </tr>
               <% end %>

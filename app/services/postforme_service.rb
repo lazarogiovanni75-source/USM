@@ -46,8 +46,35 @@ class PostformeService
   end
 
   # Generate an OAuth URL for connecting an account
-  def auth_url(platform)
-    post_request('/social-accounts/auth-url', { platform: platform })
+  # @param platform [String] Social platform (instagram, twitter, etc.)
+  # @param redirect_uri [String] Optional URL to redirect after OAuth flow
+  # @return [Hash] Response with auth_url
+  def auth_url(platform, redirect_uri: nil)
+    payload = { platform: platform }
+    payload[:redirect_uri] = redirect_uri if redirect_uri.present?
+    post_request('/social-accounts/auth-url', payload)
+  end
+
+  # Get OAuth URL for Postforme connection (initiates OAuth flow)
+  # @param redirect_uri [String] URL to redirect after OAuth
+  # @return [Hash] Response with auth_url
+  def oauth_url(redirect_uri)
+    get_request("/oauth/url?redirect_uri=#{CGI.escape(redirect_uri)}")
+  rescue PostformeError
+    # Fallback: try auth-url endpoint
+    { 'url' => "https://app.postforme.dev/oauth/authorize?redirect_uri=#{CGI.escape(redirect_uri)}" }
+  end
+
+  # Exchange OAuth code for access token
+  # @param code [String] OAuth authorization code
+  # @param redirect_uri [String] The redirect URI used in the OAuth flow
+  # @return [Hash] Response with access_token
+  def oauth_token(code, redirect_uri)
+    post_request('/oauth/token', {
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: redirect_uri
+    })
   end
 
   # Disconnect a social account

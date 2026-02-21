@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_20_000002) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_20_234845) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -76,6 +76,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_20_000002) do
     t.json "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "context", default: {}
+    t.jsonb "memory_summary", default: {}
+    t.jsonb "session_metadata", default: {}
+    t.boolean "archived", default: false
+    t.datetime "archived_at"
+    t.index ["archived"], name: "index_ai_conversations_on_archived"
+    t.index ["created_at"], name: "index_ai_conversations_on_created_at"
     t.index ["session_type"], name: "index_ai_conversations_on_session_type"
     t.index ["user_id"], name: "index_ai_conversations_on_user_id"
   end
@@ -88,7 +95,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_20_000002) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "message_type", default: "text"
+    t.jsonb "metadata", default: {}
     t.index ["ai_conversation_id"], name: "index_ai_messages_on_ai_conversation_id"
+    t.index ["created_at"], name: "index_ai_messages_on_created_at"
     t.index ["role"], name: "index_ai_messages_on_role"
   end
 
@@ -875,6 +884,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_20_000002) do
     t.boolean "enabled"
     t.index ["user_id"], name: "index_voice_settings_on_user_id"
     t.index ["voice_id"], name: "index_voice_settings_on_voice_id"
+  end
+
+  create_table "waitlists", force: :cascade do |t|
+    t.string "email"
+    t.boolean "status", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_waitlists_on_email", unique: true
   end
 
   create_table "workflow_steps", force: :cascade do |t|

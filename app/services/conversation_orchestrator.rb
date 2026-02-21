@@ -1,477 +1,361 @@
 # frozen_string_literal: true
 
-# ConversationOrchestrator - Unifies text chat, voice input, and tool execution
+# ConversationOrchestrator - ChatGPT-style conversation service
 #
-# All AI interactions go through this service to ensure consistent:
-# - Message handling
-# - Tool definitions
-# - Tool execution
-# - Conversation history management
+# Responsibilities:
+# - Maintain conversation memory (last 20-30 messages)
+# - Stream responses progressively
+# - Save all messages (never overwrite)
+# - Determine intent (chat vs media generation)
+# - Route to correct service
+# - Handle voice and text identically
 #
 # Usage:
-#   # Streaming mode (yields chunks)
-#   ConversationOrchestrator.run(
-#     conversation_id: 1,
+#   ConversationOrchestrator.process_message(
+#     user: current_user,
+#     conversation_id: 123,
 #     content: "Hello!",
-#     modality: "text",
-#     stream_name: "ai_chat_1"
-#   ) do |chunk|
-#     # Handle streaming chunk - chunk is a Hash with :delta and :conversation_id
-#   end
-#
-#   # Blocking mode
-#   response = ConversationOrchestrator.run(
-#     conversation_id: 1,
-#     content: "Hello!",
-#     modality: "text"
+#     modality: "text", # or "voice"
+#     stream_channel: "ai_chat_123"
 #   )
-class ConversationOrchestrator
-  class Error < StandardError; end
+class ConversationOrchestrator < ApplicationService
+  # Constants
+  SYSTEM_PROMPT = "You are a natural conversational AI assistant. Respond clearly and conversationally. Do not sound robotic."
+  MAX_HISTORY_MESSAGES = 30
+  CHAT_MODEL = "gpt-4o"
+  CHAT_TEMPERATURE = 0.8
+  CHAT_MAX_TOKENS = 4000
+  
+  # Intent keywords for routing
+  IMAGE_KEYWORDS = %w[image photo picture generate create make draw design]
+  VIDEO_KEYWORDS = %w[video clip footage generate create make film]
+  
+  attr_reader :user, :conversation, :content, :modality, :stream_channel
 
-  # Maximum tool iterations to prevent infinite loops
-  MAX_TOOL_ITERATIONS = 5
-
-  # Tool execution timeout (seconds)
-  TOOL_TIMEOUT = 60
-
-  # Event types for streaming
-  ASSISTANT_TOKEN = 'assistant_token'
-  ASSISTANT_COMPLETE = 'assistant_complete'
-  ERROR = 'error'
-
-  # Unified tool definitions (used by both text chat and voice)
-  TOOL_DEFINITIONS = AiVoiceTools::TOOLS
-
-  # Run the orchestrator
-  # @param conversation_id [Integer] The conversation ID
-  # @param content [String] The user message content
-  # @param modality [String] How the message was sent: "text" or "voice"
-  # @param system_prompt [String, nil] Optional custom system prompt
-  # @param enable_tools [Boolean] Whether to enable tool execution (default: true)
-  # @param user [User, nil] The user making the request (required for tools)
-  # @param stream_name [String, nil] ActionCable channel for streaming events
-  # @yield [Hash] Yields chunks in streaming mode: { delta: "...", conversation_id: ... }
-  # @return [String] The final assistant response content
-  def self.run(conversation_id:, content:, modality: "text", system_prompt: nil, enable_tools: true, user: nil, stream_name: nil, &block)
-    Rails.logger.info "[ConversationOrchestrator] self.run called - conversation_id: #{conversation_id}, block_given?: #{block_given?}, stream_name: #{stream_name}"
-    
-    orchestrator = new(
-      conversation_id: conversation_id,
-      content: content,
-      modality: modality,
-      system_prompt: system_prompt,
-      enable_tools: enable_tools,
-      user: user,
-      stream_name: stream_name
-    )
-
-    if block_given?
-      orchestrator.run_stream(&block)
-    else
-      orchestrator.run_blocking
-    end
-  rescue => e
-    Rails.logger.error "[ConversationOrchestrator] self.run failed: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
-
-    if orchestrator.stream_name.present?
-      begin
-        ActionCable.server.broadcast(orchestrator.stream_name, { error: "AI processing failed: #{e.message}" })
-      rescue => broadcast_error
-        Rails.logger.error "[ConversationOrchestrator] Failed to broadcast error: #{broadcast_error.message}"
-      end
-    end
-
-    nil
-  end
-
-  # Instance methods
-  attr_reader :conversation_id, :content, :modality, :system_prompt, :enable_tools, :user, :stream_name
-
-  def initialize(conversation_id:, content:, modality: "text", system_prompt: nil, enable_tools: true, user: nil, stream_name: nil)
-    @conversation_id = conversation_id
+  def initialize(user:, conversation_id:, content:, modality: "text", stream_channel: nil)
+    @user = user
+    @conversation = find_or_create_conversation(conversation_id)
     @content = content
     @modality = modality
-    @system_prompt = system_prompt || default_system_prompt
-    @enable_tools = enable_tools && user.present?
-    @user = user
-    @stream_name = stream_name
-    @execution_id = SecureRandom.uuid
+    @stream_channel = stream_channel
+    @assistant_response = ""
   end
 
-  # Streaming method - yields chunks for real-time response
-  def run_stream(&block)
-    raise ArgumentError, "Block required for streaming" unless block_given?
-
-    Rails.logger.info "[ConversationOrchestrator] Starting run_stream for conversation #{conversation_id}"
-
-    response_content = ""
-
-    begin
-      # Save user message FIRST before building history
-      save_user_message
-
-      # Load conversation history from ai_messages (now includes current message)
-      history = build_message_history
-
-      # Call OpenAI with streaming using Chat Completions API
-      api_key = ENV.fetch('OPENAI_API_KEY', nil) || ENV.fetch('CLACKY_OPENAI_API_KEY', nil)
-      client = OpenAI::Client.new(access_token: api_key)
-
-      Rails.logger.info "[ConversationOrchestrator] Streaming OpenAI with #{history.size} messages, tools: #{enable_tools}"
-
-      # First call - may return tool calls
-      tool_call_result = nil
-      
-      client.chat(
-        parameters: {
-          model: "gpt-4o",
-          messages: history,
-          temperature: 0.7,
-          tools: enable_tools ? TOOL_DEFINITIONS : [],
-          stream: proc { |chunk|
-            Rails.logger.info "[ConversationOrchestrator] Stream chunk keys: #{chunk.keys}, choices: #{chunk['choices']&.first&.keys}"
-            
-            # Handle content delta - check multiple possible formats
-            delta = nil
-            if chunk.dig("choices", 0, "delta", "content")
-              delta = chunk["choices"][0]["delta"]["content"]
-            elsif chunk.dig("choices", 0, "message", "content")
-              delta = chunk["choices"][0]["message"]["content"]
-            end
-            
-            if delta.present?
-              Rails.logger.info "[ConversationOrchestrator] Content delta: #{delta[0..50]}..."
-              response_content += delta
-              block.call({ delta: delta, conversation_id: conversation_id })
-            end
-
-            # Check for tool calls - need to accumulate arguments
-            if chunk.dig("choices", 0, "delta", "tool_calls")
-              tool_calls = chunk["choices"][0]["delta"]["tool_calls"]
-              tool_calls.each do |tc|
-                # Store tool call for later execution
-                tool_call_result ||= {}
-                tool_call_result[:id] = tc[:id] if tc[:id]
-                tool_call_result[:name] = tc.dig(:function, :name) if tc.dig(:function, :name)
-                tool_call_result[:arguments] ||= ""
-                tool_call_result[:arguments] += (tc.dig(:function, :arguments) || "")
-              end
-            end
-          }
-        }
-      )
-
-      # If tool call detected, execute it and continue conversation
-      if tool_call_result && tool_call_result[:name].present?
-        Rails.logger.info "[ConversationOrchestrator] Tool call detected: #{tool_call_result[:name]} with args: #{tool_call_result[:arguments]}"
-        
-        # Parse arguments
-        args = JSON.parse(tool_call_result[:arguments]) rescue {}
-        
-        # Execute tool
-        tool_result = execute_tool(tool_call_result[:name], args)
-        save_tool_message(tool_result) if tool_result
-        
-        # Add tool result to messages and get final response
-        history << { role: "assistant", content: response_content }
-        history << {
-          role: "tool",
-          tool_call_id: tool_call_result[:id],
-          content: tool_result.is_a?(Hash) ? tool_result[:message] || tool_result.to_json : tool_result.to_s
-        }
-        
-        # Broadcast tool execution
-        broadcast_event('tool_execution_completed', { 
-          tool: tool_call_result[:name], 
-          result: tool_result 
-        }) if stream_name
-        
-        # Get final response from AI
-        response_content = ""
-        client.chat(
-          parameters: {
-            model: "gpt-4o",
-            messages: history,
-            temperature: 0.7,
-            stream: proc { |chunk|
-              delta = chunk.dig("choices", 0, "delta", "content")
-              if delta.present?
-                response_content += delta
-                block.call({ delta: delta, conversation_id: conversation_id })
-              end
-            }
-          }
-        )
-      end
-
-      # Save final assistant response
-      save_assistant_message(response_content) if response_content.present?
-
-      # Broadcast completion if streaming
-      broadcast_completion(response_content) if stream_name
-
-      Rails.logger.info "[ConversationOrchestrator] run_stream completed successfully"
-
-      response_content
-    rescue => e
-      Rails.logger.error "[ConversationOrchestrator] run_stream failed: #{e.message}"
-      Rails.logger.error e.backtrace.first(10).join("\n")
-
-      # Notify frontend if stream_name present
-      broadcast_error("AI streaming failed: #{e.message}") if stream_name
-      raise
-    end
+  def self.process_message(**args)
+    new(**args).call
   end
 
-  # Blocking call - returns full response
-  def run_blocking
-    Rails.logger.info "[ConversationOrchestrator] Starting run_blocking for conversation #{conversation_id}"
-
-    response_content = ""
-
-    begin
-      # Save user message FIRST before building history
-      save_user_message
-
-      # Load conversation history (now includes current message)
-      history = build_message_history
-
-      # Call OpenAI with Chat Completions API
-      api_key = ENV.fetch('OPENAI_API_KEY', nil) || ENV.fetch('CLACKY_OPENAI_API_KEY', nil)
-      client = OpenAI::Client.new(access_token: api_key)
-
-      Rails.logger.info "[ConversationOrchestrator] Calling OpenAI with #{history.size} messages, tools: #{enable_tools}"
-
-      response = client.chat(
-        parameters: {
-          model: "gpt-4o",
-          messages: history,
-          temperature: 0.7,
-          tools: enable_tools ? TOOL_DEFINITIONS : []
-        }
-      )
-
-      Rails.logger.info "[ConversationOrchestrator] OpenAI response: #{response.inspect}"
-
-      # Extract response content
-      response_content = response.dig("choices", 0, "message", "content") || ""
-
-      # Handle tool calls if present
-      if enable_tools && response.dig("choices", 0, "message", "tool_calls")
-        tool_calls = response["choices"][0]["message"]["tool_calls"]
-        if tool_calls.present?
-          Rails.logger.info "[ConversationOrchestrator] Processing #{tool_calls.size} tool calls"
-          response_content = handle_tool_calls(tool_calls, response_content)
-        end
-      end
-
-      # Save assistant response
-      save_assistant_message(response_content) if response_content.present?
-
-      # Broadcast completion if streaming
-      broadcast_completion(response_content) if stream_name
-
-      Rails.logger.info "[ConversationOrchestrator] run_blocking completed successfully"
-
-      response_content
-    rescue => e
-      Rails.logger.error "[ConversationOrchestrator] run_blocking failed: #{e.message}"
-      Rails.logger.error e.backtrace.first(10).join("\n")
-      broadcast_error(e.message) if stream_name
-      raise Error, "AI processing failed: #{e.message}"
+  def call
+    Rails.logger.info "[ConversationOrchestrator] Processing message - conversation: #{conversation.id}, modality: #{modality}, stream: #{stream_channel.present?}"
+    
+    # Step 1: Save user message
+    save_user_message
+    
+    # Step 2: Determine intent
+    intent = detect_intent
+    Rails.logger.info "[ConversationOrchestrator] Detected intent: #{intent}"
+    
+    # Step 3: Route based on intent
+    case intent
+    when :image
+      handle_image_generation
+    when :video
+      handle_video_generation
+    else
+      handle_chat
     end
+    
+    # Step 4: Update conversation timestamp
+    conversation.touch
+    
+    # Return result hash
+    {
+      conversation_id: conversation.id,
+      response: @assistant_response
+    }
+  rescue => e
+    Rails.logger.error "[ConversationOrchestrator] Error: #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
+    
+    error_message = "I apologize, but I encountered an error processing your message. Please try again."
+    save_assistant_message(error_message)
+    broadcast_error(error_message) if stream_channel
+    
+    {
+      conversation_id: conversation.id,
+      response: error_message
+    }
   end
 
   private
 
-  # Default system prompt
-  def default_system_prompt
-    <<~PROMPT
-      You are Otto, a helpful AI assistant for a marketing platform.
-      Your role is to help users with marketing tasks like:
-      - Creating marketing campaigns
-      - Generating social media content
-      - Scheduling posts
-      - Analyzing performance
-      - Answering marketing questions
-
-      Be concise, friendly, and helpful. Use emojis sparingly.
-      Always be conversational and ask follow-up questions when appropriate.
-    PROMPT
-  end
-
-  # Find the conversation (uses AiConversation with ai_messages)
-  def conversation
-    @conversation ||= AiConversation.find(conversation_id)
-  rescue ActiveRecord::RecordNotFound
-    raise Error, "Conversation not found: #{conversation_id}"
-  end
-
-  # Build message history for OpenAI
-  def build_message_history
-    messages = []
-
-    # Add system prompt
-    messages << { role: "system", content: system_prompt }
-
-    # Add conversation history from ai_messages (includes current user message since we saved it first)
-    conversation.get_recent_messages(10).each do |msg|
-      messages << { role: msg.role, content: msg.content }
-    end
-
-    # Note: current user message is already saved to DB before this method is called
-    # so we don't need to manually add it here
-
-    messages
-  end
-
-  # Execute tool from Chat Completions chunk format
-  def execute_tool_from_chunk(tool_call)
-    return { error: "No user context" } unless user
-
-    tool_call_id = tool_call[:id]
-    tool_name = tool_call.dig(:function, :name)
-    args_json = tool_call.dig(:function, :arguments)
-
-    return nil if tool_name.blank?
-
-    args = if args_json.is_a?(String)
-      JSON.parse(args_json) rescue {}
+  def find_or_create_conversation(conversation_id)
+    if conversation_id.present?
+      user.ai_conversations.find_by(id: conversation_id) || create_new_conversation
     else
-      args_json || {}
+      create_new_conversation
     end
-
-    Rails.logger.info "[ConversationOrchestrator] Executing tool: #{tool_name} with args: #{args.inspect}"
-
-    handler = VoiceToolHandler.new(user: user, execution_id: @execution_id)
-    result = handler.execute(tool_name, args)
-
-    { tool_call_id: tool_call_id, tool_name: tool_name, result: result }
-  rescue => e
-    Rails.logger.error "[ConversationOrchestrator] Tool execution error: #{e.message}"
-    { error: e.message }
   end
 
-  # Simple execute tool by name and args (used by new run_stream code)
-  def execute_tool(tool_name, args)
-    return { error: "No user context" } unless user
-
-    Rails.logger.info "[ConversationOrchestrator] Executing tool: #{tool_name} with args: #{args.inspect}"
-
-    handler = VoiceToolHandler.new(user: user, execution_id: @execution_id)
-    result = handler.execute(tool_name, args)
-
-    { tool_call_id: nil, tool_name: tool_name, result: result }
-  rescue => e
-    Rails.logger.error "[ConversationOrchestrator] Tool execution error: #{e.message}"
-    { error: e.message }
+  def create_new_conversation
+    user.ai_conversations.create!(
+      title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
+      session_type: 'chat',
+      metadata: { created_via: modality }
+    )
   end
 
-  # Handle tool calls from blocking response
-  def handle_tool_calls(tool_calls, current_content)
-    tool_results = []
-
-    tool_calls.each do |tool_call|
-      begin
-        tool_result = execute_tool_from_chunk(tool_call)
-        tool_results << tool_result
-        save_tool_message(tool_result) if tool_result
-      rescue => e
-        Rails.logger.error "[ConversationOrchestrator] Tool execution failed: #{e.message}"
-      end
-    end
-
-    # Return original content (tool results are saved separately)
-    current_content
-  end
-
-  # Save user message to conversation
   def save_user_message
     conversation.ai_messages.create!(
       role: 'user',
       content: content,
-      tokens_used: estimate_tokens(content)
+      message_type: 'text',
+      metadata: { modality: modality, created_at: Time.current }
     )
-  rescue => e
-    raise Error, "Failed to save user message: #{e.message}"
+    
+    Rails.logger.info "[ConversationOrchestrator] User message saved - conversation: #{conversation.id}"
   end
 
-  # Save assistant message to conversation
-  def save_assistant_message(response_content)
-    return if response_content.blank?
-
+  def save_assistant_message(content)
     conversation.ai_messages.create!(
       role: 'assistant',
-      content: response_content,
-      tokens_used: estimate_tokens(response_content)
+      content: content,
+      message_type: 'text',
+      metadata: { model: CHAT_MODEL, created_at: Time.current }
     )
-  rescue => e
-    Rails.logger.error "[ConversationOrchestrator] Failed to save assistant message: #{e.message}"
+    
+    Rails.logger.info "[ConversationOrchestrator] Assistant message saved - conversation: #{conversation.id}, length: #{content.length}"
   end
 
-  # Save tool message to conversation
-  def save_tool_message(tool_result)
-    return if tool_result.blank?
-
-    content = if tool_result.is_a?(Hash)
-      tool_result[:result].is_a?(Hash) ? tool_result[:result].to_json : tool_result[:result].to_s
-    else
-      tool_result.to_s
-    end
-
+  def save_tool_message(tool_name, result)
     conversation.ai_messages.create!(
       role: 'tool',
-      content: content,
-      tokens_used: estimate_tokens(content)
+      content: "Tool: #{tool_name}\nResult: #{result.is_a?(Hash) ? result.to_json : result}",
+      message_type: 'text',
+      metadata: { tool_name: tool_name, created_at: Time.current }
     )
-  rescue => e
-    Rails.logger.error "[ConversationOrchestrator] Failed to save tool message: #{e.message}"
   end
 
-  # Estimate token count
-  def estimate_tokens(text)
-    (text.to_s.length / 4.0).ceil
-  end
-
-  # Broadcast event to ActionCable - broadcasts to BOTH conversation and user-level channels
-  def broadcast_event(type, payload)
-    return unless stream_name
-
-    # Build event with flat structure for frontend compatibility
-    event = {
-      type: type,
-      conversation_id: conversation_id,
-      timestamp: Time.now.to_i
-    }
+  def detect_intent
+    content_lower = content.downcase
     
-    # Merge payload at top level for frontend
-    event.merge!(payload)
-    
-    # Also extract content for frontend compatibility
-    event[:content] = payload[:content] if payload[:content]
-    
-    # Broadcast to conversation-specific channel
-    ActionCable.server.broadcast(stream_name, event)
-    
-    # Also broadcast to user-level channel (voice_chat_{user_id})
-    # This ensures the frontend receives the response regardless of which channel it subscribed to
-    if user
-      user_stream = "voice_chat_#{user.id}"
-      # Always broadcast to user channel for voice modality to ensure frontend receives it
-      ActionCable.server.broadcast(user_stream, event)
+    # Check for image keywords
+    if IMAGE_KEYWORDS.any? { |kw| content_lower.include?(kw) } && 
+       (content_lower.include?('image') || content_lower.include?('photo') || content_lower.include?('picture'))
+      return :image
     end
-  rescue => e
-    Rails.logger.error "[ConversationOrchestrator] Broadcast error: #{e.message}"
+    
+    # Check for video keywords
+    if VIDEO_KEYWORDS.any? { |kw| content_lower.include?(kw) } && 
+       content_lower.include?('video')
+      return :video
+    end
+    
+    :chat
   end
 
-  # Broadcast completion
-  def broadcast_completion(content)
-    broadcast_event(ASSISTANT_COMPLETE, { content: content })
+  def handle_chat
+    Rails.logger.info "[ConversationOrchestrator] Handling chat intent"
+    
+    # Build message history
+    history = build_message_history
+    
+    Rails.logger.info "[ConversationOrchestrator] Message history built - #{history.size} messages"
+    log_message_array(history)
+    
+    # Stream response from OpenAI
+    if stream_channel
+      stream_chat_response(history)
+    else
+      blocking_chat_response(history)
+    end
   end
 
-  # Broadcast error
+  def handle_image_generation
+    Rails.logger.info "[ConversationOrchestrator] Handling image generation intent"
+    
+    # Respond conversationally first
+    initial_response = "I'll generate that image for you. This will take a moment..."
+    broadcast_content(initial_response) if stream_channel
+    save_assistant_message(initial_response)
+    
+    # Trigger async image generation
+    ImageGenerationJob.perform_later(
+      conversation_id: conversation.id,
+      prompt: content,
+      user_id: user.id
+    )
+    
+    @assistant_response = initial_response
+  end
+
+  def handle_video_generation
+    Rails.logger.info "[ConversationOrchestrator] Handling video generation intent"
+    
+    # Respond conversationally first
+    initial_response = "I'll create that video for you. Video generation typically takes 1-2 minutes, I'll notify you when it's ready."
+    broadcast_content(initial_response) if stream_channel
+    save_assistant_message(initial_response)
+    
+    # Trigger async video generation
+    GenerateVideoJob.perform_later(
+      prompt: content,
+      user_id: user.id,
+      conversation_id: conversation.id
+    )
+    
+    @assistant_response = initial_response
+  end
+
+  def build_message_history
+    # Fetch last N messages ordered by creation time
+    recent_messages = conversation.ai_messages
+      .order(created_at: :asc)
+      .last(MAX_HISTORY_MESSAGES)
+    
+    # Build messages array for OpenAI
+    messages = [{ role: "system", content: SYSTEM_PROMPT }]
+    
+    recent_messages.each do |msg|
+      # Skip tool messages for now (can be enhanced later)
+      next if msg.role == 'tool'
+      
+      messages << {
+        role: msg.role,
+        content: msg.content
+      }
+    end
+    
+    messages
+  end
+
+  def stream_chat_response(history)
+    Rails.logger.info "[ConversationOrchestrator] Streaming chat response"
+    
+    api_key = ENV.fetch('OPENAI_API_KEY') { ENV.fetch('CLACKY_OPENAI_API_KEY', nil) }
+    unless api_key
+      error_msg = "OpenAI API key not configured"
+      Rails.logger.error "[ConversationOrchestrator] #{error_msg}"
+      broadcast_error(error_msg)
+      return error_msg
+    end
+    
+    client = OpenAI::Client.new(access_token: api_key)
+    
+    @assistant_response = ""
+    
+    begin
+      client.chat(
+        parameters: {
+          model: CHAT_MODEL,
+          messages: history,
+          temperature: CHAT_TEMPERATURE,
+          max_tokens: CHAT_MAX_TOKENS,
+          stream: proc { |chunk, _bytesize|
+            Rails.logger.debug "[ConversationOrchestrator] Stream chunk received"
+            
+            delta = chunk.dig("choices", 0, "delta", "content")
+            
+            if delta.present?
+              @assistant_response += delta
+              broadcast_content(delta)
+            end
+          }
+        }
+      )
+      
+      Rails.logger.info "[ConversationOrchestrator] Streaming complete - total length: #{@assistant_response.length}"
+      
+      # Save complete response
+      save_assistant_message(@assistant_response)
+      
+      # Broadcast completion
+      broadcast_completion
+      
+      @assistant_response
+    rescue => e
+      Rails.logger.error "[ConversationOrchestrator] Streaming error: #{e.message}"
+      error_msg = "I encountered an error while generating the response. Please try again."
+      broadcast_error(error_msg)
+      save_assistant_message(error_msg)
+      error_msg
+    end
+  end
+
+  def blocking_chat_response(history)
+    Rails.logger.info "[ConversationOrchestrator] Blocking chat response"
+    
+    api_key = ENV.fetch('OPENAI_API_KEY') { ENV.fetch('CLACKY_OPENAI_API_KEY', nil) }
+    unless api_key
+      error_msg = "OpenAI API key not configured"
+      Rails.logger.error "[ConversationOrchestrator] #{error_msg}"
+      return error_msg
+    end
+    
+    client = OpenAI::Client.new(access_token: api_key)
+    
+    begin
+      response = client.chat(
+        parameters: {
+          model: CHAT_MODEL,
+          messages: history,
+          temperature: CHAT_TEMPERATURE,
+          max_tokens: CHAT_MAX_TOKENS
+        }
+      )
+      
+      @assistant_response = response.dig("choices", 0, "message", "content") || ""
+      
+      Rails.logger.info "[ConversationOrchestrator] Response received - length: #{@assistant_response.length}"
+      
+      # Save response
+      save_assistant_message(@assistant_response)
+      
+      @assistant_response
+    rescue => e
+      Rails.logger.error "[ConversationOrchestrator] Blocking error: #{e.message}"
+      error_msg = "I encountered an error while generating the response. Please try again."
+      save_assistant_message(error_msg)
+      error_msg
+    end
+  end
+
+  def broadcast_content(delta)
+    return unless stream_channel
+    
+    ActionCable.server.broadcast(stream_channel, {
+      type: 'content_delta',
+      delta: delta,
+      conversation_id: conversation.id
+    })
+  end
+
+  def broadcast_completion
+    return unless stream_channel
+    
+    ActionCable.server.broadcast(stream_channel, {
+      type: 'completion',
+      conversation_id: conversation.id,
+      full_content: @assistant_response
+    })
+  end
+
   def broadcast_error(message)
-    broadcast_event(ERROR, { error: message })
+    return unless stream_channel
+    
+    ActionCable.server.broadcast(stream_channel, {
+      type: 'error',
+      error: message,
+      conversation_id: conversation.id
+    })
+  end
+
+  def log_message_array(messages)
+    Rails.logger.info "[ConversationOrchestrator] Message array sent to OpenAI:"
+    messages.each_with_index do |msg, idx|
+      content_preview = msg[:content].to_s[0..100]
+      Rails.logger.info "  [#{idx}] role=#{msg[:role]}, content=#{content_preview}..."
+    end
+    Rails.logger.info "[ConversationOrchestrator] Model: #{CHAT_MODEL}, Temperature: #{CHAT_TEMPERATURE}, Max tokens: #{CHAT_MAX_TOKENS}"
   end
 end

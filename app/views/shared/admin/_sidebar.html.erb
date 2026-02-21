@@ -29,3 +29,12 @@
     Payments
   <% end %>
 </li>
+
+<!-- Waitlist -->
+<li>
+  <%= link_to waitlists_path,
+      class: "flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300 rounded-lg transition-colors #{'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' if current_path.include?('/waitlists')}" do %>
+    <%= lucide_icon "mail", class: "w-5 h-5 mr-3" %>
+    Waitlist
+  <% end %>
+</li>

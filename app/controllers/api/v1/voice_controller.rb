@@ -157,11 +157,32 @@ class Api::V1::VoiceController < ApplicationController
         Rails.logger.info "Wake word detected: #{wake_word_detected}"
       end
 
-      # Generate AI response based on transcribed text
-      if transcribed_text.present?
-        ai_response = generate_ai_response(transcribed_text)
+      # Generate AI response based on transcribed text using ConversationOrchestrator
+      if transcribed_text.present? && current_user.present?
+        # Use ConversationOrchestrator for unified conversation flow
+        conversation_id = params[:conversation_id]
+        stream_channel = "ai_chat_#{current_user.id}_#{conversation_id || 'new'}"
+        
+        result = ConversationOrchestrator.process_message(
+          user: current_user,
+          conversation_id: conversation_id,
+          content: transcribed_text,
+          modality: 'voice',
+          stream_channel: stream_channel
+        )
+        
+        ai_response = result[:response]
         Rails.logger.info "AI response generated: '#{ai_response}'"
+        
         # Wake word detection also triggers a response
+        if wake_word_detected
+          ai_response = "🎯 Wake word detected! #{ai_response}"
+        end
+      elsif transcribed_text.present?
+        # Fallback for non-authenticated requests
+        ai_response = generate_ai_response(transcribed_text)
+        Rails.logger.info "AI response generated (fallback): '#{ai_response}'"
+        
         if wake_word_detected
           ai_response = "🎯 Wake word detected! #{ai_response}"
         end

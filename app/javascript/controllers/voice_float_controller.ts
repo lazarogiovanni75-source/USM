@@ -520,7 +520,7 @@ export default class VoiceFloatController extends Controller {
         // Display user transcript in a separate area
         if (data.text && data.text.trim().length > 0) {
           // Show user's input
-          this.updateTranscript("You: " + data.text)
+          this.updateTranscript(`You: ${data.text}`)
         }
 
         // Clear AI response area for new response
@@ -774,7 +774,8 @@ export default class VoiceFloatController extends Controller {
           </div>
           <div id="voice-result" class="hidden mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm w-full"></div>
           <!-- Stop Button -->
-          <button id="voice-stop-btn" class="mt-3 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center space-x-2 w-full justify-center">
+          <button id="voice-stop-btn"
+            class="mt-3 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center space-x-2 w-full justify-center">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 6h12v12H6z"/>
             </svg>

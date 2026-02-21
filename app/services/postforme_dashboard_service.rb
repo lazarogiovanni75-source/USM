@@ -59,7 +59,12 @@ class PostformeDashboardService
         last_synced: Time.current
       }
     rescue PostformeService::PostformeError => e
-      Rails.logger.error("[PostformeDashboard] API error for account #{account.id}: #{e.message}")
+      # Only log first failure per account to avoid noise (use Rails cache)
+      cache_key = "postforme_error_logged_#{account.id}"
+      unless Rails.cache.read(cache_key)
+        Rails.logger.error("[PostformeDashboard] API error for account #{account.id}: #{e.message}")
+        Rails.cache.write(cache_key, true, expires_in: 1.hour)
+      end
       # Fallback to stored metrics when API fails
       fallback_metrics(account)
     rescue StandardError => e

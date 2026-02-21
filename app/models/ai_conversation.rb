@@ -9,9 +9,7 @@ class AiConversation < ApplicationRecord
   default_scope { order(updated_at: :desc) }
   
   # Memory and context tracking
-  serialize :context, Hash
-  serialize :memory_summary, Hash
-  serialize :session_metadata, Hash
+  # context, memory_summary, session_metadata are JSONB, no need to serialize
   
   # Memory retention settings
   MEMORY_RETENTION_DAYS = 30

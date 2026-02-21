@@ -109,6 +109,15 @@ export default class extends Controller<HTMLElement> {
 
   private handleCableMessage(data: any): void {
     switch (data.type) {
+      case 'content_delta':
+        this.appendContentDelta(data.delta)
+        break
+      case 'completion':
+        this.handleCompletion()
+        break
+      case 'error':
+        this.handleError(data.error)
+        break
       case 'typing':
         if (data.status) this.showTypingIndicator()
         else this.hideTypingIndicator()
@@ -118,9 +127,6 @@ export default class extends Controller<HTMLElement> {
         break
       case 'complete':
         this.handleComplete(data)
-        break
-      case 'error':
-        this.handleError(data.error)
         break
       case 'tool_call':
         this.handleToolCall(data)
@@ -138,6 +144,31 @@ export default class extends Controller<HTMLElement> {
         this.handleToolRejected(data)
         break
     }
+  }
+
+  private appendContentDelta(delta: string): void {
+    let messageEl = this.currentAssistantMessage
+    if (!messageEl) {
+      this.hideTypingIndicator()
+      messageEl = this.createAssistantMessageElement()
+      this.messagesContainerTarget.appendChild(messageEl)
+      this.currentAssistantMessage = messageEl
+    }
+    const contentEl = messageEl.querySelector('.message-content')
+    if (contentEl) {
+      contentEl.innerHTML += this.escapeHtml(delta)
+      this.scrollToBottom()
+    }
+  }
+
+  private handleCompletion(): void {
+    this.isGenerating = false
+    this.hideTypingIndicator()
+    this.showStopButton(false)
+    this.setLoading(false)
+    this.inputTarget.disabled = false
+    this.currentAssistantMessage = null
+    this.abortController = null
   }
 
   private handleToolCall(data: any): void {

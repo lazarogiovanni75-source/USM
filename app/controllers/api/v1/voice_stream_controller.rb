@@ -53,60 +53,30 @@ class Api::V1::VoiceStreamController < ApplicationController
         Rails.logger.info "Wake word detected: #{wake_word_detected}"
       end
 
-      # Create or get conversation service
-      voice_service = VoiceConversationService.new(
-        user: current_user,
-        conversation_id: conversation_id
-      )
-
-      # Generate streaming channel name FIRST
-      stream_name = VoiceConversationService.conversation_channel(current_user.id, voice_service.conversation.id)
-
-      # NOTE: Don't save user message here - the ConversationOrchestrator will save it
-      # This prevents duplicate messages in conversation history
-
-      # Show user input as text, but don't echo it back via speech
-      # Just broadcast that we received the command and show transcript
-      ActionCable.server.broadcast(stream_name, {
-        type: 'command-received',
-        transcript: transcribed_text,
-        message: '',  # Empty - don't speak anything
-        timestamp: Time.current
-      })
+      # Use ConversationOrchestrator for unified conversation flow
+      # This ensures voice and text share the same conversation memory
+      Rails.logger.info "[VoiceStream] Processing voice message via ConversationOrchestrator"
+      Rails.logger.info "[VoiceStream] Transcribed text: #{transcribed_text}"
+      Rails.logger.info "[VoiceStream] Conversation ID: #{conversation_id}"
       
-      # Also broadcast to user channel for reliability
-      user_channel = "voice_chat_#{current_user.id}"
-      unless user_channel == stream_name
-        ActionCable.server.broadcast(user_channel, {
-          type: 'command-received',
-          transcript: transcribed_text,
-          message: '',  # Empty - don't speak anything
-          timestamp: Time.current
-        })
-      end
-
-      # Build the prompt for LLM
-      prompt = voice_service.build_prompt_for_llm(transcribed_text)
-
-      # Start streaming LLM response via ActionCable
-      user_stream_name = "voice_chat_#{current_user.id}"
-      VoiceStreamJob.perform_later(
-        stream_name: stream_name,
-        user_stream_name: user_stream_name,
-        prompt: prompt,
-        system: voice_service.system_prompt,
-        conversation_id: voice_service.conversation.id,
-        user_id: current_user.id,
-        wake_word_detected: wake_word_detected,
-        stream_tts: true,  # Enable TTS streaming
-        enable_tools: true  # Enable tool execution for real task handling
+      # Generate stream channel name
+      stream_channel = "ai_chat_#{current_user.id}_#{conversation_id || 'new'}"
+      
+      # Process message through ConversationOrchestrator
+      # This handles: saving user message, loading history, streaming response, saving assistant message
+      result = ConversationOrchestrator.process_message(
+        user: current_user,
+        conversation_id: conversation_id,
+        content: transcribed_text,
+        modality: 'voice',
+        stream_channel: stream_channel
       )
 
       render json: {
         text: transcribed_text,
-        transcript: transcribed_text,  # Include for frontend display
-        conversation_id: voice_service.conversation.id,
-        stream_name: stream_name,
+        transcript: transcribed_text,
+        conversation_id: result[:conversation_id],
+        stream_name: stream_channel,
         status: 'streaming_started',
         wake_word_detected: wake_word_detected,
         early_trigger: early_trigger

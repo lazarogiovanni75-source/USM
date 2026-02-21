@@ -1,7 +1,14 @@
 class DashboardsController < ApplicationController
   before_action :authenticate_user!
+  before_action :check_verification, except: [:index]
 
   def index
+    # Show dashboard only for verified users, otherwise redirect to landing
+    unless current_user.verified?
+      redirect_to root_path, alert: 'Your account is pending approval. Please wait for admin verification.'
+      return
+    end
+    
     @user = current_user
     
     # Load all user data for comprehensive dashboard
@@ -119,4 +126,10 @@ class DashboardsController < ApplicationController
   end
 
   private
+
+  def check_verification
+    unless current_user.verified?
+      redirect_to root_path, alert: 'Your account is pending approval. Please wait for admin verification.'
+    end
+  end
 end

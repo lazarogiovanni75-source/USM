@@ -2,9 +2,9 @@ class HomeController < ApplicationController
   include HomeDemoConcern
 
   def index
-    # Redirect authenticated users to dashboard
-    if current_user.present?
-      redirect_to dashboards_path and return
-    end
+    # Show landing page with waitlist to everyone
+    # Authenticated users can still access dashboard via navbar
+    @show_pending_approval = current_user.present? && !current_user.verified?
+    render 'home/index'
   end
 end

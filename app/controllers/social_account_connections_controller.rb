@@ -158,6 +158,93 @@ class SocialAccountConnectionsController < ApplicationController
     end
   end
 
+  # Initiate OAuth flow with Postforme
+  def initiate_oauth
+    begin
+      service = PostformeService.new
+      redirect_uri = postforme_oauth_callback_url
+      
+      # Get OAuth URL from Postforme
+      response = service.oauth_url(redirect_uri)
+      auth_url = response['url'] || response['auth_url']
+      
+      if auth_url
+        # Store state for security
+        state = SecureRandom.hex(16)
+        session[:postforme_oauth_state] = state
+        session[:postforme_oauth_initiated_at] = Time.current.to_i
+        
+        # Redirect to Postforme OAuth
+        redirect_to "#{auth_url}&state=#{state}", allow_other_host: true
+      else
+        redirect_to social_account_connections_path, alert: 'Failed to get OAuth URL from Postforme'
+      end
+    rescue PostformeService::PostformeError => e
+      Rails.logger.error("[Postforme OAuth] Error: #{e.message}")
+      redirect_to social_account_connections_path, alert: "OAuth Error: #{e.message}"
+    rescue StandardError => e
+      Rails.logger.error("[Postforme OAuth] Error: #{e.message}")
+      redirect_to social_account_connections_path, alert: "Error: #{e.message}"
+    end
+  end
+
+  # Handle OAuth callback from Postforme
+  def oauth_callback
+    error = params[:error]
+    error_description = params[:error_description]
+    code = params[:code]
+    state = params[:state]
+    
+    # Verify state to prevent CSRF
+    stored_state = session[:postforme_oauth_state]
+    stored_time = session[:postforme_oauth_initiated_at]
+    
+    if error
+      redirect_to social_account_connections_path, alert: "OAuth Error: #{error_description || error}"
+      return
+    end
+    
+    if state != stored_state
+      redirect_to social_account_connections_path, alert: 'OAuth state mismatch. Please try again.'
+      return
+    end
+    
+    # Check if state expired (15 minutes)
+    if stored_time && (Time.current.to_i - stored_time > 900)
+      redirect_to social_account_connections_path, alert: 'OAuth session expired. Please try again.'
+      return
+    end
+    
+    begin
+      # Exchange code for token
+      service = PostformeService.new
+      redirect_uri = postforme_oauth_callback_url
+      token_response = service.oauth_token(code, redirect_uri)
+      
+      access_token = token_response['access_token'] || token_response['token']
+      
+      unless access_token
+        redirect_to social_account_connections_path, alert: 'Failed to get access token'
+        return
+      end
+      
+      # Store the API key in session
+      session[:postforme_api_key] = access_token
+      
+      # Clear OAuth state
+      session.delete(:postforme_oauth_state)
+      session.delete(:postforme_oauth_initiated_at)
+      
+      redirect_to social_account_connections_path, notice: 'Successfully connected to Postforme!'
+    rescue PostformeService::PostformeError => e
+      Rails.logger.error("[Postforme OAuth] Token exchange error: #{e.message}")
+      redirect_to social_account_connections_path, alert: "Failed to complete OAuth: #{e.message}"
+    rescue StandardError => e
+      Rails.logger.error("[Postforme OAuth] Error: #{e.message}")
+      redirect_to social_account_connections_path, alert: "Error: #{e.message}"
+    end
+  end
+
   # Share content directly to a connected social media account
   def share_to_social_media
     draft_id = params[:draft_id]

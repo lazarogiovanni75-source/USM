@@ -4,10 +4,8 @@ class AiMessage < ApplicationRecord
   validates :role, presence: true, inclusion: { in: %w[user assistant system tool] }
   validates :content, presence: true
   
-  default_scope { order(created_at: :asc) }
-  
   # Memory and context tracking
-  serialize :metadata, Hash
+  # metadata is JSONB, no need to serialize
   
   # Message types for better organization
   MESSAGE_TYPES = %w[text image file link code].freeze
