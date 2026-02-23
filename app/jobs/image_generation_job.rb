@@ -23,7 +23,7 @@ class ImageGenerationJob < ApplicationJob
 
         # Save the image URL to the conversation
         message = AiMessage.create!(
-          conversation: conversation,
+          ai_conversation: conversation,
           role: 'assistant',
           content: "I've generated an image based on your request: #{prompt}\n\n![Generated Image](#{image_url})",
           message_type: 'image'

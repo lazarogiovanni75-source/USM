@@ -17,7 +17,16 @@ class ImageGenerationService
   def self.generate_image(prompt:, size: '1024x1024', quality: 'high')
     # Try primary service (Poyo.ai GPT-Image-1.5)
     result = try_primary_image(prompt: prompt, size: size, quality: quality)
-    return result if result[:success]
+    
+    # If primary succeeded with a task_id, return it (polling will handle completion)
+    return result if result[:success] && result[:task_id].present?
+    
+    # If primary failed with retry flag (like insufficient credits), try fallback
+    if result[:retry] || result[:error]&.include?('credits') || result[:error]&.include?('insufficient')
+      Rails.logger.info "[ImageGeneration] Primary service failed with retryable error, trying Defapi..."
+    else
+      Rails.logger.warn "[ImageGeneration] Primary service failed: #{result[:error]}"
+    end
 
     # Try secondary service (Defapi GPT-Image-1.5)
     result = try_secondary_image(prompt: prompt, size: size, quality: quality)
@@ -64,7 +73,7 @@ class ImageGenerationService
         quality: quality
       )
 
-      if result['output'].present?
+      if result['task_id'].present? && result['output'].present?
         Rails.logger.info "[ImageGeneration] Primary service succeeded"
         {
           success: true,
@@ -73,12 +82,25 @@ class ImageGenerationService
           output_url: result['output'],
           metadata: { model: 'gpt-image-1', size: size, quality: quality }
         }
+      elsif result['task_id'].present?
+        # Task started but no output yet - this is OK, polling will handle it
+        Rails.logger.info "[ImageGeneration] Primary service started task: #{result['task_id']}"
+        {
+          success: true,
+          task_id: result['task_id'],
+          service: 'poyo',
+          output_url: nil,
+          metadata: { model: 'gpt-image-1', size: size, quality: quality }
+        }
       else
-        Rails.logger.error "[ImageGeneration] Primary service returned no output"
+        Rails.logger.error "[ImageGeneration] Primary service returned no task_id: #{result.inspect}"
         { success: false, error: result['error'] || 'Failed to generate image' }
       end
-    rescue => e
+    rescue PoyoImageService::Error => e
       Rails.logger.error "[ImageGeneration] Primary service error: #{e.message}"
+      { success: false, error: e.message, retry: true }
+    rescue => e
+      Rails.logger.error "[ImageGeneration] Primary service unexpected error: #{e.message}"
       { success: false, error: e.message }
     end
   end

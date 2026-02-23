@@ -39,8 +39,9 @@ class Api::V1::VoiceStreamController < ApplicationController
 
       # Transcribe using OpenAI Whisper
       transcribed_text = transcribe_audio(processed_audio)
-      if transcribed_text.blank?
-        # No speech detected - return silently
+      if transcribed_text.blank? || transcribed_text.strip.length < 3
+        # No speech detected or too short (likely partial transcript) - return silently
+        Rails.logger.info "[VoiceStream] Ignoring too-short transcript: '#{transcribed_text}'"
         render json: { text: '', status: 'no_speech' }
         return
       end

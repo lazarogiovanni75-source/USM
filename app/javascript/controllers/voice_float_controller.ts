@@ -113,6 +113,9 @@ export default class VoiceFloatController extends Controller {
   private wakePhrase: string = "hey Otto"
   private processingAudio: boolean = false
   private wakeWordEnabled: boolean = false
+  private lastProcessedTime: number = 0
+  private silenceStartTime: number = 0
+  private isSpeaking: boolean = false
 
   // Streaming state
   private currentConversationId: number | null = null
@@ -485,9 +488,14 @@ export default class VoiceFloatController extends Controller {
       this.processor.connect(this.audioContext.destination)
 
       this.recordingStartTime = Date.now()
+      this.lastProcessedTime = Date.now()
+      this.silenceStartTime = 0
+      this.isSpeaking = false
+      
       this.recordingInterval = setInterval(() => {
         this.checkRecordingDuration()
-      }, 1000)
+        this.checkForSilence()
+      }, 100) // Check every 100ms for better responsiveness
 
     } catch (error) {
       console.error("[VoiceFloat] Microphone error:", error)
@@ -500,9 +508,9 @@ export default class VoiceFloatController extends Controller {
 
     const duration = Date.now() - this.recordingStartTime
 
-    // Auto-process after 15 seconds of recording
-    if (duration > 15000) {
-      console.log("[VoiceFloat] Processing after 15 seconds of speech")
+    // Auto-process after 20 seconds of recording (increased from 15)
+    if (duration > 20000) {
+      console.log("[VoiceFloat] Processing after 20 seconds of speech")
       this.processWavAudio()
     }
   }
@@ -516,13 +524,44 @@ export default class VoiceFloatController extends Controller {
 
     // Calculate average volume
     const average = dataArray.reduce((a, b) => a + b) / dataArray.length
+    const threshold = 15 // Silence threshold
 
-    // If very quiet (silence), we could optionally stop early
-    // For now, we'll keep the 15 second max but could add silence detection
+    const duration = Date.now() - this.recordingStartTime
+
+    // Only process after minimum 2 seconds of audio
+    if (duration < 2000) {
+      return
+    }
+
+    if (average > threshold) {
+      // User is speaking
+      this.isSpeaking = true
+      this.silenceStartTime = 0
+    } else {
+      // Silence detected
+      if (this.isSpeaking && this.silenceStartTime === 0) {
+        // User just stopped speaking
+        this.silenceStartTime = Date.now()
+      }
+
+      // If we've had 2.5 seconds of silence after speech, process the audio
+      // Increased from 1.5s to prevent processing partial transcripts
+      if (this.silenceStartTime > 0 && Date.now() - this.silenceStartTime > 2500) {
+        console.log("[VoiceFloat] Detected end of speech (2.5s silence), processing audio")
+        this.processWavAudio()
+      }
+    }
   }
 
   private processWavAudio(): void {
     if (!this.wavEncoder || this.processingAudio) return
+
+    // Prevent duplicate processing within 3 seconds
+    const timeSinceLastProcess = Date.now() - this.lastProcessedTime
+    if (timeSinceLastProcess < 3000) {
+      console.log(`[VoiceFloat] Skipping duplicate processing (${timeSinceLastProcess}ms since last)`)  
+      return
+    }
 
     if (this.recordingInterval) {
       clearInterval(this.recordingInterval)
@@ -530,6 +569,7 @@ export default class VoiceFloatController extends Controller {
     }
 
     this.processingAudio = true
+    this.lastProcessedTime = Date.now()
     const samplesLength = this.wavEncoder.samples.length
     console.log(`[VoiceFloat] Processing ${samplesLength} audio chunks`)
 
@@ -645,6 +685,9 @@ export default class VoiceFloatController extends Controller {
 
     this.processingAudio = false
     this.recordingStartTime = Date.now()
+    this.lastProcessedTime = Date.now()
+    this.silenceStartTime = 0
+    this.isSpeaking = false
     this.streamingResponse = ""
 
     // Clean up old audio resources if they exist
