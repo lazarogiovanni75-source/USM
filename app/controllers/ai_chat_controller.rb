@@ -44,13 +44,9 @@ class AiChatController < ApplicationController
     
     # Get the conversation from result
     @conversation = current_user.ai_conversations.find(result[:conversation_id])
+    @messages = @conversation.ai_messages.order(created_at: :asc)
     
-    # Return JSON response with conversation details
-    render json: {
-      success: true,
-      conversation_id: result[:conversation_id],
-      response: result[:response],
-      message: "Message processed successfully"
-    }
+    # Return Turbo Stream response for frontend updates
+    render 'send_message'
   end
 end

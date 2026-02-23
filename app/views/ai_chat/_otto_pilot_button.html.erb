@@ -1,0 +1,24 @@
+<!-- Floating Voice Button - Otto-Pilot -->
+<button id="voice-float-btn"
+        type="button"
+        data-controller="simple-voice"
+        data-action="simple-voice#toggle"
+        class="fixed bottom-20 right-8 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/30 hover:scale-110 transition-transform group cursor-pointer">
+  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+  </svg>
+  <span class="text-white font-medium text-sm pr-1">Otto-Pilot</span>
+</button>
+
+<!-- Wake Word Toggle Button -->
+<button id="wake-word-toggle-btn"
+        type="button"
+        data-controller="simple-voice"
+        data-action="simple-voice#enableWakeWord"
+        class="fixed bottom-20 right-56 z-50 flex items-center gap-1 px-3 py-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg border border-border/50 hover:scale-110 transition-transform cursor-pointer"
+        title="Enable 'Hey Otto' wake word">
+  <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M9 12a3 3 0 100-6 3 3 0 000 6z"></path>
+  </svg>
+  <span class="text-xs font-medium text-primary">Hey Otto</span>
+</button>

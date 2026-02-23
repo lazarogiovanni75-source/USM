@@ -189,8 +189,10 @@ export default class AiVoiceChatController extends Controller {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
+            'Accept': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+          },
+          credentials: 'include'
         });
         const createData = await createResponse.json();
         convId = createData.conversation?.id;
@@ -214,12 +216,14 @@ export default class AiVoiceChatController extends Controller {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         },
         body: JSON.stringify({
           conversation_id: convId,
           message: message
-        })
+        }),
+        credentials: 'include'
       });
 
       if (!response.ok) {

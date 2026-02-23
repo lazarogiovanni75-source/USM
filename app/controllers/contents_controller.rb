@@ -1,5 +1,5 @@
 class ContentsController < ApplicationController
-  before_action :set_content, only: %i[show edit update destroy approve reject duplicate generate_variation]
+  before_action :set_content, only: %i[show edit update destroy approve reject duplicate generate_variation preview optimize apply_optimization]
   before_action :authenticate_user!
 
   # GET /contents
@@ -33,6 +33,7 @@ class ContentsController < ApplicationController
     @content = current_user.contents.build(content_params)
 
     if @content.save
+      trigger_automation('content_created', @content)
       redirect_to content_path(@content), notice: 'Content was successfully created.'
     else
       render :new, status: :unprocessable_entity
@@ -57,8 +58,8 @@ class ContentsController < ApplicationController
   # Approve content
   def approve
     if @content.update(status: 'approved', approved_at: Time.current)
-      # Send approval notification
       ContentApprovalService.new(@content).notify_approval
+      trigger_automation('content_approved', @content)
       redirect_to content_path(@content), notice: 'Content has been approved and is ready for scheduling.'
     else
       redirect_to content_path(@content), alert: 'Failed to approve content.'
@@ -81,7 +82,7 @@ class ContentsController < ApplicationController
     @new_content.status = 'draft'
     
     if @new_content.save
-      redirect_to edit_content_path(@new_content), notice: 'Content duplicated successfully. You can now edit it.'
+      redirect_to edit_content_path(@new_content), notice: 'Content duplicated successfully.'
     else
       redirect_to content_path(@content), alert: 'Failed to duplicate content.'
     end
@@ -90,10 +91,7 @@ class ContentsController < ApplicationController
   # Generate content variation
   def generate_variation
     begin
-      generated_content = AiAutopilotService.new(
-        action: 'generate_content_variation',
-        content: @content
-      ).call
+      generated_content = AiAutopilotService.new(action: 'generate_content_variation', content: @content).call
       
       if generated_content
         @new_content = current_user.contents.create!(
@@ -109,15 +107,14 @@ class ContentsController < ApplicationController
         redirect_to content_path(@content), alert: 'Failed to generate content variation.'
       end
     rescue StandardError => e
-      redirect_to content_path(@content), alert: "Error generating variation: #{e.message}"
+      redirect_to content_path(@content), alert: "Error: #{e.message}"
     end
   end
 
-  # Bulk approve selected content
+  # Bulk approve
   def bulk_approve
     content_ids = params[:content_ids]
     contents = current_user.contents.where(id: content_ids)
-    
     updated_count = 0
     contents.each do |content|
       if content.update(status: 'approved', approved_at: Time.current)
@@ -125,65 +122,62 @@ class ContentsController < ApplicationController
         updated_count += 1
       end
     end
-    
-    redirect_to contents_path, notice: "Successfully approved #{updated_count} content items."
+    redirect_to contents_path, notice: "Approved #{updated_count} content items."
   end
 
-  # Bulk reject selected content
+  # Bulk reject
   def bulk_reject
     content_ids = params[:content_ids]
     contents = current_user.contents.where(id: content_ids)
-    
-    updated_count = 0
-    contents.each do |content|
-      if content.update(status: 'rejected', rejected_at: Time.current)
-        updated_count += 1
-      end
-    end
-    
-    redirect_to contents_path, notice: "Successfully rejected #{updated_count} content items."
+    updated_count = contents.update_all(status: 'rejected', rejected_at: Time.current)
+    redirect_to contents_path, notice: "Rejected #{updated_count} content items."
   end
 
-  # Preview content for different platforms
+  # Preview content
   def preview
     @platform = params[:platform] || @content.platform
     render 'preview'
   end
 
-  # AI-powered content optimization suggestions
+  # Optimize content
   def optimize
     begin
-      optimization_suggestions = AiAutopilotService.new(
-        action: 'optimize_content',
-        content: @content
-      ).call
-      
+      optimization_suggestions = AiAutopilotService.new(action: 'optimize_content', content: @content).call
       @suggestions = optimization_suggestions[:suggestions] || []
       @optimized_content = optimization_suggestions[:optimized_content]
     rescue StandardError => e
-      @error = "Error generating optimization suggestions: #{e.message}"
+      @error = "Error: #{e.message}"
     end
-    
     render 'optimize'
   end
 
-  # Apply optimization suggestions
+  # Apply optimization
   def apply_optimization
     optimized_body = params[:optimized_body]
-    
     if @content.update(body: optimized_body)
-      redirect_to content_path(@content), notice: 'Content has been optimized successfully.'
+      redirect_to content_path(@content), notice: 'Content optimized successfully.'
     else
       redirect_to content_path(@content), alert: 'Failed to apply optimization.'
     end
   end
 
   private
-    def set_content
-      @content = current_user.contents.find(params[:id])
-    end
 
-    def content_params
-      params.require(:content).permit(:title, :body, :content_type, :platform, :status, :campaign_id)
-    end
+  def trigger_automation(event_type, content)
+    return unless current_user
+    service = AutomationRulesService.new(current_user)
+    service.execute_rules(event_type, { content: content, user: current_user })
+  rescue => e
+    Rails.logger.error "[Automation] Error: #{e.message}"
+  end
+
+  def set_content
+    @content = current_user.draft_contents.find_by(id: params[:id])
+    @content ||= current_user.contents.find_by(id: params[:id])
+    raise ActiveRecord::RecordNotFound if @content.nil?
+  end
+
+  def content_params
+    params.require(:content).permit(:title, :body, :content_type, :platform, :status, :campaign_id)
+  end
 end

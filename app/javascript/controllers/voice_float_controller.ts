@@ -101,6 +101,7 @@ export default class VoiceFloatController extends Controller {
   private modalElement: HTMLElement | null = null
   private isListening: boolean = false
   private channel: any = null
+  private channels: any[] = []  // Store all ActionCable subscriptions
   private currentTranscript: string = ""
   private audioContext: AudioContext | null = null
   private mediaStream: MediaStream | null = null
@@ -154,12 +155,19 @@ export default class VoiceFloatController extends Controller {
   }
 
   toggle(event?: Event): void {
-    event?.preventDefault()
-    console.log("[VoiceFloat] Toggle called, isListening=", this.isListening)
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    console.log('[VoiceFloat] Toggle called, isListening=', this.isListening)
+    console.log('[VoiceFloat] Modal element before:', this.modalElement)
+    
     if (this.isListening) {
+      console.log('[VoiceFloat] Stopping listening')
       this.stopListening()
       this.closeModal()
     } else {
+      console.log('[VoiceFloat] Starting listening')
       this.openModal()
     }
   }
@@ -194,6 +202,11 @@ export default class VoiceFloatController extends Controller {
   closeModal(): void {
     console.log("[VoiceFloat] Closing modal")
     this.stopListening()
+    // Clean up all ActionCable subscriptions
+    this.channels.forEach(ch => {
+      try { ch.unsubscribe() } catch(e) { /* ignore */ }
+    })
+    this.channels = []
     if (this.channel) {
       this.channel.unsubscribe()
       this.channel = null
@@ -210,28 +223,79 @@ export default class VoiceFloatController extends Controller {
       return
     }
 
-    // Subscribe to user-specific channel for receiving AI responses
-    // The backend broadcasts to voice_chat_{user_id}_{conversation_id}
-    const channelName = `voice_chat_${this.currentUserId || 0}`
-    console.log(`[VoiceFloat] Subscribing to channel: ${channelName}`)
+    const userId = this.currentUserId || 0
+    const voiceChannelName = `voice_chat_${userId}`
+    const aiChannelName = `ai_chat_${userId}`
+    console.log(`[VoiceFloat] Subscribing to channels: ${voiceChannelName}, ${aiChannelName}`)
 
-    // Only create subscription if we don't have one
+    // Subscribe to voice_chat channel for voice processing responses
     if (!this.channel) {
       this.channel = (window as any).ActionCable.createConsumer().subscriptions.create(
-        { channel: "VoiceChatChannel", stream_name: channelName },
+        { channel: "VoiceChatChannel", stream_name: voiceChannelName },
         {
           connected: () => {
-            console.log("[VoiceFloat] ✅ Channel connected:", channelName)
+            console.log("[VoiceFloat] ✅ Voice channel connected:", voiceChannelName)
           },
           disconnected: () => {
-            console.log("[VoiceFloat] ❌ Channel disconnected")
+            console.log("[VoiceFloat] ❌ Voice channel disconnected")
           },
           received: (data: VoiceStreamEvent) => {
-            console.log("[VoiceFloat] 📨 Message received:", data.type)
+            console.log("[VoiceFloat] 📬 Voice message received:", data.type)
             this.handleStreamMessage(data)
           }
         }
       )
+    }
+
+    // Also subscribe to ai_chat channel for AI response streaming
+    const aiChannel = (window as any).ActionCable.createConsumer().subscriptions.create(
+      { channel: "AiChatChannel", stream_name: aiChannelName },
+      {
+        connected: () => {
+          console.log("[VoiceFloat] ✅ AI channel connected:", aiChannelName)
+        },
+        disconnected: () => {
+          console.log("[VoiceFloat] ❌ AI channel disconnected")
+        },
+        received: (data: any) => {
+          console.log("[VoiceFloat] 📬 AI Chat message received:", data.type || data)
+          // Handle AI chat streaming events
+          if (data.type === 'content_delta' || data.delta) {
+            this.handleStreamingChunk(data.delta || data.content || '')
+          } else if (data.type === 'completion' || data.full_content) {
+            this.handleStreamComplete(data.full_content || data.content || '')
+          } else if (data.type === 'processing') {
+            this.showLoading()
+            this.updateTranscript(data.message || 'AI is thinking...')
+          }
+        }
+      }
+    )
+    this.channels.push(aiChannel)
+
+    // Also subscribe to conversation-specific channel (ai_chat_{user_id}_{conversation_id})
+    if (this.currentConversationId) {
+      const convChannelName = `ai_chat_${userId}_${this.currentConversationId}`
+      const convChannel = (window as any).ActionCable.createConsumer().subscriptions.create(
+        { channel: "AiChatChannel", stream_name: convChannelName },
+        {
+          connected: () => {
+            console.log("[VoiceFloat] ✅ Conversation channel connected:", convChannelName)
+          },
+          received: (data: any) => {
+            console.log("[VoiceFloat] 📬 Conv channel message:", data.type || data)
+            if (data.type === 'content_delta' || data.delta) {
+              this.handleStreamingChunk(data.delta || data.content || '')
+            } else if (data.type === 'completion' || data.full_content) {
+              this.handleStreamComplete(data.full_content || data.content || '')
+            } else if (data.type === 'processing') {
+              this.showLoading()
+              this.updateTranscript(data.message || 'AI is thinking...')
+            }
+          }
+        }
+      )
+      this.channels.push(convChannel)
     }
   }
 
@@ -630,13 +694,27 @@ export default class VoiceFloatController extends Controller {
     utterance.rate = 1.0
     utterance.pitch = 1.0
     
-    // Try to get a good voice
+    // Try to select a male voice
     const voices = window.speechSynthesis.getVoices()
     console.log("[VoiceFloat] Available voices:", voices.length)
-    const englishVoice = voices.find(v => v.lang.startsWith('en'))
-    if (englishVoice) {
-      utterance.voice = englishVoice
-      console.log("[VoiceFloat] Using voice:", englishVoice.name)
+    const maleVoice = voices.find((v: any) => 
+      v.name.includes('Male') || 
+      v.name.includes('David') || 
+      v.name.includes('Mark') || 
+      v.name.includes('James') ||
+      v.name.includes('John') ||
+      v.name.includes('Paul')
+    )
+    if (maleVoice) {
+      utterance.voice = maleVoice
+      console.log("[VoiceFloat] Using male voice:", maleVoice.name)
+    } else {
+      // Fallback to any English voice
+      const englishVoice = voices.find((v: any) => v.lang.startsWith('en'))
+      if (englishVoice) {
+        utterance.voice = englishVoice
+        console.log("[VoiceFloat] Using English voice:", englishVoice.name)
+      }
     }
 
     utterance.onend = () => {

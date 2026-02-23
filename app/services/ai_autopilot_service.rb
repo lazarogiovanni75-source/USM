@@ -615,7 +615,7 @@ class AiAutopilotService < ApplicationService
       parameters: {
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are an AI assistant for social media management. Help users with their social media strategy, content creation, and campaign management. Keep responses brief and actionable.' },
+          { role: 'system', content: 'You are Otto-Pilot, a marketing assistant. Help users with their social media strategy, content creation, and campaign management. Keep responses brief and actionable.' },
           { role: 'user', content: prompt }
         ],
         max_tokens: 150

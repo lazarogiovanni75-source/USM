@@ -70,12 +70,11 @@ class AutomationRulesController < ApplicationController
     if template
       @rule = current_user.automation_rules.build(
         name: template[:name],
-        description: template[:description],
-        trigger_events: template[:trigger_events],
+        trigger_type: template[:trigger_events]&.first || 'content_created',
         action_type: template[:action_type],
         conditions: template[:conditions] || [],
-        config: template[:config] || {},
-        status: 'active'
+        actions: template[:config] || {},
+        is_active: true
       )
       
       if @rule.save
@@ -120,10 +119,10 @@ class AutomationRulesController < ApplicationController
     
     case action
     when 'activate'
-      current_user.automation_rules.where(id: rule_ids).update_all(status: 'active')
+      current_user.automation_rules.where(id: rule_ids).update_all(is_active: true)
       message = "#{rule_ids.count} rules activated"
     when 'deactivate'
-      current_user.automation_rules.where(id: rule_ids).update_all(status: 'inactive')
+      current_user.automation_rules.where(id: rule_ids).update_all(is_active: false)
       message = "#{rule_ids.count} rules deactivated"
     when 'delete'
       current_user.automation_rules.where(id: rule_ids).destroy_all
@@ -141,24 +140,22 @@ class AutomationRulesController < ApplicationController
 
   def rule_params
     params.require(:automation_rule).permit(
-      :name, :description, :action_type, :status,
-      trigger_events: [],
+      :name, :trigger_type, :action_type,
       conditions: [],
-      config: {}
+      actions: []
     )
   end
 
   def generate_rules_csv(rules)
     CSV.generate do |csv|
-      csv << ['Name', 'Description', 'Action Type', 'Trigger Events', 'Status', 'Created At']
+      csv << ['Name', 'Trigger Type', 'Action Type', 'Active', 'Created At']
       
       rules.each do |rule|
         csv << [
           rule.name,
-          rule.description,
+          rule.trigger_type,
           rule.action_type,
-          rule.trigger_events.join(', '),
-          rule.status,
+          rule.is_active? ? 'Yes' : 'No',
           rule.created_at.strftime('%Y-%m-%d %H:%M')
         ]
       end

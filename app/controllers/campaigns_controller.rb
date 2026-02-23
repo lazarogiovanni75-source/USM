@@ -195,7 +195,8 @@ class CampaignsController < ApplicationController
       :status, :goal, :goal_value, :platforms, :content_count,
       :hashtag_set, :mentions, :campaign_type, :content_pillars,
       :key_messages, :brand_guidelines, :competitors, :influencer_targets,
-      :budget_allocation, :kpis, :success_metrics
+      :budget_allocation, :kpis, :success_metrics,
+      :video_count, :image_count
     ).tap do |attrs|
       if attrs[:status].present?
         attrs[:status] = attrs[:status].to_i if attrs[:status].match?(/^\d+$/)

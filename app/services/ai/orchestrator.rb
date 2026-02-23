@@ -288,6 +288,10 @@ module Ai
         content_pillars: campaign.content_pillars || [],
         hashtags: campaign.hashtag_set || [],
         target_audience: campaign.target_audience,
+        # Asset requirements for this campaign
+        video_count: campaign.video_count || 2,
+        image_count: campaign.image_count || 3,
+        content_count: campaign.content_count || 10,
         tasks_completed: campaign.tasks.done.count,
         tasks_failed: campaign.tasks.failed.count,
         tasks_pending: campaign.tasks.pending.count,
@@ -307,6 +311,18 @@ module Ai
         Goal: #{campaign.goal}
         Platforms: #{context[:platforms].join(', ')}
 
+        Campaign Asset Requirements:
+        - Videos to generate: #{context[:video_count]} (10-second videos)
+        - Images to generate: #{context[:image_count]}
+        - Content pieces to create: #{context[:content_count]}
+        
+        IMPORTANT: For this campaign, you MUST generate:
+        - At least #{context[:video_count]} 10-second videos
+        - At least #{context[:image_count]} AI-generated images
+        - Multiple content pieces (posts, captions) that complement the videos and images
+        
+        The videos, images, and content should all be related and work together for the campaign topic.
+
         Progress:
         - Tasks completed: #{context[:tasks_completed]}
         - Tasks failed: #{context[:tasks_failed]}
@@ -316,6 +332,7 @@ module Ai
         Current Usage:
         - Cost: $#{context[:usage][:estimated_cost]}
         - Images generated: #{context[:usage][:images_generated]}
+        - Videos generated: #{context[:usage][:videos_generated] || 0}
         - Posts published: #{context[:usage][:posts_published]}
         - LLM tokens: #{context[:usage][:llm_tokens]}
 
@@ -327,14 +344,17 @@ module Ai
         Available tools:
         - generate_post: Create a new social media post
         - generate_image: Generate an AI image for posts
+        - generate_video: Generate a 10-second AI video
         - schedule_post: Schedule a post for publishing
         - analyze_performance: Check how posts are performing
         - complete_campaign: Mark campaign as done
 
-        If the campaign goals are met or no more actions are needed, use complete_campaign.
-        Otherwise, use generate_post, generate_image, or schedule_post to continue.
+        IMPORTANT: Prioritize generating videos and images to meet the campaign requirements.
+        Use generate_video to create the #{context[:video_count]} required videos.
+        Use generate_image to create the #{context[:image_count]} required images.
+        Use generate_post to create content that incorporates the videos and images.
 
-        IMPORTANT: You MUST call a tool. Do not respond with plain text.
+        If the campaign goals are met (videos, images, and content created), use complete_campaign.
       PROMPT
     end
 

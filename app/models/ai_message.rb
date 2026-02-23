@@ -5,13 +5,14 @@ class AiMessage < ApplicationRecord
   validates :content, presence: true
   
   # Memory and context tracking
-  # metadata is JSONB, no need to serialize
+  # metadata is JSONB - no serialize needed
   
   # Message types for better organization
   MESSAGE_TYPES = %w[text image file link code].freeze
   validates :message_type, inclusion: { in: MESSAGE_TYPES }, allow_nil: true
   
   before_save :estimate_tokens
+  before_validation :set_default_metadata
   
   # Token estimation (rough approximation)
   def estimate_tokens
@@ -20,6 +21,10 @@ class AiMessage < ApplicationRecord
     # Rough estimation: 1 token ≈ 4 characters for English text
     # This is a simplification - actual tokenization varies
     self.tokens_used = (content.length / 4.0).ceil
+  end
+  
+  def set_default_metadata
+    self.metadata ||= {}
   end
   
   # Context helpers

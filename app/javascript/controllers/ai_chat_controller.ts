@@ -143,6 +143,22 @@ export default class extends Controller<HTMLElement> {
       case 'tool_rejected':
         this.handleToolRejected(data)
         break
+      case 'image_generated':
+        this.handleImageGenerated(data)
+        break
+    }
+  }
+
+  private handleImageGenerated(data: any): void {
+    this.hideTypingIndicator()
+    const messageEl = this.currentAssistantMessage
+    if (messageEl) {
+      const contentEl = messageEl.querySelector('.message-content')
+      if (contentEl && data.image_url) {
+        const imgHtml = `<div class="mt-3"><img src="${data.image_url}" alt="Generated image" class="rounded-lg max-w-md"/></div>`
+        contentEl.innerHTML += imgHtml
+        this.scrollToBottom()
+      }
     }
   }
 
@@ -412,11 +428,24 @@ export default class extends Controller<HTMLElement> {
     utterance.rate = 1.0
     utterance.pitch = 1.0
 
-    // Try to get an English voice
+    // Try to select a male voice
     const voices = window.speechSynthesis.getVoices()
-    const englishVoice = voices.find(v => v.lang.startsWith('en'))
-    if (englishVoice) {
-      utterance.voice = englishVoice
+    const maleVoice = voices.find((v: any) => 
+      v.name.includes('Male') || 
+      v.name.includes('David') || 
+      v.name.includes('Mark') || 
+      v.name.includes('James') ||
+      v.name.includes('John') ||
+      v.name.includes('Paul')
+    )
+    if (maleVoice) {
+      utterance.voice = maleVoice
+    } else {
+      // Fallback to any English voice
+      const englishVoice = voices.find((v: any) => v.lang.startsWith('en'))
+      if (englishVoice) {
+        utterance.voice = englishVoice
+      }
     }
 
     utterance.onerror = (e) => {
@@ -561,7 +590,7 @@ export default class extends Controller<HTMLElement> {
             </path>
           </svg>
         </div>
-        <h3 class="text-xl font-bold text-primary mb-2">AI Marketing Assistant</h3>
+        <h3 class="text-xl font-bold text-primary mb-2">Otto-Pilot</h3>
         <p class="text-muted text-center max-w-md mb-6">
           Ask me anything about content creation, scheduling, or marketing strategy
         </p>

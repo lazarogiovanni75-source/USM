@@ -178,9 +178,20 @@
               <%= f.label :budget, class: "block text-sm font-medium text-primary mb-1" %>
               <%= f.number_field :budget, class: "form-input w-full", step: 0.01, placeholder: "Campaign budget" %>
             </div>
-            <div>
-              <%= f.label :content_count, class: "block text-sm font-medium text-primary mb-1" %>
-              <%= f.number_field :content_count, class: "form-input w-full", placeholder: "Number of content pieces" %>
+            <div class="grid grid-cols-3 gap-4">
+              <div>
+                <%= f.label :content_count, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.number_field :content_count, class: "form-input w-full", placeholder: "Content pieces" %>
+              </div>
+              <div>
+                <%= f.label :video_count, "Videos (10s)", class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.number_field :video_count, class: "form-input w-full", placeholder: "2" %>
+                <p class="text-xs text-muted mt-1">10-second videos</p>
+              </div>
+              <div>
+                <%= f.label :image_count, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.number_field :image_count, class: "form-input w-full", placeholder: "3" %>
+              </div>
             </div>
           </div>
         </div>

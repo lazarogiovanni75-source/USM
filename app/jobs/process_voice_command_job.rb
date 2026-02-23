@@ -342,7 +342,7 @@ class ProcessVoiceCommandJob < ApplicationJob
   end
 
   def generate_ai_response(prompt, user)
-    system_prompt = "You are Otto, a friendly AI assistant for a social media marketing platform. Help the user with their social media questions. Be concise and helpful."
+    system_prompt = "You are Otto-Pilot, a friendly marketing assistant."
 
     begin
       response = ''

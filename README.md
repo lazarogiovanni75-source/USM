@@ -1,4 +1,29 @@
-nope
+ITASK: Stabilize ChatGPT-Like Conversation Flow
+1. Disable Autopilot Interference
+In ConversationOrchestrator (or wherever chat messages are processed), ensure AiAutopilotService does not run automatically during normal chat.
+It should only run when explicitly triggered.
+Goal: Only user messages → OpenAI → assistant responses. No hidden injections.
+2. Expand Conversation History
+Increase MAX_HISTORY_MESSAGES from 30 → 50 (or 50–100 for longer threads).
+Ensure messages are ordered ascending (created_at: :asc).
+Only skip messages with role == 'tool'.
+3. Verify Single OpenAI Call
+Confirm each user message triggers exactly one OpenAI chat call.
+Do not make additional classification, rewriting, or autopilot calls during a chat message.
+4. Logging (Temporary)
+Log every OpenAI request:
+Ruby
+Copy code
+Rails.logger.info "Chat message array: #{messages.to_json}"
+Rails.logger.info "Calling OpenAI model: #{MODEL_NAME}, temperature: #{CHAT_TEMPERATURE}"
+Purpose: Confirm message array and model settings for debugging.
+5. Testing Checklist
+Send 5–10 messages in a row.
+Verify assistant references previous messages correctly.
+Confirm no duplicate or out-of-context responses.
+Ensure streaming still works correctly.
+Do not add new features, tool calling, or media generation changes yet.
+Focus solely on stabilizing chat flow and conversation memory.nope
 
 qi opened tgat url in my  rowser and it gave me rhe same shitstripe webhookhello everything is showing green EVERYTHING pastcloselyclosely over these 6 shelloa9creenshotscreenshots. is already at 3000 of those variables were already in there lipfm_live_4NJHWqt7cUTpmVkXAqxCRa# ClackyAI Rails7 starter
 

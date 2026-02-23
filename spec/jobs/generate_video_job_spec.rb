@@ -5,7 +5,7 @@ RSpec.describe GenerateVideoJob, type: :job do
     it 'executes successfully with valid arguments' do
       # Create a user and video for testing
       user = create(:user)
-      video = create(:video, user: user)
+      video = create(:video, :pending, user: user)
 
       # Stub the PoyoService to avoid real API calls
       poyo_service_double = instance_double(PoyoService)
@@ -29,7 +29,7 @@ RSpec.describe GenerateVideoJob, type: :job do
 
       # Verify video was updated
       video.reload
-      expect(video.status).to eq('completed')
+      expect(video.status_completed?).to eq(true)
       expect(video.video_url).to eq('http://example.com/video.mp4')
     end
   end

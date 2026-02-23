@@ -1,9 +1,35 @@
 class GenerateVideoJob < ApplicationJob
   queue_as :default
 
-  def perform(video_id, topic)
-    video = Video.find(video_id)
-    user = video.user
+  # Accept either keyword arguments (preferred) or positional arguments for backward compatibility
+  # Keyword usage: GenerateVideoJob.perform_later(prompt: "...", user_id: 1, conversation_id: 1)
+  # Positional usage: GenerateVideoJob.perform_later(video.id, "topic")
+  def perform(*args, **kwargs)
+    # Handle keyword arguments
+    if kwargs.present?
+      prompt = kwargs[:prompt]
+      user_id = kwargs[:user_id]
+      conversation_id = kwargs[:conversation_id]
+      
+      user = User.find_by(id: user_id)
+      conversation = AiConversation.find_by(id: conversation_id)
+      
+      # Create a new Video record for this generation
+      video = Video.create!(
+        user: user,
+        title: prompt,
+        status: 'pending'
+      )
+      
+      video_id = video.id
+      topic = prompt
+    else
+      # Handle positional arguments (backward compatibility)
+      video_id = args[0]
+      topic = args[1]
+      video = Video.find(video_id)
+      user = video.user
+    end
 
     # Validate topic - use default if empty or nil
     topic = topic.presence || "social media content"

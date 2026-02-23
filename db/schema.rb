@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_20_234845) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_21_132330) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -239,6 +239,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_20_234845) do
     t.decimal "estimated_cost", precision: 10, scale: 2, default: "0.0"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "videos_generated", default: 0
     t.index ["campaign_id"], name: "index_campaign_usages_on_campaign_id"
   end
 
@@ -277,6 +278,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_20_234845) do
     t.datetime "last_optimized_at"
     t.integer "consecutive_decline_cycles", default: 0
     t.integer "published_posts_count", default: 0
+    t.integer "video_count", default: 2
+    t.integer "image_count", default: 3
     t.index ["client_id"], name: "index_campaigns_on_client_id"
     t.index ["status"], name: "index_campaigns_on_status"
     t.index ["strategy"], name: "index_campaigns_on_strategy", using: :gin

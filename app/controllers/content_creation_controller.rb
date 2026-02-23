@@ -199,6 +199,9 @@ class ContentCreationController < ApplicationController
       status: 'draft'
     )
 
+    # Trigger automation for draft_created
+    trigger_automation('draft_created', draft)
+
     @draft = draft
     flash[:notice] = 'Draft created successfully'
     redirect_to draft_path(draft)
@@ -284,6 +287,9 @@ class ContentCreationController < ApplicationController
 
     # Update draft status
     draft.update(status: 'published')
+
+    # Trigger automation for content_published
+    trigger_automation('content_published', content)
 
     @content = content
     flash[:notice] = 'Content published successfully'
@@ -398,5 +404,14 @@ Please return only the content body without any introduction or explanation."
     else
       { success: false, error: response[:error] || 'LLM generation failed' }
     end
+  end
+
+  def trigger_automation(event_type, content)
+    return unless current_user
+    
+    service = AutomationRulesService.new(current_user)
+    service.execute_rules(event_type, { content: content, draft: content, user: current_user })
+  rescue => e
+    Rails.logger.error "[Automation] Error triggering #{event_type}: #{e.message}"
   end
 end

@@ -19,6 +19,7 @@ import PwaInstallController from "./pwa_install_controller"
 import MobileWebviewController from "./mobile_webview_controller"
 import ScheduledPostsController from "./scheduled_posts_controller"
 import VoiceFloatController from "./voice_float_controller"
+import SimpleVoiceController from "./simple_voice_controller"
 import VoiceCommandToggleController from "./voice_command_toggle_controller"
 import VideoProgressController from "./video_progress_controller"
 import AiChatController from "./ai_chat_controller"
@@ -54,6 +55,7 @@ application.register("pwa-install", PwaInstallController)
 application.register("mobile-webview", MobileWebviewController)
 application.register("scheduled-posts", ScheduledPostsController)
 application.register("voice-float", VoiceFloatController)
+application.register("simple-voice", SimpleVoiceController)
 application.register("voice-command-toggle", VoiceCommandToggleController)
 application.register("video-progress", VideoProgressController)
 application.register("ai-chat", AiChatController)

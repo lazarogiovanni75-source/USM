@@ -169,6 +169,8 @@ class Campaign < ApplicationRecord
     self.content_pillars ||= []
     self.hashtag_set ||= []
     self.mentions ||= []
+    self.video_count ||= 2
+    self.image_count ||= 3
   end
   
   def broadcast_status

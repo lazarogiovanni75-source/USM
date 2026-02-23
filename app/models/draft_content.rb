@@ -11,6 +11,11 @@ class DraftContent < ApplicationRecord
   validates :status, presence: true, inclusion: { in: %w[draft reviewing approved published pending failed] }
   
   default_scope { order(updated_at: :desc) }
+
+  # Alias content as body for compatibility with Content model views
+  def body
+    content
+  end
   
   # Get the best URL for displaying media (CloudFront, ActiveStorage, or legacy URL)
   def media_display_url

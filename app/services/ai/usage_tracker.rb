@@ -7,6 +7,7 @@ module Ai
     # Cost constants (in USD)
     LLM_TOKEN_COST_PER_1K = 0.002  # $2 per 1M tokens
     IMAGE_GENERATION_COST = 0.04   # $0.04 per image
+    VIDEO_GENERATION_COST = 0.50   # $0.50 per video (10-second)
     POSTFORME_API_CALL_COST = 0.001 # $0.001 per API call
 
     class << self
@@ -31,6 +32,19 @@ module Ai
         usage = find_or_initialize_usage(campaign)
         usage.images_generated += count.to_i
         usage.estimated_cost += calculate_image_cost(count)
+        usage.save!
+      end
+
+      # Record video generation
+      # @param campaign [Campaign]
+      # @param count [Integer] Number of videos generated
+      def track_videos_generated(campaign, count = 1)
+        return unless campaign.present? && count.to_i.positive?
+
+        usage = find_or_initialize_usage(campaign)
+        usage.videos_generated ||= 0
+        usage.videos_generated += count.to_i
+        usage.estimated_cost += calculate_video_cost(count)
         usage.save!
       end
 
@@ -69,6 +83,7 @@ module Ai
         {
           llm_tokens: usage.llm_tokens,
           images_generated: usage.images_generated,
+          videos_generated: usage.videos_generated || 0,
           posts_published: usage.posts_published,
           api_calls: usage.api_calls,
           estimated_cost: usage.estimated_cost.to_f,
@@ -129,6 +144,10 @@ module Ai
         (count.to_i * IMAGE_GENERATION_COST).round(4)
       end
 
+      def calculate_video_cost(count)
+        (count.to_i * VIDEO_GENERATION_COST).round(4)
+      end
+
       def calculate_api_call_cost(count)
         (count.to_i * POSTFORME_API_CALL_COST).round(4)
       end
@@ -137,6 +156,7 @@ module Ai
         {
           llm_tokens: 0,
           images_generated: 0,
+          videos_generated: 0,
           posts_published: 0,
           api_calls: 0,
           estimated_cost: 0.0,

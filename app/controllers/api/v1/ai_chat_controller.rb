@@ -32,14 +32,12 @@ module Api
         # It handles: saving messages, LLM calls, tool execution, streaming, completion
         # Block receives: { delta: "...", conversation_id: ... }
         begin
-          ConversationOrchestrator.run(
+          ConversationOrchestrator.process_message(
+            user: current_user,
             conversation_id: conversation.id,
             content: message_content,
             modality: "text",
-            system_prompt: system_prompt,
-            enable_tools: true,
-            user: current_user,
-            stream_name: stream_name
+            stream_channel: stream_name
           ) do |chunk_data|
             # chunk_data is now a Hash: { delta: "...", conversation_id: ... }
             delta = chunk_data[:delta] || chunk_data[:content] || ""
@@ -277,7 +275,7 @@ module Api
 
       def build_system_prompt(conversation)
         <<~PROMPT
-          You are Otto, a helpful AI assistant for a marketing platform.
+          You are Otto-Pilot, a helpful marketing assistant.
           Your role is to help users with marketing tasks like:
           - Creating marketing campaigns
           - Generating social media content

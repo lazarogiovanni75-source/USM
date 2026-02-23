@@ -247,6 +247,8 @@ Rails.application.routes.draw do
       get 'optimize'
       post 'approve'
       post 'reject'
+      post 'duplicate'
+      post 'generate_variation'
     end
   end
   resources :social_accounts
@@ -346,6 +348,13 @@ Rails.application.routes.draw do
       get 'search'
     end
   end
+
+  # Route for DraftContent preview
+  resources :draft_contents, only: [] do
+    member do
+      get 'preview'
+    end
+  end
   
   # Content Template System
   resources :content_templates, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
@@ -371,6 +380,8 @@ Rails.application.routes.draw do
     end
     collection do
       get 'statistics'
+      post 'create_from_template'
+      post 'bulk_actions'
     end
   end
   
@@ -443,9 +454,6 @@ Rails.application.routes.draw do
       get 'stats'
     end
   end
-  
-  # Zapier Webhooks
-  resources :zapier_webhooks, only: [:index, :show, :create, :update, :destroy]
   
   # Content Publishing
   resources :publish_queues, only: [:index, :show]

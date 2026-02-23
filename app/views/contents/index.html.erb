@@ -70,7 +70,7 @@
           <% all_items = all_items.sort_by { |c| c.try(:updated_at) || c.try(:created_at) || Time.now }.reverse %>
           <% if all_items.any? %>
             <% all_items.each do |item| %>
-              <% is_draft = item.is_a?(Draft) %>
+              <% is_draft = item.is_a?(DraftContent) %>
               <div class="p-6 hover:bg-gray-50">
                 <div class="flex items-start space-x-4">
                   <div class="flex-1 min-w-0">

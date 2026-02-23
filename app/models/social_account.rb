@@ -60,16 +60,6 @@ class SocialAccount < ApplicationRecord
     buffer_profile_id
   end
 
-  def buffer_access_token_for_platform
-    return nil unless buffer_access_token.present?
-
-    buffer_access_token
-  end
-
-  def configured_for_buffer?
-    buffer_profile_id.present? && buffer_access_token.present?
-  end
-
   # ==================== OAuth Token Encryption ====================
 
   def access_token

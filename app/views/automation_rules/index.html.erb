@@ -86,17 +86,14 @@
                 <div class="flex-1">
                   <div class="flex items-center mb-2">
                     <h3 class="text-lg font-medium text-primary mr-3"><%= rule.name %></h3>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= rule.active? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' %>">
-                      <div class="w-1.5 h-1.5 rounded-full mr-1.5 <%= rule.active? ? 'bg-green-400' : 'bg-gray-400' %>"></div>
-                      <%= rule.active? ? 'Active' : 'Inactive' %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= rule.is_active? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' %>">
+                      <div class="w-1.5 h-1.5 rounded-full mr-1.5 <%= rule.is_active? ? 'bg-green-400' : 'bg-gray-400' %>"></div>
+                      <%= rule.is_active? ? 'Active' : 'Inactive' %>
                     </span>
                   </div>
-                  <p class="text-sm text-muted mb-3"><%= rule.description %></p>
+                  <p class="text-sm text-muted mb-3"><%= rule.trigger_type %></p>
                   <div class="flex flex-wrap gap-2">
                     <span class="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary"><%= rule.action_type&.gsub('_', ' ')&.titleize %></span>
-                    <% rule.trigger_events.each do |event| %>
-                      <span class="px-2 py-1 rounded-full text-xs bg-surface-elevated text-muted"><%= event&.gsub('_', ' ')&.titleize %></span>
-                    <% end %>
                   </div>
                 </div>
                 <div class="flex items-center gap-2 ml-4">

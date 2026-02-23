@@ -24,7 +24,7 @@
           </nav>
         </div>
         <div class="flex items-center space-x-4">
-          <%= link_to "Back", @content, class: "bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium" %>
+          <%= link_to "Back", "/contents/#{@content.id}", class: "bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium" %>
           <%= link_to "Schedule", "#", class: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium" %>
         </div>
       </div>
@@ -174,7 +174,7 @@
               <% ['instagram', 'twitter', 'linkedin', 'facebook'].each do |platform| %>
                 <% next if platform == @platform %>
                 <%= link_to "Preview for #{platform.titleize}", 
-                            preview_content_path(@content, platform: platform), 
+                            "/contents/#{@content.id}/preview?platform=#{platform}", 
                             class: "block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md" %>
               <% end %>
             </div>
@@ -187,14 +187,14 @@
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
             <div class="space-y-3">
               <%= button_to "Approve Content", 
-                            approve_content_path(@content), 
+                            "/contents/#{@content.id}/approve", 
                             method: :post,
                             class: "w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium" %>
               <%= link_to "Edit Content", 
-                          edit_content_path(@content), 
+                          "/contents/#{@content.id}/edit", 
                           class: "w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium text-center block" %>
               <%= link_to "Generate Variation", 
-                          generate_variation_content_path(@content), 
+                          "/contents/#{@content.id}/generate_variation", 
                           method: :post,
                           class: "w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium text-center block" %>
             </div>
