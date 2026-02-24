@@ -74,22 +74,20 @@ curl -X POST https://your-railway-app.up.railway.app/api/ai/generate-content \
 
 ---
 
-## 🎬 Shotstack (Video Generation)
+## 🎬 Poyo.ai (Video Generation)
 
-**Website**: https://shotstack.io
+**Website**: https://poyo.ai
 
 ### Setup Steps
-1. [ ] Create Shotstack account or sign in
+1. [ ] Create Poyo.ai account or sign in
 2. [ ] Go to Dashboard > API
 3. [ ] Copy your API key
-4. [ ] Use "stage" environment for testing (free tier)
-5. [ ] Use "prod" environment for production
 
 ### Environment Variables
 ```bash
 # In Railway dashboard
-SHOTSTACK_API_KEY=your_api_key_here
-SHOTSTACK_ENVIRONMENT=stage  # or "prod" for production
+POYO_API_KEY=your_api_key_here
+POYO_BASE_URL=https://api.poyo.ai  # default
 ```
 
 ### Verification
@@ -158,14 +156,13 @@ MAKEAI_WEBHOOK_URL=https://hook.make.com/your_scenario_id
 ```
 ELEVENLABS_API_KEY=xi_xxxxxxxxxxxxxxxx
 OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx
-SHOTSTACK_API_KEY=xxxxxxxxxxxxxxxx
+POYO_API_KEY=xxxxxxxxxxxxxxxx
 MAKEAI_API_KEY=xxxxxxxxxxxxxxxx
 ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/xxxxx/yyyyy/
 MAKEAI_WEBHOOK_URL=https://hook.make.com/xxxxx
 PORT=3000
 NODE_ENV=production
 ALLOWED_ORIGINS=https://your-thread.clacky.app,http://localhost:3000
-SHOTSTACK_ENVIRONMENT=stage
 ELEVENLABS_VOICE_ID=pNInz6obpgDQGcFmaJgB
 OPENAI_MODEL=gpt-4o-mini
 ```
@@ -194,10 +191,10 @@ curl -X POST https://your-railway-app.up.railway.app/api/ai/generate-content \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Write a LinkedIn post about productivity", "platform": "linkedin"}'
 
-# Shotstack
+# Poyo.ai
 curl -X POST https://your-railway-app.up.railway.app/api/video/generate \
   -H "Content-Type: application/json" \
-  -d '{"script": "Amazing product launch!", "style": "social"}'
+  -d '{"prompt": "Amazing product launch!"}'
 ```
 
 ---
@@ -223,11 +220,11 @@ curl -X POST https://your-railway-app.up.railway.app/api/video/generate \
 | 401 Invalid key | Regenerate API key |
 | 429 Rate limit | Use gpt-4o-mini or wait |
 
-### Shotstack Issues
+### Poyo.ai Issues
 | Error | Solution |
 |-------|----------|
-| Render timeout | Videos take 1-2 minutes |
-| Stage vs Prod | Use "stage" for testing |
+| Video generation failed | Check API key and quota |
+| Rate limit | Wait and retry |
 
 ---
 
@@ -236,7 +233,7 @@ curl -X POST https://your-railway-app.up.railway.app/api/video/generate \
 - **ClackyAI**: contact@clacky.ai
 - **ElevenLabs**: https://elevenlabs.io/support
 - **OpenAI**: https://help.openai.com
-- **Shotstack**: https://shotstack.io/support
+- **Poyo.ai**: https://poyo.ai/support
 - **Zapier**: https://zapier.com/help
 - **Make**: https://make.com/help
 - **Railway**: https://discord.gg/railway

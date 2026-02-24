@@ -6,7 +6,7 @@ Your Railway backend at `https://clacky-backend-clean-production.up.railway.app`
 
 1. **OpenAI** - AI content generation
 2. **ElevenLabs** - Text-to-speech voice generation
-3. **Shotstack** - Video generation
+3. **Poyo.ai** - Video generation (Sora 2)
 4. **Make.com or Zapier** - Automation workflows
 
 ---
@@ -18,7 +18,7 @@ Add these in your Railway project's **Variables** section:
 ```bash
 ELEVENLABS_API_KEY=your_elevenlabs_key_here
 OPENAI_API_KEY=your_openai_key_here
-SHOTSTACK_API_KEY=your_shotstack_key_here
+POYO_API_KEY=your_poyo_api_key
 MAKEAI_API_KEY=your_makeai_key_here
 ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/xxxxx/yyyyy/
 ```
@@ -97,36 +97,22 @@ Value: pNInz6obpgDQGcFmaJgB  (default: Adam voice)
 
 ---
 
-## 3. Shotstack API Key
+## 3. Poyo.ai API Key (Video Generation - Sora 2)
 
-**What it's for:** Automated video generation and editing with templates.
+**What it's for:** AI video generation using OpenAI Sora 2 models.
 
 ### Steps to Get API Key:
 
-1. Go to **https://shotstack.io**
+1. Go to **https://poyo.ai**
 2. Sign up for an account
 3. Go to **Dashboard** → **API Keys**
-4. Copy your **Stage API Key** (for testing)
-5. Later, copy **Production API Key** when ready to go live
-
-### Pricing:
-- **Developer (Free):** 20 videos/month in sandbox
-- **Starter:** $49/month - 100 videos
-- **Professional:** $199/month - 500 videos
-- **Enterprise:** Custom pricing
+4. Copy your API key
 
 ### Railway Setup:
 ```
-Variable: SHOTSTACK_API_KEY
-Value: your_shotstack_stage_key_here
+Variable: POYO_API_KEY
+Value: your_poyo_api_key_here
 ```
-
-```
-Variable: SHOTSTACK_ENVIRONMENT
-Value: stage  (use "prod" when ready for production)
-```
-
-**Note:** Start with `stage` environment - it's free for testing!
 
 ---
 
@@ -231,7 +217,7 @@ railway link
 # Add variables
 railway variables set OPENAI_API_KEY=sk-proj-...
 railway variables set ELEVENLABS_API_KEY=a1b2c3...
-railway variables set SHOTSTACK_API_KEY=your_key...
+railway variables set POYO_API_KEY=your_key...
 railway variables set MAKEAI_API_KEY=your_key...
 
 # View all variables
@@ -302,23 +288,21 @@ curl https://clacky-backend-clean-production.up.railway.app/api/voices
 
 **Expected:** JSON array of available ElevenLabs voices.
 
-### 5. Test Shotstack Video Generation
+### 5. Test Poyo.ai Video Generation
 
 ```bash
 curl -X POST https://clacky-backend-clean-production.up.railway.app/api/video/generate \
   -H "Content-Type: application/json" \
-  -d '{
-    "script": "Welcome to our social media platform",
-    "style": "social"
-  }'
+  -d '{"prompt": "Test video"}'
 ```
 
 **Expected Response:**
 ```json
 {
   "success": true,
-  "renderId": "abc-123-def",
-  "status": "queued"
+  "jobId": "abc-123-def",
+  "status": "pending",
+  "message": "Video generation started"
 }
 ```
 
@@ -395,7 +379,7 @@ railway variables set ALLOWED_ORIGINS=https://your-thread.clacky.app
 |---------|-----------|---------------|
 | OpenAI | https://platform.openai.com | https://platform.openai.com/docs |
 | ElevenLabs | https://elevenlabs.io/app | https://elevenlabs.io/docs |
-| Shotstack | https://dashboard.shotstack.io | https://shotstack.io/docs |
+| Poyo.ai | https://poyo.ai | https://poyo.ai/docs |
 | Make.com | https://make.com | https://www.make.com/en/help |
 | Zapier | https://zapier.com/app/dashboard | https://zapier.com/help |
 | Railway | https://railway.app/dashboard | https://docs.railway.app |

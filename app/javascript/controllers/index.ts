@@ -33,6 +33,7 @@ import CampaignWorkflowController from "./campaign_workflow_controller"
 import ContinuousVoiceController from "./continuous_voice_controller"
 import VoiceChatController from "./voice_chat_controller"
 import PolicySettingsController from "./policy_settings_controller"
+import StrategyTrendController from "./strategy_trend_controller"
 
 const application = Application.start()
 
@@ -69,5 +70,6 @@ application.register("campaign-workflow", CampaignWorkflowController)
 application.register("continuous-voice", ContinuousVoiceController)
 application.register("voice-chat", VoiceChatController)
 application.register("policy-settings", PolicySettingsController)
+application.register("strategy-trend", StrategyTrendController)
 
 window.Stimulus = application

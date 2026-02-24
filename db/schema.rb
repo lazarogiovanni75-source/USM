@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_21_132330) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_24_010254) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -740,6 +740,22 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_21_132330) do
     t.index ["campaign_id", "social_account_id"], name: "idx_on_campaign_id_social_account_id_c51727054e", unique: true
     t.index ["campaign_id"], name: "index_social_accounts_campaigns_on_campaign_id"
     t.index ["social_account_id"], name: "index_social_accounts_campaigns_on_social_account_id"
+  end
+
+  create_table "strategy_histories", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "focus_area", default: "comprehensive"
+    t.jsonb "metrics"
+    t.jsonb "strategy"
+    t.jsonb "insights"
+    t.text "recommendations"
+    t.jsonb "kpis_tracked"
+    t.integer "overall_score", default: 0
+    t.string "generated_by", default: "manual"
+    t.datetime "generated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_strategy_histories_on_user_id"
   end
 
   create_table "subscription_plans", force: :cascade do |t|

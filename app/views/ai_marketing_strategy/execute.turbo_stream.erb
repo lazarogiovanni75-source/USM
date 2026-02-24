@@ -1,0 +1,52 @@
+<% if @created_posts.any? %>
+  <turbo-stream action="replace" target="analysis-results">
+    <template>
+      <div id="analysis-results" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+            <%= lucide_icon "check-circle", class: "w-5 h-5 text-success" %>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-success">Strategy Executed Successfully!</h3>
+            <p class="text-sm text-muted">Created <%= @created_posts.count %> scheduled draft posts</p>
+          </div>
+        </div>
+        
+        <div class="space-y-3 mt-4">
+          <% @created_posts.each do |post| %>
+            <div class="flex items-center justify-between p-3 bg-surface-elevated rounded-xl">
+              <div>
+                <p class="text-sm font-medium text-primary line-clamp-1"><%= post.body %></p>
+                <p class="text-xs text-muted">Scheduled: <%= post.scheduled_at&.strftime("%B %d at %I:%M %p") || 'Not scheduled' %></p>
+              </div>
+              <span class="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Draft</span>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="mt-4 flex gap-2">
+          <%= link_to scheduled_posts_path, class: "btn-primary cursor-pointer text-sm" do %>
+            <%= lucide_icon "calendar", class: "w-4 h-4 mr-2" %>
+            View Scheduled Posts
+          <% end %>
+        </div>
+      </div>
+    </template>
+  </turbo-stream>
+<% else %>
+  <turbo-stream action="replace" target="analysis-results">
+    <template>
+      <div id="analysis-results" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center">
+            <%= lucide_icon "alert-circle", class: "w-5 h-5 text-error" %>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-error">No Content Generated</h3>
+            <p class="text-sm text-muted">Could not generate content ideas from this strategy</p>
+          </div>
+        </div>
+      </div>
+    </template>
+  </turbo-stream>
+<% end %>

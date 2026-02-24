@@ -21,3 +21,11 @@ cleanup_good_jobs:
 #   cron: "0 2 * * 0"  # Every Sunday at 2 AM
 #   class: "WeeklyCleanupJob"
 #   args: [{ batch_size: 500 }]
+
+# Weekly Strategy Analysis - Every Sunday at 6 AM
+weekly_strategy_analysis:
+  cron: "0 6 * * 0"  # Every Sunday at 6 AM
+  class: "WeeklyStrategyAnalysisJob"
+  queue: "default"
+  description: "Generate AI marketing strategy for all users weekly"
+  args:

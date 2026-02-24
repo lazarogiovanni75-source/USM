@@ -304,6 +304,9 @@ Rails.application.routes.draw do
       post 'analyze'
       post 'generate_report'
       post 'ask_ai'
+      get 'history'
+      post 'execute'
+      get 'trend'
     end
   end
   

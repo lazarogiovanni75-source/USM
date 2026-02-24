@@ -48,4 +48,43 @@ class AiMarketingStrategyController < ApplicationController
     # Return HTML fragment for Turbo Stream update
     render partial: "ai_answer", locals: { answer: response[:content] }
   end
+  
+  def history
+    @analyzer = MarketingStrategyAnalyzerService.new(current_user)
+    @histories = @analyzer.get_history(limit: 20)
+  end
+  
+  def trend
+    @analyzer = MarketingStrategyAnalyzerService.new(current_user)
+    @trend = @analyzer.get_trend
+    
+    respond_to do |format|
+      format.json { render json: @trend }
+    end
+  end
+  
+  def execute
+    @analyzer = MarketingStrategyAnalyzerService.new(current_user)
+    focus_area = params[:focus_area] || 'comprehensive'
+    
+    # Generate strategy report
+    report = @analyzer.generate_strategy_report(focus_area)
+    
+    # Save to history
+    @analyzer.save_to_history(focus_area: focus_area, generated_by: 'manual')
+    
+    # Execute recommendations - create scheduled posts
+    if report[:content_ideas].present?
+      @created_posts = @analyzer.execute_recommendations(
+        content_ideas: report[:content_ideas],
+        schedule_options: { start_time: 1.day.from_now, interval_days: 1 }
+      )
+    else
+      @created_posts = []
+    end
+    
+    @report = report
+    
+    render "execute.turbo_stream.erb"
+  end
 end

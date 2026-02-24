@@ -4,6 +4,9 @@ class User < ApplicationRecord
 
   has_secure_password validations: false
 
+  # Strategy History
+  has_many :strategy_histories, dependent: :destroy
+
   # Agency Staff Roles
   AGENCY_ROLES = %w[admin editor viewer].freeze
   validates :agency_role, inclusion: { in: AGENCY_ROLES }, if: -> { agency_role.present? }

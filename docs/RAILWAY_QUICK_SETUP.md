@@ -36,17 +36,13 @@ Value: [your-key-here]
 - Get key: https://elevenlabs.io → Profile → API Key
 - Click "Copy" button
 
-### Shotstack (Required)
+### Poyo.ai (Required - Video Generation)
 ```
-Variable: SHOTSTACK_API_KEY
+Variable: POYO_API_KEY
 Value: [your-key-here]
 ```
-```
-Variable: SHOTSTACK_ENVIRONMENT
-Value: stage
-```
-- Get key: https://dashboard.shotstack.io → API Keys
-- Use "Stage" key for testing (free)
+- Get key: https://poyo.ai → Dashboard → API Keys
+- Uses Sora 2 for AI video generation
 
 ### Make.com or Zapier (Optional - pick one)
 
@@ -111,11 +107,11 @@ curl -X POST https://clacky-backend-clean-production.up.railway.app/api/voice/ge
   --output test.mp3
 ```
 
-### Test Shotstack
+### Test Poyo.ai
 ```bash
 curl -X POST https://clacky-backend-clean-production.up.railway.app/api/video/generate \
   -H "Content-Type: application/json" \
-  -d '{"script":"Test video"}'
+  -d '{"prompt":"Test video"}'
 ```
 
 ---
@@ -125,7 +121,7 @@ curl -X POST https://clacky-backend-clean-production.up.railway.app/api/video/ge
 Your Railway backend is now connected to:
 - ✅ OpenAI (AI content generation)
 - ✅ ElevenLabs (voice generation)
-- ✅ Shotstack (video generation)
+- ✅ Poyo.ai (video generation)
 - ✅ Make.com/Zapier (automation)
 
 ClackyAI → Railway → Third-Party APIs ✨
@@ -160,7 +156,7 @@ ClackyAI → Railway → Third-Party APIs ✨
 
 - OpenAI: $5 free credit (new users)
 - ElevenLabs: 10,000 chars/month free
-- Shotstack: 20 videos/month free (stage environment)
+- Poyo.ai: Check poyo.ai for pricing
 - Make.com: 1,000 operations/month free
 - Zapier: 100 tasks/month free
 - Railway: $5/month credit included

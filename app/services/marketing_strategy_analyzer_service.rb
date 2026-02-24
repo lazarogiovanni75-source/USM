@@ -59,6 +59,83 @@ class MarketingStrategyAnalyzerService
     }
   end
   
+  # Save strategy to history
+  # @param focus_area [String] Focus area of the strategy
+  # @param generated_by [String] Source of generation (manual, auto_weekly)
+  # @return [StrategyHistory] Saved record
+  def save_to_history(focus_area: 'comprehensive', generated_by: 'manual')
+    return nil unless user
+    
+    metrics = fetch_user_metrics
+    insights = generate_ai_insights(metrics, 'month')
+    strategy = create_strategy_recommendations(metrics, insights, 'month')
+    
+    StrategyHistory.create!(
+      user: user,
+      focus_area: focus_area,
+      metrics: metrics,
+      strategy: strategy,
+      insights: insights,
+      recommendations: strategy[:key_recommendations].join("\n"),
+      kpis_tracked: strategy[:kpis_to_track],
+      overall_score: calculate_overall_score(metrics),
+      generated_by: generated_by,
+      generated_at: Time.current
+    )
+  end
+  
+  # Get strategy history for user
+  # @param limit [Integer] Number of records to return
+  # @return [Array<StrategyHistory>] Strategy history records
+  def get_history(limit: 10)
+    return [] unless user
+    
+    user.strategy_histories.recent.limit(limit)
+  end
+  
+  # Get strategy trend over time
+  # @return [Hash] Trend data
+  def get_trend
+    return { trend: 'no_data', change_percent: 0 } unless user
+    
+    histories = user.strategy_histories.recent.limit(4).order(generated_at: :asc)
+    return { trend: 'no_data', change_percent: 0 } if histories.count < 2
+    
+    scores = histories.pluck(:overall_score)
+    first = scores.first
+    last = scores.last
+    
+    change_percent = first > 0 ? ((last - first).to_f / first * 100).round(1) : 0
+    
+    { trend: change_percent > 5 ? 'improving' : change_percent < -5 ? 'declining' : 'stable', change_percent: change_percent, scores: scores }
+  end
+  
+  # Execute recommendations - create scheduled posts from content ideas
+  # @param content_ideas [Array<String>] List of content ideas
+  # @param schedule_options [Hash] Scheduling options
+  # @return [Array<ScheduledPost>] Created posts
+  def execute_recommendations(content_ideas:, schedule_options: {})
+    return [] unless user && content_ideas.present?
+    
+    created_posts = []
+    
+    content_ideas.first(5).each_with_index do |idea, index|
+      scheduled_time = calculate_scheduled_time(index, schedule_options)
+      
+      post = ScheduledPost.create!(
+        user: user,
+        body: idea,
+        scheduled_at: scheduled_time,
+        status: 'draft',
+        metadata: { source: 'strategy_execution', idea: idea }
+      )
+      
+      created_posts << post
+    end
+    
+    created_posts
+  end
+  
   private
   
   attr_reader :user
@@ -310,5 +387,12 @@ class MarketingStrategyAnalyzerService
   
   def min(value, max)
     value < max ? value : max
+  end
+  
+  def calculate_scheduled_time(index, options)
+    base_time = options[:start_time] || 1.day.from_now
+    interval = options[:interval_days] || 1
+    
+    base_time + (index * interval.days)
   end
 end

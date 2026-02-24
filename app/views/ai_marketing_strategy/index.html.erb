@@ -25,6 +25,22 @@
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
+          <!-- History Link -->
+          <%= link_to history_ai_marketing_strategy_path,
+              class: "btn-ghost cursor-pointer" do %>
+            <%= lucide_icon "history", class: "w-4 h-4 mr-2" %>
+            History
+          <% end %>
+          
+          <!-- Execute Strategy Button -->
+          <%= button_to execute_ai_marketing_strategy_path(focus_area: 'comprehensive'),
+              method: :post,
+              class: "btn-primary cursor-pointer",
+              data: { confirm: "This will create 5 scheduled draft posts based on AI recommendations. Continue?" } do %>
+            <%= lucide_icon "play", class: "w-4 h-4 mr-2" %>
+            Execute Strategy
+          <% end %>
+          
           <!-- Time Range Selector -->
           <%= form_with url: analyze_ai_marketing_strategy_path, method: :post, local: true, class: "flex items-center gap-2" do |f| %>
             <%= f.select :time_range, 
@@ -234,6 +250,19 @@
               <p class="text-sm text-muted">Run analysis to see KPI targets</p>
             </div>
           <% end %>
+        </div>
+        
+        <!-- Strategy Trend -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "line-chart", class: "w-5 h-5 text-primary" %>
+            Strategy Performance Trend
+          </h3>
+          <div id="strategy-trend" data-controller="strategy-trend" data-strategy-trend-url="<%= trend_ai_marketing_strategy_path %>">
+            <div class="flex items-center justify-center h-32 text-muted text-sm">
+              <span class="animate-pulse">Loading trend data...</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
