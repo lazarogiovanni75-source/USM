@@ -16,9 +16,33 @@
     </div>
   </div>
 
+  <!-- Promo Code Section -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-gradient-to-r from-purple-600/20 to-indigo-600/20 rounded-2xl p-6 border border-purple-500/30">
+      <div class="flex flex-col sm:flex-row items-center gap-4">
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-foreground">Have a Promo Code?</h3>
+          <p class="text-text-secondary text-sm">Enter your promo code to get exclusive discounts</p>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" 
+                 id="pricing-promo-code-input"
+                 placeholder="Enter promo code" 
+                 class="px-4 py-2 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 uppercase w-40 sm:w-48">
+          <button type="button" 
+                  id="pricing-apply-promo-btn"
+                  class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-xl transition-colors">
+            Apply
+          </button>
+        </div>
+        <div id="pricing-promo-message" class="text-sm hidden"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Dynamic Plans from Database -->
   <% if @plans.any? %>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <% @plans.each do |plan| %>
           <div class="bg-white rounded-2xl shadow-lg border <%= plan.is_popular ? 'border-secondary ring-2 ring-secondary' : 'border-border/50' %> overflow-hidden relative">
@@ -31,7 +55,13 @@
             
             <div class="p-6 <%= plan.is_popular ? 'bg-gradient-to-r from-secondary/10 to-primary/10' : 'bg-gradient-to-r from-primary/10 to-secondary/10' %> border-b border-border/50">
               <h3 class="text-2xl font-bold <%= plan.is_popular ? 'text-secondary' : 'text-primary' %>"><%= plan.name %></h3>
-              <p class="text-5xl font-bold <%= plan.is_popular ? 'text-secondary' : 'text-primary' %> mt-4">$<%= plan.price_dollars.to_i %><span class="text-text-secondary text-lg">/month</span></p>
+              <div class="flex items-baseline gap-2">
+                <p class="text-5xl font-bold <%= plan.is_popular ? 'text-secondary' : 'text-primary' %>">$<span id="price-<%= plan.id %>"><%= plan.price_dollars.to_i %></span><span class="text-text-secondary text-lg">/month</span></p>
+              </div>
+              <div id="discount-<%= plan.id %>" class="hidden">
+                <p class="text-sm text-green-600 font-semibold">Discount applied!</p>
+                <p class="text-sm text-text-secondary line-through">$<%= plan.price_dollars.to_i %>/month</p>
+              </div>
             </div>
             
             <div class="p-6 bg-surface-elevated">
@@ -63,7 +93,8 @@
                     class: "w-full #{plan.is_popular ? 'btn btn-secondary' : 'btn btn-primary'}" %>
               <% else %>
                 <%= link_to 'Sign Up to Subscribe', sign_up_path, 
-                    class: "block w-full text-center #{plan.is_popular ? 'btn btn-secondary' : 'btn btn-primary'}" %>
+                    class: "block w-full text-center #{plan.is_popular ? 'btn btn-secondary' : 'btn btn-primary'}",
+                    id: "subscribe-#{plan.id}" %>
               <% end %>
             </div>
           </div>
@@ -170,3 +201,105 @@
     </div>
   </div>
 </div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const promoInput = document.getElementById('pricing-promo-code-input');
+    const applyBtn = document.getElementById('pricing-apply-promo-btn');
+    const messageDiv = document.getElementById('pricing-promo-message');
+    
+    // Check if there's a promo code in sessionStorage from the landing page
+    const storedPromo = sessionStorage.getItem('promo_discount');
+    if (storedPromo) {
+      try {
+        const promoData = JSON.parse(storedPromo);
+        promoInput.value = promoData.code;
+        applyPromoCode(promoData);
+      } catch (e) {
+        console.log('Error parsing stored promo:', e);
+      }
+    }
+    
+    function applyPromoCode(promoData) {
+      // Update all prices with discount
+      <% @plans.each do |plan| %>
+        (function() {
+          const priceEl = document.getElementById('price-<%= plan.id %>');
+          const discountEl = document.getElementById('discount-<%= plan.id %>');
+          const subscribeLink = document.getElementById('subscribe-<%= plan.id %>');
+          
+          if (priceEl && discountEl) {
+            const originalPrice = <%= plan.price_dollars.to_i %>;
+            let discountedPrice = originalPrice;
+            
+            if (promoData.discount_percent > 0) {
+              discountedPrice = originalPrice * (1 - promoData.discount_percent / 100);
+            } else if (promoData.discount_amount > 0) {
+              discountedPrice = Math.max(0, originalPrice - promoData.discount_amount);
+            }
+            
+            priceEl.textContent = Math.round(discountedPrice);
+            discountEl.classList.remove('hidden');
+            
+            // Update subscribe link with promo code
+            if (subscribeLink) {
+              const href = subscribeLink.getAttribute('href');
+              if (href && !href.includes('promo_code')) {
+                subscribeLink.setAttribute('href', href + '?promo_code=' + promoData.code);
+              }
+            }
+          }
+        })();
+      <% end %>
+      
+      messageDiv.textContent = 'Promo code applied! ' + (promoData.discount_percent > 0 ? promoData.discount_percent + '% off' : '$' + promoData.discount_amount + ' off');
+      messageDiv.className = 'text-sm text-green-600 font-semibold';
+      messageDiv.classList.remove('hidden');
+    }
+    
+    if (promoInput && applyBtn) {
+      applyBtn.addEventListener('click', function() {
+        const code = promoInput.value.trim();
+        if (!code) {
+          messageDiv.textContent = 'Please enter a promo code';
+          messageDiv.className = 'text-sm text-red-600';
+          messageDiv.classList.remove('hidden');
+          return;
+        }
+        
+        fetch('/api/promo_codes/validate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          },
+          body: JSON.stringify({ code: code })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.valid) {
+            sessionStorage.setItem('promo_code', data.code);
+            sessionStorage.setItem('promo_discount', JSON.stringify(data));
+            applyPromoCode(data);
+          } else {
+            messageDiv.textContent = data.error || 'Invalid promo code';
+            messageDiv.className = 'text-sm text-red-600';
+            messageDiv.classList.remove('hidden');
+          }
+        })
+        .catch(err => {
+          messageDiv.textContent = 'Error validating promo code';
+          messageDiv.className = 'text-sm text-red-600';
+          messageDiv.classList.remove('hidden');
+        });
+      });
+      
+      promoInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          applyBtn.click();
+        }
+      });
+    }
+  });
+</script>

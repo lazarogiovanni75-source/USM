@@ -6,16 +6,30 @@
       <%= form_with(model: User.new, url: sign_up_path, class: "space-y-6") do |form| %>
         <div>
           <%= form.label :name, required: true do %>
-            Name
+            Name <span class="text-red-500">*</span>
           <% end %>
           <%= form.text_field :name, required: true, autofocus: true, autocomplete: "name", placeholder: "Enter your name" %>
         </div>
 
         <div>
           <%= form.label :email do %>
-            Email
+            Email <span class="text-red-500">*</span>
           <% end %>
           <%= form.email_field :email, required: true, autocomplete: "email", placeholder: "Enter your email" %>
+        </div>
+
+        <div>
+          <%= form.label :phone do %>
+            Phone Number
+          <% end %>
+          <%= form.telephone_field :phone, autocomplete: "tel", placeholder: "Enter your phone number (optional)" %>
+        </div>
+
+        <div>
+          <%= form.label :business_name do %>
+            Business Name
+          <% end %>
+          <%= form.text_field :business_name, autocomplete: "organization", placeholder: "Enter your business name (optional)" %>
         </div>
 
         <div>

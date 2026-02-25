@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_24_010254) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_24_231149) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -582,6 +582,20 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_24_010254) do
     t.index ["scheduled_post_id"], name: "index_postforme_analytics_on_scheduled_post_id"
   end
 
+  create_table "promo_codes", force: :cascade do |t|
+    t.string "code"
+    t.integer "discount_percent", default: 0
+    t.integer "discount_amount", default: 0
+    t.boolean "is_active", default: true
+    t.datetime "expires_at"
+    t.integer "max_uses"
+    t.integer "use_count", default: 0
+    t.string "+"
+    t.string "migration"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "prompt_templates", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "name"
@@ -838,6 +852,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_24_010254) do
     t.string "subscription_status"
     t.datetime "subscription_expires_at"
     t.string "agency_role"
+    t.string "phone"
+    t.string "business_name"
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
