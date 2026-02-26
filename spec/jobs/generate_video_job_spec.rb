@@ -7,19 +7,23 @@ RSpec.describe GenerateVideoJob, type: :job do
       user = create(:user)
       video = create(:video, :pending, user: user)
 
-      # Stub the PoyoService to avoid real API calls
-      poyo_service_double = instance_double(PoyoService)
-      allow(PoyoService).to receive(:new).and_return(poyo_service_double)
+      # Stub the AtlasCloudService to avoid real API calls
+      atlas_service_double = instance_double(AtlasCloudService)
+      
+      # IMPORTANT: The job calls AtlasCloudService.new directly, not through a factory
+      # So we need to allow AtlasCloudService to be instantiated and return our double
+      allow(AtlasCloudService).to receive(:new).and_return(atlas_service_double)
 
-      # Return the task_id on first call (generate_video)
-      allow(poyo_service_double).to receive(:generate_video).and_return(
-        'task_id' => 'task-123',
+      # Return the prediction_id on first call (generate_video)
+      allow(atlas_service_double).to receive(:generate_video).and_return(
+        'prediction_id' => 'pred-123',
         'output' => nil
       )
 
       # Return success status immediately (avoid polling loop)
-      allow(poyo_service_double).to receive(:task_status).and_return(
-        'status' => 'success',
+      # Also need to handle the status check in wait_for_completion
+      allow(atlas_service_double).to receive(:task_status).and_return(
+        'status' => 'succeeded',
         'output' => 'http://example.com/video.mp4'
       )
 

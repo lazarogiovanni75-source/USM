@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # Video Generation Service with Primary/Secondary Fallback
-# Primary: Poyo.ai (https://api.poyo.ai)
-# Secondary: OpenAI/Sora (not yet available via API - placeholder for future)
+# Primary: Atlas Cloud/Seedance v1 Pro (https://api.atlascloud.ai)
+# Secondary: Poyo.ai (deprecated - fallback only)
 class VideoGenerationService
   class VideoGenerationError < StandardError; end
   class ServiceUnavailableError < VideoGenerationError; end
@@ -15,16 +15,16 @@ class VideoGenerationService
   # @return [Hash] Result with task_id and metadata
   #
   def self.generate_video(prompt:, duration: '10', aspect_ratio: '16:9')
-    # Try primary service (Poyo)
+    # Try primary service (Atlas Cloud)
     result = try_primary_video(prompt: prompt, duration: duration, aspect_ratio: aspect_ratio)
     return result if result[:success]
 
-    # Try secondary service (OpenAI Sora - placeholder for when available)
+    # Try secondary service (Poyo.ai - fallback)
     result = try_secondary_video(prompt: prompt, duration: duration, aspect_ratio: aspect_ratio)
     return result if result[:success]
 
     # Both services failed
-    raise ServiceUnavailableError, "Video generation services unavailable. Primary: Poyo.ai failed. Secondary: OpenAI Sora not yet available."
+    raise ServiceUnavailableError, "Video generation services unavailable. Primary: Atlas Cloud failed. Secondary: Poyo.ai not configured or failed."
   end
 
   # Get video task status
@@ -36,46 +36,33 @@ class VideoGenerationService
   private
 
   def self.try_primary_video(prompt:, duration:, aspect_ratio:)
-    Rails.logger.info "[VideoGeneration] Trying primary service: Poyo.ai"
+    Rails.logger.info "[VideoGeneration] Trying primary service: Atlas Cloud (Seedance v1 Pro)"
     
-    service = PoyoService.new
+    service = AtlasCloudService.new
     
     unless service.configured?
       Rails.logger.warn "[VideoGeneration] Primary service not configured"
-      return { success: false, error: "Poyo.ai not configured" }
+      return { success: false, error: "Atlas Cloud not configured" }
     end
-
-    # Get the webhook URL for callbacks
-    # Handle config.x.public_host which may be OrderedOptions or nil
-    public_host = Rails.application.config.x.public_host
-    public_host = public_host.to_s if public_host.respond_to?(:to_str)
-    public_host = public_host.presence || ENV['CLACKY_PUBLIC_HOST'] || 'localhost:3000'
-    
-    callback_url = Rails.application.routes.url_helpers.poyo_webhook_url(
-      host: public_host,
-      protocol: Rails.env.production? ? 'https' : 'http'
-    )
 
     begin
       result = service.generate_video(
         prompt: prompt,
-        duration: duration,
-        aspect_ratio: aspect_ratio,
-        callback_url: callback_url
+        duration: duration.to_i,
+        aspect_ratio: aspect_ratio
       )
 
-      if result['task_id'].present?
-        Rails.logger.info "[VideoGeneration] Primary service succeeded - task_id: #{result['task_id']}"
+      if result['prediction_id'].present?
+        Rails.logger.info "[VideoGeneration] Primary service succeeded - prediction_id: #{result['prediction_id']}"
         {
           success: true,
-          task_id: result['task_id'],
-          service: 'poyo',
-          metadata: { duration: duration, aspect_ratio: aspect_ratio, callback_url: callback_url }
+          task_id: result['prediction_id'],
+          service: 'atlas_cloud',
+          metadata: { duration: duration, aspect_ratio: aspect_ratio }
         }
       else
-        # Log the full result for debugging
-        Rails.logger.error "[VideoGeneration] Primary service returned no task_id. Full response: #{result.inspect}"
-        { success: false, error: result['error'] || result['message'] || 'Failed to start generation - no task_id returned' }
+        Rails.logger.error "[VideoGeneration] Primary service returned no prediction_id. Full response: #{result.inspect}"
+        { success: false, error: result['error'] || result['message'] || 'Failed to start generation - no prediction_id returned' }
       end
     rescue => e
       Rails.logger.error "[VideoGeneration] Primary service error: #{e.message}"
@@ -84,25 +71,48 @@ class VideoGenerationService
   end
 
   def self.try_secondary_video(prompt:, duration:, aspect_ratio:)
-    Rails.logger.info "[VideoGeneration] Trying secondary service: OpenAI/Sora"
+    Rails.logger.info "[VideoGeneration] Trying secondary service: Poyo.ai (fallback)"
     
-    # Note: OpenAI Sora is not yet publicly available via API
-    # This is a placeholder for when it becomes available
-    # For now, we return failure to indicate it's not ready
+    service = PoyoService.new
     
-    Rails.logger.warn "[VideoGeneration] Secondary service (OpenAI Sora) not yet available via API"
-    { success: false, error: "OpenAI Sora not yet available via API" }
+    unless service.configured?
+      Rails.logger.warn "[VideoGeneration] Secondary service not configured"
+      return { success: false, error: "Poyo.ai not configured" }
+    end
+
+    begin
+      result = service.generate_video(
+        prompt: prompt,
+        duration: duration,
+        aspect_ratio: aspect_ratio
+      )
+
+      if result['task_id'].present?
+        Rails.logger.info "[VideoGeneration] Secondary service succeeded - task_id: #{result['task_id']}"
+        {
+          success: true,
+          task_id: result['task_id'],
+          service: 'poyo',
+          metadata: { duration: duration, aspect_ratio: aspect_ratio }
+        }
+      else
+        Rails.logger.error "[VideoGeneration] Secondary service returned no task_id. Full response: #{result.inspect}"
+        { success: false, error: result['error'] || result['message'] || 'Failed to start generation - no task_id returned' }
+      end
+    rescue => e
+      Rails.logger.error "[VideoGeneration] Secondary service error: #{e.message}"
+      { success: false, error: e.message }
+    end
   end
 
   def self.service_to_object(service_name)
     case service_name
+    when 'atlas_cloud'
+      AtlasCloudService.new
     when 'poyo'
       PoyoService.new
-    when 'openai'
-      # Placeholder for when OpenAI Sora becomes available
-      raise ServiceUnavailableError, "OpenAI Sora not yet available"
     else
-      PoyoService.new
+      AtlasCloudService.new
     end
   end
 end

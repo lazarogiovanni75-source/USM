@@ -1,6 +1,6 @@
 <!-- Navbar - Simple without nav_links partial -->
 <div data-controller="dropdown">
-  <nav class="sticky top-0 z-50 backdrop-blur-md bg-white/70 dark:bg-gray-900/70 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+  <nav class="sticky top-0 z-50 backdrop-blur-md bg-white border-b border-gray-200 dark:border-gray-700 shadow-sm">
     <div class="container-xl mx-auto px-4">
       <div class="flex items-center justify-between h-16">
         <!-- Logo with image -->
@@ -106,7 +106,7 @@
         <!-- Mobile hamburger -->
         <button type="button"
                 data-action="click->dropdown#toggle"
-                class="md:hidden p-2 text-gray-600 hover:bg-gray-100">
+                class="md:hidden p-2 text-gray-900 hover:bg-gray-200">
           <%= lucide_icon "menu", class: "w-6 h-6" %>
         </button>
       </div>

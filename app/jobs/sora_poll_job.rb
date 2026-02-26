@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # Polling job for video generation tasks (supports multiple services)
-# Primary: Poyo.ai (https://api.poyo.ai)
-# Secondary: OpenAI/Sora (placeholder for when available)
+# Primary: Atlas Cloud/Seedance v1 Pro (https://api.atlascloud.ai)
+# Secondary: Poyo.ai (deprecated - fallback only)
 class SoraPollJob < ApplicationJob
   queue_as :default
 
@@ -17,7 +17,7 @@ class SoraPollJob < ApplicationJob
 
     # Get task_id and service from draft metadata if not provided
     task_id ||= draft.metadata['task_id']
-    service ||= draft.metadata['service'] || 'poyo'
+    service ||= draft.metadata['service'] || 'atlas_cloud'
     
     if task_id.blank?
       Rails.logger.error "SoraPollJob: No task_id for draft #{draft_id}"
@@ -107,6 +107,16 @@ class SoraPollJob < ApplicationJob
 
   def get_status(service, task_id)
     case service
+    when 'atlas_cloud'
+      begin
+        AtlasCloudService.new.task_status(task_id)
+      rescue AtlasCloudService::Error => e
+        if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
+          Rails.logger.warn "SoraPollJob: Task #{task_id} not found yet, will retry..."
+          return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
+        end
+        raise
+      end
     when 'poyo'
       begin
         PoyoService.new.task_status(task_id)
@@ -124,9 +134,9 @@ class SoraPollJob < ApplicationJob
       { 'status' => 'error', 'error' => 'OpenAI Sora not yet available via API' }
     else
       begin
-        PoyoService.new.task_status(task_id)
-      rescue PoyoService::Error => e
-        if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('task not found')
+        AtlasCloudService.new.task_status(task_id)
+      rescue AtlasCloudService::Error => e
+        if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
           return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
         end
         raise

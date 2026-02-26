@@ -3,7 +3,7 @@ module Ai
     class GenerateVideo
       class Error < StandardError; end
       
-      def self.call(user:, campaign: nil, prompt:, duration: "10", model: "sora-2-pro", **)
+      def self.call(user:, campaign: nil, prompt:, duration: "10", model: "sora-2", **)
         Rails.logger.info "[Tools::GenerateVideo] Generating video: #{prompt}"
         
         result = VideoGenerationService.generate_video(

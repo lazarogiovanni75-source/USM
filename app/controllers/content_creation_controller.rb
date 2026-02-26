@@ -128,7 +128,7 @@ class ContentCreationController < ApplicationController
 
       if result[:success]
         service = result[:service]
-        model = result.dig(:metadata, :model) || 'sora-2-pro'
+        model = result.dig(:metadata, :model) || 'seedance-v1-pro'
         
         # Save as a draft with task_id for polling
         draft = current_user.draft_contents.create!(
@@ -159,6 +159,12 @@ class ContentCreationController < ApplicationController
     rescue VideoGenerationService::ServiceUnavailableError => e
       Rails.logger.error "[ContentCreation] Video service unavailable: #{e.message}"
       redirect_to content_creation_index_path, alert: e.message
+    rescue AtlasCloudService::AuthenticationError => e
+      Rails.logger.error "[ContentCreation] Atlas Cloud Authentication Error: #{e.message}"
+      redirect_to content_creation_index_path, alert: 'Video generation authentication failed. Please check your API configuration.'
+    rescue AtlasCloudService::Error => e
+      Rails.logger.error "[ContentCreation] Atlas Cloud Error: #{e.message}"
+      redirect_to content_creation_index_path, alert: "Video generation error: #{e.message}"
     rescue PoyoService::AuthenticationError => e
       Rails.logger.error "[ContentCreation] Poyo.ai Authentication Error: #{e.message}"
       redirect_to content_creation_index_path, alert: 'Video generation authentication failed. Please check your API configuration.'

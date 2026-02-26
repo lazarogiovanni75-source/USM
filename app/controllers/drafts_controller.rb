@@ -110,7 +110,7 @@ class DraftsController < ApplicationController
     end
     
     task_id = @draft.metadata['task_id']
-    service = @draft.metadata['service'] || 'poyo'
+    service = @draft.metadata['service'] || 'atlas_cloud'
     
     if task_id.blank?
       redirect_to draft_path(@draft), alert: 'No task ID found for this draft.'
@@ -120,10 +120,12 @@ class DraftsController < ApplicationController
     begin
       # Manually check the status
       case service
+      when 'atlas_cloud'
+        status_response = AtlasCloudService.new.task_status(task_id)
       when 'poyo'
         status_response = PoyoService.new.task_status(task_id)
       else
-        status_response = PoyoService.new.task_status(task_id)
+        status_response = AtlasCloudService.new.task_status(task_id)
       end
       
       Rails.logger.info "[retry_video_status] Draft #{@draft.id}, Task #{task_id}, Status: #{status_response['status']}, Output: #{status_response['output']}"

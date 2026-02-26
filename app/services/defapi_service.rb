@@ -27,7 +27,7 @@ class DefapiService
   def generate_video(prompt:,
                      duration: '10',
                      aspect_ratio: '16:9',
-                     model: 'sora-2-pro',
+                     model: 'sora-2',
                      image: nil)
     body = {
       prompt: prompt,

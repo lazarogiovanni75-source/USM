@@ -1,5 +1,5 @@
 
-
+I need you to delete everything that has to do with Pollo AI we're not going to use them anymore for video generation deployment environment ver,
 ITASK: Stabilize ChatGPT-Like Conversation Flow
 1. Disable Autopilot Interference
 In ConversationOrchestrator (or wherever chat messages are processed), ensure AiAutopilotService does not run automatically during normal chat.

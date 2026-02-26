@@ -59,8 +59,8 @@ module Ai
               },
               model: {
                 type: "string",
-                enum: ["sora-2", "sora-2-hd", "sora-2-pro"],
-                description: "Sora model version (sora-2-pro is highest quality)"
+                enum: ["sora-2", "sora-2-hd"],
+                description: "Sora model version (sora-2-hd is higher quality)"
               }
             },
             required: ["prompt"]

@@ -37,17 +37,16 @@ class GenerateVideoJob < ApplicationJob
     # Update video status to processing
     video.update!(status: 'processing')
 
-    # Generate video using PoyoService (Sora 2 Pro)
-    poyo_service = PoyoService.new
-    response = poyo_service.generate_video(
+    # Generate video using AtlasCloudService (Seedance v1 Pro)
+    atlas_service = AtlasCloudService.new
+    response = atlas_service.generate_video(
       prompt: topic,
-      duration: '10',
-      aspect_ratio: '16:9',
-      model: 'sora-2-pro'
+      duration: 10,
+      aspect_ratio: '16:9'
     )
 
     # Store the task_id for status checking
-    task_id = response['task_id']
+    task_id = response['prediction_id']
     video.update!(
       status: 'processing',
       video_url: nil,
@@ -66,7 +65,7 @@ class GenerateVideoJob < ApplicationJob
     )
 
     # Poll for completion
-    wait_for_completion(video, poyo_service, task_id)
+    wait_for_completion(video, atlas_service, task_id)
 
   rescue StandardError => e
     video&.update!(status: 'failed', error_message: e.message)
@@ -85,7 +84,7 @@ class GenerateVideoJob < ApplicationJob
 
   private
 
-  def wait_for_completion(video, poyo_service, task_id)
+  def wait_for_completion(video, atlas_service, task_id)
     max_attempts = 120 # 10 minutes max for 10s videos
     attempt = 0
 
@@ -94,11 +93,11 @@ class GenerateVideoJob < ApplicationJob
       attempt += 1
 
       begin
-        status_response = poyo_service.task_status(task_id)
+        status_response = atlas_service.task_status(task_id)
         status = status_response['status']
 
         case status
-        when 'success'
+        when 'success', 'succeeded'
           video.update!(
             status: 'completed',
             video_url: status_response['output']
