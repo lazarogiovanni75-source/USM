@@ -13,6 +13,12 @@ class AtlasCloudService
   def initialize(api_key = nil)
     @api_key = api_key || fetch_api_key
     @base_url = BASE_URL
+    
+    if @api_key.blank?
+      Rails.logger.warn "[AtlasCloudService] No API key configured!"
+    else
+      Rails.logger.info "[AtlasCloudService] API key configured (length: #{@api_key.length})"
+    end
   end
 
   # Generate video from text prompt using Seedance v1 Pro
@@ -40,7 +46,9 @@ class AtlasCloudService
       seed: seed
     }
 
-    Rails.logger.debug "[AtlasCloudService] Sending request with body: #{body.inspect}"
+    Rails.logger.info "[AtlasCloudService] Sending video generation request..."
+    Rails.logger.debug "[AtlasCloudService] Request body: #{body.inspect}"
+    Rails.logger.debug "[AtlasCloudService] Request URL: #{@base_url}/api/v1/model/generateVideo"
 
     result = post_request('/api/v1/model/generateVideo', body)
 
@@ -117,6 +125,7 @@ class AtlasCloudService
 
   def post_request(endpoint, body)
     url = "#{@base_url}#{endpoint}"
+    Rails.logger.debug "[AtlasCloudService] Using API key: #{@api_key ? @api_key[0..10] + '...' : 'nil'}"
     response = HTTParty.post(url, body: body.to_json, headers: request_headers, timeout: TIMEOUT)
     handle_response(response)
   end
@@ -154,12 +163,17 @@ class AtlasCloudService
     when 402
       error_msg = parsed.dig('error', 'message') || 'Insufficient credits - please top up your Atlas Cloud account'
       raise Error, error_msg
+    when 403
+      raise AuthenticationError, "Access forbidden - #{response.body}"
     when 429
       raise Error, 'Rate limit exceeded - please try again later'
     when 500..599
-      raise Error, "Server error: #{response.code}"
+      raise Error, "Server error: #{response.code} - #{response.body}"
     else
       raise Error, "Unexpected response: #{response.code} - #{response.body}"
     end
+  rescue Error => e
+    Rails.logger.error "[AtlasCloudService] Error details - Code: #{response.code}, Body: #{response.body}, Parsed: #{parsed.inspect}"
+    raise
   end
 end

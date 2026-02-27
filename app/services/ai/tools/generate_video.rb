@@ -6,6 +6,25 @@ module Ai
       def self.call(user:, campaign: nil, prompt:, duration: "10", model: "sora-2", **)
         Rails.logger.info "[Tools::GenerateVideo] Generating video: #{prompt}"
         
+        # Prevent duplicate video generations - check for recent pending videos with same prompt
+        recent_video = user.videos.where(
+          "created_at > ? AND status IN ('pending', 'processing')", 
+          5.minutes.ago
+        ).where("title ILIKE ?", "%#{prompt[0..50]}%").first
+        
+        if recent_video
+          Rails.logger.info "[Tools::GenerateVideo] Duplicate video generation detected, returning existing video"
+          return {
+            success: true,
+            task_id: recent_video.prediction_url,
+            service: 'atlas_cloud',
+            prompt: prompt,
+            duration: duration,
+            model: model,
+            message: "Video generation already in progress for similar prompt. Please wait for the existing video."
+          }
+        end
+        
         result = VideoGenerationService.generate_video(
           prompt: prompt,
           duration: duration,

@@ -12,6 +12,26 @@ class ImageGenerationJob < ApplicationJob
       Rails.logger.error "[ImageGenerationJob] Conversation or user not found"
       return
     end
+    
+    # Prevent duplicate image generations - check for recent pending images with same prompt
+    recent_image = conversation.ai_messages.where(
+      "created_at > ? AND role = 'assistant' AND message_type = 'image'", 
+      5.minutes.ago
+    ).where("content ILIKE ?", "%#{prompt[0..30]}%").first
+    
+    if recent_image
+      Rails.logger.info "[ImageGenerationJob] Duplicate image generation detected, skipping"
+      ActionCable.server.broadcast(
+        "ai_chat_#{conversation.id}",
+        {
+          type: 'image_generated',
+          image_url: recent_image.content[/!\[([^\]]+)\]\(([^)]+)\)/, 2],
+          prompt: prompt,
+          message_id: recent_image.id
+        }
+      )
+      return
+    end
 
     begin
       # Generate the image using the image generation service (class method)

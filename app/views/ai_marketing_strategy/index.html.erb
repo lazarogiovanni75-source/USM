@@ -11,7 +11,7 @@
   </div>
 
   <!-- Header -->
-  <div class="bg-white/60 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 relative">
+  <div class="bg-surface-elevated/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 relative">
     <div class="container-xl mx-auto px-4 py-6">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div class="flex items-center gap-4">
@@ -206,7 +206,7 @@
           </h3>
           <!-- Question textarea wrapper -->
           <div data-ai-marketing-strategy-target="question">
-            <%= form_with url: ask_ai_ai_marketing_strategy_path, method: :post, local: true do |f| %>
+            <%= form_with url: ask_ai_ai_marketing_strategy_path, method: :post, data: { turbo_stream: true } do |f| %>
               <div class="space-y-4">
                 <%= f.text_area :question, 
                     id: "strategy-question",
@@ -226,7 +226,7 @@
               </div>
             <% end %>
           </div>
-          <div id="strategy-qa-result" class="hidden mt-4" data-ai-marketing-strategy-target="result">
+          <div id="strategy-qa-result" class="mt-4" data-ai-marketing-strategy-target="result">
           </div>
         </div>
         
@@ -258,10 +258,44 @@
             <%= lucide_icon "line-chart", class: "w-5 h-5 text-primary" %>
             Strategy Performance Trend
           </h3>
-          <div id="strategy-trend" data-controller="strategy-trend" data-strategy-trend-url="<%= trend_ai_marketing_strategy_path %>">
-            <div class="flex items-center justify-center h-32 text-muted text-sm">
-              <span class="animate-pulse">Loading trend data...</span>
-            </div>
+          <div id="strategy-trend">
+            <% if @trend[:trend] == 'no_data' %>
+              <div class="text-center py-8">
+                <p class="text-sm text-muted">Generate strategies to see trends</p>
+                <a href="/ai_marketing_strategy" class="text-sm text-primary hover:underline mt-2 inline-block">Generate First Strategy</a>
+              </div>
+            <% else %>
+              <% trend_color = case @trend[:trend]
+                               when 'improving' then 'text-success'
+                               when 'declining' then 'text-error'
+                               else 'text-muted'
+                               end %>
+              <% trend_label = case @trend[:trend]
+                               when 'improving' then 'Improving'
+                               when 'declining' then 'Declining'
+                               else 'Stable'
+                               end %>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl font-bold <%= trend_color %>"><%= @trend[:change_percent] %>%</span>
+                  <span class="text-sm text-muted">change</span>
+                </div>
+                <span class="px-3 py-1 rounded-full text-sm font-medium <%= trend_color %> bg-opacity-10">
+                  <%= trend_label %>
+                </span>
+              </div>
+              <% if @trend[:scores] && @trend[:scores].any? %>
+                <div class="flex items-end justify-between h-24 gap-2">
+                  <% @trend[:scores].each_with_index do |score, i| %>
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                      <div class="w-full bg-primary/20 rounded-t" style="height: <%= score %>%"></div>
+                      <span class="text-xs text-muted"><%= i + 1 %></span>
+                    </div>
+                  <% end %>
+                </div>
+                <p class="text-xs text-muted text-center mt-2">Last <%= @trend[:scores].length %> strategies</p>
+              <% end %>
+            <% end %>
           </div>
         </div>
       </div>

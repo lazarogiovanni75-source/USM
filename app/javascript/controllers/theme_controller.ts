@@ -4,6 +4,7 @@ import { Controller } from "@hotwired/stimulus"
  * Theme Controller
  *
  * Toggles dark/light theme and persists preference to localStorage
+ * Defaults to system preference if no saved preference exists
  *
  * Usage:
  *   <div data-controller="theme" data-theme-storage-key-value="page-isdark">
@@ -52,7 +53,14 @@ export default class extends Controller<HTMLElement> {
   }
 
   private getSavedTheme(): boolean {
-    return JSON.parse(localStorage.getItem(this.storageKeyValue) || 'false')
+    // First check localStorage for saved preference
+    const saved = localStorage.getItem(this.storageKeyValue)
+    if (saved !== null) {
+      return JSON.parse(saved)
+    }
+    
+    // Default to dark mode if no saved preference (system default)
+    return true
   }
 
   private updateTheme(isDark: boolean): void {

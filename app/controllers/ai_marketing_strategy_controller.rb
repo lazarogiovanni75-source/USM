@@ -45,8 +45,10 @@ class AiMarketingStrategyController < ApplicationController
       { context_type: 'marketing_strategy' }
     )
     
-    # Return HTML fragment for Turbo Stream update
-    render partial: "ai_answer", locals: { answer: response[:content] }
+    @answer = response[:content]
+    
+    # Render Turbo Stream for partial updates
+    render "ask_ai.turbo_stream.erb"
   end
   
   def history
@@ -58,9 +60,8 @@ class AiMarketingStrategyController < ApplicationController
     @analyzer = MarketingStrategyAnalyzerService.new(current_user)
     @trend = @analyzer.get_trend
     
-    respond_to do |format|
-      format.json { render json: @trend }
-    end
+    # Render HTML directly - Turbo Drive will handle the page navigation
+    render "trend.html.erb"
   end
   
   def execute

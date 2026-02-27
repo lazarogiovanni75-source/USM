@@ -1,0 +1,39 @@
+<%= turbo_stream.update "strategy_trend" do %>
+  <% if @trend[:trend] == 'no_data' %>
+    <div class="text-center py-8">
+      <p class="text-sm text-muted">Generate strategies to see trends</p>
+      <a href="/ai_marketing_strategy" class="text-sm text-primary hover:underline mt-2 inline-block">Generate First Strategy</a>
+    </div>
+  <% else %>
+    <% trend_color = case @trend[:trend]
+                     when 'improving' then 'text-success'
+                     when 'declining' then 'text-error'
+                     else 'text-muted'
+                     end %>
+    <% trend_label = case @trend[:trend]
+                     when 'improving' then 'Improving'
+                     when 'declining' then 'Declining'
+                     else 'Stable'
+                     end %>
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl font-bold <%= trend_color %>"><%= @trend[:change_percent] %>%</span>
+        <span class="text-sm text-muted">change</span>
+      </div>
+      <span class="px-3 py-1 rounded-full text-sm font-medium <%= trend_color %> bg-opacity-10">
+        <%= trend_label %>
+      </span>
+    </div>
+    <% if @trend[:scores] && @trend[:scores].any? %>
+      <div class="flex items-end justify-between h-24 gap-2">
+        <% @trend[:scores].each_with_index do |score, i| %>
+          <div class="flex-1 flex flex-col items-center gap-1">
+            <div class="w-full bg-primary/20 rounded-t" style="height: <%= score %>%"></div>
+            <span class="text-xs text-muted"><%= i + 1 %></span>
+          </div>
+        <% end %>
+      </div>
+      <p class="text-xs text-muted text-center mt-2">Last <%= @trend[:scores].length %> strategies</p>
+    <% end %>
+  <% end %>
+<% end %>

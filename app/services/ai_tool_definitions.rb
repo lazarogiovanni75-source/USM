@@ -21,7 +21,9 @@ module AiToolDefinitions
     create_post: :medium,
     create_content: :medium,
     generate_image: :medium,
-    generate_video: :medium,
+    
+    # Video - HIGH risk (requires confirmation before execution)
+    generate_video: :high,
     
     # Publishing - high risk (requires confirmation)
     schedule_post: :high,

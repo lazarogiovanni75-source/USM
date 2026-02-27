@@ -12,7 +12,7 @@
   </div>
 
   <!-- Header -->
-  <div class="bg-white/60 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 relative">
+  <div class="bg-surface-elevated/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 relative">
     <div class="container-xl mx-auto px-4">
       <div class="flex justify-between items-center py-4">
         <div class="flex items-center gap-4">
@@ -34,15 +34,15 @@
       
       <!-- Tabs -->
       <div class="flex gap-2 pb-4 overflow-x-auto items-center">
-        <%= link_to ai_chat_index_path, class: "flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-xl hover:bg-white transition-all whitespace-nowrap #{controller_name == 'ai_chat' ? 'bg-gradient-to-r from-primary to-secondary text-white' : ''}" do %>
+        <%= link_to ai_chat_index_path, class: "flex items-center gap-2 px-4 py-2 bg-surface border border-border/50 rounded-xl hover:bg-surface-elevated transition-all whitespace-nowrap #{controller_name == 'ai_chat' ? 'bg-gradient-to-r from-primary to-secondary text-white' : 'text-text-primary'}" do %>
           <%= lucide_icon "message-circle", class: "w-4 h-4" %>
           Text Chat
         <% end %>
-        <%= link_to content_creation_index_path, class: "flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-xl hover:bg-white transition-all whitespace-nowrap #{controller_name == 'content_creation' ? 'bg-gradient-to-r from-primary to-secondary text-white' : ''}" do %>
+        <%= link_to content_creation_index_path, class: "flex items-center gap-2 px-4 py-2 bg-surface border border-border/50 rounded-xl hover:bg-surface-elevated transition-all whitespace-nowrap #{controller_name == 'content_creation' ? 'bg-gradient-to-r from-primary to-secondary text-white' : 'text-text-primary'}" do %>
           <%= lucide_icon "sparkles", class: "w-4 h-4" %>
           Content
         <% end %>
-        <%= link_to scheduled_posts_path, class: "flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-xl hover:bg-white transition-all whitespace-nowrap #{controller_name == 'scheduled_posts' ? 'bg-gradient-to-r from-primary to-secondary text-white' : ''}" do %>
+        <%= link_to scheduled_posts_path, class: "flex items-center gap-2 px-4 py-2 bg-surface border border-border/50 rounded-xl hover:bg-surface-elevated transition-all whitespace-nowrap #{controller_name == 'scheduled_posts' ? 'bg-gradient-to-r from-primary to-secondary text-white' : 'text-text-primary'}" do %>
           <%= lucide_icon "calendar", class: "w-4 h-4" %>
           Scheduled
         <% end %>
@@ -78,7 +78,7 @@
       
       <!-- Sidebar: Conversations List -->
       <div class="lg:col-span-1">
-        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-4 sticky top-40">
+        <div class="bg-surface-elevated backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-4 sticky top-40">
           <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
             <%= lucide_icon "history", class: "w-5 h-5" %>
             Recent Conversations
@@ -113,7 +113,7 @@
 
       <!-- Main Chat Area -->
       <div class="lg:col-span-3">
-        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 h-[600px] flex flex-col overflow-hidden">
+        <div class="bg-surface-elevated backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 h-[600px] flex flex-col overflow-hidden">
           
           <!-- Chat Messages -->
           <div id="chat-messages" class="flex-1 p-6 overflow-y-auto" data-ai-chat-target="messagesContainer">
@@ -141,7 +141,7 @@
                       </div>
                     </div>
                     <div class="<%= message.role == 'user' ? 'text-right' : 'text-left' %>">
-                      <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary text-white' : 'bg-white border border-border/50 text-primary' %> shadow-sm">
+                      <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary text-white' : 'bg-surface border border-border/50 text-text-primary' %> shadow-sm">
                         <p class="text-sm"><%= message.content %></p>
                       </div>
                       <p class="text-xs text-muted mt-1"><%= message.created_at.strftime('%H:%M') %></p>
@@ -158,15 +158,15 @@
                 <h3 class="text-xl font-bold text-primary mb-2">Otto-Pilot</h3>
                 <p class="text-muted text-center max-w-md mb-6">Ask me anything about content creation, scheduling, or marketing strategy</p>
                 <div class="flex flex-wrap justify-center gap-2" data-ai-chat-target="quickPrompts">
-                  <button class="quick-prompt px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                  <button class="quick-prompt px-4 py-2 bg-surface border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
                           data-prompt="Help me create a social media strategy for my new product launch">
                     New Product Launch
                   </button>
-                  <button class="quick-prompt px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                  <button class="quick-prompt px-4 py-2 bg-surface border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
                           data-prompt="Generate engaging content ideas for Instagram posts">
                     Instagram Ideas
                   </button>
-                  <button class="quick-prompt px-4 py-2 bg-white/80 backdrop-blur-sm border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                  <button class="quick-prompt px-4 py-2 bg-surface border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
                           data-prompt="Help me optimize my existing campaigns for better engagement">
                     Optimize Campaigns
                   </button>
@@ -176,7 +176,7 @@
           </div>
 
           <!-- Chat Input with Submit Button and Voice Transcript -->
-          <div class="border-t border-border/50 p-4 bg-white/50 backdrop-blur-sm">
+          <div class="border-t border-border/50 p-4 bg-surface-elevated/50 backdrop-blur-sm">
             <!-- Live Voice Transcript Display -->
             <div id="voice-transcript-display" 
                  class="hidden mb-3 px-4 py-2 bg-gradient-to-r from-success/10 to-emerald-500/10 border border-success/30 rounded-xl flex items-center gap-2"
@@ -192,7 +192,7 @@
                   <!-- Talk to Text Button -->
                   <button type="button" 
                           id="voice-chat-btn"
-                          class="flex-shrink-0 p-3 rounded-xl transition-all <%= current_user.voice_settings.any? && current_user.voice_settings.first.enabled? ? 'bg-success text-white' : 'bg-white border border-border/50 hover:bg-gray-50' %>"
+                          class="flex-shrink-0 p-3 rounded-xl transition-all <%= current_user.voice_settings.any? && current_user.voice_settings.first.enabled? ? 'bg-success text-white' : 'bg-surface border border-border/50 hover:bg-surface-elevated' %>"
                           data-action="ai-voice-chat#toggle"
                           data-ai-voice-chat-target="button"
                           title="Talk to Text">
@@ -203,12 +203,15 @@
                   </button>
                   <textarea name="message" 
                       id="message-input"
-                      class="flex-1 px-4 py-3 bg-white border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none shadow-sm"
+                      class="flex-1 px-4 py-3 bg-surface border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-text-primary placeholder:text-text-muted"
                       rows="1" 
                       placeholder="Type your message..."
                       data-ai-chat-target="input"
                       data-ai-voice-chat-target="input"
-                      data-action="keydown->ai-chat#handleKeydown"></textarea>
+                      data-action="keydown->ai-chat#handleKeydown click->ai-chat#focusInput"
+                      onclick="this.focus()"
+                      style="pointer-events: auto !important;"
+                      autocomplete="off"></textarea>
                   <!-- Submit Button -->
                   <button type="submit" id="send-btn" class="flex-shrink-0 p-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all" data-ai-chat-target="sendBtn">
                     <%= lucide_icon "send", class: "w-5 h-5" %>
@@ -236,7 +239,7 @@
 <!-- Voice Command Modal -->
 <div id="voice-command-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center" data-controller="voice-command-toggle">
   <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
-  <div class="relative bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all scale-95 opacity-0">
+  <div class="relative bg-surface-elevated rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all scale-95 opacity-0">
     <div class="text-center">
       <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg animate-pulse">
         <%= lucide_icon "mic", class: "w-12 h-12 text-white" %>

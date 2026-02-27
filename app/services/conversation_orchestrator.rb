@@ -474,6 +474,27 @@ class ConversationOrchestrator < ApplicationService
       
       Rails.logger.info "[ConversationOrchestrator] Executing tool: #{function_name}"
       
+      # Check if HIGH risk tool - require confirmation before executing
+      risk_level = AiToolDefinitions.risk_level(function_name)
+      if risk_level == :high
+        Rails.logger.info "[ConversationOrchestrator] HIGH risk tool #{function_name} - requires user confirmation"
+        
+        # Broadcast confirmation request to frontend
+        broadcast_tool_confirmed(function_name, { requires_confirmation: true, message: "This action requires your confirmation" }) if stream_channel
+        
+        # Add error to history instead of executing
+        error_result = { error: "This action (#{function_name}) requires user confirmation before execution." }
+        save_tool_message(function_name, error_result, tool_id)
+        history_after_tool_call << {
+          role: "tool",
+          tool_call_id: tool_id,
+          name: function_name,
+          content: error_result.to_json
+        }
+        tool_results << { tool: function_name, result: error_result, success: false }
+        next
+      end
+      
       begin
         arguments = JSON.parse(arguments_json) rescue {}
         

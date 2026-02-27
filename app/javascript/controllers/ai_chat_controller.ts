@@ -81,6 +81,23 @@ export default class extends Controller<HTMLElement> {
   connect(): void {
     console.log("AI Chat controller connected")
     this.subscribeToCable()
+    this.setupQuickPromptButtons()
+  }
+
+  private setupQuickPromptButtons(): void {
+    // Find all quick prompt buttons and add click handlers
+    const buttons = document.querySelectorAll('.quick-prompt')
+    buttons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const prompt = (e.currentTarget as HTMLElement).getAttribute('data-prompt')
+        if (prompt) {
+          this.inputTarget.value = prompt
+          this.inputTarget.focus()
+          // Optionally auto-submit:
+          // this.sendMessage(new Event('submit'))
+        }
+      })
+    })
   }
 
   disconnect(): void {
@@ -354,7 +371,7 @@ export default class extends Controller<HTMLElement> {
           </div>
         </div>
         <div class="text-left">
-          <div class="inline-block p-4 rounded-2xl bg-white border border-border/50 shadow-sm">
+          <div class="inline-block p-4 rounded-2xl bg-surface border border-border/50 shadow-sm">
             <div class="flex gap-1">
               <span class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 0ms;"></span>
               <span class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 150ms;"></span>
@@ -397,8 +414,8 @@ export default class extends Controller<HTMLElement> {
           </div>
         </div>
         <div class="text-left">
-          <div class="inline-block p-4 rounded-2xl bg-white border border-border/50 shadow-sm">
-            <p class="text-sm message-content"></p>
+          <div class="inline-block p-4 rounded-2xl bg-surface border border-border/50 shadow-sm">
+            <p class="text-sm message-content text-text-primary"></p>
           </div>
           <p class="text-xs text-muted mt-1">AI - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
@@ -685,7 +702,7 @@ export default class extends Controller<HTMLElement> {
     const bgClass = (
       role === "user"
         ? "bg-gradient-to-br from-primary to-secondary text-white"
-        : "bg-white border border-border/50"
+        : "bg-surface border border-border/50 text-text-primary"
     )
     const flexClass = role === "user" ? "flex-row-reverse" : "flex-row"
     const avatarBg = role === "user" ? "from-primary to-secondary" : "from-purple-500 to-pink-500"
@@ -719,6 +736,10 @@ export default class extends Controller<HTMLElement> {
       event.preventDefault()
       this.sendMessage(event)
     }
+  }
+
+  focusInput(): void {
+    this.inputTarget.focus()
   }
 
   private setLoading(loading: boolean): void {
