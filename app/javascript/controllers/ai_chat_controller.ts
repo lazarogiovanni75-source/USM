@@ -415,7 +415,7 @@ export default class extends Controller<HTMLElement> {
         </div>
         <div class="text-left">
           <div class="inline-block p-4 rounded-2xl bg-surface border border-border/50 shadow-sm">
-            <p class="text-sm message-content text-text-primary"></p>
+            <p class="text-sm message-content text-primary"></p>
           </div>
           <p class="text-xs text-muted mt-1">AI - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
@@ -702,7 +702,7 @@ export default class extends Controller<HTMLElement> {
     const bgClass = (
       role === "user"
         ? "bg-gradient-to-br from-primary to-secondary text-white"
-        : "bg-surface border border-border/50 text-text-primary"
+        : "bg-surface border border-border/50 text-primary"
     )
     const flexClass = role === "user" ? "flex-row-reverse" : "flex-row"
     const avatarBg = role === "user" ? "from-primary to-secondary" : "from-purple-500 to-pink-500"

@@ -242,19 +242,28 @@ class ConversationOrchestrator < ApplicationService
     messages = [{ role: "system", content: SYSTEM_PROMPT }]
     
     recent_messages.each do |msg|
-      # Include tool messages for tool call continuity
+      # Skip tool messages without valid metadata
       if msg.role == 'tool'
-        messages << {
-          role: "tool",
-          tool_call_id: msg.metadata&.dig(:tool_call_id),
-          name: msg.metadata&.dig(:tool_name),
-          content: msg.content
-        }
+        tool_call_id = msg.metadata&.dig(:tool_call_id)
+        tool_name = msg.metadata&.dig(:tool_name)
+        
+        # Only include tool messages with valid tool_call_id and name
+        if tool_call_id.present? && tool_name.present?
+          messages << {
+            role: "tool",
+            tool_call_id: tool_call_id,
+            name: tool_name,
+            content: msg.content || ""
+          }
+        end
       else
-        messages << {
-          role: msg.role,
-          content: msg.content
-        }
+        # Skip messages without content
+        if msg.content.present?
+          messages << {
+            role: msg.role,
+            content: msg.content
+          }
+        end
       end
     end
     
@@ -461,7 +470,7 @@ class ConversationOrchestrator < ApplicationService
     history_after_tool_call = history.dup
     history_after_tool_call << {
       role: "assistant",
-      content: @assistant_response,
+      content: @assistant_response || "",
       tool_calls: tool_calls
     }
     
@@ -472,7 +481,7 @@ class ConversationOrchestrator < ApplicationService
       function_name = tool_call.dig("function", "name")
       arguments_json = tool_call.dig("function", "arguments")
       
-      Rails.logger.info "[ConversationOrchestrator] Executing tool: #{function_name}"
+      Rails.logger.info "[ConversationOrchestrator] Executing tool: #{function_name} with args: #{arguments_json}"
       
       # Check if HIGH risk tool - require confirmation before executing
       risk_level = AiToolDefinitions.risk_level(function_name)
@@ -496,7 +505,48 @@ class ConversationOrchestrator < ApplicationService
       end
       
       begin
-        arguments = JSON.parse(arguments_json) rescue {}
+        # Parse arguments and convert string keys to symbols for Ruby keyword arguments
+        # Handle empty or malformed JSON
+        raw_arguments = begin
+          JSON.parse(arguments_json) rescue {}
+        end
+        
+        # Check if arguments_json was empty or invalid
+        if arguments_json.blank? || raw_arguments.empty?
+          Rails.logger.warn "[ConversationOrchestrator] Empty or invalid arguments for tool: #{function_name}"
+          error_result = { error: "No arguments provided for #{function_name}" }
+          save_tool_message(function_name, error_result, tool_id)
+          history_after_tool_call << {
+            role: "tool",
+            tool_call_id: tool_id,
+            name: function_name,
+            content: error_result.to_json
+          }
+          tool_results << { tool: function_name, result: error_result, success: false }
+          next
+        end
+        
+        # Convert string keys to symbols using recursive approach
+        arguments = convert_keys_to_symbols(raw_arguments)
+        
+        Rails.logger.info "[ConversationOrchestrator] Parsed arguments: #{arguments.inspect}"
+        
+        # Validate required arguments exist
+        required_args = required_tool_arguments(function_name)
+        missing_args = required_args - arguments.keys.map(&:to_sym)
+        if missing_args.any?
+          Rails.logger.warn "[ConversationOrchestrator] Missing required arguments: #{missing_args.inspect}"
+          error_result = { error: "Missing required arguments: #{missing_args.join(', ')}" }
+          save_tool_message(function_name, error_result, tool_id)
+          history_after_tool_call << {
+            role: "tool",
+            tool_call_id: tool_id,
+            name: function_name,
+            content: error_result.to_json
+          }
+          tool_results << { tool: function_name, result: error_result, success: false }
+          next
+        end
         
         # Execute tool using Ai::ToolExecutor
         result = Ai::ToolExecutor.call(
@@ -628,5 +678,31 @@ class ConversationOrchestrator < ApplicationService
       result: result,
       conversation_id: conversation.id
     })
+  end
+  
+  # Get required arguments for a tool
+  def required_tool_arguments(tool_name)
+    case tool_name.to_s
+    when 'generate_image'
+      [:prompt]
+    when 'generate_video'
+      [:prompt]
+    when 'create_post'
+      [:content]
+    when 'schedule_post'
+      [:content, :scheduled_at]
+    when 'publish_post'
+      [:content]
+    else
+      []
+    end
+  end
+  
+  # Recursively convert string keys to symbol keys
+  def convert_keys_to_symbols(hash)
+    hash.each_with_object({}) do |(key, value), result|
+      new_key = key.is_a?(String) ? key.to_sym : key
+      result[new_key] = value.is_a?(Hash) ? convert_keys_to_symbols(value) : value
+    end
   end
 end

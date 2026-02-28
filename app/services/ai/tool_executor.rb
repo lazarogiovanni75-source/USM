@@ -16,7 +16,7 @@ module Ai
       
       begin
         result = tool_class.call(
-          parameters.merge(user: user, campaign: campaign)
+          **parameters.merge(user: user, campaign: campaign)
         )
         Rails.logger.info "[ToolExecutor] #{tool_name} completed successfully"
         result

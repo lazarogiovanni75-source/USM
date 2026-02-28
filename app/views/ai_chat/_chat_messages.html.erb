@@ -13,7 +13,7 @@
             </div>
           </div>
           <div class="<%= message.role == 'user' ? 'text-right' : 'text-left' %>">
-            <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary text-white' : 'bg-surface border border-border/50 text-text-primary' %> shadow-sm">
+            <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary text-white' : 'bg-surface border border-border/50 text-primary' %> shadow-sm">
               <p class="text-sm"><%= message.content %></p>
             </div>
             <p class="text-xs text-muted mt-1"><%= message.created_at.strftime('%H:%M') %></p>

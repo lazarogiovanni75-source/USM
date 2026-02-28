@@ -1,31 +1,31 @@
 <% content_for :title, "Otto-Pilot" %>
 
 <!-- stimulus-validator: disable-next-line -->
-<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated relative overflow-hidden" 
+<div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-purple-900 dark:via-gray-900 dark:to-purple-900 relative overflow-hidden" 
      data-controller="ai-chat ai-voice-chat" 
      data-ai-chat-conversation-id-value="<%= @current_conversation&.id %>"
      data-ai-voice-chat-conversation-id-value="<%= @current_conversation&.id %>">
   <!-- Decorative Background -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none">
-    <div class="absolute top-20 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
-    <div class="absolute top-40 right-20 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+    <div class="absolute top-20 left-10 w-64 h-64 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute top-40 right-20 w-96 h-96 bg-indigo-300/30 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
   </div>
 
   <!-- Header -->
-  <div class="bg-surface-elevated/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 relative">
+  <div class="bg-white/80 backdrop-blur-lg border-b border-purple-200 dark:border-purple-800 sticky top-0 z-40 relative">
     <div class="container-xl mx-auto px-4">
       <div class="flex justify-between items-center py-4">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
             <%= lucide_icon "bot", class: "w-6 h-6 text-white" %>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-primary">Otto-Pilot</h1>
-            <p class="text-sm text-muted">Your intelligent marketing companion</p>
+            <h1 class="text-2xl font-bold text-purple-700 dark:text-white">Otto-Pilot</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Your intelligent marketing companion</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <button id="new-chat-btn" class="btn-primary" data-action="ai-chat#createNewConversation">
+          <button id="new-chat-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors" data-action="ai-chat#createNewConversation">
             <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>
             New Chat
           </button>
@@ -34,22 +34,26 @@
       
       <!-- Tabs -->
       <div class="flex gap-2 pb-4 overflow-x-auto items-center">
-        <%= link_to ai_chat_index_path, class: "flex items-center gap-2 px-4 py-2 bg-surface border border-border/50 rounded-xl hover:bg-surface-elevated transition-all whitespace-nowrap #{controller_name == 'ai_chat' ? 'bg-gradient-to-r from-primary to-secondary text-white' : 'text-text-primary'}" do %>
+        <%= link_to ai_chat_index_path, class: "flex items-center gap-2 px-4 py-2 bg-white border border-purple-200 rounded-xl hover:bg-purple-50 transition-all whitespace-nowrap #{controller_name == 'ai_chat' ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white' : 'text-purple-700'}" do %>
           <%= lucide_icon "message-circle", class: "w-4 h-4" %>
           Text Chat
         <% end %>
-        <%= link_to content_creation_index_path, class: "flex items-center gap-2 px-4 py-2 bg-surface border border-border/50 rounded-xl hover:bg-surface-elevated transition-all whitespace-nowrap #{controller_name == 'content_creation' ? 'bg-gradient-to-r from-primary to-secondary text-white' : 'text-text-primary'}" do %>
+        <%= link_to ai_autopilot_index_path, class: "flex items-center gap-2 px-4 py-2 bg-white border border-purple-200 rounded-xl hover:bg-purple-50 transition-all whitespace-nowrap #{controller_name == 'ai_autopilot' ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white' : 'text-purple-700'}" do %>
+          <%= lucide_icon "bot", class: "w-4 h-4" %>
+          Otto-Pilot
+        <% end %>
+        <%= link_to content_creation_index_path, class: "flex items-center gap-2 px-4 py-2 bg-white border border-purple-200 rounded-xl hover:bg-purple-50 transition-all whitespace-nowrap #{controller_name == 'content_creation' ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white' : 'text-purple-700'}" do %>
           <%= lucide_icon "sparkles", class: "w-4 h-4" %>
           Content
         <% end %>
-        <%= link_to scheduled_posts_path, class: "flex items-center gap-2 px-4 py-2 bg-surface border border-border/50 rounded-xl hover:bg-surface-elevated transition-all whitespace-nowrap #{controller_name == 'scheduled_posts' ? 'bg-gradient-to-r from-primary to-secondary text-white' : 'text-text-primary'}" do %>
+        <%= link_to scheduled_posts_path, class: "flex items-center gap-2 px-4 py-2 bg-white border border-purple-200 rounded-xl hover:bg-purple-50 transition-all whitespace-nowrap #{controller_name == 'scheduled_posts' ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white' : 'text-purple-700'}" do %>
           <%= lucide_icon "calendar", class: "w-4 h-4" %>
           Scheduled
         <% end %>
         
         <!-- Wake Word Toggle -->
-        <div class="ml-auto flex items-center gap-2 px-3 py-1.5 bg-surface-elevated rounded-lg border border-border/50">
-          <span class="text-xs text-muted">Hey Otto</span>
+        <div class="ml-auto flex items-center gap-2 px-3 py-1.5 bg-purple-50 rounded-lg border border-purple-200">
+          <span class="text-xs text-purple-600">Hey Otto</span>
           <!-- stimulus-validator: allow-script -->
           <script>
             function syncWakeWordToggle(checked) {
@@ -78,8 +82,8 @@
       
       <!-- Sidebar: Conversations List -->
       <div class="lg:col-span-1">
-        <div class="bg-surface-elevated backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-4 sticky top-40">
-          <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+        <div class="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-200 dark:border-purple-700 p-4 sticky top-40">
+          <h2 class="text-lg font-bold text-purple-700 dark:text-white mb-4 flex items-center gap-2">
             <%= lucide_icon "history", class: "w-5 h-5" %>
             Recent Conversations
           </h2>
@@ -89,22 +93,22 @@
                 <%= link_to ai_chat_path(conversation), class: "conversation-item block p-3 rounded-xl hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 cursor-pointer transition-all border border-transparent hover:border-primary/20 #{params[:id].to_i == conversation.id ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/30' : ''}" do %>
                   <div class="flex items-center justify-between">
                     <div class="flex-1 min-w-0">
-                      <p class="text-sm font-semibold text-primary truncate"><%= conversation.title || 'Untitled Chat' %></p>
-                      <p class="text-xs text-muted"><%= time_ago_in_words(conversation.updated_at) %> ago</p>
+                      <p class="text-sm font-semibold text-purple-700 dark:text-white truncate"><%= conversation.title || 'Untitled Chat' %></p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400"><%= time_ago_in_words(conversation.updated_at) %> ago</p>
                     </div>
                     <div class="ml-2">
-                      <%= lucide_icon "chevron-right", class: "w-4 h-4 text-muted" %>
+                      <%= lucide_icon "chevron-right", class: "w-4 h-4 text-gray-400" %>
                     </div>
                   </div>
                 <% end %>
               <% end %>
             <% else %>
               <div class="text-center py-8">
-                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center mx-auto mb-3">
-                  <%= lucide_icon "message-square", class: "w-8 h-8 text-primary" %>
+                <div class="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-800 flex items-center justify-center mx-auto mb-3">
+                  <%= lucide_icon "message-square", class: "w-8 h-8 text-purple-600 dark:text-purple-400" %>
                 </div>
-                <h3 class="text-sm font-medium text-primary mb-1">No conversations yet</h3>
-                <p class="text-xs text-muted">Start a new conversation to get help</p>
+                <h3 class="text-sm font-medium text-purple-700 dark:text-white mb-1">No conversations yet</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Start a new conversation to get help</p>
               </div>
             <% end %>
           </div>
@@ -113,19 +117,19 @@
 
       <!-- Main Chat Area -->
       <div class="lg:col-span-3">
-        <div class="bg-surface-elevated backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 h-[600px] flex flex-col overflow-hidden">
+        <div class="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-200 dark:border-purple-700 h-[600px] flex flex-col overflow-hidden">
           
           <!-- Chat Messages -->
           <div id="chat-messages" class="flex-1 p-6 overflow-y-auto" data-ai-chat-target="messagesContainer">
             <!-- Voice Transcript Display -->
             <div id="voice-transcript-display" class="hidden mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
               <p class="text-sm text-green-700 font-medium mb-1">🎤 You said:</p>
-              <p id="voice-transcript" class="text-primary"></p>
+              <p id="voice-transcript" class="text-gray-900 dark:text-white"></p>
             </div>
             <!-- Voice Response Display -->
-            <div id="voice-response-display" class="hidden mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-              <p class="text-sm text-blue-700 font-medium mb-1">🤖 AI:</p>
-              <p id="voice-response-text" class="text-primary"></p>
+            <div id="voice-response-display" class="hidden mb-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+              <p class="text-sm text-purple-700 font-medium mb-1">🤖 AI:</p>
+              <p id="voice-response-text" class="text-gray-900 dark:text-white"></p>
             </div>
             <% if @messages.any? %>
               <% @messages.each do |message| %>
@@ -141,10 +145,10 @@
                       </div>
                     </div>
                     <div class="<%= message.role == 'user' ? 'text-right' : 'text-left' %>">
-                      <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary text-white' : 'bg-surface border border-border/50 text-text-primary' %> shadow-sm">
-                        <p class="text-sm"><%= message.content %></p>
+                      <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white' : 'bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-900 dark:text-white' %> shadow-sm">
+                        <p class="text-sm text-gray-900 dark:text-white"><%= message.content %></p>
                       </div>
-                      <p class="text-xs text-muted mt-1"><%= message.created_at.strftime('%H:%M') %></p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><%= message.created_at.strftime('%H:%M') %></p>
                     </div>
                   </div>
                 </div>
@@ -152,21 +156,21 @@
             <% else %>
               <!-- Empty State -->
               <div class="flex flex-col items-center justify-center h-full">
-                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-4 shadow-lg">
-                  <%= lucide_icon "sparkles", class: "w-10 h-10 text-primary" %>
+                <div class="w-20 h-20 rounded-full bg-purple-100 dark:bg-purple-800 flex items-center justify-center mb-4 shadow-lg">
+                  <%= lucide_icon "sparkles", class: "w-10 h-10 text-purple-600 dark:text-purple-400" %>
                 </div>
-                <h3 class="text-xl font-bold text-primary mb-2">Otto-Pilot</h3>
-                <p class="text-muted text-center max-w-md mb-6">Ask me anything about content creation, scheduling, or marketing strategy</p>
+                <h3 class="text-xl font-bold text-purple-700 dark:text-white mb-2">Otto-Pilot</h3>
+                <p class="text-gray-600 dark:text-gray-300 text-center max-w-md mb-6">Ask me anything about content creation, scheduling, or marketing strategy</p>
                 <div class="flex flex-wrap justify-center gap-2" data-ai-chat-target="quickPrompts">
-                  <button class="quick-prompt px-4 py-2 bg-surface border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                  <button class="quick-prompt px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all" 
                           data-prompt="Help me create a social media strategy for my new product launch">
                     New Product Launch
                   </button>
-                  <button class="quick-prompt px-4 py-2 bg-surface border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                  <button class="quick-prompt px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all" 
                           data-prompt="Generate engaging content ideas for Instagram posts">
                     Instagram Ideas
                   </button>
-                  <button class="quick-prompt px-4 py-2 bg-surface border border-border/50 rounded-full text-sm text-primary hover:bg-primary hover:text-white transition-all" 
+                  <button class="quick-prompt px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all" 
                           data-prompt="Help me optimize my existing campaigns for better engagement">
                     Optimize Campaigns
                   </button>
@@ -176,13 +180,13 @@
           </div>
 
           <!-- Chat Input with Submit Button and Voice Transcript -->
-          <div class="border-t border-border/50 p-4 bg-surface-elevated/50 backdrop-blur-sm">
+          <div class="border-t border-purple-200 dark:border-purple-700 p-4 bg-white dark:bg-gray-800 backdrop-blur-sm">
             <!-- Live Voice Transcript Display -->
             <div id="voice-transcript-display" 
-                 class="hidden mb-3 px-4 py-2 bg-gradient-to-r from-success/10 to-emerald-500/10 border border-success/30 rounded-xl flex items-center gap-2"
+                 class="hidden mb-3 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-300 rounded-xl flex items-center gap-2"
                  data-ai-voice-chat-target="transcript">
-              <span class="w-2 h-2 bg-success rounded-full animate-pulse"></span>
-              <span class="text-sm text-primary" data-ai-voice-chat-target="status">Listening...</span>
+              <span class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+              <span class="text-sm text-gray-900 dark:text-white" data-ai-voice-chat-target="status">Listening...</span>
             </div>
             <!-- Chat form wrapper -->
             <div>
@@ -192,7 +196,7 @@
                   <!-- Talk to Text Button -->
                   <button type="button" 
                           id="voice-chat-btn"
-                          class="flex-shrink-0 p-3 rounded-xl transition-all <%= current_user.voice_settings.any? && current_user.voice_settings.first.enabled? ? 'bg-success text-white' : 'bg-surface border border-border/50 hover:bg-surface-elevated' %>"
+                          class="flex-shrink-0 p-3 rounded-xl transition-all bg-gradient-to-br from-purple-500 to-indigo-600 text-white hover:shadow-lg hover:scale-105"
                           data-action="ai-voice-chat#toggle"
                           data-ai-voice-chat-target="button"
                           title="Talk to Text">
@@ -203,17 +207,17 @@
                   </button>
                   <textarea name="message" 
                       id="message-input"
-                      class="flex-1 px-4 py-3 bg-surface border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-text-primary placeholder:text-text-muted"
+                      class="flex-1 px-4 py-3 bg-white dark:bg-gray-700 border border-purple-200 dark:border-purple-600 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
                       rows="1" 
                       placeholder="Type your message..."
                       data-ai-chat-target="input"
                       data-ai-voice-chat-target="input"
-                      data-action="keydown->ai-chat#handleKeydown click->ai-chat#focusInput"
+                      data-action="keydown->ai-chat#handleKeydown"
                       onclick="this.focus()"
                       style="pointer-events: auto !important;"
                       autocomplete="off"></textarea>
                   <!-- Submit Button -->
-                  <button type="submit" id="send-btn" class="flex-shrink-0 p-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all" data-ai-chat-target="sendBtn">
+                  <button type="submit" id="send-btn" class="flex-shrink-0 p-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all" data-ai-chat-target="sendBtn">
                     <%= lucide_icon "send", class: "w-5 h-5" %>
                   </button>
                 </div>
@@ -221,11 +225,11 @@
             </div>
             <div class="flex items-center justify-between mt-2">
               <!-- Talk to Text Label -->
-              <span class="text-xs text-muted flex items-center gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                 <%= lucide_icon "mic", class: "w-3 h-3" %>
                 Talk to Text
               </span>
-              <p class="text-xs text-muted">Press Enter to send or click the button</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Press Enter to send or click the button</p>
             </div>
           </div>
         </div>
@@ -239,24 +243,24 @@
 <!-- Voice Command Modal -->
 <div id="voice-command-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center" data-controller="voice-command-toggle">
   <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
-  <div class="relative bg-surface-elevated rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all scale-95 opacity-0">
+  <div class="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all scale-95 opacity-0">
     <div class="text-center">
-      <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg animate-pulse">
+      <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg animate-pulse">
         <%= lucide_icon "mic", class: "w-12 h-12 text-white" %>
       </div>
       <h2 class="text-2xl font-bold text-primary mb-2">Otto-Pilot</h2>
-      <p class="text-muted mb-6">Speak your commands to create campaigns, generate content, and manage your social media</p>
+      <p class="text-gray-600 dark:text-gray-300 mb-6">Speak your commands to create campaigns, generate content, and manage your social media</p>
       
-      <div class="bg-surface-elevated rounded-2xl p-4 mb-4 min-h-[80px]">
-        <p id="voice-transcript" class="text-primary text-lg mb-2">Listening...</p>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-4 mb-4 min-h-[80px]">
+        <p id="voice-transcript" class="text-gray-900 dark:text-white text-lg mb-2">Listening...</p>
         <div id="voice-response" class="hidden">
-          <p class="text-xs text-muted mb-1">AI Response:</p>
-          <p id="voice-response-text" class="text-primary text-sm"></p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">AI Response:</p>
+          <p id="voice-response-text" class="text-gray-900 dark:text-white text-sm"></p>
         </div>
         <p id="voice-status" class="text-xs text-gray-500 mt-2"></p>
       </div>
       
-      <button class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all" data-action="voice-command-toggle#closeModal">
+      <button class="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all" data-action="voice-command-toggle#closeModal">
         Close Voice Command
       </button>
     </div>

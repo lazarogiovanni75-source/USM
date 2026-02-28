@@ -4,6 +4,7 @@ class CalendarController < ApplicationController
 
   def index
     @date = params[:date] ? Date.parse(params[:date]) : Date.current
+    @current_view = params[:view] || 'month'
     @start_date = @date.beginning_of_month.beginning_of_week
     @end_date = @date.end_of_month.end_of_week
     
@@ -20,6 +21,15 @@ class CalendarController < ApplicationController
     @contents = current_user.contents
       .where('published_at >= ? AND published_at <= ?', @start_date, @end_date)
       .order(:published_at)
+    
+    # Get optimal posting times
+    @optimal_times = CalendarService.suggest_optimal_times(current_user, @date)
+    
+    # Get content gaps
+    @content_gaps = CalendarService.analyze_content_gaps(current_user, @start_date..@end_date)
+    
+    # Set current date for navigation
+    @current_date = @date
   end
 
   def schedule_post
@@ -120,6 +130,56 @@ class CalendarController < ApplicationController
       published_posts: current_user.scheduled_posts.where('scheduled_at >= ? AND scheduled_at <= ?', @start_date, @end_date, status: 'published').count,
       pending_posts: current_user.scheduled_posts.where('scheduled_at >= ? AND scheduled_at <= ?', @start_date, @end_date, status: 'pending').count
     }
+  end
+
+  def optimize
+    # Optimize the schedule based on engagement predictions
+    @optimized_count = 0
+    
+    # Get posts that can be optimized (scheduled but not yet published)
+    posts = current_user.scheduled_posts.where(status: 'scheduled')
+    
+    # For now, just return success - in production this would use AI optimization
+    posts.each do |post|
+      # Simple optimization: suggest better times based on platform
+      best_time = suggest_best_time(post.platform, post.scheduled_at)
+      if best_time != post.scheduled_at
+        post.update!(scheduled_at: best_time)
+        @optimized_count += 1
+      end
+    end
+    
+    # Use Turbo Stream for redirect
+    redirect_to calendar_path, notice: "Optimized #{@optimized_count} posts"
+  rescue => e
+    redirect_to calendar_path, alert: "Optimization failed: #{e.message}"
+  end
+
+  def suggestions
+    # Get AI-powered content suggestions for the calendar
+    @suggestions = CalendarService.generate_weekly_content_ideas(current_user, Date.current.beginning_of_week)
+    
+    # Render using Turbo Stream
+    render "calendar/suggestions", layout: false
+  end
+
+  def suggest_best_time(platform, current_time)
+    # Suggest better time based on platform best times
+    best_times = {
+      'instagram' => [9, 11, 14, 17],
+      'twitter' => [8, 12, 18, 21],
+      'linkedin' => [8, 9, 12, 17],
+      'facebook' => [13, 15, 19, 21],
+      'tiktok' => [6, 10, 19, 20]
+    }
+    
+    platform_best = best_times[platform.to.downcase] || best_times['instagram']
+    current_hour = current_time.hour
+    
+    # Find closest best time
+    closest = platform_best.min_by { |t| (t - current_hour).abs }
+    
+    current_time.change(hour: closest)
   end
 
   private

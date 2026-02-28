@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-# Image Generation Service with Primary/Secondary Fallback
+# Image Generation Service
 # Primary: Atlas Cloud/Gemini 2.5 Flash (https://api.atlascloud.ai)
-# Secondary: Poyo.ai (deprecated - fallback only)
+# Note: Poyo.ai disabled by user
 class ImageGenerationService
   class ImageGenerationError < StandardError; end
   class ServiceUnavailableError < ImageGenerationError; end
 
-  # Generate image with primary/secondary fallback
+  # Generate image
   #
   # @param prompt [String] Text prompt for image
   # @param size [String] Image size
@@ -21,19 +21,8 @@ class ImageGenerationService
     # If primary succeeded with a task_id, return it (polling will handle completion)
     return result if result[:success] && result[:task_id].present?
     
-    # If primary failed with retry flag (like insufficient credits), try fallback
-    if result[:retry] || result[:error]&.include?('credits') || result[:error]&.include?('insufficient')
-      Rails.logger.info "[ImageGeneration] Primary service failed with retryable error, trying Poyo.ai..."
-    else
-      Rails.logger.warn "[ImageGeneration] Primary service failed: #{result[:error]}"
-    end
-
-    # Try secondary service (Poyo.ai - fallback)
-    result = try_secondary_image(prompt: prompt, size: size, quality: quality)
-    return result if result[:success]
-
-    # Both services failed
-    raise ServiceUnavailableError, "Image generation services unavailable. Primary: Atlas Cloud failed. Secondary: Poyo.ai not configured or failed."
+    # Primary failed - raise error
+    raise ServiceUnavailableError, "Image generation service is currently unavailable. Please try again later or contact support."
   end
 
   # Get image task status
@@ -58,7 +47,7 @@ class ImageGenerationService
   end
 
   def self.try_primary_image(prompt:, size:, quality:)
-    Rails.logger.info "[ImageGeneration] Trying primary service: Atlas Cloud/Gemini 2.5 Flash"
+    Rails.logger.info "[ImageGeneration] Trying primary service: Atlas Cloud/Flux Schnell"
     
     service = AtlasCloudImageService.new
     
@@ -74,22 +63,39 @@ class ImageGenerationService
         quality: quality
       )
 
+      # In sync mode, output_url may be returned immediately
       if result['prediction_id'].present?
-        Rails.logger.info "[ImageGeneration] Primary service succeeded - prediction_id: #{result['prediction_id']}"
-        {
-          success: true,
-          task_id: result['prediction_id'],
-          service: 'atlas_cloud_image',
-          output_url: result['output'],
-          metadata: { model: 'gemini-2.5-flash-image', size: size, quality: quality }
-        }
+        output_url = result['output'] || result.dig('data', 'outputs')&.first
+        
+        if output_url.present?
+          Rails.logger.info "[ImageGeneration] Primary service succeeded - image ready immediately"
+          {
+            success: true,
+            task_id: result['prediction_id'],
+            service: 'atlas_cloud_image',
+            output_url: output_url,
+            metadata: { model: 'flux-schnell', size: size, quality: quality }
+          }
+        else
+          # Fallback: task was started but needs polling
+          Rails.logger.info "[ImageGeneration] Primary service started task: #{result['prediction_id']}"
+          {
+            success: true,
+            task_id: result['prediction_id'],
+            service: 'atlas_cloud_image',
+            output_url: nil,
+            metadata: { model: 'flux-schnell', size: size, quality: quality }
+          }
+        end
       else
         Rails.logger.error "[ImageGeneration] Primary service returned no prediction_id: #{result.inspect}"
         { success: false, error: result['error'] || 'Failed to generate image' }
       end
     rescue AtlasCloudImageService::Error => e
       Rails.logger.error "[ImageGeneration] Primary service error: #{e.message}"
-      { success: false, error: e.message, retry: true }
+      # Check if it's a credit/account issue - should trigger fallback
+      retryable = e.message.include?('credit') || e.message.include?('unavailable') || e.message.include?('insufficient') || e.message.include?('令牌')
+      { success: false, error: e.message, retry: retryable }
     rescue => e
       Rails.logger.error "[ImageGeneration] Primary service unexpected error: #{e.message}"
       { success: false, error: e.message }

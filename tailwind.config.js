@@ -21,6 +21,8 @@ module.exports = {
     { pattern: /^ts-/ },
     { pattern: /^flatpickr/ },
     'dark',  // Dark mode class
+    'text-primary',
+    'text-muted',
     {
       pattern: /^(hidden|inline|block|flex|grid|inline-flex|inline-block)$/,
       variants: ['sm', 'md', 'lg', 'xl', '2xl']

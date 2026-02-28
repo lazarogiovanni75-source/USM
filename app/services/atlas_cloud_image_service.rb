@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Atlas Cloud Service for Image Generation (Gemini 2.5 Flash)
+# Atlas Cloud Service for Image Generation (Flux Schnell)
 # API Documentation: https://api.atlascloud.ai
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
@@ -21,7 +21,7 @@ class AtlasCloudImageService
     end
   end
 
-  # Generate image from text prompt using Gemini 2.5 Flash
+  # Generate image from text prompt using Flux Schnell
   #
   # @param prompt [String] Text prompt describing the image to generate
   # @param size [String] Image size (e.g., "1024x1024")
@@ -31,7 +31,7 @@ class AtlasCloudImageService
   def generate_image(prompt:,
                      size: '1024x1024',
                      quality: 'high',
-                     model: 'google/gemini-2.5-flash-image/text-to-image-developer')
+                     model: 'black-forest-labs/flux-schnell')
     # Parse aspect ratio from size
     aspect_ratio = parse_aspect_ratio(size)
 
@@ -40,7 +40,7 @@ class AtlasCloudImageService
       prompt: prompt,
       aspect_ratio: aspect_ratio,
       enable_base64_output: false,
-      enable_sync_mode: false,
+      enable_sync_mode: true,
       output_format: 'png'
     }
 
@@ -52,12 +52,20 @@ class AtlasCloudImageService
 
     Rails.logger.debug "[AtlasCloudImageService] Response: #{result.inspect}"
 
-    # Parse response - prediction_id is in data.id
+    # Parse response - in sync mode, output is returned immediately in data.outputs
     prediction_id = result.dig('data', 'id')
+    output_url = result.dig('data', 'outputs')&.first
+    status = result.dig('data', 'status')
 
     if prediction_id.present?
-      Rails.logger.info "[AtlasCloudImageService] Generated image prediction_id: #{prediction_id}"
-      return { 'prediction_id' => prediction_id, 'output' => nil }
+      Rails.logger.info "[AtlasCloudImageService] Generated image prediction_id: #{prediction_id}, status: #{status}"
+      # In sync mode, output_url may be present immediately
+      if output_url.present?
+        Rails.logger.info "[AtlasCloudImageService] Image ready immediately: #{output_url}"
+        return { 'prediction_id' => prediction_id, 'output' => output_url, 'status' => status }
+      else
+        return { 'prediction_id' => prediction_id, 'output' => nil, 'status' => status }
+      end
     else
       Rails.logger.error "[AtlasCloudImageService] No prediction_id in response: #{result.inspect}"
       return { 'prediction_id' => nil, 'output' => nil, 'error' => result['message'] || result.dig('error', 'message'), 'raw_response' => result }
@@ -165,10 +173,21 @@ class AtlasCloudImageService
 
     case response.code
     when 200..299
-      if parsed.is_a?(Hash) && (parsed['error'] || parsed['message'] || parsed['status'] == 'error')
-        error_msg = parsed['error'] || parsed['message'] || parsed.dig('error', 'message')
-        Rails.logger.error "[AtlasCloudImageService] API returned error: #{error_msg}"
-        raise Error, "API error: #{error_msg}"
+      # Check for actual errors - not "success" messages
+      if parsed.is_a?(Hash)
+        # Only treat as error if there's an actual error field or status is 'error'
+        error_field = parsed['error'] || parsed.dig('error', 'message')
+        status = parsed['status']
+        message = parsed['message']
+        
+        # Ignore "success" messages - they're not errors
+        if error_field.present? && error_field != 'success'
+          Rails.logger.error "[AtlasCloudImageService] API returned error: #{error_field}"
+          raise Error, "API error: #{error_field}"
+        elsif status == 'error' && message != 'success'
+          Rails.logger.error "[AtlasCloudImageService] API returned error status: #{message}"
+          raise Error, "API error: #{message}"
+        end
       end
       parsed
     when 401
@@ -181,9 +200,23 @@ class AtlasCloudImageService
     when 429
       raise Error, 'Rate limit exceeded - please try again later'
     when 500..599
-      raise Error, "Server error: #{response.code} - #{response.body}"
-    else
-      raise Error, "Unexpected response: #{response.code} - #{response.body}"
+      # Check if it's a credit/token issue
+      error_msg = parsed.dig('msg') || parsed.dig('error', 'message') || parsed.dig('message')
+      if error_msg && (error_msg.include?('令牌') || error_msg.include?('token') || error_msg.include?('credit') || error_msg.include?('unavailable'))
+        raise Error, 'Image generation service unavailable - please check your account credits or contact support'
+      end
+      raise Error, "Server error: #{response.code} - #{error_msg || response.body[0..200]}"
+    when 400
+      error_msg = parsed.dig('msg') || parsed.dig('error', 'message') || parsed.dig('message') || parsed['error']
+      # Check for specific error types
+      if error_msg
+        if error_msg.include?('not found') || error_msg.include?('model')
+          raise Error, 'Image generation model unavailable - please contact support'
+        elsif error_msg.include?('invalid') || error_msg.include?('key')
+          raise AuthenticationError, 'Invalid API key - please check your Atlas Cloud configuration'
+        end
+      end
+      raise Error, "Bad request: #{error_msg || response.body[0..200]}"
     end
   rescue Error => e
     Rails.logger.error "[AtlasCloudImageService] Error details - Code: #{response.code}, Body: #{response.body}, Parsed: #{parsed.inspect}"

@@ -131,7 +131,7 @@ export default class SimpleVoiceController extends Controller {
         <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.micIconPath}"></path>
         </svg>
-        <span class="text-white font-medium text-sm pr-1">Listening...</span>
+        <span class="text-white font-medium text-sm pr-1">🎤 Say "Hey Otto"</span>
       `
     }
     
@@ -151,7 +151,7 @@ export default class SimpleVoiceController extends Controller {
     
     // Reset button
     if (this.button) {
-      this.button.classList.remove('wake-word-active')
+      this.button.classList.remove('wake-word-active', 'wake-word-detected')
       this.button.innerHTML = `
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.micIconPath}"></path>
@@ -229,6 +229,20 @@ export default class SimpleVoiceController extends Controller {
             console.log("[SimpleVoice] WAKE WORD DETECTED!")
             this.wakeWordDetected = true
             this.updateStatus("🎯 Listening for your command...")
+            
+            // Navigate to Otto-Pilot page automatically
+            window.location.href = '/ai_autopilot'
+            
+            // Update button to show wake word was detected
+            if (this.button) {
+              this.button.classList.add('wake-word-detected')
+              this.button.innerHTML = `
+                <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.micIconPath}"></path>
+                </svg>
+                <span class="text-white font-medium text-sm pr-1">👂 Say cmd...</span>
+              `
+            }
             // Continue listening for the actual command
           }
         }
@@ -249,6 +263,12 @@ export default class SimpleVoiceController extends Controller {
               // Reset after processing
               this.wakeWordDetected = false
               this.pendingCommand = ""
+              
+              // Reset button appearance
+              if (this.button) {
+                this.button.classList.remove('wake-word-detected')
+                this.updateButtonHtml('🎤 Say "Hey Otto"')
+              }
               
               // Continue listening for more commands
               if (this.wakeWordEnabled) {
@@ -506,5 +526,16 @@ export default class SimpleVoiceController extends Controller {
 
   private updateUIProcessing(processing: boolean): void {
     this.button?.classList.toggle('processing', processing)
+  }
+
+  private updateButtonHtml(label: string): void {
+    if (this.button) {
+      this.button.innerHTML = `
+        <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.micIconPath}"></path>
+        </svg>
+        <span class="text-white font-medium text-sm pr-1">${label}</span>
+      `
+    }
   }
 }

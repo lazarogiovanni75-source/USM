@@ -72,6 +72,21 @@ class ImageGenerationJob < ApplicationJob
           }
         )
       end
+    rescue ImageGenerationService::ServiceUnavailableError => e
+      Rails.logger.error "[ImageGenerationJob] Image generation services unavailable: #{e.message}"
+      # Determine user-friendly message based on error
+      if e.message.include?('credit') || e.message.include?('unavailable')
+        user_message = "Image generation is temporarily unavailable due to service issues. Please try again in a few moments or contact support if the problem persists."
+      else
+        user_message = "Image generation is temporarily unavailable. Please try again in a few moments, or contact support if the issue persists."
+      end
+      ActionCable.server.broadcast(
+        "ai_chat_#{conversation.id}",
+        {
+          type: 'error',
+          error: user_message
+        }
+      )
     rescue => e
       Rails.logger.error "[ImageGenerationJob] Error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
