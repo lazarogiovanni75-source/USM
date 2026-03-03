@@ -1,4 +1,4 @@
-// base dependency library, it should be only imported by `admin.ts` and `application.ts`.
+// base dependency library, it should be only imported by `admin.ts` and `application.js`.
 //
 // Global patches (must be first)
 import './form_data_patch'

@@ -145,6 +145,17 @@ Rails.application.routes.draw do
     end
   end
 
+  # Simple Chat API endpoint
+  post '/api/v1/chat', to: 'chat#create'
+  post '/api/v1/transcribe', to: 'chat#transcribe'
+  post '/api/v1/speak', to: 'chat#speak'
+
+  # Voice Chat standalone routes (no merging with existing)
+  get 'voice_chat', to: 'voice_chat#index'
+  post '/chat', to: 'voice_chat#chat'
+  post '/transcribe', to: 'voice_chat#transcribe'
+  post '/speak', to: 'voice_chat#speak'
+
   # Authentication routes
   get 'sign_in', to: 'sessions#new', as: :new_user_session
   post 'sign_in', to: 'sessions#create', as: :user_session
@@ -284,21 +295,12 @@ Rails.application.routes.draw do
     end
   end
   
-  # AI & Voice features routes
+  # AI Chat routes
   resources :ai_chat, only: [:index, :show, :create] do
     collection do
       post 'send_message'
       post 'suggest_content'
-    end
-  end
-  
-  # AI Autopilot
-  resources :ai_autopilot, only: [:index] do
-    collection do
-      post 'toggle'
-      post 'generate_content'
-      post 'analyze_engagement'
-      get 'logs'
+      post 'toggle_voice'
     end
   end
   

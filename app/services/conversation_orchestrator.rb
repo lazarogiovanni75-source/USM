@@ -602,6 +602,19 @@ class ConversationOrchestrator < ApplicationService
   
   # Continue with streaming after tool execution
   def continue_streaming(history)
+    # Filter and validate messages before sending to OpenAI
+    valid_messages = history.filter do |msg|
+      msg.is_a?(Hash) && msg[:role].present?
+    end.map do |msg|
+      filtered = msg.dup
+      # Remove nil values
+      filtered.each { |k, v| filtered[k] = nil if v.nil? }
+      filtered
+    end
+    
+    Rails.logger.info "[ConversationOrchestrator] Continuing streaming with #{valid_messages.size} messages"
+    Rails.logger.info "[ConversationOrchestrator] Validated message history: #{valid_messages.to_json[0..500]}..."
+    
     api_key = ENV.fetch('OPENAI_API_KEY') { ENV.fetch('CLACKY_OPENAI_API_KEY', nil) }
     client = OpenAI::Client.new(access_token: api_key)
     
@@ -610,7 +623,7 @@ class ConversationOrchestrator < ApplicationService
     client.chat(
       parameters: {
         model: CHAT_MODEL,
-        messages: history,
+        messages: valid_messages,
         temperature: CHAT_TEMPERATURE,
         max_tokens: CHAT_MAX_TOKENS,
         stream: proc { |chunk, _bytesize|
@@ -628,8 +641,15 @@ class ConversationOrchestrator < ApplicationService
     broadcast_completion
     
     @assistant_response
+  rescue OpenAI::Error => e
+    Rails.logger.error "[ConversationOrchestrator] OpenAI API error: #{e.message}"
+    Rails.logger.error "[ConversationOrchestrator] Error details: #{e.response.inspect}" if e.respond_to?(:response)
+    error_msg = "Error communicating with AI: #{e.message}"
+    save_assistant_message(error_msg)
+    error_msg
   rescue => e
     Rails.logger.error "[ConversationOrchestrator] Continue streaming error: #{e.message}"
+    Rails.logger.error "[ConversationOrchestrator] Backtrace: #{e.backtrace.first(5).join("\n")}"
     error_msg = "Error processing tool results. Please try again."
     save_assistant_message(error_msg)
     error_msg

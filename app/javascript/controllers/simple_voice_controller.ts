@@ -1,8 +1,8 @@
 /**
- * SimpleVoiceController - Clean voice input for Otto-Pilot
- * Uses browser's built-in SpeechRecognition API (Web Speech API)
- * No audio recording/encoding needed - browser handles speech-to-text
+ * SimpleVoiceController - Simple click-to-talk voice for Otto
+ * No wake word needed - just click the button and talk
  */
+/* eslint-disable max-len */
 
 import { Controller } from "@hotwired/stimulus"
 
@@ -61,118 +61,15 @@ export default class SimpleVoiceController extends Controller {
   private statusEl: HTMLElement | null = null
   private responseEl: HTMLElement | null = null
   private recognition: SpeechRecognition | null = null
-  private recognitionStartTimeout: ReturnType<typeof setTimeout> | null = null
   private isListening = false
   private isProcessing = false
-  private userId: number | null = null
-  private conversationId: number | null = null
-  private autoRestart = true
-  private wakeWordEnabled = false
-  private wakeWordDetected = false
-  private wakePhrase = "hey Otto"
-  private pendingCommand = ""
   private micIconPath = "M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
 
-  private loadConversationId(): void {
-    // Get conversation ID from page's data attribute (set by ai-chat controller)
-    const container = document.querySelector('[data-ai-chat-conversation-id-value]')
-    if (container) {
-      const convId = container.getAttribute('data-ai-chat-conversation-id-value')
-      if (convId) {
-        this.conversationId = parseInt(convId, 10)
-        console.log("[SimpleVoice] Using conversation:", this.conversationId)
-      }
-    }
-    if (!this.conversationId) {
-      console.warn("[SimpleVoice] No conversation ID found on page")
-    }
-  }
-
   connect(): void {
-    console.log("[SimpleVoice] Connected - looking for button and initializing")
-    this.loadConversationId()
-    this.loadWakeWordSettings()
-    this.initializeSpeechRecognition()
+    console.log("Voice flow active")
+    console.log("[SimpleVoice] Controller connected")
     this.findElements()
-    console.log("[SimpleVoice] Controller initialized, recognition available:", !!this.recognition)
-    
-    // If wake word was previously enabled, start listening
-    if (this.wakeWordEnabled) {
-      console.log("[SimpleVoice] Wake word was enabled, starting continuous listening")
-      this.enableWakeWordMode()
-    }
-  }
-
-  private loadWakeWordSettings(): void {
-    // Load wake word preference
-    const wakeEnabled = localStorage.getItem('wake_word_enabled')
-    this.wakeWordEnabled = wakeEnabled === 'true'
-    
-    // Load custom wake phrase if any
-    const savedPhrase = localStorage.getItem('wake_phrase')
-    if (savedPhrase) {
-      this.wakePhrase = savedPhrase.toLowerCase()
-    }
-    
-    console.log(`[SimpleVoice] Wake word: enabled=${this.wakeWordEnabled}, phrase="${this.wakePhrase}"`)
-  }
-
-  private enableWakeWordMode(): void {
-    if (!this.recognition) return
-    
-    this.wakeWordEnabled = true
-    this.autoRestart = false  // Disable auto-restart in wake word mode
-    localStorage.setItem('wake_word_enabled', 'true')
-    
-    // Update button to show wake word is active
-    if (this.button) {
-      this.button.classList.add('wake-word-active')
-      this.button.innerHTML = `
-        <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.micIconPath}"></path>
-        </svg>
-        <span class="text-white font-medium text-sm pr-1">🎤 Say "Hey Otto"</span>
-      `
-    }
-    
-    this.updateStatus("Say 'Hey Otto' to activate")
-    this.startListening()
-  }
-
-  private disableWakeWordMode(): void {
-    this.wakeWordEnabled = false
-    this.autoRestart = false
-    this.wakeWordDetected = false
-    this.pendingCommand = ""
-    localStorage.setItem('wake_word_enabled', 'false')
-    
-    // Stop recognition completely
-    this.stopListening()
-    
-    // Reset button
-    if (this.button) {
-      this.button.classList.remove('wake-word-active', 'wake-word-detected')
-      this.button.innerHTML = `
-        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.micIconPath}"></path>
-        </svg>
-        <span class="text-white font-medium text-sm pr-1">Otto-Pilot</span>
-      `
-    }
-    
-    this.updateStatus("Wake word disabled")
-  }
-
-  disconnect(): void {
-    this.stopListening()
-  }
-
-  private loadUserId(): void {
-    const meta = document.querySelector('meta[name="user-id"]')
-    if (meta) {
-      const id = meta.getAttribute('content')
-      this.userId = id && id !== 'anonymous' ? parseInt(id, 10) : null
-    }
+    this.updateButtonReady()
   }
 
   private findElements(): void {
@@ -181,279 +78,143 @@ export default class SimpleVoiceController extends Controller {
     this.responseEl = document.getElementById('voice-response')
   }
 
-  private initializeSpeechRecognition(): void {
-    // First check if the browser supports the API at all
+  toggle(event?: Event): void {
+    console.log("[SimpleVoice] Button clicked")
+    event?.preventDefault()
+    
+    if (this.isListening) {
+      this.stopListening()
+      return
+    }
+    
+    this.startListening()
+  }
+
+  private initializeSpeechRecognition(): boolean {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
-      console.warn("[SimpleVoice] Not supported - no SpeechRecognition API")
-      this.updateStatus("Voice not supported on this browser")
-      this.showVoiceNotSupported()
-      return
+      console.error("[SimpleVoice] Not supported")
+      this.updateStatus("Voice not supported")
+      return false
     }
 
-    console.log("[SimpleVoice] SpeechRecognition API available")
-    
-    try {
-      this.recognition = new SpeechRecognition()
-    } catch (e: any) {
-      console.error("[SimpleVoice] Failed to create SpeechRecognition:", e)
-      this.updateStatus(`Voice error: ${e.message}`)
-      return
-    }
-
-    this.recognition.continuous = true // Enable continuous for wake word detection
-    this.recognition.interimResults = true // Get interim results to detect wake word quickly
+    this.recognition = new SpeechRecognition()
+    this.recognition.continuous = false
+    this.recognition.interimResults = true
     this.recognition.lang = 'en-US'
     this.recognition.maxAlternatives = 1
 
     this.recognition.onstart = () => {
-      console.log("[SimpleVoice] Recognition started!")
+      console.log("[SimpleVoice] Started")
       this.isListening = true
-      this.updateStatus("Listening... Speak now!")
-      this.updateUIListening(true)
+      this.updateButtonListening()
+      this.updateStatus("Listening...")
     }
 
     this.recognition.onresult = (event: SpeechRecognitionEvent) => {
-      console.log("[SimpleVoice] Got result:", event.results)
+      let transcript = ''
       
-      // Process all results (both interim and final)
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
-        const transcript = result[0].transcript.trim().toLowerCase()
+        transcript = result[0].transcript
         
-        console.log("[SimpleVoice] Transcript:", transcript, "isFinal:", result.isFinal)
-        
-        // Wake word detection mode
-        if (this.wakeWordEnabled && !this.wakeWordDetected) {
-          if (transcript.includes(this.wakePhrase)) {
-            console.log("[SimpleVoice] WAKE WORD DETECTED!")
-            this.wakeWordDetected = true
-            this.updateStatus("🎯 Listening for your command...")
-            
-            // Navigate to Otto-Pilot page automatically
-            window.location.href = '/ai_autopilot'
-            
-            // Update button to show wake word was detected
-            if (this.button) {
-              this.button.classList.add('wake-word-detected')
-              this.button.innerHTML = `
-                <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.micIconPath}"></path>
-                </svg>
-                <span class="text-white font-medium text-sm pr-1">👂 Say cmd...</span>
-              `
-            }
-            // Continue listening for the actual command
-          }
-        }
-        
-        // If wake word was detected, treat this as the command
-        if (this.wakeWordEnabled && this.wakeWordDetected && result.isFinal && transcript) {
-          // Remove the wake phrase from the command
-          let command = result[0].transcript.trim()
-          command = command.replace(new RegExp(this.wakePhrase, 'gi'), '').trim()
-          
-          if (command.length > 0) {
-            console.log("[SimpleVoice] Command after wake word:", command)
-            this.pendingCommand = command
-            this.updateStatus(`Executing: "${command}"`)
-            
-            // Process the command
-            this.processVoiceInput(command).then(() => {
-              // Reset after processing
-              this.wakeWordDetected = false
-              this.pendingCommand = ""
-              
-              // Reset button appearance
-              if (this.button) {
-                this.button.classList.remove('wake-word-detected')
-                this.updateButtonHtml('🎤 Say "Hey Otto"')
-              }
-              
-              // Continue listening for more commands
-              if (this.wakeWordEnabled) {
-                this.updateStatus("Say 'Hey Otto' again for another command")
-              }
-            })
-            return // Don't process further
-          }
-        }
-        
-        // Normal mode (no wake word) - process final results
-        if (!this.wakeWordEnabled && result.isFinal) {
-          const finalTranscript = result[0].transcript.trim()
-          if (finalTranscript) {
-            console.log("[SimpleVoice] Final transcript:", finalTranscript)
-            const wasAutoRestart = this.autoRestart
-            this.autoRestart = false
-            this.processVoiceInput(finalTranscript).then(() => {
-              if (wasAutoRestart) {
-                this.autoRestart = true
-              }
-            })
-          }
+        if (result.isFinal) {
+          console.log("[SimpleVoice] Final:", transcript)
+          this.processVoiceInput(transcript)
           return
         }
+      }
+      
+      // Interim result
+      if (transcript) {
+        this.updateStatus(`Hearing: "${transcript}"`)
       }
     }
 
     this.recognition.onend = () => {
-      console.log("[SimpleVoice] Recognition ended")
+      console.log("[SimpleVoice] Ended")
       this.isListening = false
-      this.updateUIListening(false)
-      // Don't auto-restart here - only restart after processing a response
-      // This prevents the on/off loop when silence is detected
-      // Also reset the recognition object to prevent "already started" errors
-      this.recognition = null
-      // Reinitialize for next use
-      setTimeout(() => this.initializeSpeechRecognition(), 100)
+      this.updateButtonReady()
     }
 
     this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error("[SimpleVoice] Error:", event.error, event.message)
+      console.error("[SimpleVoice] Error:", event.error)
+      // Stop on errors
+      this.isListening = false
       this.updateStatus(`Error: ${event.error}`)
-      // Reset recognition to prevent "already started" errors
-      this.recognition = null
-      // Reinitialize for next use
-      setTimeout(() => this.initializeSpeechRecognition(), 100)
+      this.updateButtonReady()
     }
+
+    return true
   }
 
-  toggle(event?: Event): void {
-    console.log("[SimpleVoice] Toggle called, event:", event, "isListening:", this.isListening, "autoRestart:", this.autoRestart, "wakeWordEnabled:", this.wakeWordEnabled)
-    event?.preventDefault()
+  private startListening(): void {
+    if (!this.initializeSpeechRecognition()) return
     
-    // If wake word is enabled, toggle it off
-    if (this.wakeWordEnabled) {
-      this.disableWakeWordMode()
-      return
-    }
-    
-    // Show menu to enable wake word or start manual voice
-    if (!this.recognition) {
-      this.updateStatus("Voice not supported")
-      return
-    }
-    
-    // Simple toggle: start/stop manual listening
-    if (this.isListening || this.autoRestart) {
-      console.log("[SimpleVoice] Stopping listening")
-      this.autoRestart = false
-      this.stopListening()
-      this.updateStatus("Ready - tap to talk")
-    } else {
-      console.log("[SimpleVoice] Starting manual listening")
-      this.autoRestart = true
-      this.wakeWordEnabled = false
-      this.updateStatus("Listening... Speak now!")
-      this.startListening()
-    }
-  }
-
-  // New method: Long press or double-tap to enable wake word mode
-  enableWakeWord(event?: Event): void {
-    event?.preventDefault()
-    console.log("[SimpleVoice] Enabling wake word mode")
-    this.enableWakeWordMode()
-  }
-
-  // Disable wake word
-  disableWakeWord(event?: Event): void {
-    event?.preventDefault()
-    console.log("[SimpleVoice] Disabling wake word mode")
-    this.disableWakeWordMode()
-  }
-
-  startListening(): void {
-    // More robust guard - check if recognition exists and is in a valid state
-    if (!this.recognition) {
-      console.log("[SimpleVoice] Cannot start: no recognition object, reinitializing...")
-      // Reinitialize recognition if it's null
-      this.initializeSpeechRecognition()
-      setTimeout(() => this.startListening(), 200)
-      return
-    }
-    
-    // Check if already listening or processing
-    if (this.isListening) {
-      console.log("[SimpleVoice] Cannot start: already listening, isListening=", this.isListening)
-      return
-    }
-    
-    // Guard against rapid restart calls on mobile
-    if (this.recognitionStartTimeout) {
-      clearTimeout(this.recognitionStartTimeout)
-      this.recognitionStartTimeout = null
-    }
-    
-    console.log("[SimpleVoice] Attempting to start recognition...")
     try {
-      // Check if recognition is in a state where we can start it
-      // Sometimes the browser holds onto the recognition object even after stopping
+      this.recognition?.start()
+    } catch (e) {
+      console.error("[SimpleVoice] Start failed:", e)
+    }
+  }
+
+  private stopListening(): void {
+    if (this.recognition) {
       try {
-        // First try to stop any existing recognition
         this.recognition.stop()
       } catch (e) {
-        // Ignore - recognition might not be running
+        // Ignore errors when stopping - may already be stopped
+        console.log("[SimpleVoice] Stop recognition:", e)
       }
-      
-      // Small delay to ensure clean state
-      setTimeout(() => {
-        try {
-          this.recognition?.start()
-          console.log("[SimpleVoice] recognition.start() called successfully")
-        } catch (startError: any) {
-          if (startError.message?.includes('already started')) {
-            console.log("[SimpleVoice] Recognition already running, waiting for it to stop...")
-            // Wait a bit longer and try again
-            this.recognitionStartTimeout = setTimeout(() => this.startListening(), 500)
-          } else {
-            console.error("[SimpleVoice] Failed to start recognition:", startError)
-          }
-        }
-      }, 100)
-    } catch (e: any) {
-      console.error("[SimpleVoice] Failed to start recognition:", e)
-    }
-  }
-
-  stopListening(): void {
-    if (this.recognition && this.isListening) {
-      try { this.recognition.stop() } catch(e) { /* ignore */ }
     }
     this.isListening = false
-    this.updateUIListening(false)
+    this.updateButtonReady()
+    this.updateStatus("Ready")
   }
 
   private async processVoiceInput(text: string): Promise<void> {
+    if (!text.trim()) return
+    
+    console.log("Transcript received")
     this.isProcessing = true
-    this.updateStatus(`Processing: "${text}"`)
-    this.updateUIProcessing(true)
+    this.updateButtonProcessing()
+    this.updateStatus("Thinking...")
+
+    // Add user's message to chat immediately
+    this.addMessageToChat('user', text)
 
     try {
-      const response = await this.sendToOttoPilot(text)
+      const response = await this.sendToAI(text)
       this.displayResponse(response)
-      // Auto-restart ONLY in manual mode (not wake word mode)
-      // and only if the user explicitly wants continuous listening
-      if (this.autoRestart && !this.wakeWordEnabled) {
-        setTimeout(() => this.startListening(), 1500)
-      }
     } catch (e: any) {
+      console.error("[SimpleVoice] Error:", e)
       this.updateStatus(`Error: ${e.message}`)
     } finally {
       this.isProcessing = false
-      this.updateUIProcessing(false)
+      this.updateButtonReady()
     }
   }
 
-  private async sendToOttoPilot(text: string): Promise<string> {
-    console.log("[SimpleVoice] Sending:", text, "to conversation:", this.conversationId)
-
-    if (!this.conversationId) {
-      console.error("[SimpleVoice] No conversation ID found on page")
-      throw new Error("No conversation. Please refresh the page and try again.")
+  private async sendToAI(text: string): Promise<string> {
+    console.log("Sending to /api/v1/ai_chat/stream_message (with tools)")
+    
+    // Get conversation ID - try multiple sources
+    let conversationId = ''
+    const urlParams = new URLSearchParams(window.location.search)
+    const pathMatch = window.location.pathname.match(/ai_chat\/(\d+)/)
+    
+    // Check URL path first
+    if (pathMatch) {
+      conversationId = pathMatch[1]
     }
-
+    // Check data attribute on page
+    const convEl = document.querySelector('[data-conversation-id]')
+    if (convEl) {
+      conversationId = convEl.getAttribute('data-conversation-id') || ''
+    }
+    
+    console.log("[SimpleVoice] Using conversation ID:", conversationId)
+    
     const response = await fetch('/api/v1/ai_chat/stream_message', {
       method: 'POST',
       headers: { 
@@ -461,7 +222,10 @@ export default class SimpleVoiceController extends Controller {
         'Accept': 'application/json',
         'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
       },
-      body: JSON.stringify({ conversation_id: this.conversationId, message: text }),
+      body: JSON.stringify({ 
+        message: text,
+        conversation_id: conversationId
+      }),
       credentials: 'include'
     })
 
@@ -470,16 +234,52 @@ export default class SimpleVoiceController extends Controller {
       throw new Error(err.error || `HTTP ${response.status}`)
     }
     const data = await response.json()
-    return data.response || data.message || ''
+    console.log("[SimpleVoice] Chat response received:", data)
+    // Return the message content from the response
+    return data.ai_message?.content || data.message || data.response || ''
   }
 
   private displayResponse(text: string): void {
-    if (this.responseEl) {
-      this.responseEl.textContent = text
-      this.responseEl.classList.remove('hidden')
+    const responseTextEl = document.getElementById('voice-response-text')
+    if (responseTextEl) {
+      responseTextEl.textContent = text
+      responseTextEl.classList.remove('hidden')
     }
+    this.updateStatus("Done")
+    
+    // Also add to main chat container
+    this.addMessageToChat('assistant', text)
+    
     this.speakText(text)
-    this.updateStatus("Ready")
+  }
+
+  private addMessageToChat(role: string, content: string): void {
+    const chatContainer = document.getElementById("chat-messages")
+    if (!chatContainer) return
+
+    // Remove empty state
+    const empty = chatContainer.querySelector('.flex.flex-col.items-center.justify-center')
+    if (empty) empty.remove()
+
+    const isUser = role === 'user'
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    
+    const html = `<div class="message ${role} mb-4 flex ${isUser?'justify-end':'justify-start'}">
+      <div class="flex ${isUser?'flex-row-reverse':'flex-row'} items-start gap-3 max-w-3xl">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center ${isUser?'bg-gradient-to-br from-primary to-secondary':'bg-gradient-to-br from-green-500 to-emerald-500'}">
+          ${isUser?'👤':'🤖'}
+        </div>
+        <div class="${isUser?'text-right':'text-left'}">
+          <div class="inline-block p-4 rounded-2xl ${isUser?'bg-gradient-to-br from-primary to-secondary text-white':'bg-white border border-gray-200 text-gray-900'}">
+            <p class="text-sm">${content}</p>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">${time}</p>
+        </div>
+      </div>
+    </div>`
+
+    chatContainer.insertAdjacentHTML('afterbegin', html)
+    chatContainer.scrollTop = 0
   }
 
   private speakText(text: string): void {
@@ -488,18 +288,17 @@ export default class SimpleVoiceController extends Controller {
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = 'en-US'
     
-    // Try to select a male voice
+    // Get the selected voice from localStorage
+    const selectedVoice = localStorage.getItem('otto_voice') || 'alloy'
     const voices = window.speechSynthesis.getVoices()
-    const maleVoice = voices.find((v: any) => 
-      v.name.includes('Male') || 
-      v.name.includes('David') || 
-      v.name.includes('Mark') || 
-      v.name.includes('James') ||
-      v.name.includes('John') ||
-      v.name.includes('Paul')
-    )
-    if (maleVoice) {
-      utterance.voice = maleVoice
+    
+    // Try to find a matching voice
+    const voice = voices.find(v => v.name.toLowerCase().includes(selectedVoice)) ||
+                  voices.find(v => v.name.toLowerCase().includes('english')) ||
+                  voices[0]
+    
+    if (voice) {
+      utterance.voice = voice
     }
     
     window.speechSynthesis.speak(utterance)
@@ -510,31 +309,38 @@ export default class SimpleVoiceController extends Controller {
     if (this.statusEl) this.statusEl.textContent = msg
   }
 
-  private showVoiceNotSupported(): void {
-    // Update the floating button to show voice is not supported
-    if (this.button) {
-      this.button.classList.add('opacity-50', 'cursor-not-allowed')
-      this.button.setAttribute('title', 'Voice not supported on this browser')
-    }
-    this.updateStatus('Voice not supported on this browser. Please try Chrome on desktop or Android.')
-  }
-
-  private updateUIListening(listening: boolean): void {
-    this.button?.classList.toggle('animate-pulse', listening)
-    this.button?.classList.toggle('listening', listening)
-  }
-
-  private updateUIProcessing(processing: boolean): void {
-    this.button?.classList.toggle('processing', processing)
-  }
-
-  private updateButtonHtml(label: string): void {
+  private updateButtonReady(): void {
     if (this.button) {
       this.button.innerHTML = `
-        <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.micIconPath}"></path>
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
         </svg>
-        <span class="text-white font-medium text-sm pr-1">${label}</span>
+        <span class="text-white font-medium text-sm pr-1">🎤 Talk to Otto</span>
+      `
+      this.button.classList.remove('listening', 'processing')
+    }
+  }
+
+  private updateButtonListening(): void {
+    if (this.button) {
+      this.button.classList.add('listening')
+      this.button.innerHTML = `
+        <svg class="w-6 h-6 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+        </svg>
+        <span class="text-white font-medium text-sm pr-1">Listening...</span>
+      `
+    }
+  }
+
+  private updateButtonProcessing(): void {
+    if (this.button) {
+      this.button.classList.add('processing')
+      this.button.innerHTML = `
+        <svg class="w-6 h-6 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        <span class="text-white font-medium text-sm pr-1">Thinking...</span>
       `
     }
   }

@@ -8,13 +8,19 @@ class AiChatController < ApplicationController
       session_type: 'chat',
       metadata: {}
     )
-    @messages = @current_conversation.ai_messages.order(created_at: :asc)
+    @messages = @current_conversation.ai_messages.order(created_at: :desc)
+    
+    # Handle voice_message param from Otto-Pilot redirect
+    @voice_message = params[:voice_message].presence
+    if @voice_message
+      Rails.logger.info "[AiChat] Voice message from URL: #{@voice_message[0..50]}"
+    end
   end
   
   def show
     @conversations = current_user.ai_conversations.order(updated_at: :desc).limit(10)
     @conversation = current_user.ai_conversations.find(params[:id])
-    @messages = @conversation.ai_messages.order(created_at: :asc)
+    @messages = @conversation.ai_messages.order(created_at: :desc)
     @current_conversation = @conversation
   end
   
@@ -44,9 +50,17 @@ class AiChatController < ApplicationController
     
     # Get the conversation from result
     @conversation = current_user.ai_conversations.find(result[:conversation_id])
-    @messages = @conversation.ai_messages.order(created_at: :asc)
+    @messages = @conversation.ai_messages.order(created_at: :desc)
     
     # Return Turbo Stream response for frontend updates
     render 'send_message'
+  end
+  
+  def toggle_voice
+    voice_setting = current_user.voice_settings.first_or_initialize
+    voice_setting.enabled = !voice_setting.enabled
+    voice_setting.save!
+    
+    redirect_back(fallback_location: ai_chat_index_path)
   end
 end

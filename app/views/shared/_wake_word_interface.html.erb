@@ -26,7 +26,7 @@
       <span class="text-sm text-gray-600">
         <%= current_user.voice_settings.first&.enabled? ? 'Enabled' : 'Disabled' %>
       </span>
-      <%= form_with url: toggle_ai_autopilot_index_path, method: :post, id: 'wake-word-toggle-form-local' do |f| %>
+      <%= form_with url: toggle_voice_ai_chat_index_path, method: :post, id: 'wake-word-toggle-form-local' do |f| %>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox"
                  class="sr-only peer"

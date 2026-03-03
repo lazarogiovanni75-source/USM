@@ -11,68 +11,107 @@ class SocialMediaDashboardController < ApplicationController
     # Get user's connected social accounts
     @social_accounts = current_user.social_accounts.order(platform: :asc)
 
-    # Build platform data with real metrics from Postforme
-    @platforms_data = PLATFORMS.map do |platform|
-      account = @social_accounts.find { |a| a.platform == platform }
-
-      if account&.configured_for_postforme?
-        # Fetch real metrics from Postforme, fallback to local if API fails
-        metrics = @dashboard_service.fetch_account_metrics(account)
-        
-        if metrics[:connected]
-          # Postforme succeeded - use API data
-          metrics[:name] = account.account_name || metrics[:name] || platform.titleize
-          metrics
-        else
-          # Postforme API failed - fallback to local stored metrics
-          {
-            platform: platform,
-            name: account.account_name || platform.titleize,
-            connected: false,
-            account: account,
-            followers: account.followers || 0,
-            likes: account.likes || 0,
-            views: account.views || 0,
-            engagement: account.engagement || 0,
-            shares: account.shares || 0,
-            new_followers: account.new_followers || 0,
-            unfollowers: account.unfollowers || 0,
-            messages: account.messages || 0,
-            error: metrics[:error]
-          }
+    # Build platform data with ALL accounts (not just first one per platform)
+    @platforms_data = {}
+    
+    PLATFORMS.each do |platform|
+      platform_accounts = @social_accounts.select { |a| a.platform == platform }
+      
+      if platform_accounts.any?
+        # Process all accounts for this platform
+        platform_accounts_data = platform_accounts.map do |account|
+          if account.configured_for_postforme?
+            metrics = @dashboard_service.fetch_account_metrics(account)
+            
+            if metrics[:connected]
+              {
+                platform: platform,
+                name: account.account_name || metrics[:name] || platform.titleize,
+                connected: true,
+                account: account,
+                followers: metrics[:followers],
+                likes: metrics[:likes],
+                views: metrics[:views],
+                engagement: metrics[:engagement],
+                shares: metrics[:shares],
+                new_followers: metrics[:new_followers],
+                unfollowers: metrics[:unfollowers],
+                messages: metrics[:messages],
+                posts_count: metrics[:posts_count],
+                last_synced: metrics[:last_synced]
+              }
+            else
+              {
+                platform: platform,
+                name: account.account_name || platform.titleize,
+                connected: false,
+                account: account,
+                followers: account.followers || 0,
+                likes: account.likes || 0,
+                views: account.views || 0,
+                engagement: account.engagement || 0,
+                shares: account.shares || 0,
+                new_followers: account.new_followers || 0,
+                unfollowers: account.unfollowers || 0,
+                messages: account.messages || 0,
+                posts_count: 0,
+                error: metrics[:error]
+              }
+            end
+          else
+            {
+              platform: platform,
+              name: account.account_name || platform.titleize,
+              connected: false,
+              account: account,
+              followers: account.followers || 0,
+              likes: account.likes || 0,
+              views: account.views || 0,
+              engagement: account.engagement || 0,
+              shares: account.shares || 0,
+              new_followers: account.new_followers || 0,
+              unfollowers: account.unfollowers || 0,
+              messages: account.messages || 0,
+              posts_count: 0
+            }
+          end
         end
+        
+        @platforms_data[platform] = platform_accounts_data
       else
-        # Account not connected to Postforme
-        {
+        # No accounts for this platform
+        @platforms_data[platform] = [{
           platform: platform,
           name: platform.titleize,
           connected: false,
-          account: account,
-          followers: account&.followers || 0,
-          likes: account&.likes || 0,
-          views: account&.views || 0,
-          engagement: account&.engagement || 0,
-          shares: account&.shares || 0,
-          new_followers: account&.new_followers || 0,
-          unfollowers: account&.unfollowers || 0,
-          messages: account&.messages || 0
-        }
+          account: nil,
+          followers: 0,
+          likes: 0,
+          views: 0,
+          engagement: 0,
+          shares: 0,
+          new_followers: 0,
+          unfollowers: 0,
+          messages: 0,
+          posts_count: 0
+        }]
       end
     end
 
-    # Calculate totals from real data
+    # Calculate totals from all accounts
+    all_accounts_data = @platforms_data.values.flatten
     @totals = {
-      likes: @platforms_data.sum { |p| p[:likes].to_i },
-      views: @platforms_data.sum { |p| p[:views].to_i },
-      engagement: @platforms_data.sum { |p| p[:engagement].to_i },
-      shares: @platforms_data.sum { |p| p[:shares].to_i },
-      followers: @platforms_data.sum { |p| p[:followers].to_i },
-      new_followers: @platforms_data.sum { |p| p[:new_followers].to_i },
-      unfollowers: @platforms_data.sum { |p| p[:unfollowers].to_i },
-      messages: @platforms_data.sum { |p| p[:messages].to_i }
+      likes: all_accounts_data.sum { |p| p[:likes].to_i },
+      views: all_accounts_data.sum { |p| p[:views].to_i },
+      engagement: all_accounts_data.sum { |p| p[:engagement].to_i },
+      shares: all_accounts_data.sum { |p| p[:shares].to_i },
+      followers: all_accounts_data.sum { |p| p[:followers].to_i },
+      new_followers: all_accounts_data.sum { |p| p[:new_followers].to_i },
+      unfollowers: all_accounts_data.sum { |p| p[:unfollowers].to_i },
+      messages: all_accounts_data.sum { |p| p[:messages].to_i }
     }
 
-    @connected_count = @platforms_data.count { |p| p[:connected] }
+    @connected_count = all_accounts_data.count { |p| p[:connected] }
     @syncing = params[:syncing] == 'true'
   end
 

@@ -9,13 +9,14 @@
           <p class="mt-1 text-gray-600">View all your social media metrics in one place</p>
         </div>
         <div class="flex items-center space-x-4">
-          <span class="text-sm text-gray-500"><%= @connected_count %>/9 platforms connected</span>
-          <button class="btn-secondary">
+          <span class="text-sm text-gray-500"><%= @connected_count %> accounts connected</span>
+          <%= link_to sync_all_social_media_dashboard_index_path, class: "btn-secondary", data: { turbo_method: :post } do %>
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
             Refresh
-          </button>
+          <% end %>
+          <%= link_to "Connect Accounts", social_account_connections_path, class: "btn-primary" %>
         </div>
       </div>
     </div>
@@ -60,11 +61,23 @@
       </div>
     </div>
 
-    <!-- Platform Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <% @platforms_data.each do |platform| %>
-        <%= render 'platform_card', platform: platform %>
-      <% end %>
-    </div>
+    <!-- Platform Sections -->
+    <% @platforms_data.each do |platform, accounts| %>
+      <% next unless accounts.any? { |a| a[:connected] } || accounts.first[:account].present? %>
+      <div class="mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+          <span class="mr-2"><%= platform_icon(platform) %></span>
+          <%= platform.titleize %>
+          <span class="ml-2 text-sm font-normal text-gray-500">
+            (<%= accounts.count { |a| a[:connected] } %>/<%= accounts.count %> connected)
+          </span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <% accounts.each do |account_data| %>
+            <%= render 'platform_card', platform: account_data %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
   </div>
 </div>

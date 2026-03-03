@@ -47,7 +47,7 @@ class SocialAccountConnectionsController < ApplicationController
       render turbo_stream: turbo_stream.replace(
         'profiles-list',
         partial: 'social_account_connections/profiles_list',
-        locals: { profiles: [], error: @error }
+        locals: { profiles: [], error: @error, api_key: nil }
       )
       return
     end
@@ -57,7 +57,7 @@ class SocialAccountConnectionsController < ApplicationController
       render turbo_stream: turbo_stream.replace(
         'profiles-list',
         partial: 'social_account_connections/profiles_list',
-        locals: { profiles: @profiles, error: nil }
+        locals: { profiles: @profiles, error: nil, api_key: api_key }
       )
     rescue PostformeService::PostformeError => e
       Rails.logger.error("[SocialAccountConnections] Error fetching profiles: #{e.message}")
@@ -65,7 +65,7 @@ class SocialAccountConnectionsController < ApplicationController
       render turbo_stream: turbo_stream.replace(
         'profiles-list',
         partial: 'social_account_connections/profiles_list',
-        locals: { profiles: [], error: @error }
+        locals: { profiles: [], error: @error, api_key: nil }
       )
     rescue StandardError => e
       Rails.logger.error("[SocialAccountConnections] Error fetching profiles: #{e.message}")
@@ -73,7 +73,7 @@ class SocialAccountConnectionsController < ApplicationController
       render turbo_stream: turbo_stream.replace(
         'profiles-list',
         partial: 'social_account_connections/profiles_list',
-        locals: { profiles: [], error: @error }
+        locals: { profiles: [], error: @error, api_key: nil }
       )
     end
   end
@@ -319,5 +319,9 @@ class SocialAccountConnectionsController < ApplicationController
 
   def set_service
     @service = PostformeDashboardService.new
+  end
+
+  def postforme_oauth_callback_url
+    auth_postforme_callback_url
   end
 end

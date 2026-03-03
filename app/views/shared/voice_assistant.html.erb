@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voice Assistant Demo</title>
+</head>
+<body>
+  <button id="record" style="padding: 20px 40px; font-size: 18px; cursor: pointer;">
+    🎤 Hold to Record (5s)
+  </button>
+
+  <div id="status" style="margin-top: 20px; font-family: monospace;"></div>
+
+  <script>
+    const button = document.getElementById("record");
+    const status = document.getElementById("status");
+
+    button.onclick = async () => {
+      status.textContent = "🎙️ Recording...";
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      let chunks = [];
+
+      recorder.ondataavailable = e => chunks.push(e.data);
+      
+      recorder.onstop = async () => {
+        status.textContent = "⏳ Processing...";
+        
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const formData = new FormData();
+        formData.append("audio", blob, "recording.webm");
+
+        // 1. Transcribe audio
+        const res = await fetch("/api/v1/transcribe", {
+          method: "POST",
+          body: formData
+        });
+        
+        const data = await res.json();
+        const userText = data.text || "No transcript";
+        status.textContent = `👤 You: ${userText}`;
+
+        // 2. Send to chat
+        const chatRes = await fetch("/api/v1/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userText })
+        });
+
+        const chatData = await chatRes.json();
+        const aiText = chatData.choices?.[0]?.message?.content || "No response";
+        status.textContent += `\n🤖 AI: ${aiText}`;
+
+        // 3. Get speech
+        const speechRes = await fetch("/api/v1/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: aiText })
+        });
+
+        const audioBlob = await speechRes.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        new Audio(audioUrl).play();
+        
+        status.textContent += "\n🔊 Playing response...";
+      };
+
+      recorder.start();
+      setTimeout(() => recorder.stop(), 5000);
+    };
+  </script>
+</body>
+</html>

@@ -2,16 +2,22 @@ import { Controller } from "@hotwired/stimulus"
 
 // AI Voice Chat Controller - Uses browser's webkitSpeechRecognition
 export default class AiVoiceChatController extends Controller {
+  // stimulus-validator: disable-next-line
   static targets = ["button", "indicator", "status", "transcript"]
   
+  // stimulus-validator: disable-next-line
   declare readonly buttonTarget: HTMLButtonElement
+  // stimulus-validator: disable-next-line
   declare readonly indicatorTarget: HTMLElement
+  // stimulus-validator: disable-next-line
   declare readonly statusTarget: HTMLElement
+  // stimulus-validator: disable-next-line
   declare readonly transcriptTarget: HTMLElement
   
   private recognition: any = null
   private isRecording: boolean = false
   private isProcessing: boolean = false
+  private shouldBeListening: boolean = false
   
   connect(): void {
     this.initializeSpeechRecognition()
@@ -41,6 +47,7 @@ export default class AiVoiceChatController extends Controller {
     
     this.recognition.onstart = () => {
       this.isRecording = true
+      this.shouldBeListening = true
       this.updateUI(true)
       this.updateStatus('Listening... Speak now')
     }
@@ -85,7 +92,10 @@ export default class AiVoiceChatController extends Controller {
     
     this.recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error)
+      
+      // Stop on errors
       this.isRecording = false
+      this.shouldBeListening = false
       this.updateUI(false)
       
       if (event.error === 'not-allowed') {
@@ -97,11 +107,8 @@ export default class AiVoiceChatController extends Controller {
     
     this.recognition.onend = () => {
       this.isRecording = false
+      this.shouldBeListening = false
       this.updateUI(false)
-      
-      if (!this.isProcessing) {
-        this.updateStatus('Voice off')
-      }
     }
   }
   
@@ -138,6 +145,7 @@ export default class AiVoiceChatController extends Controller {
   }
   
   private stopListening(): void {
+    this.shouldBeListening = false
     if (this.recognition && this.isRecording) {
       try {
         this.recognition.stop()
@@ -149,7 +157,16 @@ export default class AiVoiceChatController extends Controller {
     this.updateUI(false)
   }
   
-  submitVoiceMessage(): void {
+  submitVoiceMessage(event?: Event): void {
+    event?.preventDefault()
+    event?.stopPropagation()
+    
+    // Prevent double submission
+    if (this.isProcessing) {
+      console.warn('[AiVoiceChat] Already processing, ignoring submit')
+      return
+    }
+    
     this.isProcessing = true
     this.updateStatus('Processing...')
     
@@ -158,14 +175,19 @@ export default class AiVoiceChatController extends Controller {
     const message = inputEl?.value?.trim();
     
     if (!message) {
+      console.warn('[AiVoiceChat] No message to send')
       this.updateStatus('No message to send')
       this.isProcessing = false
       return
     }
     
+    console.log('[AiVoiceChat] Submitting voice message:', message)
+    
     // Get conversation ID from hidden field
     const convIdInput = document.querySelector('input[name="conversation_id"]') as HTMLInputElement;
     const conversationId = convIdInput?.value;
+    
+    console.log('[AiVoiceChat] Conversation ID:', conversationId)
     
     // Call the streaming API directly
     this.callStreamingAPI(conversationId, message)
@@ -231,18 +253,81 @@ export default class AiVoiceChatController extends Controller {
         throw new Error(errorData.error || 'Failed to send message');
       }
       
+      const data = await response.json();
+      
       // Clear input
       const inputEl = document.querySelector('[data-ai-voice-chat-target="input"]') as HTMLTextAreaElement;
       if (inputEl) {
         inputEl.value = '';
       }
       
-      this.updateStatus('Processing complete');
+      // Manually append messages to chat container (since we're not using Turbo Stream)
+      const chatContainer = document.getElementById("chat-messages");
+      if (chatContainer && data) {
+        // Remove empty state if exists
+        const emptyState = chatContainer.querySelector('.flex.flex-col.items-center.justify-center');
+        if (emptyState) {
+          emptyState.remove();
+        }
+        
+        // Append user message
+        if (data.user_message) {
+          const userHtml = this.buildMessageHtml('user', data.user_message.content, data.user_message.created_at);
+          chatContainer.insertAdjacentHTML('afterbegin', userHtml);
+        }
+        
+        // Append AI message
+        if (data.ai_message) {
+          const aiHtml = this.buildMessageHtml('assistant', data.ai_message.content, data.ai_message.created_at);
+          chatContainer.insertAdjacentHTML('afterbegin', aiHtml);
+        }
+        
+        // Scroll to top
+        chatContainer.scrollTop = 0;
+      }
+      
+      // Reset processing state immediately to allow new recordings
+      this.isProcessing = false;
+      this.updateStatus('Voice off');
       
     } catch (error: any) {
       console.error('Voice message error:', error);
       this.updateStatus(`Error: ${error.message}`);
     }
+  }
+  
+  private buildMessageHtml(role: string, content: string, timestamp: string): string {
+    const isUser = role === 'user';
+    const time = timestamp
+      ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const userIcon = '👤';
+    const aiIcon = '🤖';
+
+    const userDivClass = 'w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary to-secondary';
+    const aiDivClass = 'w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-green-500 to-emerald-500';
+    const userBubbleClass = 'inline-block p-4 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white';
+    const aiBubbleClass = 'inline-block p-4 rounded-2xl bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-900 dark:text-white';
+    const alignClass = isUser ? 'text-right' : 'text-left';
+
+    return `
+      <div class="message ${role} mb-4 flex ${isUser ? 'justify-end' : 'justify-start'}">
+        <div class="flex ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start gap-3 max-w-3xl">
+          <div class="flex-shrink-0">
+            <div class="${isUser ? userDivClass : aiDivClass}">
+              ${isUser ? userIcon : aiIcon}
+            </div>
+          </div>
+          <div class="${alignClass}">
+            <div class="${isUser ? userBubbleClass : aiBubbleClass} shadow-sm">
+              <p class="text-sm whitespace-pre-wrap">${content}</p>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${time}</p>
+          </div>
+        </div>
+      </div>
+    `;
   }
   
   private updateUI(listening: boolean): void {

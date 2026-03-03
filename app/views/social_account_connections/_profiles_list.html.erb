@@ -16,7 +16,7 @@
             connect_profile_social_account_connections_path,
             method: :post,
             params: {
-              api_key: session[:postforme_api_key],
+              api_key: api_key || session[:postforme_api_key],
               profile_id: profile[:id],
               platform: profile[:platform] || 'unknown'
             },

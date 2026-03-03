@@ -59,16 +59,33 @@ const STOP_ICON = (
 export default class extends Controller<HTMLElement> {
   // stimulus-validator: disable-next-line
   static values = {
-    conversationId: String
+    conversationId: { type: String, default: '' },
+    voiceMessage: { type: String, default: '' }
   }
 
   // stimulus-validator: disable-next-line
   static targets = ["form", "input", "messagesContainer", "sendBtn"]
 
+  // For TypeScript to recognize has*Target properties
+  // stimulus-validator: disable-next-line
+  declare hasFormTarget: boolean
+  // stimulus-validator: disable-next-line
+  declare hasInputTarget: boolean
+  // stimulus-validator: disable-next-line
+  declare hasMessagesContainerTarget: boolean
+  // stimulus-validator: disable-next-line
+  declare hasSendBtnTarget: boolean
+
   declare readonly conversationIdValue: string
+  // stimulus-validator: disable-next-line
+  declare readonly voiceMessageValue: string
+  // stimulus-validator: disable-next-line
   declare readonly formTarget: HTMLFormElement
+  // stimulus-validator: disable-next-line
   declare readonly inputTarget: HTMLTextAreaElement
+  // stimulus-validator: disable-next-line
   declare readonly messagesContainerTarget: HTMLElement
+  // stimulus-validator: disable-next-line
   declare readonly sendBtnTarget: HTMLButtonElement
 
   private cableSubscription: any = null
@@ -80,8 +97,165 @@ export default class extends Controller<HTMLElement> {
 
   connect(): void {
     console.log("AI Chat controller connected")
-    this.subscribeToCable()
-    this.setupQuickPromptButtons()
+    // Use setTimeout to ensure DOM is fully ready
+    setTimeout(() => {
+      this.subscribeToCable()
+      this.setupQuickPromptButtons()
+      this.handleVoiceMessage()
+      this.initSettingsPanel()
+    }, 100)
+  }
+
+  private initSettingsPanel(): void {
+    console.log("[AIChat] initSettingsPanel called")
+    const voiceSelect = document.getElementById('voice-select') as HTMLSelectElement
+    const speechRate = document.getElementById('speech-rate') as HTMLInputElement
+    const speechRateValue = document.getElementById('speech-rate-value')
+    const autoSpeakToggle = document.getElementById('auto-speak-toggle') as HTMLButtonElement
+    const testVoiceBtn = document.getElementById('test-voice-btn')
+    const personalitySelect = document.getElementById('ai-personality') as HTMLSelectElement
+
+    console.log("[AIChat] Elements found:", {
+      voiceSelect: !!voiceSelect,
+      speechRate: !!speechRate,
+      autoSpeakToggle: !!autoSpeakToggle,
+      testVoiceBtn: !!testVoiceBtn,
+      personalitySelect: !!personalitySelect
+    })
+
+    // Load saved settings
+    const savedVoice = localStorage.getItem('otto_voice') || 'alloy'
+    const savedRate = localStorage.getItem('otto_speech_rate') || '1'
+    const savedPersonality = localStorage.getItem('otto_personality') || 'default'
+
+    if (voiceSelect) {
+      voiceSelect.value = savedVoice
+      console.log("[AIChat] Voice select found, saved voice:", savedVoice)
+      voiceSelect.addEventListener('change', () => {
+        localStorage.setItem('otto_voice', voiceSelect.value)
+        console.log("[AIChat] Voice changed to:", voiceSelect.value)
+        this.testVoice(voiceSelect.value)
+      })
+    } else {
+      console.error("[AIChat] Voice select not found!")
+    }
+
+    if (speechRate && speechRateValue) {
+      speechRate.value = savedRate
+      speechRateValue.textContent = `${parseFloat(savedRate).toFixed(1)}x`
+      speechRate.addEventListener('input', () => {
+        const rate = parseFloat(speechRate.value)
+        speechRateValue.textContent = `${rate.toFixed(1)}x`
+        localStorage.setItem('otto_speech_rate', rate.toString())
+      })
+    }
+
+    // Auto-speak toggle - using click listener only
+    if (autoSpeakToggle) {
+      const savedAutoSpeak = localStorage.getItem('otto_auto_speak')
+      const isEnabled = savedAutoSpeak !== 'false' // default true
+      this.updateAutoSpeakToggle(autoSpeakToggle, isEnabled)
+      console.log("[AIChat] Auto-speak init, enabled:", isEnabled, "saved:", savedAutoSpeak)
+      
+      autoSpeakToggle.addEventListener('click', () => {
+        const newState = !autoSpeakToggle.classList.contains('bg-purple-600')
+        this.updateAutoSpeakToggle(autoSpeakToggle, newState)
+        localStorage.setItem('otto_auto_speak', newState.toString())
+        console.log("[AIChat] Auto-speak toggled:", newState)
+      })
+    } else {
+      console.error("[AIChat] Auto-speak toggle not found!")
+    }
+
+    // Personality selection
+    if (personalitySelect) {
+      personalitySelect.value = savedPersonality
+      personalitySelect.addEventListener('change', () => {
+        localStorage.setItem('otto_personality', personalitySelect.value)
+      })
+    }
+
+    // Test voice button - already declared above
+    if (testVoiceBtn) {
+      testVoiceBtn.addEventListener('click', () => {
+        const voice = voiceSelect?.value || savedVoice
+        console.log('[AIChat] Test button clicked, testing voice:', voice)
+        this.testVoice(voice)
+      })
+    }
+  }
+
+  private async testVoice(voice: string): Promise<void> {
+    try {
+      console.log('[AIChat] Fetching test voice for:', voice)
+      const response = await fetch('/speak', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        body: JSON.stringify({ text: 'Hello! This is your new voice. Testing, one, two, three.', voice })
+      })
+      
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer()
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+        
+        const source = audioContext.createBufferSource()
+        source.buffer = audioBuffer
+        source.connect(audioContext.destination)
+        source.start(0)
+        
+        console.log('[AIChat] Playing test voice:', voice)
+      } else {
+        console.error('[AIChat] TTS response not ok:', response.status)
+      }
+    } catch (e) {
+      console.error('[AIChat] Failed to test voice:', e)
+    }
+  }
+
+  private updateAutoSpeakToggle(toggle: HTMLButtonElement, enabled: boolean): void {
+    const span = toggle.querySelector('span') as HTMLElement
+    if (enabled) {
+      toggle.classList.add('bg-purple-600')
+      toggle.classList.remove('bg-gray-300')
+      if (span) {
+        span.classList.add('translate-x-7')
+        span.classList.remove('translate-x-1')
+      }
+    } else {
+      toggle.classList.remove('bg-purple-600')
+      toggle.classList.add('bg-gray-300')
+      if (span) {
+        span.classList.remove('translate-x-7')
+        span.classList.add('translate-x-1')
+      }
+    }
+  }
+
+  toggleAutoSpeak(): void {
+    const toggle = document.getElementById('auto-speak-toggle') as HTMLButtonElement
+    if (toggle) {
+      const isEnabled = toggle.classList.contains('bg-purple-600')
+      this.updateAutoSpeakToggle(toggle, !isEnabled)
+      localStorage.setItem('otto_auto_speak', (!isEnabled).toString())
+    }
+  }
+
+  private handleVoiceMessage(): void {
+    const voiceMsg = this.voiceMessageValue
+    if (voiceMsg && voiceMsg.trim()) {
+      console.log("[AiChat] Auto-sending voice message:", voiceMsg)
+      // Set the message in the input
+      this.inputTarget.value = voiceMsg.trim()
+      // Auto-submit after a short delay to ensure everything is ready
+      setTimeout(() => {
+        this.sendMessage(new Event('submit'))
+      }, 500)
+    }
   }
 
   private setupQuickPromptButtons(): void {
@@ -125,6 +299,18 @@ export default class extends Controller<HTMLElement> {
   }
 
   private handleCableMessage(data: any): void {
+    // Guard: Don't process if targets don't exist (e.g., user on different page)
+    // Wrap in try-catch because even has*Target can fail during navigation
+    try {
+      if (!this.hasMessagesContainerTarget || !this.hasSendBtnTarget) {
+        console.log("[AiChat] Ignoring cable message - chat UI not present")
+        return
+      }
+    } catch (e) {
+      console.log("[AiChat] Ignoring cable message - controller disconnected")
+      return
+    }
+    
     switch (data.type) {
       case 'content_delta':
         this.appendContentDelta(data.delta)
@@ -180,6 +366,16 @@ export default class extends Controller<HTMLElement> {
   }
 
   private appendContentDelta(delta: string): void {
+    // Guard: Check if container exists
+    try {
+      if (!this.hasMessagesContainerTarget) {
+        console.log("[AiChat] Ignoring - messages container not found")
+        return
+      }
+    } catch (e) {
+      console.log("[AiChat] Ignoring - controller disconnected")
+      return
+    }
     let messageEl = this.currentAssistantMessage
     if (!messageEl) {
       this.hideTypingIndicator()
@@ -195,6 +391,16 @@ export default class extends Controller<HTMLElement> {
   }
 
   private handleCompletion(): void {
+    // Guard: Check if UI elements exist
+    try {
+      if (!this.hasSendBtnTarget || !this.hasInputTarget) {
+        console.log("[AiChat] Ignoring completion - UI not present")
+        return
+      }
+    } catch (e) {
+      console.log("[AiChat] Ignoring completion - controller disconnected")
+      return
+    }
     this.isGenerating = false
     this.hideTypingIndicator()
     this.showStopButton(false)
@@ -359,6 +565,11 @@ export default class extends Controller<HTMLElement> {
   }
 
   private showTypingIndicator(): void {
+    // Guard: Check if container exists
+    if (!this.messagesContainerTarget) {
+      console.log("[AiChat] Ignoring typing indicator - container not found")
+      return
+    }
     this.hideTypingIndicator()
     const indicator = document.createElement('div')
     indicator.id = 'typing-indicator'
@@ -423,54 +634,47 @@ export default class extends Controller<HTMLElement> {
     return div
   }
 
-  // Text-to-Speech: Speak the AI response
-  private speakResponse(text: string): void {
-    if (!('speechSynthesis' in window)) {
-      console.log("[AIChat] Text-to-speech not supported")
+  // Text-to-Speech: Speak the AI response using backend TTS
+  private async speakResponse(text: string): Promise<void> {
+    // Check if auto-speak is enabled
+    const autoSpeak = localStorage.getItem('otto_auto_speak')
+    if (autoSpeak === 'false') {
+      console.log("[AIChat] Auto-speak disabled, skipping")
       return
     }
 
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel()
-
-    // Strip emojis and problematic characters before speaking
+    // Strip emojis and problematic characters
     const cleanText = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/gu, '').trim()
     
     if (!cleanText || cleanText.length === 0) {
       return
     }
 
-    const utterance = new SpeechSynthesisUtterance(cleanText)
-    utterance.lang = 'en-US'
-    utterance.rate = 1.0
-    utterance.pitch = 1.0
+    // Get saved voice (default to alloy)
+    const voice = localStorage.getItem('otto_voice') || 'alloy'
+    
+    console.log("[AIChat] Speaking with voice:", voice)
 
-    // Try to select a male voice
-    const voices = window.speechSynthesis.getVoices()
-    const maleVoice = voices.find((v: any) => 
-      v.name.includes('Male') || 
-      v.name.includes('David') || 
-      v.name.includes('Mark') || 
-      v.name.includes('James') ||
-      v.name.includes('John') ||
-      v.name.includes('Paul')
-    )
-    if (maleVoice) {
-      utterance.voice = maleVoice
-    } else {
-      // Fallback to any English voice
-      const englishVoice = voices.find((v: any) => v.lang.startsWith('en'))
-      if (englishVoice) {
-        utterance.voice = englishVoice
+    try {
+      const response = await fetch('/speak', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        body: JSON.stringify({ text: cleanText, voice })
+      })
+      
+      if (response.ok) {
+        const audioBlob = await response.blob()
+        const audioUrl = URL.createObjectURL(audioBlob)
+        const audio = new Audio(audioUrl)
+        audio.play()
       }
+    } catch (e) {
+      console.error('[AIChat] TTS error:', e)
     }
-
-    utterance.onerror = (e) => {
-      console.log("[AIChat] Speech error:", e.error)
-    }
-
-    console.log("[AIChat] Speaking response:", cleanText.substring(0, 50))
-    window.speechSynthesis.speak(utterance)
   }
 
   private handleComplete(data: any): void {
@@ -490,9 +694,9 @@ export default class extends Controller<HTMLElement> {
         }
       }
       
-      // Speak the AI response if voice is enabled
-      const voiceBtn = document.getElementById('voice-chat-btn')
-      if (voiceBtn && voiceBtn.classList.contains('bg-success')) {
+      // Speak the AI response - check auto-speak setting
+      const autoSpeak = localStorage.getItem('otto_auto_speak')
+      if (autoSpeak !== 'false') {
         this.speakResponse(data.content)
       }
     }
@@ -743,11 +947,20 @@ export default class extends Controller<HTMLElement> {
   }
 
   private setLoading(loading: boolean): void {
+    // Guard: Check if button exists
+    if (!this.sendBtnTarget) {
+      return
+    }
     this.sendBtnTarget.disabled = loading
     this.sendBtnTarget.innerHTML = loading ? SPINNER : SEND_ICON
   }
 
   private scrollToBottom(): void {
-    this.messagesContainerTarget.scrollTop = this.messagesContainerTarget.scrollHeight
+    // Guard: Check if container exists
+    if (!this.messagesContainerTarget) {
+      return
+    }
+    // Scroll to top so newest messages (at top) are visible
+    this.messagesContainerTarget.scrollTop = 0
   }
 }

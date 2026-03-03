@@ -42,7 +42,12 @@ class PostformeService
     get_request("/social-accounts/#{account_id}/metrics")
   rescue PostformeService::PostformeError
     # Fallback: try getting metrics from account feed
-    account_feed(account_id, expand_metrics: true)
+    begin
+      account_feed(account_id, expand_metrics: true)
+    rescue PostformeService::PostformeError
+      # Return empty metrics if both endpoints fail
+      { 'data' => [] }
+    end
   end
 
   # Generate an OAuth URL for connecting an account
@@ -281,6 +286,12 @@ class PostformeService
     rescue SocketError, Errno::ECONNREFUSED => e
       log_error(e)
       raise PostformeError, "Connection refused: #{e.message}"
+    rescue PostformeError => e
+      # Don't log 404 errors - they're expected for optional endpoints
+      unless e.message.include?("Resource not found")
+        log_error(e)
+      end
+      raise
     rescue StandardError => e
       log_error(e)
       raise PostformeError, "Unknown error: #{e.message}"

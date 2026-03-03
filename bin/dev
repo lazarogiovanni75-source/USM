@@ -1,6 +1,18 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Load .env file if it exists
+env_file = File.expand_path('../.env', __dir__)
+if File.exist?(env_file)
+  File.read(env_file).each_line do |line|
+    line = line.strip
+    next if line.empty? || line.start_with?('#')
+    key, value = line.split('=', 2)
+    ENV[key] = value if key && value
+  end
+  puts "Loaded .env file"
+end
+
 # Unset conflicting environment variables that override config
 ENV.delete('CLACKY_LLM_API_KEY')
 ENV.delete('CLACKY_LLM_BASE_URL')

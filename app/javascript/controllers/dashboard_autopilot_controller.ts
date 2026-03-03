@@ -126,7 +126,7 @@ export default class DashboardAutopilotController extends Controller {
       `<p class="text-sm ${textClass}">${content}</p></div></div>` +
       `<p class="text-xs text-muted mt-1 ${alignClass}">${senderName} - Just now</p></div>`
     this.messagesContainerTarget.appendChild(div)
-    this.scrollToBottom()
+    this.scrollToTop()
   }
 
   setLoading(loading: boolean) {
@@ -134,8 +134,8 @@ export default class DashboardAutopilotController extends Controller {
     this.sendBtnTarget.innerHTML = loading ? SPINNER : SEND_ICON
   }
 
-  scrollToBottom() {
-    this.messagesContainerTarget.scrollTop = this.messagesContainerTarget.scrollHeight
+  scrollToTop() {
+    this.messagesContainerTarget.scrollTop = 0
   }
 
   getWelcomeMessage() {
@@ -230,6 +230,6 @@ export default class DashboardAutopilotController extends Controller {
           </div>`
       })
       .join("")
-    this.scrollToBottom()
+    this.scrollToTop()
   }
 }

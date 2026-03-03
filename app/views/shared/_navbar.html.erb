@@ -1,6 +1,18 @@
 <!-- Navbar - Simple without nav_links partial -->
 <div data-controller="dropdown">
-  <nav class="sticky top-0 z-50 backdrop-blur-md bg-white border-b border-gray-200 dark:border-gray-700 shadow-sm">
+<!-- Floating Voice Button - Shows on every page -->
+<button id="voice-float-btn"
+        type="button"
+        data-controller="simple-voice"
+        data-action="click->simple-voice#toggle"
+        class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/30 hover:scale-110 transition-transform group cursor-pointer">
+  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+  </svg>
+  <span class="text-white font-medium text-sm pr-1">🎤 Talk to Otto</span>
+</button>
+
+<nav class="sticky top-0 z-50 backdrop-blur-md bg-white border-b border-gray-200 dark:border-gray-700 shadow-sm">
     <div class="container-xl mx-auto px-4">
       <div class="flex items-center justify-between h-16">
         <!-- Logo with image -->
@@ -44,9 +56,9 @@
                 <%= lucide_icon "bar-chart-2", class: "w-4 h-4 text-blue-500" %>
                 <span>Analytics</span>
               <% end %>
-              <%= link_to social_account_connections_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
-                <%= lucide_icon "users", class: "w-4 h-4 text-green-500" %>
-                <span>Social Media Accounts</span>
+              <%= link_to social_media_dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-green-500" %>
+                <span>Social Media Dashboard</span>
               <% end %>
               <%= link_to scheduled_posts_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
                 <%= lucide_icon "calendar", class: "w-4 h-4 text-orange-500" %>
@@ -54,7 +66,7 @@
               <% end %>
               <%= link_to ai_chat_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
                 <%= lucide_icon "bot", class: "w-4 h-4 text-purple-500" %>
-                <span>Otto-Pilot</span>
+                <span>Otto-Chat</span>
               <% end %>
               <div class="border-t my-2"></div>
               <%= link_to dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
@@ -154,9 +166,9 @@
                 <%= lucide_icon "bar-chart-2", class: "w-4 h-4 text-blue-500" %>
                 <span class="text-gray-700 dark:text-gray-300">Analytics</span>
               <% end %>
-              <%= link_to social_account_connections_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" do %>
-                <%= lucide_icon "users", class: "w-4 h-4 text-green-500" %>
-                <span class="text-gray-700 dark:text-gray-300">Social Media Accounts</span>
+              <%= link_to social_media_dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" do %>
+                <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-green-500" %>
+                <span class="text-gray-700 dark:text-gray-300">Social Media Dashboard</span>
               <% end %>
               <%= link_to scheduled_posts_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" do %>
                 <%= lucide_icon "calendar", class: "w-4 h-4 text-orange-500" %>
@@ -164,7 +176,7 @@
               <% end %>
               <%= link_to ai_chat_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" do %>
                 <%= lucide_icon "bot", class: "w-4 h-4 text-purple-500" %>
-                <span class="text-gray-700 dark:text-gray-300">Otto-Pilot</span>
+                <span class="text-gray-700 dark:text-gray-300">Otto-Chat</span>
               <% end %>
               <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
               <%= link_to dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" do %>

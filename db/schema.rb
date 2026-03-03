@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_24_231149) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_02_083503) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -742,6 +742,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_24_231149) do
     t.string "encrypted_access_token"
     t.string "encrypted_refresh_token"
     t.bigint "client_id"
+    t.datetime "metrics_synced_at", precision: nil
     t.index ["client_id"], name: "index_social_accounts_on_client_id"
     t.index ["user_id"], name: "index_social_accounts_on_user_id"
   end

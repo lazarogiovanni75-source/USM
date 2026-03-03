@@ -31,6 +31,12 @@ class PaymentsController < ApplicationController
       redirect_to root_path, alert: 'Payment was not paid. Please try again.'
       return
     end
+
+    # Auto-verify user after successful payment
+    # This ensures users must pay before getting full access
+    @payment.user.update!(verified: true) if @payment.user.present?
+
+    redirect_to root_path, notice: 'Payment successful! Your account is now verified.'
   end
 
   def failure

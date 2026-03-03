@@ -1,5 +1,49 @@
+R
+I need you to delete everythThe file simple_voice_controller.ts is still being executed and throwing the conversation ID error.
+Do NOT modify it anymore.
+Instead:
+Completely disconnect simple_voice_controller from the /ai_chat page.
+Remove its data-controller="simple-voice" reference from the view.
+Create a new file: app/javascript/voice_minimal.js
+In /ai_chat.html.erb, directly include: <%= javascript_include_tag "voice_minimal", defer: true %>
+In voice_minimal.js, implement plain JavaScript voice logic.
+No Stimulus
+No conversation_id
+No references to existing controllers
+The mic button should:
+Record 5 seconds
+Send transcript to /chat
+Receive response
+Log result to console
+Confirm in browser console: console.log("voice_minimal active")
+Do not reuse any existing voice controller code.Create the JS file at this exact path:
+Copy code
 
-I need you to delete everything that has to do with Pollo AI we're not going to use them anymore for video generation deployment environment ver,
+app/assets/javascripts/voice_minimal.js
+Note: Since your view is throwing a “load path” error, putting it under app/assets/javascripts/ ensures Rails sees it via the asset pipeline. Files in app/javascript/ only work automatically with importmap, webpacker, or esbuild.
+2️⃣ Include it in the view
+In /app/views/ai_chat/index.html.erb (line 316), replace the previous include with:
+Erb
+Copy code
+<%= javascript_include_tag "voice_minimal", defer: true %>
+No type: "module" needed if using the asset pipeline.
+3️⃣ Precompile assets
+Run in terminal:
+Copy code
+
+bin/rails assets:precompile
+4️⃣ Restart Rails server
+Copy code
+
+bin/rails server
+5️⃣ Hard refresh browser
+Cmd + Shift + R (Mac)
+Ctrl + Shift + R (Windows)
+Check the console for:
+Copy code
+
+voice_minimal active
+pping that has to do with Pollo AI we're not going to use them anymore for video generation deployment environment ver,
 ITASK: Stabilize ChatGPT-Like Conversation Flow
 1. Disable Autopilot Interference
 In ConversationOrchestrator (or wherever chat messages are processed), ensure AiAutopilotService does not run automatically during normal chat.
