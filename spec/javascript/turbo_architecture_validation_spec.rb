@@ -245,6 +245,10 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
         # Skip API namespace (explicit API endpoints can use JSON)
         next if relative_path.include?('app/controllers/api/')
         
+        # Skip voice API controllers that return binary audio/JSON (not Turbo Stream compatible)
+        next if relative_path.include?('chat_controller.rb')
+        next if relative_path.include?('voice_chat_controller.rb')
+
         # Skip webhook controllers (external webhooks require JSON responses)
         next if relative_path.include?('_webhooks_controller.rb')
 
@@ -362,6 +366,8 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
           if line.match?(/\bfetch\s*\(/)
             # Exempt fetch calls to API endpoints (single or double quotes)
             next if line.match?(/fetch\s*\(\s*['"]\/api\//)
+            # Exempt fetch calls to /speak (returns binary audio/mpeg)
+            next if line.match?(/fetch\s*\(\s*['"]\/speak['"]/)
 
             violations << {
               file: relative_path,

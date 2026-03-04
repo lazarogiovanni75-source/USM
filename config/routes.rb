@@ -189,6 +189,7 @@ Rails.application.routes.draw do
 
   # Admin routes
   namespace :admin do
+    resources :site_settings
     resources :payments, only: [:index, :show]
     root "dashboard#index"
     get 'login', to: 'sessions#new', as: :login

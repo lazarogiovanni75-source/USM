@@ -238,28 +238,28 @@ puts "Creating subscription plans..."
 
 SubscriptionPlan.create!(
   name: "Starter",
-  price_cents: 2900,
-  credits: 50,
+  price_cents: 4000,
+  credits: 40,
   description: "Perfect for individuals and small businesses just getting started.",
-  features: "3 Social Platforms\n10 Campaigns\n50 Posts per month\nAI Content Generation\nBasic Analytics\nEmail Support",
+  features: "3 Social Platforms\n4 Campaigns\n40 Posts per month\nAI Content Generation (text only)\nBasic Analytics\nEmail Support",
   is_popular: false
 )
 
 SubscriptionPlan.create!(
   name: "Entrepreneur",
-  price_cents: 5900,
-  credits: 100,
+  price_cents: 8000,
+  credits: 80,
   description: "Ideal for growing businesses and marketers.",
-  features: "6 Social Platforms\n20 Campaigns\n100 Posts per month\nAI Content Generation\nAdvanced Analytics\nPriority Support\nWorkflow Automation\nCampaign Planner",
+  features: "6 Social Platforms\n8 Campaigns\n80 Posts per month\nAI Content Generation\nVoice Commands\nAdvanced Analytics\nPriority Support\nWorkflow Automation\nCampaign Planner",
   is_popular: true
 )
 
 SubscriptionPlan.create!(
   name: "Pro",
-  price_cents: 9900,
-  credits: 200,
+  price_cents: 12000,
+  credits: 120,
   description: "For professionals and agencies managing multiple accounts.",
-  features: "9 Social Platforms\n30 Campaigns\n200 Posts per month\nAI Content Generation\nPremium Analytics\n24/7 Priority Support\nAdvanced Automation\nA/B Testing\nCustom Reports\nInfluencer Discovery",
+  features: "9 Social Platforms\n12 Campaigns\n120 Posts per month\nAI Content Generation\nFull Otto-Pilot Automation\nPremium Analytics\n24/7 Priority Support\nAdvanced Automation\nA/B Testing\nCustom Reports\nInfluencer Discovery",
   is_popular: false
 )
 

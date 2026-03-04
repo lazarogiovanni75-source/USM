@@ -1,4 +1,6 @@
 class ChatController < ApplicationController
+  # API namespace - exempt from Turbo Stream architecture
+  # These endpoints return binary audio data (speak) or JSON (chat, transcribe)
   require "net/http"
   require "json"
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_02_083503) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_03_233157) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -712,6 +712,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_02_083503) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "site_settings", force: :cascade do |t|
+    t.string "key"
+    t.text "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "social_accounts", force: :cascade do |t|
     t.bigint "user_id"
     t.string "platform", default: "instagram"
@@ -855,6 +862,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_02_083503) do
     t.string "agency_role"
     t.string "phone"
     t.string "business_name"
+    t.text "ai_instructions"
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 

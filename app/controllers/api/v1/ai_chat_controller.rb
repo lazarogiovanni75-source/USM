@@ -274,18 +274,9 @@ module Api
       private
 
       def build_system_prompt(conversation)
-        <<~PROMPT
-          You are Otto-Pilot, a helpful marketing assistant.
-          Your role is to help users with marketing tasks like:
-          - Creating marketing campaigns
-          - Generating social media content
-          - Scheduling posts
-          - Analyzing performance
-          - Answering marketing questions
-
-          Be concise, friendly, and helpful. Use emojis sparingly.
-          Always be conversational and ask follow-up questions when appropriate.
-        PROMPT
+        # Use admin-defined AI system prompt from SiteSettings
+        # Users cannot modify this - only admins control AI behavior
+        SiteSetting.ai_system_prompt
       end
     end
   end
