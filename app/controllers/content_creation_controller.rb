@@ -1,5 +1,12 @@
 class ContentCreationController < ApplicationController
   before_action :authenticate_user!
+  before_action :check_ideas_access, only: [:generate_ideas]
+
+  def check_ideas_access
+    unless current_user.can_access_ai_content_ideas?
+      redirect_to subscription_path, alert: 'Upgrade to Entrepreneur or Pro plan to access AI Content Ideas.'
+    end
+  end
 
   def index
     @drafts = current_user.draft_contents.order(updated_at: :desc)
@@ -74,7 +81,7 @@ class ContentCreationController < ApplicationController
             content: prompt,
             content_type: 'image',
             platform: 'general',
-            status: 'completed',
+            status: 'published',
             media_url: result[:output_url],
             metadata: { 'service' => service, 'model' => model }
           )
@@ -190,8 +197,73 @@ class ContentCreationController < ApplicationController
       return
     end
 
-    # Note: Image editing is limited - show message
-    redirect_to content_creation_index_path, alert: 'Image editing requires DALL-E 2 API. Please generate a new image instead.'
+    if edit_prompt.blank?
+      redirect_to content_creation_index_path, alert: 'Please provide edit instructions'
+      return
+    end
+
+    # Combine original prompt with edit instructions to generate a new image
+    original_prompt = draft.content.presence || 'AI generated image'
+    combined_prompt = "#{original_prompt}. Modification: #{edit_prompt}"
+
+    begin
+      # Generate a new image based on the edit prompt
+      result = ImageGenerationService.generate_image(
+        prompt: combined_prompt,
+        size: '1024x1024',
+        quality: 'high'
+      )
+
+      if result[:success]
+        service = result[:service]
+        model = result.dig(:metadata, :model) || 'gpt-image-1.5'
+        
+        if result[:output_url]
+          # Create a new draft with the edited image
+          new_draft = current_user.draft_contents.create!(
+            title: "Edited - #{draft.title}",
+            content: combined_prompt,
+            content_type: 'image',
+            platform: draft.platform,
+            status: 'published',
+            media_url: result[:output_url],
+            metadata: { 
+              'service' => service, 
+              'model' => model,
+              'edited_from' => draft.id,
+              'edit_prompt' => edit_prompt
+            }
+          )
+          
+          redirect_to draft_path(new_draft), notice: 'Image edited successfully!'
+        else
+          # Create draft with task_id for polling
+          new_draft = current_user.draft_contents.create!(
+            title: "Edited - #{draft.title}",
+            content: combined_prompt,
+            content_type: 'image',
+            platform: draft.platform,
+            status: 'pending',
+            media_url: nil,
+            metadata: { 
+              'task_id' => result[:task_id], 
+              'service' => service, 
+              'model' => model,
+              'edited_from' => draft.id,
+              'edit_prompt' => edit_prompt
+            }
+          )
+
+          ImagePollJob.perform_later(new_draft.id, result[:task_id])
+          redirect_to draft_path(new_draft), notice: 'Image editing started! Check back in a few moments.'
+        end
+      else
+        redirect_to content_creation_index_path, alert: "Failed to edit image: #{result[:error]}"
+      end
+    rescue => e
+      Rails.logger.error "Image Edit Error: #{e.message}"
+      redirect_to content_creation_index_path, alert: "Failed to edit image: #{e.message}"
+    end
   rescue ActiveRecord::RecordNotFound
     redirect_to content_creation_index_path, alert: 'Draft not found'
   end
@@ -398,17 +470,17 @@ Platform guidelines: #{platform_guidance}
 Please return only the content body without any introduction or explanation."
 
     # Use LlmService (supports OpenAI, Gemini, DeepSeek)
-    response = LlmService.call(
+    content = LlmService.call(
       prompt: enhanced_prompt,
       system: "You are an expert social media content creator. Create engaging, platform-optimized content.",
       temperature: 0.8,
       max_tokens: 1000
     )
 
-    if response[:success] && response[:content].present?
-      { success: true, content: response[:content] }
+    if content.present? && content.is_a?(String)
+      { success: true, content: content }
     else
-      { success: false, error: response[:error] || 'LLM generation failed' }
+      { success: false, error: 'LLM generation failed' }
     end
   end
 

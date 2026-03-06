@@ -1,6 +1,13 @@
 class Api::V1::WorkflowsController < ApplicationController
   skip_before_action :verify_authenticity_token
   before_action :set_default_headers
+  before_action :check_workflow_access, only: [:create, :index]
+
+  def check_workflow_access
+    unless current_user.can_run_autonomous_workflows?
+      render json: { error: 'Full workflow automation is available on Pro plan. Upgrade to access this feature.' }, status: :forbidden
+    end
+  end
 
   # Create and execute a workflow
   def create

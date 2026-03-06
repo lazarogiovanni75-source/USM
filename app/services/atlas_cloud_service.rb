@@ -152,10 +152,14 @@ class AtlasCloudService
     case response.code
     when 200..299
       # Check if response indicates an error even with 200 status
-      if parsed.is_a?(Hash) && (parsed['error'] || parsed['message'] || parsed['status'] == 'error')
-        error_msg = parsed['error'] || parsed['message'] || parsed.dig('error', 'message')
-        Rails.logger.error "[AtlasCloudService] API returned error: #{error_msg}"
-        raise Error, "API error: #{error_msg}"
+      # Only treat as error if message/error is non-empty
+      error_field = parsed['error'] if parsed['error'].present?
+      error_field ||= parsed['message'] if parsed['message'].present?
+      error_field ||= parsed.dig('error', 'message') if parsed.dig('error', 'message').present?
+      
+      if error_field.present? || (parsed.is_a?(Hash) && parsed['status'] == 'error')
+        Rails.logger.error "[AtlasCloudService] API returned error: #{error_field}"
+        raise Error, "API error: #{error_field}"
       end
       parsed
     when 401

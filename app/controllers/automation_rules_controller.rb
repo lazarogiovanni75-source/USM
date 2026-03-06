@@ -1,6 +1,13 @@
 class AutomationRulesController < ApplicationController
   before_action :authenticate_user!
+  before_action :check_plan_access, only: [:index, :new, :create]
   before_action :set_rule, only: [:show, :edit, :update, :destroy, :toggle_status]
+  
+  def check_plan_access
+    unless current_user.can_use_voice_autopilot?
+      redirect_to subscription_path, alert: 'Upgrade to Entrepreneur or Pro plan to access automation features.'
+    end
+  end
   
   def index
     @automation_service = AutomationRulesService.new(current_user)

@@ -10,7 +10,7 @@ class ChatController < ApplicationController
     response = Net::HTTP.post(
       uri,
       {
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: [
           { role: "user", content: params[:message] }
         ]

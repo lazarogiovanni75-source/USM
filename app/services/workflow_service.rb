@@ -9,7 +9,7 @@ class WorkflowService
   def create_content_with_media(content_text:, generate_image: false, generate_video: false,
                                 post_now: false, scheduled_at: nil,
                                 social_account_ids: [], campaign_id: nil)
-    # Step 1: Create content
+    # Create content
     content = Content.create!(
       user: @user,
       title: content_text[0..50],

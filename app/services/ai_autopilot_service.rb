@@ -1,4 +1,6 @@
 class AiAutopilotService < ApplicationService
+  # Voice command processing for AI Autopilot feature
+  
   def initialize(command: nil, action: nil, campaign: nil, content_type: nil, platform: nil, video_params: nil)
     @command = command
     @action = action
@@ -69,7 +71,8 @@ class AiAutopilotService < ApplicationService
       'generate_video'
     elsif text.include?('campaign') || text.include?('new campaign') || text.include?('create campaign')
       'create_campaign'
-    elsif text.include?('image') || text.include?('generate image') || text.include?('create image')
+    # Image detection - require explicit intent (generate image, create image, make image, draw)
+    elsif text.match?(/\b(generate image|create image|make image|draw|create a picture|make a picture)\b/i)
       'generate_image'
     elsif text.include?('schedule') && text.include?('publish')
       'schedule_and_publish'
@@ -79,7 +82,7 @@ class AiAutopilotService < ApplicationService
       'publish_now'
     elsif text.include?('analytics') || text.include?('performance') || text.include?('stats') || text.include?('analyze') || text.include?('how am i doing')
       'analyze_performance'
-    elsif text.include?('content') || text.include?('post') || text.include?('generate') || text.include?('create post') || text.include?('write')
+    elsif text.include?('content') || text.include?('post') || text.include?('generate') || text.include?('create post') || text.include?('write') || text.include?('caption')
       'generate_content'
     else
       'general_inquiry'
@@ -613,7 +616,7 @@ class AiAutopilotService < ApplicationService
 
     response = client.chat(
       parameters: {
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: 'You are Otto-Pilot, a marketing assistant. Help users with their social media strategy, content creation, and campaign management. Keep responses brief and actionable.' },
           { role: 'user', content: prompt }

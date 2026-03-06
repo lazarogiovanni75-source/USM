@@ -6,10 +6,10 @@ module AssetHelper
     css_files = Dir.glob("app/assets/stylesheets/**/*.css")
 
     # Check if build output directory exists
-    return true unless Dir.exist?("app/assets/builds")
+    return true unless Dir.exist?("public/dev-assets")
 
-    # Only check actual compiled output files at root level (.js and .css)
-    built_files = Dir.glob("app/assets/builds/*.{js,css}")
+    # Check compiled output files in public/dev-assets
+    built_files = Dir.glob("public/dev-assets/*.{js,css}")
                      .select { |f| File.file?(f) }
 
     return true if built_files.empty?

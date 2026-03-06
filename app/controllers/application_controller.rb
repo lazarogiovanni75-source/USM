@@ -127,8 +127,8 @@ class ApplicationController < ActionController::Base
   end
   
   def require_premium_subscription!
-    unless current_user&.premium? || current_user&.admin? || current_user&.moderator?
-      redirect_to pricing_path, alert: "Premium subscription required to access this feature."
+    unless current_user&.paid_plan? || current_user&.admin? || current_user&.moderator?
+      redirect_to pricing_path, alert: "Subscription required to access this feature."
     end
   end
 end

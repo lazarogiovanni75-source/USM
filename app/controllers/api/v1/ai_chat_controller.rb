@@ -276,7 +276,29 @@ module Api
       def build_system_prompt(conversation)
         # Use admin-defined AI system prompt from SiteSettings
         # Users cannot modify this - only admins control AI behavior
-        SiteSetting.ai_system_prompt
+        base_prompt = SiteSetting.ai_system_prompt
+        
+        # Add user-specific subscription info
+        if current_user
+          plan = current_user.subscription_plan || 'Starter'
+          plan_data = SubscriptionPlan.find_by(name: plan)
+          credits = plan_data&.credits || 40
+          
+          user_context = <<~CONTEXT
+
+## CURRENT USER CONTEXT
+- User: #{current_user.name || current_user.email}
+- Subscription Plan: #{plan}
+- Monthly Credits: #{credits}
+- Credits Remaining: #{current_user.credits || credits}
+
+REMEMBER: You must enforce the #{plan} plan limits for this user!
+CONTEXT
+          
+          base_prompt + user_context
+        else
+          base_prompt
+        end
       end
     end
   end

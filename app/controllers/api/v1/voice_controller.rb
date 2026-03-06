@@ -15,7 +15,7 @@ class Api::V1::VoiceController < ApplicationController
     begin
       # Generate AI response
       api_key = ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
-      llm_model = Rails.application.config_for(:application)['LLM_MODEL'] || 'gpt-4o-mini'
+      llm_model = Rails.application.config_for(:application)['LLM_MODEL'] || 'gpt-4o'
 
       system_prompt = <<~PROMPT
         You are a helpful AI voice assistant for a marketing platform.
@@ -279,7 +279,7 @@ class Api::V1::VoiceController < ApplicationController
     # Use OpenAI to generate intelligent, contextual responses
     api_key = ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
     # Use configured LLM model (default: gpt-4o-mini)
-    llm_model = Rails.application.config_for(:application)['LLM_MODEL'] || 'gpt-4o-mini'
+    llm_model = Rails.application.config_for(:application)['LLM_MODEL'] || 'gpt-4o'
     uri = URI.parse('https://api.openai.com/v1/chat/completions')
 
     system_prompt = <<~PROMPT

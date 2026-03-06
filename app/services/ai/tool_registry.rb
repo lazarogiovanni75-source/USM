@@ -277,6 +277,31 @@ module Ai
       {
         type: "function",
         function: {
+          name: "generate_content_idea",
+          description: "Generate content ideas for a specific topic or platform",
+          parameters: {
+            type: "object",
+            properties: {
+              topic: {
+                type: "string",
+                description: "Topic or theme for content ideas"
+              },
+              platform: {
+                type: "string",
+                enum: ["twitter", "facebook", "instagram", "linkedin", "any"],
+                description: "Target platform (default: any)"
+              },
+              count: {
+                type: "integer",
+                description: "Number of ideas to generate (default: 3)"
+              }
+            }
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
           name: "wait",
           description: "Wait/sleep for a specified duration. Use when pacing is needed between actions.",
           parameters: {

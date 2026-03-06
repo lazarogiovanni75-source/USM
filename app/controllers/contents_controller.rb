@@ -16,7 +16,8 @@ class ContentsController < ApplicationController
 
   # GET /contents/1
   def show
-    @related_contents = current_user.contents.where(campaign_id: @content.campaign_id).where.not(id: @content.id).limit(5)
+    campaign_id = @content.respond_to?(:campaign_id) ? @content.campaign_id : nil
+    @related_contents = campaign_id ? current_user.contents.where(campaign_id: campaign_id).where.not(id: @content.id).limit(5) : []
   end
 
   # GET /contents/new

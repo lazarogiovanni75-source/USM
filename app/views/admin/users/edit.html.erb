@@ -57,16 +57,16 @@
           <div class="mt-1">
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
               <% case @user.subscription_plan %>
-              <% when 'enterprise' %>
-                bg-indigo-100 text-indigo-800
-              <% when 'premium' %>
+              <% when 'Pro' %>
+                bg-purple-100 text-purple-800
+              <% when 'Entrepreneur' %>
                 bg-yellow-100 text-yellow-800
-              <% when 'basic' %>
+              <% when 'Starter' %>
                 bg-green-100 text-green-800
               <% else %>
                 bg-gray-100 text-gray-800
               <% end %>">
-              <%= @user.subscription_plan&.humanize || 'Free' %>
+              <%= @user.subscription_plan || 'Starter' %>
             </span>
           </div>
         </div>

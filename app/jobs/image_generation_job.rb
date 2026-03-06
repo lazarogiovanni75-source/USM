@@ -49,6 +49,24 @@ class ImageGenerationJob < ApplicationJob
           message_type: 'image'
         )
 
+        # Also save to Drafts so user can find it at /drafts
+        draft = DraftContent.create!(
+          user: user,
+          title: "AI Image: #{prompt.truncate(50)}",
+          content: "![Generated Image](#{image_url})\n\nPrompt: #{prompt}",
+          content_type: 'image',
+          platform: 'general',
+          status: 'draft',
+          metadata: {
+            image_url: image_url,
+            prompt: prompt,
+            conversation_id: conversation.id,
+            message_id: message.id,
+            generated_at: Time.current.iso8601
+          }
+        )
+        Rails.logger.info "[ImageGenerationJob] Image saved to Drafts: #{draft.id}"
+
         # Broadcast to the user via ActionCable
         ActionCable.server.broadcast(
           "ai_chat_#{conversation.id}",
@@ -56,7 +74,8 @@ class ImageGenerationJob < ApplicationJob
             type: 'image_generated',
             image_url: image_url,
             prompt: prompt,
-            message_id: message.id
+            message_id: message.id,
+            draft_id: draft.id
           }
         )
       else

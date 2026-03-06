@@ -345,7 +345,7 @@ class AiFunctionDispatcher
 
     ideas = LlmService.call_blocking(
       prompt: prompt,
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       temperature: 0.8
     )
 

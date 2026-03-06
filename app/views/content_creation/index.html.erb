@@ -44,7 +44,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Content Generator</h3>
           <form id="ai-generate-form" action="/content_creation/generate_content" method="post" class="space-y-4">
-            <%= csrf_meta_tags %>
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Topic</label>
               <input type="text" id="topic-input" data-content-creation-target="topic" name="topic" class="form-input w-full" placeholder="Enter your topic...">
@@ -79,12 +79,13 @@
           </form>
         </div>
 
-        <!-- AI Content Ideas -->
+        <!-- AI Content Ideas (Auto-generation - Pro/Entrepreneur only) -->
+        <% if current_user&.can_access_ai_content_ideas? %>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Content Ideas</h3>
           <p class="text-sm text-gray-600 mb-4">Generate creative content ideas using GPT-5o Mini</p>
           <form action="/content_creation/generate_ideas" method="post" class="space-y-4">
-            <%= csrf_meta_tags %>
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Topic / Niche</label>
               <input type="text" name="topic" class="form-input w-full" placeholder="e.g., Fitness, Tech, Food..." required>
@@ -110,13 +111,30 @@
             </button>
           </form>
         </div>
+        <% else %>
+        <!-- Upgrade Prompt for Starter users -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-center mb-4">
+            <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2 text-center">Unlock AI Content Ideas</h3>
+          <p class="text-sm text-gray-600 mb-4 text-center">Upgrade to Entrepreneur or Pro to automatically generate content ideas</p>
+          <a href="/subscription" class="btn-primary w-full text-center block">
+            Upgrade Plan
+          </a>
+        </div>
+        <% end %>
 
         <!-- AI Image Generation (Sora 2 HD) -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Image Generation</h3>
           <p class="text-sm text-gray-600 mb-4">Create images with AI</p>
           <form action="/content_creation/generate_image" method="post" class="space-y-4">
-            <%= csrf_meta_tags %>
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Image Description</label>
               <textarea name="prompt" rows="3" class="form-input w-full" placeholder="Describe the image you want..." required></textarea>
@@ -143,7 +161,7 @@
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit Image</h3>
           <p class="text-sm text-gray-600 mb-4">Edit an existing generated image</p>
           <form action="/content_creation/edit_image" method="post" class="space-y-4">
-            <%= csrf_meta_tags %>
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Select Image</label>
               <select name="draft_id" class="form-select w-full">
@@ -166,12 +184,12 @@
           </form>
         </div>
 
-        <!-- AI Video Generation (Sora) -->
+        <!-- AI Video Generation (Sora) - Manual input available to all plans -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Video Generation</h3>
           <p class="text-sm text-gray-600 mb-4">Create videos with AI using OpenAI Sora</p>
           <form action="/content_creation/generate_video" method="post" class="space-y-4">
-            <%= csrf_meta_tags %>
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Video Description</label>
               <textarea name="prompt" rows="3" class="form-input w-full" placeholder="Describe the video you want..." required></textarea>
@@ -204,7 +222,8 @@
           </div>
         </div>
 
-        <!-- Voice Commands -->
+        <!-- Voice Commands (Entrepreneur+ only) -->
+        <% if current_user&.can_use_voice_autopilot? %>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Voice Commands</h3>
           <div class="space-y-3">
@@ -219,6 +238,23 @@
             </div>
           </div>
         </div>
+        <% else %>
+        <!-- Voice Commands Upgrade Prompt for Starter users -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-center mb-4">
+            <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2 text-center">Unlock Voice Commands</h3>
+          <p class="text-sm text-gray-600 mb-4 text-center">Upgrade to Entrepreneur or Pro for voice-controlled autopilot</p>
+          <a href="/subscription" class="btn-primary w-full text-center block">
+            Upgrade Plan
+          </a>
+        </div>
+        <% end %>
       </div>
 
       <!-- Main Content Area -->
@@ -332,7 +368,8 @@
           </div>
         </div>
 
-        <!-- AI Content Suggestions -->
+        <!-- AI Content Suggestions (Auto-generation - Pro/Entrepreneur only) -->
+        <% if current_user&.can_access_ai_content_ideas? %>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100">
           <div class="p-6 border-b border-gray-100">
             <div class="flex items-center justify-between">
@@ -375,6 +412,23 @@
             <% end %>
           </div>
         </div>
+        <% else %>
+        <!-- Upgrade Prompt for Starter users - Content Suggestions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-center mb-4">
+            <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2 text-center">Unlock AI Content Suggestions</h3>
+          <p class="text-sm text-gray-600 mb-4 text-center">Upgrade to Entrepreneur or Pro for AI-powered content suggestions</p>
+          <a href="/subscription" class="btn-primary w-full text-center block">
+            Upgrade Plan
+          </a>
+        </div>
+        <% end %>
       </div>
     </div>
   </div>

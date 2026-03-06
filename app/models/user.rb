@@ -30,27 +30,109 @@ class User < ApplicationRecord
   validates :role, inclusion: { in: ROLES }, if: -> { role.present? }
   
   # Subscription Plans
-  SUBSCRIPTION_PLANS = %w[free basic premium enterprise].freeze
+  SUBSCRIPTION_PLANS = %w[Starter Entrepreneur Pro].freeze
   validates :subscription_plan, inclusion: { in: SUBSCRIPTION_PLANS }, if: -> { subscription_plan.present? }
   
   # Helper methods
-  def premium? = subscription_plan == 'premium' || subscription_plan == 'enterprise'
-  def enterprise? = subscription_plan == 'enterprise'
+  def pro? = subscription_plan == 'Pro'
+  def entrepreneur? = subscription_plan == 'Entrepreneur'
+  def starter? = subscription_plan == 'Starter'
+  def paid_plan? = subscription_plan.present?
+  
+  # Plan Limits Configuration
+  PLAN_LIMITS = {
+    'Starter' => {
+      max_platforms: 3,
+      storage_gb: 5,
+      campaigns_per_month: 4,
+      posts_per_month: 40,
+      videos_per_campaign: 2,
+      images_per_campaign: 3,
+      has_voice_autopilot: false,
+      has_ai_assist: false,
+      has_autonomous: false
+    },
+    'Entrepreneur' => {
+      max_platforms: 6,
+      storage_gb: 10,
+      campaigns_per_month: 8,
+      posts_per_month: 80,
+      videos_per_campaign: 2,
+      images_per_campaign: 3,
+      has_voice_autopilot: true,
+      has_ai_assist: true,
+      has_autonomous: false
+    },
+    'Pro' => {
+      max_platforms: 9,
+      storage_gb: 20,
+      campaigns_per_month: 12,
+      posts_per_month: 120,
+      videos_per_campaign: 2,
+      images_per_campaign: 3,
+      has_voice_autopilot: true,
+      has_ai_assist: true,
+      has_autonomous: true
+    }
+  }.freeze
+  
+  # Get current plan limits
+  def plan_limits
+    PLAN_LIMITS[subscription_plan] || PLAN_LIMITS['Starter']
+  end
+  
+  def max_platforms
+    plan_limits[:max_platforms]
+  end
+  
+  def storage_limit_gb
+    plan_limits[:storage_gb]
+  end
+  
+  def max_campaigns_per_month
+    plan_limits[:campaigns_per_month]
+  end
+  
+  def max_posts_per_month
+    plan_limits[:posts_per_month]
+  end
+  
+  def videos_per_campaign
+    plan_limits[:videos_per_campaign]
+  end
+  
+  def images_per_campaign
+    plan_limits[:images_per_campaign]
+  end
+  
+  def has_voice_autopilot?
+    plan_limits[:has_voice_autopilot]
+  end
+  
+  def has_ai_assist?
+    plan_limits[:has_ai_assist]
+  end
+  
+  def has_autonomous?
+    plan_limits[:has_autonomous]
+  end
+  
+  # Role helpers
   def admin? = role == 'admin'
   def moderator? = role == 'moderator'
-  def free_plan? = subscription_plan == 'free' || subscription_plan.blank?
+  def premium? = role == 'premium' || role == 'moderator' || role == 'admin'
   
   # Role-based authorization methods
   def can_access_feature?(feature_name)
     case feature_name
     when 'ai_advanced'
-      premium? || admin? || moderator?
+      paid_plan? || admin? || moderator?
     when 'voice_premium'
-      premium? || admin? || moderator?
+      paid_plan? || admin? || moderator?
     when 'analytics_advanced'
-      enterprise? || admin?
+      pro? || admin?
     when 'automation_advanced'
-      premium? || admin? || moderator?
+      paid_plan? || admin? || moderator?
     when 'admin_features'
       admin? || moderator?
     when 'user_management'
@@ -62,25 +144,73 @@ class User < ApplicationRecord
   
   # Subscription and role combinations
   def can_create_campaigns?
-    !free_plan? || admin? || moderator?
+    paid_plan? || admin? || moderator?
   end
   
   def can_schedule_posts?
-    !free_plan? || admin? || moderator?
+    paid_plan? || admin? || moderator?
   end
   
   def can_use_ai_features?
-    !free_plan? || admin? || moderator?
+    paid_plan? || admin? || moderator?
   end
   
   def can_access_analytics?
-    !free_plan? || admin? || moderator?
+    paid_plan? || admin? || moderator?
   end
   
   def can_manage_automation?
-    premium? || enterprise? || admin? || moderator?
+    pro? || entrepreneur? || admin? || moderator?
   end
+
+  # AI Auto-generation features (Otto-Pilot proactive content creation)
+  # Starter = Manual input only
+  # Entrepreneur = Voice command autopilot (assists when prompted, no autonomous workflows)
+  # Pro = Full automation + workflows (can run autonomously)
   
+  def can_use_ai_auto_generate?
+    # Pro and Entrepreneur plans get AI auto-generation
+    pro? || entrepreneur? || admin? || moderator?
+  end
+
+  def can_access_ai_content_ideas?
+    # Content ideas = AI auto-generation feature
+    can_use_ai_auto_generate?
+  end
+
+  def can_access_ai_image_ideas?
+    # Image ideas = AI auto-generation feature
+    can_use_ai_auto_generate?
+  end
+
+  def can_access_ai_video_ideas?
+    # Video ideas = AI auto-generation feature
+    can_use_ai_auto_generate?
+  end
+
+  def can_use_voice_autopilot?
+    # Voice command autopilot available to Entrepreneur and Pro
+    entrepreneur? || pro? || admin? || moderator?
+  end
+
+  def can_run_autonomous_workflows?
+    # Full automation/workflows only on Pro plan
+    pro? || admin? || moderator?
+  end
+
+  # Manual input features (user types what they want) - available to all plans
+  def can_use_manual_content_generation?
+    true # All users can manually input prompts
+  end
+
+  def can_use_manual_image_generation?
+    true # All users can manually input prompts
+  end
+
+  def can_use_manual_video_generation?
+    true # All users can manually input prompts
+  end
+
   # Admin panel access
   def can_access_admin_panel?
     admin? || moderator?

@@ -159,6 +159,33 @@ class Campaign < ApplicationRecord
     end
   end
   
+  # Default included media per campaign (free, not counted against posts_per_month)
+  DEFAULT_VIDEO_COUNT = 2
+  DEFAULT_IMAGE_COUNT = 3
+  
+  # These track how many of the included free media have been used
+  # Users can add unlimited videos/images - only usage beyond this count
+  # would potentially count against their plan's posts_per_month if we tracked that way
+  # But for simplicity, campaign media is always free and separate from posts limit
+  
+  def max_videos
+    video_count || DEFAULT_VIDEO_COUNT
+  end
+  
+  def max_images
+    image_count || DEFAULT_IMAGE_COUNT
+  end
+  
+  def videos_included
+    # Number of free video generations included per campaign
+    max_videos
+  end
+  
+  def images_included
+    # Number of free image generations included per campaign
+    max_images
+  end
+  
   private
   
   def set_defaults
@@ -169,8 +196,8 @@ class Campaign < ApplicationRecord
     self.content_pillars ||= []
     self.hashtag_set ||= []
     self.mentions ||= []
-    self.video_count ||= 2
-    self.image_count ||= 3
+    self.video_count ||= DEFAULT_VIDEO_COUNT
+    self.image_count ||= DEFAULT_IMAGE_COUNT
   end
   
   def broadcast_status

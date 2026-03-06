@@ -103,12 +103,32 @@ class GenerateVideoJob < ApplicationJob
             video_url: status_response['output']
           )
 
+          # Also save to Drafts so user can find it at /drafts
+          if video.user.present?
+            draft = DraftContent.create!(
+              user: video.user,
+              title: "AI Video: #{video.title.to_s.truncate(50)}",
+              content: "Video generated from prompt: #{video.title}\n\nVideo URL: #{video.video_url}",
+              content_type: 'video',
+              platform: 'general',
+              status: 'draft',
+              metadata: {
+                video_url: video.video_url,
+                prompt: video.title,
+                video_id: video.id,
+                generated_at: Time.current.iso8601
+              }
+            )
+            Rails.logger.info "[GenerateVideoJob] Video saved to Drafts: #{draft.id}"
+          end
+
           ActionCable.server.broadcast(
             "video_progress_#{video.id}",
             {
               type: 'video-completed',
               video_id: video.id,
               video_url: video.video_url,
+              draft_id: draft&.id,
               message: 'Video generated successfully!'
             }
           )

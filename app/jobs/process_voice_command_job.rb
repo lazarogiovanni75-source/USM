@@ -53,6 +53,9 @@ class ProcessVoiceCommandJob < ApplicationJob
       'generate_video'
     elsif text_downcase.include?('campaign')
       'create_campaign'
+    # Image detection - require explicit intent
+    elsif text_downcase.match?(/\b(generate image|create image|make image|draw|create a picture|make a picture)\b/)
+      'generate_image'
     elsif text_downcase.include?('content') || text_downcase.include?('post') || text_downcase.include?('generate') || text_downcase.include?('write') || text_downcase.include?('caption')
       'generate_content'
     elsif text_downcase.include?('schedule')
@@ -330,7 +333,7 @@ class ProcessVoiceCommandJob < ApplicationJob
       LlmService.call(
         prompt: "#{topic_hint}. #{prompt}",
         system: system_prompt,
-        model: 'gpt-4o-mini'
+        model: 'gpt-4o'
       ) do |chunk|
         chunk_content = chunk.is_a?(Hash) ? chunk[:content] : chunk
         content += chunk_content if chunk_content
@@ -349,7 +352,7 @@ class ProcessVoiceCommandJob < ApplicationJob
       LlmService.call(
         prompt: prompt,
         system: system_prompt,
-        model: 'gpt-4o-mini'
+        model: 'gpt-4o'
       ) do |chunk|
         chunk_content = chunk.is_a?(Hash) ? chunk[:content] : chunk
         response += chunk_content if chunk_content

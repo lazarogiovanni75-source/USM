@@ -45,7 +45,7 @@ class ConversationOrchestrator < ApplicationService
     You have access to tools that can help users manage their social media, including creating campaigns, drafting content, scheduling posts, and analyzing performance.
   PROMPT
   MAX_HISTORY_MESSAGES = 50
-  CHAT_MODEL = "gpt-4o-mini"
+  CHAT_MODEL = "gpt-4o"
   CHAT_TEMPERATURE = 0.8
   CHAT_MAX_TOKENS = 4000
   
@@ -239,7 +239,8 @@ class ConversationOrchestrator < ApplicationService
       .last(MAX_HISTORY_MESSAGES)
     
     # Build messages array for OpenAI
-    messages = [{ role: "system", content: SYSTEM_PROMPT }]
+    # Use admin-defined system prompt from SiteSettings
+    messages = [{ role: "system", content: SiteSetting.ai_system_prompt }]
     
     recent_messages.each do |msg|
       # Skip tool messages without valid metadata
