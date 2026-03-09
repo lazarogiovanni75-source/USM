@@ -12,7 +12,7 @@ class AiAutopilotService < ApplicationService
 
   def call
     if @command
-      process_voice_command
+      process_voice_cd yoy ommand
     elsif @action == 'generate_content'
       generate_content
     elsif @action == 'generate_video'

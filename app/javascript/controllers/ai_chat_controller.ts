@@ -175,11 +175,13 @@ export default class extends Controller<HTMLElement> {
       })
     }
 
-    // Test voice button - already declared above
+    // Test voice button - get the CURRENT value from dropdown, not cached
     if (testVoiceBtn) {
       testVoiceBtn.addEventListener('click', () => {
-        const voice = voiceSelect?.value || savedVoice
-        console.log('[AIChat] Test button clicked, testing voice:', voice)
+        // Get fresh value directly from dropdown each time
+        const voiceSelectEl = document.getElementById('voice-select') as HTMLSelectElement
+        const voice = voiceSelectEl ? voiceSelectEl.value : 'alloy'
+        console.log('[AIChat] Test button clicked, current voice:', voice)
         this.testVoice(voice)
       })
     }
@@ -248,13 +250,10 @@ export default class extends Controller<HTMLElement> {
   private handleVoiceMessage(): void {
     const voiceMsg = this.voiceMessageValue
     if (voiceMsg && voiceMsg.trim()) {
-      console.log("[AiChat] Auto-sending voice message:", voiceMsg)
-      // Set the message in the input
+      console.log("[AiChat] Voice message received, setting in input field:", voiceMsg)
+      // Set the message in the input field - user must manually click send
       this.inputTarget.value = voiceMsg.trim()
-      // Auto-submit after a short delay to ensure everything is ready
-      setTimeout(() => {
-        this.sendMessage(new Event('submit'))
-      }, 500)
+      // Removed auto-submit - user wants manual send button only
     }
   }
 
@@ -401,6 +400,16 @@ export default class extends Controller<HTMLElement> {
       console.log("[AiChat] Ignoring completion - controller disconnected")
       return
     }
+    
+    // Get the AI response content BEFORE clearing for TTS
+    let responseText = ""
+    if (this.currentAssistantMessage) {
+      const contentEl = this.currentAssistantMessage.querySelector('.message-content')
+      if (contentEl) {
+        responseText = contentEl.textContent || ""
+      }
+    }
+    
     this.isGenerating = false
     this.hideTypingIndicator()
     this.showStopButton(false)
@@ -408,6 +417,24 @@ export default class extends Controller<HTMLElement> {
     this.inputTarget.disabled = false
     this.currentAssistantMessage = null
     this.abortController = null
+    
+    // Trigger continuous voice mode - auto-listen after AI responds
+    this.triggerContinuousVoice()
+    
+    // Speak the AI response using saved voice settings
+    const autoSpeak = localStorage.getItem('otto_auto_speak')
+    if (autoSpeak !== 'false' && responseText) {
+      console.log("[AiChat] Speaking response with TTS:", responseText.substring(0, 50))
+      this.speakResponse(responseText)
+    }
+  }
+
+  // Trigger continuous voice mode if enabled
+  private triggerContinuousVoice(): void {
+    console.log("[AIChat] Triggering continuous voice mode...")
+    // Dispatch custom event that simple-voice controller listens for
+    window.dispatchEvent(new CustomEvent('ai:response-complete', { detail: {} }))
+    console.log("[AIChat] Event dispatched")
   }
 
   private handleToolCall(data: any): void {
@@ -650,10 +677,15 @@ export default class extends Controller<HTMLElement> {
       return
     }
 
-    // Get saved voice (default to alloy)
-    const voice = localStorage.getItem('otto_voice') || 'alloy'
+    // Get CURRENT voice from dropdown (not cached localStorage)
+    const voiceSelectEl = document.getElementById('voice-select') as HTMLSelectElement
+    const voice = voiceSelectEl ? voiceSelectEl.value : (localStorage.getItem('otto_voice') || 'alloy')
     
-    console.log("[AIChat] Speaking with voice:", voice)
+    // Get speech rate
+    const speechRateEl = document.getElementById('speech-rate') as HTMLInputElement
+    const rate = speechRateEl ? speechRateEl.value : (localStorage.getItem('otto_speech_rate') || '1')
+    
+    console.log("[AIChat] Speaking with voice:", voice, "rate:", rate)
 
     try {
       const response = await fetch('/speak', {
@@ -663,7 +695,7 @@ export default class extends Controller<HTMLElement> {
           'Accept': 'audio/mpeg',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         },
-        body: JSON.stringify({ text: cleanText, voice })
+        body: JSON.stringify({ text: cleanText, voice, rate })
       })
       
       if (response.ok) {
@@ -846,9 +878,16 @@ export default class extends Controller<HTMLElement> {
     const message = this.inputTarget.value.trim()
     if (!message || this.isGenerating) return
 
+    // Enable continuous voice mode when user sends any message
+    // So they don't have to press voice button again
+    window.dispatchEvent(new CustomEvent('voice:enable-continuous', { detail: {} }))
+
+    // Check if this was a voice input (transcript from voice button)
+    const isVoiceInput = document.getElementById('voice-float-btn')?.classList.contains('voice-input-recent')
+
     // Use streaming API if conversation ID is available
     if (this.conversationIdValue) {
-      this.sendMessageStreaming(message)
+      this.sendMessageStreaming(message, isVoiceInput)
     } else {
       this.setLoading(true)
       this.appendMessage(message, "user")
@@ -860,7 +899,7 @@ export default class extends Controller<HTMLElement> {
     }
   }
 
-  private async sendMessageStreaming(message: string): Promise<void> {
+  private async sendMessageStreaming(message: string, isVoiceInput: boolean = false): Promise<void> {
     this.isGenerating = true
     this.setLoading(true)
     this.inputTarget.disabled = true
@@ -868,6 +907,9 @@ export default class extends Controller<HTMLElement> {
     this.inputTarget.value = ""
     this.showStopButton(true)
     this.abortController = new AbortController()
+
+    // Add voice indicator prefix so AI knows this was spoken
+    const messageWithVoice = isVoiceInput ? `(Voice) ${message}` : message
 
     try {
       const response = await fetch('/api/v1/ai_chat/stream_message', {
@@ -878,7 +920,8 @@ export default class extends Controller<HTMLElement> {
         },
         body: JSON.stringify({
           conversation_id: this.conversationIdValue,
-          message: message
+          message: messageWithVoice,
+          modality: isVoiceInput ? 'voice' : 'text'
         }),
         signal: this.abortController.signal
       })
@@ -936,9 +979,17 @@ export default class extends Controller<HTMLElement> {
   }
 
   handleKeydown(event: KeyboardEvent): void {
+    // Don't auto-send on Enter - user must click send button manually
+    // Enter key just adds a new line
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      this.sendMessage(event)
+      // Insert newline instead of sending
+      const input = this.inputTarget
+      const start = input.selectionStart
+      const end = input.selectionEnd
+      const value = input.value
+      input.value = `${value.substring(0, start)}\n${value.substring(end)}`
+      input.selectionStart = input.selectionEnd = start + 1
     }
   }
 

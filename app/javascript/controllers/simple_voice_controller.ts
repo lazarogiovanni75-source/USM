@@ -4,7 +4,7 @@
  */
 /* eslint-disable max-len */
 
-import { Controller } from "@hotwired/stimulus"
+import { Controller, Context } from "@hotwired/stimulus"
 
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList
@@ -63,13 +63,31 @@ export default class SimpleVoiceController extends Controller {
   private recognition: SpeechRecognition | null = null
   private isListening = false
   private isProcessing = false
+  private continuousMode = false
   private micIconPath = "M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+  private onAiResponseHandler: () => void
+  private enableContinuousHandler: () => void
+
+  constructor(context: Context) {
+    super(context)
+    this.onAiResponseHandler = this.onAiResponseComplete.bind(this)
+    this.enableContinuousHandler = this.enableContinuousMode.bind(this)
+  }
 
   connect(): void {
     console.log("Voice flow active")
     console.log("[SimpleVoice] Controller connected")
     this.findElements()
     this.updateButtonReady()
+    
+    // Listen for AI response completion to trigger continuous mode
+    window.addEventListener('ai:response-complete', this.onAiResponseHandler)
+    window.addEventListener('voice:enable-continuous', this.enableContinuousHandler)
+  }
+
+  disconnect(): void {
+    window.removeEventListener('ai:response-complete', this.onAiResponseHandler)
+    window.removeEventListener('voice:enable-continuous', this.enableContinuousHandler)
   }
 
   private findElements(): void {
@@ -87,6 +105,11 @@ export default class SimpleVoiceController extends Controller {
       return
     }
     
+    if (this.isProcessing) {
+      console.log("[SimpleVoice] Already processing, ignoring click")
+      return
+    }
+    
     this.startListening()
   }
 
@@ -94,7 +117,7 @@ export default class SimpleVoiceController extends Controller {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
       console.error("[SimpleVoice] Not supported")
-      this.updateStatus("Voice not supported")
+      this.updateStatus("Voice not supported in this browser")
       return false
     }
 
@@ -172,48 +195,166 @@ export default class SimpleVoiceController extends Controller {
     this.updateStatus("Ready")
   }
 
-  private async processVoiceInput(text: string): Promise<void> {
+  private processVoiceInput(text: string): void {
     if (!text.trim()) return
     
-    console.log("Transcript received")
-    this.isProcessing = true
+    console.log("[SimpleVoice] Transcript received:", text)
+    
+    // Put transcript in the text input box
+    const input = document.getElementById('message-input') as HTMLTextAreaElement | null
+    if (input) {
+      input.value = text.trim()
+      input.focus()
+    }
+    
+    // Show visual feedback that voice captured
+    this.showVoiceCapturedFeedback(text)
+    
+    // Mark this as voice input
+    if (this.button) {
+      this.button.classList.add('voice-input-recent')
+      setTimeout(() => {
+        this.button?.classList.remove('voice-input-recent')
+      }, 5000)
+    }
+    
+    // AUTO-SEND for the floating red button - no manual send needed
+    this.updateStatus("Sending...")
     this.updateButtonProcessing()
-    this.updateStatus("Thinking...")
-
-    // Add user's message to chat immediately
-    this.addMessageToChat('user', text)
-
+    this.isProcessing = true
+    
+    // Send to AI automatically
+    this.handleVoiceSubmit(text.trim())
+  }
+  
+  private async handleVoiceSubmit(text: string): Promise<void> {
     try {
-      const response = await this.sendToAI(text)
+      const conversationId = await this.getOrCreateConversation()
+      if (!conversationId) {
+        console.error("[SimpleVoice] No conversation ID")
+        this.updateStatus("Error: No conversation")
+        this.isProcessing = false
+        this.updateButtonReady()
+        return
+      }
+      
+      // Send message and get response
+      const response = await this.sendToAI(text, conversationId)
+      
+      // Display response
       this.displayResponse(response)
-    } catch (e: any) {
+      
+    } catch (e) {
       console.error("[SimpleVoice] Error:", e)
-      this.updateStatus(`Error: ${e.message}`)
+      this.updateStatus(`Error: ${(e as Error).message}`)
     } finally {
       this.isProcessing = false
       this.updateButtonReady()
     }
   }
 
-  private async sendToAI(text: string): Promise<string> {
-    console.log("Sending to /api/v1/ai_chat/stream_message (with tools)")
-    
-    // Get conversation ID - try multiple sources
-    let conversationId = ''
-    const urlParams = new URLSearchParams(window.location.search)
-    const pathMatch = window.location.pathname.match(/ai_chat\/(\d+)/)
-    
-    // Check URL path first
-    if (pathMatch) {
-      conversationId = pathMatch[1]
+  // Called by ai_chat_controller when AI finishes responding
+  // This enables continuous voice mode after first voice interaction
+  enableContinuousMode(): void {
+    this.continuousMode = true
+    this.updateButtonContinuous()
+    console.log("[SimpleVoice] Continuous mode enabled - will auto-listen after AI responds")
+    this.updateStatus("Continuous mode ON - AI will listen after responding")
+  }
+
+  disableContinuousMode(): void {
+    this.continuousMode = false
+    this.updateButtonReady()
+    console.log("[SimpleVoice] Continuous mode disabled")
+    this.updateStatus("Continuous mode OFF")
+  }
+
+  // Called after AI responds - starts listening if continuous mode is on
+  onAiResponseComplete(): void {
+    console.log("[SimpleVoice] onAiResponseComplete called, continuousMode:", this.continuousMode, "isListening:", this.isListening)
+    if (this.continuousMode && !this.isListening && !this.isProcessing) {
+      console.log("[SimpleVoice] AI responded, auto-starting listening...")
+      this.updateStatus("Listening after AI response...")
+      // Small delay then start listening
+      setTimeout(() => {
+        this.startListening()
+      }, 500)
+    } else {
+      console.log("[SimpleVoice] Not auto-starting, continuousMode:", this.continuousMode, "isListening:", this.isListening, "isProcessing:", this.isProcessing)
     }
+  }
+
+  private updateButtonContinuous(): void {
+    if (!this.button) return
+    // Show pulsing animation to indicate continuous mode
+    this.button.classList.add('animate-pulse')
+    this.button.classList.remove('from-red-500', 'to-red-600')
+    this.button.classList.add('from-purple-500', 'to-pink-500')
+    const span = this.button.querySelector('span')
+    if (span) span.textContent = "🎤 Listening..."
+  }
+
+  private showVoiceCapturedFeedback(_text: string): void {
+    // Flash the input to show capture worked
+    const input = document.getElementById('message-input')
+    if (input) {
+      input.classList.add('ring-2', 'ring-purple-500')
+      setTimeout(() => {
+        input.classList.remove('ring-2', 'ring-purple-500')
+      }, 1000)
+    }
+  }
+
+  private async getOrCreateConversation(): Promise<string | null> {
+    // First try to get existing conversation from page
+    let conversationId = ''
+    
     // Check data attribute on page
     const convEl = document.querySelector('[data-conversation-id]')
     if (convEl) {
       conversationId = convEl.getAttribute('data-conversation-id') || ''
     }
     
-    console.log("[SimpleVoice] Using conversation ID:", conversationId)
+    // Check URL path
+    const pathMatch = window.location.pathname.match(/ai_chat\/(\d+)/)
+    if (pathMatch) {
+      conversationId = pathMatch[1]
+    }
+    
+    // If we have a conversation ID, return it
+    if (conversationId) {
+      console.log("[SimpleVoice] Using existing conversation:", conversationId)
+      return conversationId
+    }
+    
+    // Otherwise create a new conversation
+    console.log("[SimpleVoice] Creating new conversation...")
+    try {
+      const response = await fetch('/api/v1/ai_chat/create_conversation', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Accept': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
+      const data = await response.json()
+      console.log("[SimpleVoice] Created conversation:", data.conversation?.id)
+      return data.conversation?.id || null
+    } catch (e) {
+      console.error("[SimpleVoice] Failed to create conversation:", e)
+      return null
+    }
+  }
+
+  private async sendToAI(text: string, conversationId: string): Promise<string> {
+    console.log("[SimpleVoice] Sending to /api/v1/ai_chat/stream_message, conversation:", conversationId)
     
     const response = await fetch('/api/v1/ai_chat/stream_message', {
       method: 'POST',
@@ -245,12 +386,16 @@ export default class SimpleVoiceController extends Controller {
       responseTextEl.textContent = text
       responseTextEl.classList.remove('hidden')
     }
-    this.updateStatus("Done")
+    this.updateStatus("Done - listening...")
     
     // Also add to main chat container
     this.addMessageToChat('assistant', text)
     
+    // Speak the response
     this.speakText(text)
+    
+    // Enable continuous mode and auto-listen for next input
+    this.enableContinuousMode()
   }
 
   private addMessageToChat(role: string, content: string): void {
@@ -306,7 +451,16 @@ export default class SimpleVoiceController extends Controller {
 
   private updateStatus(msg: string): void {
     console.log("[SimpleVoice]", msg)
-    if (this.statusEl) this.statusEl.textContent = msg
+    if (this.statusEl) {
+      this.statusEl.textContent = msg
+      this.statusEl.classList.remove('opacity-0')
+      // Auto-hide after 3 seconds unless listening
+      if (!this.isListening) {
+        setTimeout(() => {
+          this.statusEl?.classList.add('opacity-0')
+        }, 3000)
+      }
+    }
   }
 
   private updateButtonReady(): void {

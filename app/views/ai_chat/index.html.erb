@@ -1,11 +1,9 @@
 <% content_for :title, "Otto-Chat" %>
-<!-- stimulus-validator: disable-next-line -->
 
 <div class="bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-purple-900 dark:via-gray-900 dark:to-purple-900 relative" 
      data-controller="ai-chat"
      data-voice-message="<%= @voice_message %>"
      data-conversation-id="<%= @current_conversation&.id %>">
-  <!-- Decorative Background -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none">
     <div class="absolute top-20 left-10 w-64 h-64 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
     <div class="absolute top-40 right-20 w-96 h-96 bg-indigo-300/30 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
@@ -119,30 +117,26 @@
       <!-- END Chat Messages -->
 
       <!-- Chat Input -->
-      <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800" data-controller="ai-chat ai-voice-chat">
-        <!-- Live Voice Transcript Display -->
-        <div id="voice-transcript-display" 
-             class="hidden mb-3 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-300 rounded-xl flex items-center gap-2"
-             data-ai-voice-chat-target="transcript">
+      <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800" data-controller="ai-chat simple-voice">
+        <!-- Live Voice Transcript Display (handled by floating button) -->
+        <div id="voice-transcript-display" class="hidden mb-3 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-300 rounded-xl flex items-center gap-2">
           <span class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
-          <span class="text-sm text-gray-900 dark:text-white"><span data-ai-voice-chat-target="status">Listening...</span></span>
+          <span class="text-sm text-gray-900 dark:text-white"><span id="voice-status">Listening...</span></span>
         </div>
         <!-- Chat form wrapper -->
         <div>
-          <form id="chat-form" data-action="submit->ai-voice-chat#submitVoiceMessage">
+          <form id="chat-form" data-ai-chat-target="form" data-action="submit->ai-chat#sendMessage">
             <input type="hidden" name="conversation_id" value="<%= @current_conversation&.id %>">
             <div class="flex items-center gap-2">
               <!-- Talk to Text Button -->
               <button type="button" 
                       id="voice-chat-btn"
                       class="flex-shrink-0 p-3 rounded-xl transition-all bg-purple-100 text-purple-600 hover:bg-purple-200"
-                      data-action="ai-voice-chat#toggle"
-                      data-ai-voice-chat-target="button"
+                      data-action="simple-voice#toggle"
                       title="Talk to Text">
                 <%= lucide_icon "mic", class: "w-5 h-5" %>
                 <!-- Recording indicator -->
-                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full hidden" 
-                      data-ai-voice-chat-target="indicator"></span>
+                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full hidden"></span>
               </button>
               <textarea name="message" 
                   id="message-input"
@@ -151,7 +145,6 @@
                   rows="1" 
                   placeholder="Type your message..."
                   data-ai-chat-target="input"
-                  data-ai-voice-chat-target="input"
                   data-action="keydown->ai-chat#handleKeydown"
                   autocomplete="off"></textarea>
               <!-- Submit Button -->
@@ -167,7 +160,7 @@
             <%= lucide_icon "mic", class: "w-3 h-3" %>
             Talk to Text
           </span>
-          <p class="text-xs text-gray-600 dark:text-gray-400">Press Enter to send or click the button</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">Click mic to speak, click send button to submit</p>
         </div>
       </div>
       <!-- END Chat Input -->

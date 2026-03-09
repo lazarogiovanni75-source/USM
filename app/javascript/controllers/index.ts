@@ -30,6 +30,7 @@ import AiMarketingStrategyController from "./ai_marketing_strategy_controller"
 import DashboardAutopilotController from "./dashboard_autopilot_controller"
 import SocialAccountConnectionsController from "./social_account_connections_controller"
 import CampaignWorkflowController from "./campaign_workflow_controller"
+import AssemblyAiVoiceController from "./assembly_ai_voice_controller"
 import ContinuousVoiceController from "./continuous_voice_controller"
 import VoiceChatController from "./voice_chat_controller"
 import PolicySettingsController from "./policy_settings_controller"
@@ -68,6 +69,7 @@ application.register("dashboard-autopilot", DashboardAutopilotController)
 application.register("social-account-connections", SocialAccountConnectionsController)
 application.register("campaign-workflow", CampaignWorkflowController)
 application.register("continuous-voice", ContinuousVoiceController)
+application.register("assembly-ai-voice", AssemblyAiVoiceController)
 application.register("voice-chat", VoiceChatController)
 application.register("policy-settings", PolicySettingsController)
 application.register("strategy-trend", StrategyTrendController)

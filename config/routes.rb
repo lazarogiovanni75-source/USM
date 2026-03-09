@@ -308,7 +308,7 @@ Rails.application.routes.draw do
   end
   
   # AI Marketing Strategy Analyzer
-  resources :ai_marketing_strategy, only: [:index] do
+  resources :ai_marketing_strategy do
     collection do
       post 'analyze'
       post 'generate_report'
@@ -480,6 +480,7 @@ Rails.application.routes.draw do
   get 'pages/features', to: 'pages#features'
   get 'pages/pricing', to: 'pages#pricing'
   get 'pages/about', to: 'pages#about'
+  get 'pages/faq', to: 'pages#faq'
   
   # Additional user routes
   get 'social-media-dashboard', to: 'social_media_dashboard#index'

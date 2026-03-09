@@ -20,50 +20,23 @@
 #   )
 class ConversationOrchestrator < ApplicationService
   # Constants
-  SYSTEM_PROMPT = <<~PROMPT
-    You are Otto-Pilot, a Chief Marketing Manager and Content Strategist with 15+ years of experience.
-    
-    Your expertise includes:
-    - Developing comprehensive marketing strategies and campaigns
-    - Creating compelling content for social media platforms
-    - Analyzing market trends and consumer behavior
-    - Building brand identity and voice
-    - Managing social media accounts across multiple platforms
-    - Optimizing content for maximum engagement and reach
-    - Planning and scheduling social media posts
-    - Creating content calendars and editorial plans
-    
-    When responding, always:
-    - Think strategically about marketing goals and objectives
-    - Consider the target audience and platform best practices
-    - Provide actionable, practical advice
-    - Use industry-standard terminology appropriately
-    - Be conversational but professional
-    - Focus on results-driven recommendations
-    - When appropriate, offer to create content, schedule posts, or take action
-    
-    You have access to tools that can help users manage their social media, including creating campaigns, drafting content, scheduling posts, and analyzing performance.
-  PROMPT
-  MAX_HISTORY_MESSAGES = 50
+  MAX_HISTORY_MESSAGES = 15
   CHAT_MODEL = "gpt-4o"
   CHAT_TEMPERATURE = 0.8
   CHAT_MAX_TOKENS = 4000
   
-  # Intent keywords for routing
-  IMAGE_KEYWORDS = %w[image photo picture generate create make draw design]
-  VIDEO_KEYWORDS = %w[video clip footage generate create make film]
-  
   # Enable tools by default for chat
   DEFAULT_TOOLS_ENABLED = true
   
-  attr_reader :user, :conversation, :content, :modality, :stream_channel, :tools_enabled
+  attr_reader :user, :conversation, :content, :modality, :stream_channel, :fallback_channel, :tools_enabled
 
-  def initialize(user:, conversation_id:, content:, modality: "text", stream_channel: nil, tools_enabled: nil)
+  def initialize(user:, conversation_id:, content:, modality: "text", stream_channel: nil, fallback_channel: nil, tools_enabled: nil)
     @user = user
     @conversation = find_or_create_conversation(conversation_id)
     @content = content
     @modality = modality
     @stream_channel = stream_channel
+    @fallback_channel = fallback_channel
     @assistant_response = ""
     @tools_enabled = tools_enabled.nil? ? DEFAULT_TOOLS_ENABLED : tools_enabled
   end
@@ -155,20 +128,9 @@ class ConversationOrchestrator < ApplicationService
   end
 
   def detect_intent
-    content_lower = content.downcase
-    
-    # Check for image keywords
-    if IMAGE_KEYWORDS.any? { |kw| content_lower.include?(kw) } && 
-       (content_lower.include?('image') || content_lower.include?('photo') || content_lower.include?('picture'))
-      return :image
-    end
-    
-    # Check for video keywords
-    if VIDEO_KEYWORDS.any? { |kw| content_lower.include?(kw) } && 
-       content_lower.include?('video')
-      return :video
-    end
-    
+    # Don't auto-detect intents - let the AI decide based on system prompt
+    # This ensures the AI follows rules to ask questions before generating
+    # The system prompt already has: "Always ask necessary information BEFORE generating content, images, videos, or campaigns"
     :chat
   end
 
@@ -239,8 +201,31 @@ class ConversationOrchestrator < ApplicationService
       .last(MAX_HISTORY_MESSAGES)
     
     # Build messages array for OpenAI
-    # Use admin-defined system prompt from SiteSettings
-    messages = [{ role: "system", content: SiteSetting.ai_system_prompt }]
+    # Use admin-defined system prompt from SiteSettings with user context
+    base_prompt = SiteSetting.ai_system_prompt
+    
+    # Add user-specific subscription info
+    if user
+      plan = user.subscription_plan || 'Starter'
+      plan_data = SubscriptionPlan.find_by(name: plan)
+      credits = plan_data&.credits || 40
+      
+      user_context = <<~CONTEXT
+
+## CURRENT USER CONTEXT
+- User: #{user.name || user.email}
+- Subscription Plan: #{plan}
+- Monthly Credits: #{credits}
+
+REMEMBER: You must enforce the #{plan} plan limits for this user!
+CONTEXT
+      
+      system_prompt = base_prompt + user_context
+    else
+      system_prompt = base_prompt
+    end
+    
+    messages = [{ role: "system", content: system_prompt }]
     
     recent_messages.each do |msg|
       # Skip tool messages without valid metadata
@@ -427,11 +412,21 @@ class ConversationOrchestrator < ApplicationService
   def broadcast_content(delta)
     return unless stream_channel
     
+    # Broadcast to primary channel
     ActionCable.server.broadcast(stream_channel, {
       type: 'content_delta',
       delta: delta,
       conversation_id: conversation.id
     })
+    
+    # Also broadcast to fallback channel if different
+    if fallback_channel && fallback_channel != stream_channel
+      ActionCable.server.broadcast(fallback_channel, {
+        type: 'content_delta',
+        delta: delta,
+        conversation_id: conversation.id
+      })
+    end
   end
 
   def broadcast_completion
@@ -442,6 +437,15 @@ class ConversationOrchestrator < ApplicationService
       conversation_id: conversation.id,
       full_content: @assistant_response
     })
+    
+    # Also broadcast to fallback channel if different
+    if fallback_channel && fallback_channel != stream_channel
+      ActionCable.server.broadcast(fallback_channel, {
+        type: 'completion',
+        conversation_id: conversation.id,
+        full_content: @assistant_response
+      })
+    end
   end
 
   def broadcast_error(message)
@@ -452,6 +456,15 @@ class ConversationOrchestrator < ApplicationService
       error: message,
       conversation_id: conversation.id
     })
+    
+    # Also broadcast to fallback channel if different
+    if fallback_channel && fallback_channel != stream_channel
+      ActionCable.server.broadcast(fallback_channel, {
+        type: 'error',
+        error: message,
+        conversation_id: conversation.id
+      })
+    end
   end
 
   def log_message_array(messages)
@@ -699,6 +712,16 @@ class ConversationOrchestrator < ApplicationService
       result: result,
       conversation_id: conversation.id
     })
+    
+    # Also broadcast to fallback channel if different
+    if fallback_channel && fallback_channel != stream_channel
+      ActionCable.server.broadcast(fallback_channel, {
+        type: 'tool_result',
+        tool_name: tool_name,
+        result: result,
+        conversation_id: conversation.id
+      })
+    end
   end
   
   # Get required arguments for a tool

@@ -16,7 +16,7 @@
           </span>
         </h1>
         <p class="text-xl sm:text-2xl text-white/80 mb-8 max-w-2xl">
-          The next-generation social media management platform combining voice activated AI with content/image/video generation, scheduling, posting, and analytics. No need for multiple apps any longer. Now you have Ultimate Social Media the only completely fully automated hands-free, from start to finish social media marketing platform.
+          The next-generation social media management platform combining voice activated AI with content/image/video generation, scheduling, posting, and analytics. there's no need for multiple apps/subscriptions any longer. Now you have Ultimate Social Media the only completely fully automated hands-free, from start to finish social media marketing platform.
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
           <%= link_to "Sign Up Now", sign_up_path, class: "bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl shadow-xl text-center" %>
@@ -110,7 +110,7 @@
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
         </div>
         <h3 class="text-xl font-bold mb-4">You</h3>
-        <p class="text-white/80 text-sm font-semibold mb-2">(Starter)</p>
+        <p class="text-white/80 text-lg font-semibold mb-2"><%= link_to '(Starter)', pages_pricing_path(anchor: 'starter'), class: 'hover:underline' %></p>
         <p class="text-white/80 text-base">All in one platform Ultimate Social Media has every tool you need to take your content from idea to posted.</p>
       </div>
       
@@ -119,8 +119,8 @@
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
         </div>
         <h3 class="text-xl font-bold mb-4">You+AI</h3>
-        <p class="text-white/80 text-sm font-semibold mb-2">(Entrepreneur)</p>
-        <p class="text-white/80 text-base">Voice control, speak or text your commands and Otto-pilot will assist you, completely hands-free.</p>
+        <p class="text-white/80 text-lg font-semibold mb-2"><%= link_to '(Entrepreneur)', pages_pricing_path(anchor: 'entrepreneur'), class: 'hover:underline' %></p>
+        <p class="text-white/80 text-base">Voice control: speak or text your commands and Otto-pilot will assist you, completely hands-free.</p>
       </div>
       
       <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
@@ -128,7 +128,7 @@
           <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
         </div>
         <h3 class="text-xl font-bold mb-4">AI</h3>
-        <p class="text-white/80 text-sm font-semibold mb-2">(Pro)</p>
+        <p class="text-white/80 text-lg font-semibold mb-2"><%= link_to '(Pro)', pages_pricing_path(anchor: 'pro'), class: 'hover:underline' %></p>
         <p class="text-white/80 text-base">Let autopilot do it all for you, just an initial simple description is all you need and watch your marketing campaign come to life.</p>
       </div>
     </div>

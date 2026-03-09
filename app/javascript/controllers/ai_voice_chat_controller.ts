@@ -84,10 +84,9 @@ export default class AiVoiceChatController extends Controller {
         inputEl.style.height = `${inputHeight}px`
       }
       
-      // If we have final transcript, submit
-      if (finalTranscript) {
-        this.submitVoiceMessage()
-      }
+      // Don't auto-submit - let user manually click send
+      // This was previously auto-submitting when user paused while speaking
+      console.log('[AiVoiceChat] Transcript ready:', finalTranscript)
     }
     
     this.recognition.onerror = (event: any) => {

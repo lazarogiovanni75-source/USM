@@ -232,7 +232,10 @@ class VoiceStreamJob < ApplicationJob
       
       api_key = ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY']
       
-      # Use HTTParty to call OpenAI TTS API directly
+      # Use gpt-4o-mini-tts for premium quality voice (same as voice_chat_controller)
+      # Available voices: alloy, echo, fable, onyx, nova, shimmer
+      voice = ENV['OTTO_VOICE'] || 'alloy'
+      
       response = HTTParty.post(
         'https://api.openai.com/v1/audio/speech',
         {
@@ -241,12 +244,13 @@ class VoiceStreamJob < ApplicationJob
             'Content-Type' => 'application/json'
           },
           body: {
-            model: 'tts-1',
-            voice: 'alloy',
+            model: 'gpt-4o-mini-tts',
+            voice: voice,
             input: text,
+            speed: 1.0,
             response_format: 'mp3'
           }.to_json,
-          timeout: 30
+          timeout: 60
         }
       )
       

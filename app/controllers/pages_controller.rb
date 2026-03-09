@@ -15,6 +15,10 @@ class PagesController < ApplicationController
     # Write your real logic here
   end
 
+  def faq
+    # FAQ page
+  end
+
   private
   # Write your private methods here
 end

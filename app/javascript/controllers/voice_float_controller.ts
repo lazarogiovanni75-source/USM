@@ -251,11 +251,13 @@ export default class VoiceFloatController extends Controller {
     }
 
     // Also subscribe to ai_chat channel for AI response streaming
+    // NOTE: Backend AiChatChannel looks for params[:conversation_id], not stream_name
+    const aiConversationId = this.currentConversationId || 'new'
     const aiChannel = (window as any).ActionCable.createConsumer().subscriptions.create(
-      { channel: "AiChatChannel", stream_name: aiChannelName },
+      { channel: "AiChatChannel", conversation_id: aiConversationId },
       {
         connected: () => {
-          console.log("[VoiceFloat] ✅ AI channel connected:", aiChannelName)
+          console.log(`[VoiceFloat] ✅ AI channel connected: ai_chat_${aiConversationId}`)
         },
         disconnected: () => {
           console.log("[VoiceFloat] ❌ AI channel disconnected")
@@ -276,30 +278,29 @@ export default class VoiceFloatController extends Controller {
     )
     this.channels.push(aiChannel)
 
-    // Also subscribe to conversation-specific channel (ai_chat_{user_id}_{conversation_id})
-    if (this.currentConversationId) {
-      const convChannelName = `ai_chat_${userId}_${this.currentConversationId}`
-      const convChannel = (window as any).ActionCable.createConsumer().subscriptions.create(
-        { channel: "AiChatChannel", stream_name: convChannelName },
-        {
-          connected: () => {
-            console.log("[VoiceFloat] ✅ Conversation channel connected:", convChannelName)
-          },
-          received: (data: any) => {
-            console.log("[VoiceFloat] 📬 Conv channel message:", data.type || data)
-            if (data.type === 'content_delta' || data.delta) {
-              this.handleStreamingChunk(data.delta || data.content || '')
-            } else if (data.type === 'completion' || data.full_content) {
-              this.handleStreamComplete(data.full_content || data.content || '')
-            } else if (data.type === 'processing') {
-              this.showLoading()
-              this.updateTranscript(data.message || 'AI is thinking...')
-            }
+    // Subscribe to conversation-specific channel (ai_chat_{conversation_id})
+    // Backend AiChatChannel uses params[:conversation_id] to build stream name
+    const convConversationId = this.currentConversationId || 'new'
+    const convChannel = (window as any).ActionCable.createConsumer().subscriptions.create(
+      { channel: "AiChatChannel", conversation_id: convConversationId },
+      {
+        connected: () => {
+          console.log(`[VoiceFloat] ✅ Conversation channel connected: ai_chat_${convConversationId}`)
+        },
+        received: (data: any) => {
+          console.log("[VoiceFloat] 📬 Conv channel message:", data.type || data)
+          if (data.type === 'content_delta' || data.delta) {
+            this.handleStreamingChunk(data.delta || data.content || '')
+          } else if (data.type === 'completion' || data.full_content) {
+            this.handleStreamComplete(data.full_content || data.content || '')
+          } else if (data.type === 'processing') {
+            this.showLoading()
+            this.updateTranscript(data.message || 'AI is thinking...')
           }
         }
-      )
-      this.channels.push(convChannel)
-    }
+      }
+    )
+    this.channels.push(convChannel)
   }
 
   private handleStreamMessage(data: VoiceStreamEvent): void {
@@ -508,8 +509,8 @@ export default class VoiceFloatController extends Controller {
 
     const duration = Date.now() - this.recordingStartTime
 
-    // Auto-process after 20 seconds of recording (increased from 15)
-    if (duration > 20000) {
+    // Auto-process after 30 seconds of recording
+    if (duration > 30000) {
       console.log("[VoiceFloat] Processing after 20 seconds of speech")
       this.processWavAudio()
     }
@@ -528,8 +529,8 @@ export default class VoiceFloatController extends Controller {
 
     const duration = Date.now() - this.recordingStartTime
 
-    // Only process after minimum 2 seconds of audio
-    if (duration < 2000) {
+    // Only process after minimum 4 seconds of audio
+    if (duration < 4000) {
       return
     }
 
@@ -544,10 +545,9 @@ export default class VoiceFloatController extends Controller {
         this.silenceStartTime = Date.now()
       }
 
-      // If we've had 2.5 seconds of silence after speech, process the audio
-      // Increased from 1.5s to prevent processing partial transcripts
-      if (this.silenceStartTime > 0 && Date.now() - this.silenceStartTime > 2500) {
-        console.log("[VoiceFloat] Detected end of speech (2.5s silence), processing audio")
+      // If we've had 4 seconds of silence after speech, process the audio
+      if (this.silenceStartTime > 0 && Date.now() - this.silenceStartTime > 4000) {
+        console.log("[VoiceFloat] Detected end of speech (4s silence), processing audio")
         this.processWavAudio()
       }
     }

@@ -60,8 +60,15 @@ class Api::V1::VoiceStreamController < ApplicationController
       Rails.logger.info "[VoiceStream] Transcribed text: #{transcribed_text}"
       Rails.logger.info "[VoiceStream] Conversation ID: #{conversation_id}"
       
-      # Generate stream channel name
-      stream_channel = "ai_chat_#{current_user.id}_#{conversation_id || 'new'}"
+      # Generate stream channel name (must match AiChatChannel subscription format: ai_chat_{conversation_id})
+      # For new conversations, use 'new' as placeholder
+      # Handle both nil and empty string cases
+      conv_id = conversation_id.presence || 'new'
+      stream_channel = "ai_chat_#{conv_id}"
+      
+      # Also broadcast to fallback 'new' channel for first-time voice interactions
+      # This ensures the frontend receives the response even before it knows the conversation_id
+      fallback_channel = "ai_chat_new"
       
       # Process message through ConversationOrchestrator
       # This handles: saving user message, loading history, streaming response, saving assistant message
@@ -70,7 +77,8 @@ class Api::V1::VoiceStreamController < ApplicationController
         conversation_id: conversation_id,
         content: transcribed_text,
         modality: 'voice',
-        stream_channel: stream_channel
+        stream_channel: stream_channel,
+        fallback_channel: fallback_channel
       )
 
       render json: {

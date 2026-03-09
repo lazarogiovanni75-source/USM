@@ -1,5 +1,4 @@
 class HomeController < ApplicationController
-  include HomeDemoConcern
 
   def index
     # Show landing page with waitlist to everyone

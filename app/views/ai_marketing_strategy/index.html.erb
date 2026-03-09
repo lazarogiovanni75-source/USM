@@ -26,14 +26,14 @@
         
         <div class="flex flex-wrap items-center gap-3">
           <!-- History Link -->
-          <%= link_to history_ai_marketing_strategy_path,
+          <%= link_to history_ai_marketing_strategy_index_path,
               class: "btn-ghost cursor-pointer" do %>
             <%= lucide_icon "history", class: "w-4 h-4 mr-2" %>
             History
           <% end %>
           
           <!-- Execute Strategy Button -->
-          <%= button_to execute_ai_marketing_strategy_path(focus_area: 'comprehensive'),
+          <%= button_to execute_ai_marketing_strategy_index_path(focus_area: 'comprehensive'),
               method: :post,
               class: "btn-primary cursor-pointer",
               data: { confirm: "This will create 5 scheduled draft posts based on AI recommendations. Continue?" } do %>
@@ -42,7 +42,7 @@
           <% end %>
           
           <!-- Time Range Selector -->
-          <%= form_with url: analyze_ai_marketing_strategy_path, method: :post, local: true, class: "flex items-center gap-2" do |f| %>
+          <%= form_with url: analyze_ai_marketing_strategy_index_path, method: :post, local: true, class: "flex items-center gap-2" do |f| %>
             <%= f.select :time_range, 
                 { 'Last Week' => 'week', 'Last Month' => 'month', 'Last Quarter' => 'quarter' },
                 { selected: 'month' },
@@ -51,7 +51,7 @@
           <% end %>
           
           <!-- Generate Full Report -->
-          <%= button_to generate_report_ai_marketing_strategy_path(focus_area: 'comprehensive'), 
+          <%= button_to generate_report_ai_marketing_strategy_index_path(focus_area: 'comprehensive'), 
               method: :post,
               class: "btn-secondary cursor-pointer" do %>
             <%= lucide_icon "file-text", class: "w-4 h-4 mr-2" %>
@@ -206,7 +206,7 @@
           </h3>
           <!-- Question textarea wrapper -->
           <div data-ai-marketing-strategy-target="question">
-            <%= form_with url: ask_ai_ai_marketing_strategy_path, method: :post, data: { turbo_stream: true } do |f| %>
+            <%= form_with url: ask_ai_ai_marketing_strategy_index_path, method: :post, data: { turbo_stream: true } do |f| %>
               <div class="space-y-4">
                 <%= f.text_area :question, 
                     id: "strategy-question",

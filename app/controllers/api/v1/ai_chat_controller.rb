@@ -290,7 +290,6 @@ module Api
 - User: #{current_user.name || current_user.email}
 - Subscription Plan: #{plan}
 - Monthly Credits: #{credits}
-- Credits Remaining: #{current_user.credits || credits}
 
 REMEMBER: You must enforce the #{plan} plan limits for this user!
 CONTEXT

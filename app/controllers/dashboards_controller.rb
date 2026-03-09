@@ -14,7 +14,7 @@ class DashboardsController < ApplicationController
     # Load all user data for comprehensive dashboard
     @campaigns = @user.campaigns.order(created_at: :desc).limit(5)
     @contents = @user.contents.order(created_at: :desc).limit(10)
-    @scheduled_posts = @user.scheduled_posts.order(scheduled_time: :asc).limit(10)
+    @scheduled_posts = @user.scheduled_posts.order(scheduled_at: :asc).limit(10)
     @voice_commands = @user.voice_commands.order(created_at: :desc).limit(5)
     
     # AI Conversations - Load for chat log

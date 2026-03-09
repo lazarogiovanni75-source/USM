@@ -33,7 +33,19 @@
             <span class="text-white font-bold text-xl"><%= current_user.name.present? ? current_user.name.first : current_user.email.first.upcase %></span>
           </div>
           <div>
-            <h1 class="text-xl font-bold text-primary">Welcome back, <%= current_user.name.present? ? current_user.name.split.first : 'there' %>! 👋</h1>
+            <% hour = Time.current.hour
+   greeting = if hour >= 5 && hour < 12
+                 'Good morning'
+               elsif hour >= 12 && hour < 17
+                 'Good afternoon'
+               elsif hour >= 17 && hour < 21
+                 'Good evening'
+               else
+                 'Good night'
+               end
+   user_name = current_user.name.present? ? current_user.name.split.first : 'there'
+%>
+<h1 class="text-xl font-bold text-primary"><%= greeting %>, <%= user_name %>! 👋</h1>
             <p class="text-sm text-muted flex items-center gap-2">
               <span class="w-2 h-2 bg-success rounded-full animate-pulse"></span>
               Your social media command center
@@ -117,11 +129,21 @@
               <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                 <td class="py-3">
                   <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br <%= account.platform == 'twitter' ? 'from-blue-400 to-blue-600' : account.platform == 'instagram' ? 'from-pink-500 to-purple-600' : 'from-green-400 to-green-600' %> flex items-center justify-center">
-                      <%= lucide_icon account.platform == 'twitter' ? 'twitter' : account.platform == 'instagram' ? 'instagram' : 'facebook', class: "w-4 h-4 text-white" %>
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br <%= account.platform == 'twitter' || account.platform == 'x' ? 'from-blue-400 to-blue-600' : account.platform == 'instagram' ? 'from-pink-500 to-purple-600' : account.platform == 'facebook' ? 'from-blue-600 to-blue-800' : account.platform == 'linkedin' ? 'from-blue-700 to-blue-900' : account.platform == 'tiktok' ? 'from-gray-800 to-black' : 'from-green-400 to-green-600' %> flex items-center justify-center text-white text-lg">
+                      <%= case account.platform
+                      when 'instagram' then '📷'
+                      when 'twitter' then '𝕏'
+                      when 'x' then '𝕏'
+                      when 'facebook' then '📘'
+                      when 'linkedin' then '💼'
+                      when 'tiktok' then '🎵'
+                      when 'youtube' then '▶️'
+                      when 'pinterest' then '📌'
+                      else '🌐'
+                      end %>
                     </div>
                     <div>
-                      <p class="font-medium text-primary text-sm"><%= account.username %></p>
+                      <p class="font-medium text-primary text-sm"><%= account.platform_username.presence || account.platform.titleize %></p>
                       <p class="text-xs text-muted capitalize"><%= account.platform %></p>
                     </div>
                   </div>
@@ -309,23 +331,22 @@
               <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                 <%= lucide_icon "calendar", class: "w-6 h-6 text-white" %>
               </div>
-              <span class="text-sm font-semibold text-primary text-center">Scheduling</span>
-              <span class="text-xs text-muted text-center">Unlimited posts</span>
+              <span class="text-sm font-semibold text-gray-800 text-center">Scheduling</span>
+              <span class="text-xs text-muted text-center">Schedule</span>
             <% end %>
 
             <%= link_to campaigns_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/20 hover:from-green-500/20 hover:to-emerald-500/20 hover:border-green-500/30 transition-all group" do %>
               <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                 <%= lucide_icon "megaphone", class: "w-6 h-6 text-white" %>
               </div>
-              <span class="text-sm font-semibold text-primary text-center">Campaigns</span>
-              <span class="text-xs text-muted text-center">AI strategies</span>
+              <span class="text-sm font-semibold text-gray-800 text-center">Campaigns</span>
             <% end %>
 
             <%= link_to ai_marketing_strategy_index_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/20 hover:from-green-500/20 hover:to-emerald-500/20 hover:border-green-500/30 transition-all group" do %>
               <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                 <%= lucide_icon "trending-up", class: "w-6 h-6 text-white" %>
               </div>
-              <span class="text-sm font-semibold text-primary text-center">Strategy</span>
+              <span class="text-sm font-semibold text-gray-800 text-center">Strategy</span>
               <span class="text-xs text-muted text-center">AI insights</span>
             <% end %>
 
@@ -334,8 +355,8 @@
               <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                 <%= lucide_icon "message-square", class: "w-6 h-6 text-white" %>
               </div>
-              <span class="text-sm font-semibold text-primary text-center">Otto-Chat</span>
-              <span class="text-xs text-muted text-center">Conversations</span>
+              <span class="text-sm font-semibold text-gray-800 text-center">Otto-Chat</span>
+              <span class="text-xs text-muted text-center">Auto chat</span>
             <% end %>
           </div>
         </div>
@@ -356,8 +377,8 @@
                     <%= lucide_icon "clock", class: "w-4 h-4 text-white" %>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-primary truncate"><%= post.title || 'Scheduled Post' %></p>
-                    <p class="text-xs text-muted"><%= post.scheduled_time&.strftime('%b %e, %l:%M %p') || 'No time' %></p>
+                    <p class="text-sm font-medium text-primary truncate"><%= post.content&.title || 'Scheduled Post' %></p>
+                    <p class="text-xs text-muted"><%= post.scheduled_at&.strftime('%b %e, %l:%M %p') || 'No time' %></p>
                   </div>
                 </div>
               <% end %>

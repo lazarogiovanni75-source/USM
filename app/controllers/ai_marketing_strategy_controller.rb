@@ -7,6 +7,7 @@ class AiMarketingStrategyController < ApplicationController
   def index
     @analyzer = MarketingStrategyAnalyzerService.new(current_user)
     @insights = @analyzer.quick_insights
+    @trend = @analyzer.get_trend
   end
   
   def analyze
