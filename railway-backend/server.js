@@ -274,14 +274,13 @@ app.post('/video/start',
 
     try {
       const response = await axios.post(
-        `${ATLAS_CLOUD_BASE_URL}/api/generate/submit`,
+        `${ATLAS_CLOUD_BASE_URL}/api/v1/model/generateVideo`,
         {
-          model: 'seedance-v1-pro',
-          input: {
-            prompt: prompt,
-            duration: 15,
-            aspect_ratio: '16:9'
-          }
+          model: 'bytedance/seedance-v1-pro-fast/text-to-video',
+          prompt: prompt,
+          duration: 5,
+          aspect_ratio: '16:9',
+          resolution: '720p'
         },
         {
           headers: {
@@ -329,7 +328,7 @@ app.get('/video/status/:jobId',
 
     try {
       const response = await axios.get(
-        `${ATLAS_CLOUD_BASE_URL}/api/task/${jobId}`,
+        `${ATLAS_CLOUD_BASE_URL}/api/v1/model/prediction/${jobId}`,
         {
           headers: {
             'Authorization': `Bearer ${ATLAS_CLOUD_API_KEY}`

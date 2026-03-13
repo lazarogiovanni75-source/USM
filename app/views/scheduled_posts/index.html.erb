@@ -59,7 +59,7 @@
                 <div class="flex items-center space-x-3 mb-2">
                   <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                     <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
-                      <%= post.platform[0].upcase %>
+                      <%= post.platform ? post.platform[0].upcase : '?' %>
                     </span>
                   </div>
                   <div>
@@ -67,7 +67,7 @@
                       <%= truncate(post.content.title, length: 50) if post.content %>
                     </h3>
                     <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                      <span><%= post.platform.capitalize %></span>
+                      <span><%= post.platform ? post.platform.capitalize : 'Unknown' %></span>
                       <span>•</span>
                       <span><%= post.scheduled_at.strftime("%b %d, %Y at %I:%M %p") %></span>
                       <span>•</span>

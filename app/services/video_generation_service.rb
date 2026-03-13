@@ -14,7 +14,7 @@ class VideoGenerationService
   # @param aspect_ratio [String] Aspect ratio
   # @return [Hash] Result with task_id and metadata
   #
-  def self.generate_video(prompt:, duration: '10', aspect_ratio: '16:9')
+  def self.generate_video(prompt:, duration: '5', aspect_ratio: '16:9')
     # Try primary service (Atlas Cloud)
     result = try_primary_video(prompt: prompt, duration: duration, aspect_ratio: aspect_ratio)
     return result if result[:success]
