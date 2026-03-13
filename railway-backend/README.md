@@ -20,7 +20,7 @@ ALLOWED_ORIGINS=https://ultimatesocialmedia01.com,https://your-clacky-thread.cla
 
 # API Keys
 OPENAI_API_KEY=sk-xxxxx
-DEFAPI_API_KEY=your-defapi-key
+ATLAS_CLOUD_API_KEY=your-atlas-cloud-key
 
 # Database (Optional - runs in degraded mode without DB)
 DATABASE_URL=postgresql://user:pass@host:5432/dbname
@@ -65,7 +65,7 @@ Readiness check showing status of all dependencies.
     "server": "ok",
     "database": "ok",
     "openai": "configured",
-    "defapi": "configured"
+    "atlas_cloud": "configured"
   },
   "timestamp": "2024-02-04T10:30:00.000Z"
 }
@@ -361,7 +361,7 @@ Access `/metrics` endpoint for detailed statistics:
 - [ ] Set all required environment variables
 - [ ] Configure `ALLOWED_ORIGINS` with production domains
 - [ ] Add OpenAI API key (`OPENAI_API_KEY`)
-- [ ] Add DefAPI key if using video generation (`DEFAPI_API_KEY`)
+- [ ] Add Atlas Cloud key if using video generation (`ATLAS_CLOUD_API_KEY`)
 - [ ] Optional: Connect PostgreSQL database (`DATABASE_URL`)
 - [ ] Verify `/health` endpoint returns 200 OK
 - [ ] Test CORS from your frontend domain

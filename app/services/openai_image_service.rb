@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # OpenAI Image Generation Service (Direct API)
-# Secondary image generation service when Defapi is unavailable
+# Secondary image generation service when Atlas Cloud is unavailable
 # Uses OpenAI's GPT-Image-1.0 API
 class OpenaiImageService
   BASE_URL = 'https://api.openai.com/v1'

@@ -1,12 +1,12 @@
 // Video Generation Service
-// Calls Defapi Service for video generation
+// Calls Atlas Cloud Service for video generation
 
 class VideoService {
   constructor() {
     this.baseUrl = '/content_creation';
   }
 
-  // Generate video using Defapi Service (Sora 2 Pro)
+  // Generate video using Atlas Cloud
   async generateVideo(script) {
     try {
       const response = await fetch(`${this.baseUrl}/generate_video`, {

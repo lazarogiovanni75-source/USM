@@ -36,13 +36,13 @@ Value: [your-key-here]
 - Get key: https://elevenlabs.io → Profile → API Key
 - Click "Copy" button
 
-### Poyo.ai (Required - Video Generation)
+### Atlas Cloud (Required - Video Generation)
 ```
-Variable: POYO_API_KEY
+Variable: ATLAS_CLOUD_API_KEY
 Value: [your-key-here]
 ```
-- Get key: https://poyo.ai → Dashboard → API Keys
-- Uses Sora 2 for AI video generation
+- Get key: https://atlascloud.ai → Dashboard → API Keys
+- Uses Atlas Cloud for AI video generation
 
 ### Make.com or Zapier (Optional - pick one)
 
@@ -107,7 +107,7 @@ curl -X POST https://clacky-backend-clean-production.up.railway.app/api/voice/ge
   --output test.mp3
 ```
 
-### Test Poyo.ai
+### Test Atlas Cloud
 ```bash
 curl -X POST https://clacky-backend-clean-production.up.railway.app/api/video/generate \
   -H "Content-Type: application/json" \
@@ -121,7 +121,7 @@ curl -X POST https://clacky-backend-clean-production.up.railway.app/api/video/ge
 Your Railway backend is now connected to:
 - ✅ OpenAI (AI content generation)
 - ✅ ElevenLabs (voice generation)
-- ✅ Poyo.ai (video generation)
+- ✅ Atlas Cloud (video generation)
 - ✅ Make.com/Zapier (automation)
 
 ClackyAI → Railway → Third-Party APIs ✨
@@ -156,7 +156,7 @@ ClackyAI → Railway → Third-Party APIs ✨
 
 - OpenAI: $5 free credit (new users)
 - ElevenLabs: 10,000 chars/month free
-- Poyo.ai: Check poyo.ai for pricing
+- Atlas Cloud: Check atlascloud.ai for pricing
 - Make.com: 1,000 operations/month free
 - Zapier: 100 tasks/month free
 - Railway: $5/month credit included

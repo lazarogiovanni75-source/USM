@@ -1,4 +1,4 @@
-I8R
+nothing different.  right could it be thatthere is no lock imoji in the addI8R
 I need you to delete everythThe file simple_voice_controller.ts is still being executed and throwing the conversation ID error.
 Do NOT modify it anymore.
 Instead:

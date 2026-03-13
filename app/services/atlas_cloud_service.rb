@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-# Atlas Cloud Service for Video Generation (Seedance v1 Pro)
+# Atlas Cloud Service for Video Generation
 # API Documentation: https://api.atlascloud.ai
 class AtlasCloudService
   BASE_URL = 'https://api.atlascloud.ai'
-  TIMEOUT = 300
+  TIMEOUT = 120
 
   class Error < StandardError; end
   class AuthenticationError < Error; end
@@ -13,88 +13,101 @@ class AtlasCloudService
   def initialize(api_key = nil)
     @api_key = api_key || fetch_api_key
     @base_url = BASE_URL
-    
-    if @api_key.blank?
-      Rails.logger.warn "[AtlasCloudService] No API key configured!"
-    else
-      Rails.logger.info "[AtlasCloudService] API key configured (length: #{@api_key.length})"
-    end
   end
 
-  # Generate video from text prompt using Seedance v1 Pro
+  # Generate video from text prompt
+  # API Documentation: https://api.atlascloud.ai
   #
   # @param prompt [String] Text prompt describing the video to generate
-  # @param duration [Integer] Video duration in seconds (default: 10)
-  # @param aspect_ratio [String] Aspect ratio ("16:9" or "9:16")
-  # @param resolution [String] Resolution ("1080p")
-  # @param camera_fixed [Boolean] Whether camera should be fixed
-  # @param seed [Integer] Random seed (-1 for random)
+  # @param duration [Integer] Video duration (10 or 15 seconds)
+  # @param aspect_ratio [String] Aspect ratio ("16:9" default or "9:16" for vertical)
+  # @param model [String] Model identifier ("seedance-v1-pro" or "seedance-v1")
+  # @param callback_url [String] Webhook URL to call when video is ready
+  # @param style [String] Video style (thanksgiving, comic, news, selfie, nostalgic, anime)
+  # @param storyboard [Boolean] Enable storyboard for finer control
+  # @param image_urls [Array] Image URLs for image-to-video generation
   #
   def generate_video(prompt:,
                      duration: 10,
                      aspect_ratio: '16:9',
-                     resolution: '1080p',
-                     camera_fixed: false,
-                     seed: -1)
-    body = {
-      model: 'bytedance/seedance-v1-pro-fast/text-to-video',
+                     model: nil,
+                     callback_url: nil,
+                     style: nil,
+                     storyboard: nil,
+                     image_urls: nil)
+    # Validate duration (must be 10 or 15)
+    duration_value = duration.to_i
+    duration_value = 10 unless [10, 15].include?(duration_value)
+
+    # Build input payload
+    input = {
       prompt: prompt,
-      duration: duration,
-      aspect_ratio: aspect_ratio,
-      resolution: resolution,
-      camera_fixed: camera_fixed,
-      seed: seed
+      duration: duration_value,
+      aspect_ratio: aspect_ratio
     }
 
-    Rails.logger.info "[AtlasCloudService] Sending video generation request..."
-    Rails.logger.debug "[AtlasCloudService] Request body: #{body.inspect}"
-    Rails.logger.debug "[AtlasCloudService] Request URL: #{@base_url}/api/v1/model/generateVideo"
+    # Add optional parameters
+    input[:style] = style if style.present?
+    input[:storyboard] = storyboard if storyboard.present?
+    input[:image_urls] = image_urls if image_urls.present? && image_urls.is_a?(Array) && image_urls.any?
 
-    result = post_request('/api/v1/model/generateVideo', body)
+    body = {
+      model: model || 'seedance-v1-pro',
+      input: input
+    }
 
+    # Add callback URL if provided
+    body[:callback_url] = callback_url if callback_url.present?
+
+    Rails.logger.debug "[AtlasCloudService] Sending request with body: #{body.inspect}"
+    
+    result = post_request('/api/generate/submit', body)
+    
     Rails.logger.debug "[AtlasCloudService] Response: #{result.inspect}"
 
-    # Parse response - prediction_id is in data.id
-    prediction_id = result.dig('data', 'id')
-
-    if prediction_id.present?
-      Rails.logger.info "[AtlasCloudService] Generated video prediction_id: #{prediction_id}"
-      return { 'prediction_id' => prediction_id, 'output' => nil }
+    # Try multiple possible job_id field names (including nested in 'data')
+    task_id = result.dig('data', 'task_id') || result['task_id'] || result['job_id'] || result['id']
+    
+    if task_id.present?
+      Rails.logger.info "[AtlasCloudService] Generated video task_id: #{task_id}"
+      return { 'task_id' => task_id, 'output' => nil }
     else
-      Rails.logger.error "[AtlasCloudService] No prediction_id in response: #{result.inspect}"
-      return { 'prediction_id' => nil, 'output' => nil, 'error' => result['message'] || result.dig('error', 'message'), 'raw_response' => result }
+      Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
+      return { 'task_id' => nil, 'output' => nil, 'error' => result['message'] || result.dig('error', 'message'), 'raw_response' => result }
     end
   end
 
   # Get generation task status
-  def task_status(prediction_id)
-    result = get_request("/api/v1/model/prediction/#{prediction_id}")
-
+  def task_status(task_id)
+    # Use correct endpoint: /api/generate/status/{task_id}
+    result = get_request("/api/generate/status/#{task_id}")
+    
     Rails.logger.info "[AtlasCloudService] Task status response: #{result.inspect}"
-
+    
     # Handle response - API wraps everything in 'data' key
     response_data = result
     response_data = result['data'] if result.is_a?(Hash) && result['data'].present?
-
+    
     # Parse status from response
     status = response_data['status'] || 'unknown'
-
-    # Get output/video URL from outputs array
+    
+    # Get output/video URL from files array
     output = nil
-    if response_data['outputs'].present? && response_data['outputs'].is_a?(Array) && response_data['outputs'].any?
-      output = response_data['outputs'].first
+    if response_data['files'].present? && response_data['files'].is_a?(Array)
+      video_file = response_data['files'].find { |f| f['file_type'] == 'video' } || response_data['files'].first
+      output = video_file['file_url'] if video_file
     end
-
+    
     # Fallback: try direct fields
     output ||= response_data['video_url']
     output ||= response_data['url']
     output ||= response_data['output']
-
+    
     # Get error message if present
-    error = response_data['error'] || response_data['error_message']
-
+    error = response_data['error_message'] || response_data['error']
+    
     Rails.logger.info "[AtlasCloudService] Parsed status: #{status}, output: #{output ? output[0..50] : 'nil'}, error: #{error}"
-
+    
     {
       'status' => status,
       'output' => output,
@@ -103,11 +116,17 @@ class AtlasCloudService
     }
   rescue AtlasCloudService::Error => e
     # If 404, return not_found so polling continues
-    if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
-      Rails.logger.warn "[AtlasCloudService] Task #{prediction_id} not found (404)"
+    if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('task not found')
+      Rails.logger.warn "[AtlasCloudService] Task #{task_id} not found (404)"
       return { 'status' => 'not_found', 'output' => nil, 'error' => 'Task not found' }
     end
     raise
+  end
+
+  # Get user credit balance
+  def credit_balance
+    # Atlas Cloud may have different endpoint for user info
+    nil
   end
 
   def configured?
@@ -117,15 +136,24 @@ class AtlasCloudService
   private
 
   def fetch_api_key
-    ENV['ATLASCLOUD_API_KEY'] ||
+    # Video service should use the dedicated image-to-video API key
+    ENV['ATLASCLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
+      ENV['CLACKY_ATLASCLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
+      ENV['ATLAS_CLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
+      ENV['CLACKY_ATLAS_CLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
+      ENV['ATLAS_CLOUD_API_KEY'] ||
+      ENV['CLACKY_ATLAS_CLOUD_API_KEY'] ||
+      ENV['ATLASCLOUD_API_KEY'] ||
       ENV['CLACKY_ATLASCLOUD_API_KEY'] ||
-      Rails.application.config.x.atlascloud_api_key ||
+      Rails.application.config.x.atlas_cloud_api_key ||
+      Rails.application.config_for(:application)['ATLASCLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
+      Rails.application.config_for(:application)['ATLAS_CLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
+      Rails.application.config_for(:application)['ATLAS_CLOUD_API_KEY'] ||
       Rails.application.config_for(:application)['ATLASCLOUD_API_KEY']
   end
 
   def post_request(endpoint, body)
     url = "#{@base_url}#{endpoint}"
-    Rails.logger.debug "[AtlasCloudService] Using API key: #{@api_key ? @api_key[0..10] + '...' : 'nil'}"
     response = HTTParty.post(url, body: body.to_json, headers: request_headers, timeout: TIMEOUT)
     handle_response(response)
   end
@@ -140,26 +168,23 @@ class AtlasCloudService
     {
       'Content-Type' => 'application/json',
       'Authorization' => "Bearer #{@api_key}",
+      'x-api-key' => @api_key,
       'User-Agent' => 'UltimateSocialMedia/1.0'
     }
   end
 
   def handle_response(response)
     parsed = response.parsed_response
-
+    
     Rails.logger.debug "[AtlasCloudService] Raw response code: #{response.code}, body: #{response.body}"
-
+    
     case response.code
     when 200..299
       # Check if response indicates an error even with 200 status
-      # Only treat as error if message/error is non-empty
-      error_field = parsed['error'] if parsed['error'].present?
-      error_field ||= parsed['message'] if parsed['message'].present?
-      error_field ||= parsed.dig('error', 'message') if parsed.dig('error', 'message').present?
-      
-      if error_field.present? || (parsed.is_a?(Hash) && parsed['status'] == 'error')
-        Rails.logger.error "[AtlasCloudService] API returned error: #{error_field}"
-        raise Error, "API error: #{error_field}"
+      if parsed.is_a?(Hash) && (parsed['error'] || parsed['message'] || parsed['status'] == 'error')
+        error_msg = parsed['error'] || parsed['message'] || parsed.dig('error', 'message')
+        Rails.logger.error "[AtlasCloudService] API returned error: #{error_msg}"
+        raise Error, "API error: #{error_msg}"
       end
       parsed
     when 401
@@ -167,17 +192,12 @@ class AtlasCloudService
     when 402
       error_msg = parsed.dig('error', 'message') || 'Insufficient credits - please top up your Atlas Cloud account'
       raise Error, error_msg
-    when 403
-      raise AuthenticationError, "Access forbidden - #{response.body}"
     when 429
       raise Error, 'Rate limit exceeded - please try again later'
     when 500..599
-      raise Error, "Server error: #{response.code} - #{response.body}"
+      raise Error, "Server error: #{response.code}"
     else
       raise Error, "Unexpected response: #{response.code} - #{response.body}"
     end
-  rescue Error => e
-    Rails.logger.error "[AtlasCloudService] Error details - Code: #{response.code}, Body: #{response.body}, Parsed: #{parsed.inspect}"
-    raise
   end
 end

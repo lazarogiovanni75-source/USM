@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-# Polling job for image generation tasks (supports multiple services)
-# Primary: Defapi/GPT-Image-1.5
-# Secondary: OpenAI/DALL-E (synchronous, no polling needed)
+# Polling job for image generation tasks
+# Primary: Atlas Cloud/Z-Image Turbo
 class ImagePollJob < ApplicationJob
   queue_as :default
 
@@ -10,6 +9,13 @@ class ImagePollJob < ApplicationJob
   POLL_INTERVAL = 5.seconds
 
   def perform(draft_id, task_id = nil, service = nil, attempt = 0)
+    # Add delay for first few attempts to allow generation to start
+    # In inline mode, jobs run immediately, so we need to wait for the API
+    if attempt < 3
+      Rails.logger.info "ImagePollJob: Waiting before poll attempt #{attempt + 1}"
+      sleep(2)
+    end
+
     draft = DraftContent.find(draft_id)
 
     return if draft.media_url.present?
@@ -22,7 +28,7 @@ class ImagePollJob < ApplicationJob
 
     # Get task_id and service from draft metadata if not provided
     task_id ||= draft.metadata['task_id']
-    service ||= draft.metadata['service'] || 'defapi'
+    service ||= draft.metadata['service'] || 'atlas_cloud_image'
     return if task_id.blank?
 
     # Skip polling for OpenAI (DALL-E generates synchronously)
@@ -36,8 +42,11 @@ class ImagePollJob < ApplicationJob
 
     Rails.logger.info "ImagePollJob: Draft #{draft_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Attempt: #{attempt}"
 
-    case status_response['status']
-    when 'success'
+    # Normalize status for comparison
+    raw_status = status_response['status']&.downcase
+    
+    # Check for success/completed status - also handle 'completed' status from Atlas Cloud
+    if raw_status.in?(['success', 'completed', 'done', 'ready'])
       if status_response['output'].present?
         draft.update(
           media_url: status_response['output'],
@@ -48,7 +57,7 @@ class ImagePollJob < ApplicationJob
         draft.update(status: 'failed')
         Rails.logger.error "ImagePollJob: Draft #{draft_id} succeeded but no output"
       end
-    when 'failed', 'error'
+    elsif raw_status.in?(['failed', 'error'])
       # Only mark as failed after a few attempts (allow time for task to register)
       if attempt >= 3
         draft.update(status: 'failed')
@@ -57,15 +66,16 @@ class ImagePollJob < ApplicationJob
         # Retry after delay - task may still be registering
         ImagePollJob.perform_later(draft_id, task_id, service, attempt + 1)
       end
-    when 'in_progress', 'starting', 'pending'
+    elsif raw_status.in?(['in_progress', 'starting', 'pending', 'processing', 'running'])
       # Still processing, schedule next poll
       ImagePollJob.perform_later(draft_id, task_id, service, attempt + 1)
-    when 'not_found'
+    elsif raw_status == 'not_found'
       # Task not found yet - this is normal for first few seconds
       # Retry after delay
       ImagePollJob.perform_later(draft_id, task_id, service, attempt + 1)
     else
-      # Unknown status, schedule next poll
+      # Unknown status or still processing - schedule next poll
+      Rails.logger.info "ImagePollJob: Unknown status '#{status_response['status']}' for draft #{draft_id}, will retry"
       ImagePollJob.perform_later(draft_id, task_id, service, attempt + 1)
     end
   end
@@ -74,14 +84,12 @@ class ImagePollJob < ApplicationJob
 
   def get_status(service, task_id)
     case service
-    when 'defapi'
-      # Use GPT image status for Defapi
+    when 'atlas_cloud_image', 'atlas_cloud'
+      # Atlas Cloud image service
       begin
-        DefapiService.new.gpt_image_status(task_id)
-      rescue DefapiService::Error => e
-        # Handle 404 "task not found" - the task may have expired or never existed
-        # Return 'not_found' so the job retries instead of failing immediately
-        if e.message.include?('404') || e.message.include?('task not found')
+        AtlasCloudImageService.new.task_status(task_id)
+      rescue AtlasCloudImageService::Error => e
+        if e.message.include?('404') || e.message.include?('not found')
           Rails.logger.warn "ImagePollJob: Task #{task_id} not found yet, will retry..."
           return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
         end
@@ -91,11 +99,11 @@ class ImagePollJob < ApplicationJob
       # OpenAI DALL-E is synchronous, return success immediately
       { 'status' => 'success', 'output' => task_id }
     else
-      # Default to Defapi
+      # Default to Atlas Cloud
       begin
-        DefapiService.new.gpt_image_status(task_id)
-      rescue DefapiService::Error => e
-        if e.message.include?('404') || e.message.include?('task not found')
+        AtlasCloudImageService.new.task_status(task_id)
+      rescue AtlasCloudImageService::Error => e
+        if e.message.include?('404') || e.message.include?('not found')
           return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
         end
         raise

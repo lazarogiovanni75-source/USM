@@ -48,7 +48,7 @@ Make sure these critical variables are set in **Main Rails App**:
 
 **API Keys (from previous setup):**
 - ✅ `CLACKY_OPENAI_API_KEY` (new OpenAI key you just created)
-- ✅ `CLACKY_DEFAPI_API_KEY` (Defapy API key for Sora 2 Pro)
+- ✅ `CLACKY_ATLAS_CLOUD_API_KEY` (Atlas Cloud API key for video generation)
 - ✅ `CLACKY_POSTFORME_API_KEY` (Postforme API key - or use default)
 
 ### Step 4: Redeploy

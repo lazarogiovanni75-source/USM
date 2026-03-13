@@ -118,7 +118,7 @@ BACKEND_URL=https://api.yourdomain.com
 
 # Other existing variables
 OPENAI_API_KEY=sk-xxxxx
-DEFAPI_API_KEY=xxxxx
+ATLAS_CLOUD_API_KEY=xxxxx
 NODE_ENV=production
 ```
 
@@ -229,7 +229,7 @@ ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 BACKEND_URL=https://api.yourdomain.com
 NODE_ENV=production
 OPENAI_API_KEY=sk-xxxxx
-DEFAPI_API_KEY=xxxxx
+ATLAS_CLOUD_API_KEY=xxxxx
 ```
 
 ### Railway Frontend (Rails) Environment Variables
@@ -327,7 +327,7 @@ Frontend: https://yourdomain.com
           ↓
 Backend:  https://api.yourdomain.com
           ↓
-Services: OpenAI, DefAPI, PostgreSQL
+Services: OpenAI, Atlas Cloud, PostgreSQL
 ```
 
 **Professional, scalable, production-ready!** 🚀

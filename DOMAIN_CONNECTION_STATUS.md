@@ -123,7 +123,7 @@
 │    ├─ SSL: Auto-provisioned                 │
 │    ├─ CORS: Configured for frontend         │
 │    ├─ Monitoring: /health, /metrics         │
-│    └─ Services: OpenAI, DefAPI, PostgreSQL  │
+│    └─ Services: OpenAI, Atlas Cloud, PostgreSQL  │
 └─────────────────────────────────────────────┘
 ```
 

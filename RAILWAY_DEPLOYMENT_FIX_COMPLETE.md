@@ -137,7 +137,7 @@ SECRET_KEY_BASE: '<%= ENV.fetch("SECRET_KEY_BASE", "b4c8815864f1b4eb94175952890e
 
 ### Clacky-clean Specific Variables
 Your variables look good:
-- ✅ `CLACKY_DEFAPI_API_KEY`
+- ✅ `CLACKY_ATLAS_CLOUD_API_KEY`
 - ✅ `CLACKY_OPENAI_API_KEY`
 - ✅ `CLACKY_POSTFORME_API_KEY`
 - ✅ `CLACKY_PUBLIC_HOST`

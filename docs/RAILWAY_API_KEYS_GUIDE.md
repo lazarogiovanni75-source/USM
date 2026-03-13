@@ -6,7 +6,7 @@ Your Railway backend at `https://clacky-backend-clean-production.up.railway.app`
 
 1. **OpenAI** - AI content generation
 2. **ElevenLabs** - Text-to-speech voice generation
-3. **Poyo.ai** - Video generation (Sora 2)
+3. **Atlas Cloud** - Video generation
 4. **Make.com or Zapier** - Automation workflows
 
 ---
@@ -18,7 +18,7 @@ Add these in your Railway project's **Variables** section:
 ```bash
 ELEVENLABS_API_KEY=your_elevenlabs_key_here
 OPENAI_API_KEY=your_openai_key_here
-POYO_API_KEY=your_poyo_api_key
+ATLASCLOUD_API_KEY=your_atlas_cloud_api_key
 MAKEAI_API_KEY=your_makeai_key_here
 ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/xxxxx/yyyyy/
 ```
@@ -97,21 +97,21 @@ Value: pNInz6obpgDQGcFmaJgB  (default: Adam voice)
 
 ---
 
-## 3. Poyo.ai API Key (Video Generation - Sora 2)
+## 3. Atlas Cloud API Key (Video Generation)
 
-**What it's for:** AI video generation using OpenAI Sora 2 models.
+**What it's for:** AI video generation using Atlas Cloud.
 
 ### Steps to Get API Key:
 
-1. Go to **https://poyo.ai**
+1. Go to **https://atlascloud.ai**
 2. Sign up for an account
 3. Go to **Dashboard** → **API Keys**
 4. Copy your API key
 
 ### Railway Setup:
 ```
-Variable: POYO_API_KEY
-Value: your_poyo_api_key_here
+Variable: ATLAS_CLOUD_API_KEY
+Value: your_atlas_cloud_api_key_here
 ```
 
 ---
@@ -217,7 +217,7 @@ railway link
 # Add variables
 railway variables set OPENAI_API_KEY=sk-proj-...
 railway variables set ELEVENLABS_API_KEY=a1b2c3...
-railway variables set POYO_API_KEY=your_key...
+railway variables set ATLAS_CLOUD_API_KEY=your_key...
 railway variables set MAKEAI_API_KEY=your_key...
 
 # View all variables
@@ -288,7 +288,7 @@ curl https://clacky-backend-clean-production.up.railway.app/api/voices
 
 **Expected:** JSON array of available ElevenLabs voices.
 
-### 5. Test Poyo.ai Video Generation
+### 5. Test Atlas Cloud Video Generation
 
 ```bash
 curl -X POST https://clacky-backend-clean-production.up.railway.app/api/video/generate \
@@ -379,7 +379,7 @@ railway variables set ALLOWED_ORIGINS=https://your-thread.clacky.app
 |---------|-----------|---------------|
 | OpenAI | https://platform.openai.com | https://platform.openai.com/docs |
 | ElevenLabs | https://elevenlabs.io/app | https://elevenlabs.io/docs |
-| Poyo.ai | https://poyo.ai | https://poyo.ai/docs |
+| Atlas Cloud | https://atlascloud.ai | https://atlascloud.ai/docs |
 | Make.com | https://make.com | https://www.make.com/en/help |
 | Zapier | https://zapier.com/app/dashboard | https://zapier.com/help |
 | Railway | https://railway.app/dashboard | https://docs.railway.app |

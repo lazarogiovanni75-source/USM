@@ -325,9 +325,11 @@ export default class extends Controller<HTMLElement> {
         else this.hideTypingIndicator()
         break
       case 'chunk':
-        this.appendChunk(data.chunk, data.message_id)
+        // Handle chunk type from stream_message API
+        this.appendContentDelta(data.chunk)
         break
       case 'complete':
+        // Handle complete type - same as completion
         this.handleComplete(data)
         break
       case 'tool_call':
@@ -465,6 +467,10 @@ export default class extends Controller<HTMLElement> {
       }
     }
     this.scrollToBottom()
+    
+    // Reset loading state - tool execution is complete
+    this.isGenerating = false
+    this.setLoading(false)
   }
 
   private handleConfirmationRequired(data: any): void {
@@ -568,6 +574,11 @@ export default class extends Controller<HTMLElement> {
       toolDiv.innerHTML = `<p class="text-xs text-green-600">✅ ${this.escapeHtml(data.tool_name)} executed successfully!</p>`
     }
     this.scrollToBottom()
+    
+    // Reset loading state - tool execution is complete
+    this.isGenerating = false
+    this.setLoading(false)
+    this.inputTarget.disabled = false
   }
 
   private handleToolRejected(data: any): void {
@@ -577,6 +588,11 @@ export default class extends Controller<HTMLElement> {
       toolDiv.innerHTML = `<p class="text-xs text-gray-600">⏹️ ${this.escapeHtml(data.tool_name)} was rejected</p>`
     }
     this.scrollToBottom()
+    
+    // Reset loading state - tool execution is complete (rejected)
+    this.isGenerating = false
+    this.setLoading(false)
+    this.inputTarget.disabled = false
   }
 
   private formatToolName(name: string): string {

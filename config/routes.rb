@@ -63,8 +63,8 @@ Rails.application.routes.draw do
     end
   end
 
-  # Webhook route for Poyo.ai video callbacks
-  post 'poyo_webhook', to: 'poyo_webhooks#video_callback'
+  # Webhook route for Atlas Cloud video callbacks
+  post 'atlas_cloud_webhook', to: 'atlas_cloud_webhooks#video_callback'
 
   # Social Media Dashboard
   resources :social_media_dashboard, only: [:index] do
@@ -488,5 +488,12 @@ Rails.application.routes.draw do
   get 'engagement-analytics', to: 'engagement_analytics#index'
   get 'trends', to: 'trend_analyses#index'
   get 'automation', to: 'automation_rules#index'
+  
+  # Workflows
+  resources :workflows do
+    member do
+      post 'run'
+    end
+  end
   
 end

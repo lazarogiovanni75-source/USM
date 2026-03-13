@@ -46,7 +46,7 @@ class GenerateVideoJob < ApplicationJob
     )
 
     # Store the task_id for status checking
-    task_id = response['prediction_id']
+    task_id = response['task_id']
     video.update!(
       status: 'processing',
       video_url: nil,

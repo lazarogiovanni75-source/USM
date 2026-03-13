@@ -1,9 +1,34 @@
 class Workflow < ApplicationRecord
   belongs_to :user
   has_many :workflow_steps, dependent: :destroy
+  
+  # Handle both JSON string and Ruby hash string formats
+  def params
+    value = super
+    return value if value.nil?
+    return value if value.is_a?(Hash)
+    
+    # Try to parse as JSON first
+    begin
+      JSON.parse(value)
+    rescue JSON::ParserError
+      # Try to evaluate as Ruby hash string (e.g., {"key"=>"value"})
+      begin
+        eval(value)
+      rescue
+        {}
+      end
+    end
+  end
+
+  def params=(value)
+    super(value.is_a?(Hash) ? value.to_json : value)
+  end
 
   enum status: {
     pending: 'pending',
+    active: 'active',
+    paused: 'paused',
     running: 'running',
     completed: 'completed',
     failed: 'failed',

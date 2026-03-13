@@ -160,7 +160,7 @@ curl https://api.yourdomain.com/metrics
 ```bash
 ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 OPENAI_API_KEY=sk-xxxxx
-DEFAPI_API_KEY=xxxxx
+ATLAS_CLOUD_API_KEY=xxxxx
 NODE_ENV=production
 ```
 
@@ -222,7 +222,7 @@ https://yourdomain.com (Frontend - Rails on Railway)
      ↓ API Calls
 https://api.yourdomain.com (Backend - Node.js on Railway)
      ↓ External Services
-  OpenAI, DefAPI, PostgreSQL
+  OpenAI, Atlas Cloud, PostgreSQL
 ```
 
 **Benefits:**

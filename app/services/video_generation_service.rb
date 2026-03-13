@@ -2,7 +2,7 @@
 
 # Video Generation Service with Primary/Secondary Fallback
 # Primary: Atlas Cloud/Seedance v1 Pro (https://api.atlascloud.ai)
-# Secondary: Poyo.ai (deprecated - fallback only)
+# Secondary: Atlas Cloud (deprecated - fallback only)
 class VideoGenerationService
   class VideoGenerationError < StandardError; end
   class ServiceUnavailableError < VideoGenerationError; end
@@ -19,12 +19,12 @@ class VideoGenerationService
     result = try_primary_video(prompt: prompt, duration: duration, aspect_ratio: aspect_ratio)
     return result if result[:success]
 
-    # Try secondary service (Poyo.ai - fallback)
+    # Try secondary service (Atlas Cloud - fallback)
     result = try_secondary_video(prompt: prompt, duration: duration, aspect_ratio: aspect_ratio)
     return result if result[:success]
 
     # Both services failed
-    raise ServiceUnavailableError, "Video generation services unavailable. Primary: Atlas Cloud failed. Secondary: Poyo.ai not configured or failed."
+    raise ServiceUnavailableError, "Video generation services unavailable. Primary: Atlas Cloud failed. Secondary: Atlas Cloud not configured or failed."
   end
 
   # Get video task status
@@ -52,17 +52,17 @@ class VideoGenerationService
         aspect_ratio: aspect_ratio
       )
 
-      if result['prediction_id'].present?
-        Rails.logger.info "[VideoGeneration] Primary service succeeded - prediction_id: #{result['prediction_id']}"
+      if result['task_id'].present?
+        Rails.logger.info "[VideoGeneration] Primary service succeeded - task_id: #{result['task_id']}"
         {
           success: true,
-          task_id: result['prediction_id'],
+          task_id: result['task_id'],
           service: 'atlas_cloud',
           metadata: { duration: duration, aspect_ratio: aspect_ratio }
         }
       else
-        Rails.logger.error "[VideoGeneration] Primary service returned no prediction_id. Full response: #{result.inspect}"
-        { success: false, error: result['error'] || result['message'] || 'Failed to start generation - no prediction_id returned' }
+        Rails.logger.error "[VideoGeneration] Primary service returned no task_id. Full response: #{result.inspect}"
+        { success: false, error: result['error'] || result['message'] || 'Failed to start generation - no task_id returned' }
       end
     rescue => e
       Rails.logger.error "[VideoGeneration] Primary service error: #{e.message}"
@@ -71,13 +71,13 @@ class VideoGenerationService
   end
 
   def self.try_secondary_video(prompt:, duration:, aspect_ratio:)
-    Rails.logger.info "[VideoGeneration] Trying secondary service: Poyo.ai (fallback)"
+    Rails.logger.info "[VideoGeneration] Trying secondary service: Atlas Cloud (fallback)"
     
-    service = PoyoService.new
+    service = AtlasCloudService.new
     
     unless service.configured?
       Rails.logger.warn "[VideoGeneration] Secondary service not configured"
-      return { success: false, error: "Poyo.ai not configured" }
+      return { success: false, error: "Atlas Cloud not configured" }
     end
 
     begin
@@ -92,7 +92,7 @@ class VideoGenerationService
         {
           success: true,
           task_id: result['task_id'],
-          service: 'poyo',
+          service: 'atlas_cloud',
           metadata: { duration: duration, aspect_ratio: aspect_ratio }
         }
       else
@@ -109,8 +109,8 @@ class VideoGenerationService
     case service_name
     when 'atlas_cloud'
       AtlasCloudService.new
-    when 'poyo'
-      PoyoService.new
+    when 'atlas_cloud'
+      AtlasCloudService.new
     else
       AtlasCloudService.new
     end

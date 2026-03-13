@@ -14,7 +14,7 @@ Your application uses a **dual-backend architecture**:
 
 2. **Railway Backend (Node.js)** - Third-party API gateway
    - Should run at: `https://backend-api-production-00f5.up.railway.app` (currently NOT deployed)
-   - Handles: ElevenLabs, OpenAI, Poyo.ai, Make.ai API calls
+   - Handles: ElevenLabs, OpenAI, Atlas Cloud, Make.ai API calls
    - Located in: `railway-backend/` directory
 
 ## Why This Architecture?
@@ -45,7 +45,7 @@ Your application uses a **dual-backend architecture**:
    # Required API Keys (get from respective service providers)
    ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
    OPENAI_API_KEY=your_openai_api_key_here
-   POYO_API_KEY=your_poyo_api_key
+   ATLAS_CLOUD_API_KEY=your_atlas_cloud_api_key
    MAKEAI_API_KEY=your_makeai_api_key_here
    
    # Service Configuration
@@ -84,8 +84,8 @@ CLACKY_RAILWAY_BACKEND_URL=https://your-actual-railway-app.up.railway.app
 2. Create API key from API Keys section
 3. Copy key and add to Railway variables
 
-#### Poyo.ai (Video Generation - Sora 2)
-1. Go to: https://poyo.ai
+#### Atlas Cloud (Video Generation)
+1. Go to: https://atlascloud.ai
 2. Create account
 3. Get API key from Dashboard → API
 4. Copy key and add to Railway variables
@@ -182,7 +182,7 @@ curl -X POST https://your-railway-app.up.railway.app/api/ai/generate-content \
 - **Railway Docs**: https://docs.railway.app
 - **ElevenLabs Docs**: https://docs.elevenlabs.io
 - **OpenAI Docs**: https://platform.openai.com/docs
-- **Poyo.ai Docs**: https://poyo.ai/docs
+- **Atlas Cloud Docs**: https://atlascloud.ai/docs
 
 ---
 

@@ -1,0 +1,66 @@
+<% content_for :title, "New Workflow" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+  <!-- Header -->
+  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+    <div class="container-xl mx-auto px-4 py-4">
+      <div class="flex items-center gap-4">
+        <%= link_to workflows_path, class: "btn-ghost" do %>
+          <%= lucide_icon "arrow-left", class: "w-5 h-5" %>
+        <% end %>
+        <div>
+          <h1 class="text-2xl font-bold text-primary">New Workflow</h1>
+          <p class="text-sm text-muted">Create an automated content workflow</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="container-xl mx-auto px-4 py-6">
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white rounded-2xl p-8 shadow-sm border border-border/50">
+        <%= form_with model: @workflow, local: true, class: "space-y-6" do |f| %>
+          <div>
+            <label class="block text-sm font-medium text-primary mb-2">Workflow Type</label>
+            <%= f.select :workflow_type, 
+                options_for_select([
+                  ['Content to Post', 'content_to_post'],
+                  ['Content to Image Post', 'content_to_image_post'],
+                  ['Content to Video Post', 'content_to_video_post']
+                ], f.object.workflow_type),
+                {}, 
+                class: "form-input" %>
+            <p class="mt-1 text-xs text-muted">Select the type of automated workflow</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-primary mb-2">Status</label>
+            <%= f.select :status, 
+                options_for_select([
+                  ['Pending', 'pending'],
+                  ['Active', 'active'],
+                  ['Paused', 'paused']
+                ], f.object.status),
+                {}, 
+                class: "form-input" %>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-primary mb-2">Parameters (JSON)</label>
+            <%= f.text_area :params, 
+                rows: 6, 
+                class: "form-input font-mono text-sm",
+                placeholder: '{"content_text": "Write your content here"}' %>
+            <p class="mt-1 text-xs text-muted">Enter JSON with a "content_text" key containing your content</p>
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <%= f.submit "Create Workflow", class: "btn-primary" %>
+            <%= link_to "Cancel", workflows_path, class: "btn-secondary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

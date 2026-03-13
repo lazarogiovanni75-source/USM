@@ -122,8 +122,6 @@ class DraftsController < ApplicationController
       case service
       when 'atlas_cloud'
         status_response = AtlasCloudService.new.task_status(task_id)
-      when 'poyo'
-        status_response = PoyoService.new.task_status(task_id)
       else
         status_response = AtlasCloudService.new.task_status(task_id)
       end
@@ -141,7 +139,7 @@ class DraftsController < ApplicationController
         redirect_to draft_path(@draft), notice: 'Video found! Media URL updated.'
       elsif raw_status.in?(['in_progress', 'pending', 'submitted', 'starting', 'processing', 'running', 'not_started'])
         @draft.update(status: 'pending', metadata: @draft.metadata.merge({ 'error' => nil }))
-        SoraPollJob.perform_later(@draft.id, task_id, service)
+        VideoPollJob.perform_later(@draft.id, task_id, service)
         redirect_to draft_path(@draft), notice: 'Video still processing. Will auto-refresh...'
       elsif raw_status == 'not_found'
         # Task expired or never existed - offer to regenerate

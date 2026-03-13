@@ -44,7 +44,7 @@ module Ai
         type: "function",
         function: {
           name: "generate_video",
-          description: "Generate an AI video using Sora 2. Creates a video generation task and returns a task ID for polling.",
+          description: "Generate an AI video. Creates a video generation task and returns a task ID for polling.",
           parameters: {
             type: "object",
             properties: {
@@ -59,8 +59,8 @@ module Ai
               },
               model: {
                 type: "string",
-                enum: ["sora-2", "sora-2-hd"],
-                description: "Sora model version (sora-2-hd is higher quality)"
+                enum: ["seedance-v1-pro", "seedance-v1"],
+                description: "Video model version (seedance-v1-pro is higher quality)"
               }
             },
             required: ["prompt"]
@@ -71,7 +71,7 @@ module Ai
         type: "function",
         function: {
           name: "generate_image",
-          description: "Generate an AI image for use in social media posts. Uses GPT-Image-1.5 through Poyo.ai or Defapi.",
+          description: "Generate an AI image for use in social media posts. Uses GPT-Image-1.5 through Atlas Cloud.",
           parameters: {
             type: "object",
             properties: {

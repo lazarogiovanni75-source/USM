@@ -13,7 +13,7 @@ class ScheduledPostPublishJob < ApplicationJob
       # Update status to publishing
       scheduled_post.update!(status: 'publishing')
       
-      # Mark as published - social media posting via Defapi integration
+      # Mark as published - social media posting via Atlas Cloud integration
       scheduled_post.update!(status: 'published', posted_at: Time.current)
       Rails.logger.info "Successfully published scheduled post #{scheduled_post.id}"
       

@@ -40,7 +40,7 @@ After adding SECRET_KEY_BASE, verify these variables exist in **stellar-reflecti
 
 **Optional (if your backend needs them):**
 - `RAILWAY_BACKEND_URL` = Your backend domain
-- API keys: `CLACKY_OPENAI_API_KEY`, `CLACKY_DEFAPI_API_KEY`, etc.
+- API keys: `CLACKY_OPENAI_API_KEY`, `CLACKY_ATLAS_CLOUD_API_KEY`, etc.
 
 ### Step 4: Save and Redeploy
 

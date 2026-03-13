@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-# Atlas Cloud Service for Image Generation (Flux Schnell)
+# Atlas Cloud Image Generation Service
+# Uses GPT Image 1.5 via Atlas Cloud unified API
 # API Documentation: https://api.atlascloud.ai
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
-  TIMEOUT = 180
+  TIMEOUT = 120
 
   class Error < StandardError; end
   class AuthenticationError < Error; end
@@ -13,141 +14,130 @@ class AtlasCloudImageService
   def initialize(api_key = nil)
     @api_key = api_key || fetch_api_key
     @base_url = BASE_URL
-    
-    if @api_key.blank?
-      Rails.logger.warn "[AtlasCloudImageService] No API key configured!"
-    else
-      Rails.logger.info "[AtlasCloudImageService] API key configured (length: #{@api_key.length})"
-    end
   end
 
-  # Generate image from text prompt using Flux Schnell
+  # Generate image using GPT Image 1.5 via Atlas Cloud unified API
   #
-  # @param prompt [String] Text prompt describing the image to generate
-  # @param size [String] Image size (e.g., "1024x1024")
-  # @param quality [String] Image quality ("high" or "standard")
-  # @param model [String] Model identifier
+  # @param prompt [String] Text prompt describing the image
+  # @param size [String] Image size (1:1, 16:9, 9:16, etc.)
+  # @param quality [String] Quality - 'high' maps to default
+  # @param n [Integer] Number of images to generate
   #
-  def generate_image(prompt:,
-                     size: '1024x1024',
-                     quality: 'high',
-                     model: 'black-forest-labs/flux-schnell')
-    # Parse aspect ratio from size
-    aspect_ratio = parse_aspect_ratio(size)
-
+  def generate_gpt_image(prompt:,
+                        size: '1:1',
+                        quality: 'high',
+                        n: 1)
+    # Map size format from "1024x1024" to "1:1" etc
+    size_value = map_size(size)
+    
     body = {
-      model: model,
-      prompt: prompt,
-      aspect_ratio: aspect_ratio,
-      enable_base64_output: false,
-      enable_sync_mode: true,
-      output_format: 'png'
+      model: 'gpt-image-1.5',
+      input: {
+        prompt: prompt,
+        size: size_value,
+        n: n
+      }
     }
 
-    Rails.logger.info "[AtlasCloudImageService] Sending image generation request..."
-    Rails.logger.debug "[AtlasCloudImageService] Request body: #{body.inspect}"
-    Rails.logger.debug "[AtlasCloudImageService] Request URL: #{@base_url}/api/v1/model/generateImage"
-
-    result = post_request('/api/v1/model/generateImage', body)
-
-    Rails.logger.debug "[AtlasCloudImageService] Response: #{result.inspect}"
-
-    # Parse response - in sync mode, output is returned immediately in data.outputs
-    prediction_id = result.dig('data', 'id')
-    output_url = result.dig('data', 'outputs')&.first
-    status = result.dig('data', 'status')
-
-    if prediction_id.present?
-      Rails.logger.info "[AtlasCloudImageService] Generated image prediction_id: #{prediction_id}, status: #{status}"
-      # In sync mode, output_url may be present immediately
-      if output_url.present?
-        Rails.logger.info "[AtlasCloudImageService] Image ready immediately: #{output_url}"
-        return { 'prediction_id' => prediction_id, 'output' => output_url, 'status' => status }
-      else
-        return { 'prediction_id' => prediction_id, 'output' => nil, 'status' => status }
-      end
+    result = post_request('/api/generate/submit', body)
+    
+    # Extract task_id from response
+    task_id = result.dig('data', 'task_id') || result['task_id']
+    
+    if task_id.present?
+      Rails.logger.info "[AtlasCloudImageService] Image generation started, task_id: #{task_id}"
+      { 'task_id' => task_id, 'output' => nil, 'status' => 'not_started' }
     else
-      Rails.logger.error "[AtlasCloudImageService] No prediction_id in response: #{result.inspect}"
-      return { 'prediction_id' => nil, 'output' => nil, 'error' => result['message'] || result.dig('error', 'message'), 'raw_response' => result }
+      Rails.logger.error "[AtlasCloudImageService] No task_id in response: #{result.inspect}"
+      { 'task_id' => nil, 'output' => nil, 'error' => result['message'] || 'Failed to start generation' }
     end
   end
 
-  # Get image generation task status
-  def task_status(prediction_id)
-    result = get_request("/api/v1/model/prediction/#{prediction_id}")
-
+  # Get image task status
+  def image_status(task_id)
+    result = get_request("/api/generate/status/#{task_id}")
+    
     Rails.logger.info "[AtlasCloudImageService] Task status response: #{result.inspect}"
-
+    
     # Handle response - API wraps everything in 'data' key
     response_data = result
     response_data = result['data'] if result.is_a?(Hash) && result['data'].present?
-
+    
     # Parse status from response
     status = response_data['status'] || 'unknown'
-
-    # Get output/image URL from outputs array
+    
+    # Get output/image URL from files array
     output = nil
-    if response_data['outputs'].present? && response_data['outputs'].is_a?(Array) && response_data['outputs'].any?
-      output = response_data['outputs'].first
+    if response_data['files'].present? && response_data['files'].is_a?(Array)
+      image_file = response_data['files'].find { |f| f['file_type'] == 'image' } || response_data['files'].first
+      output = image_file['file_url'] if image_file
     end
-
+    
     # Fallback: try direct fields
     output ||= response_data['image_url']
     output ||= response_data['url']
     output ||= response_data['output']
-
+    
     # Get error message if present
-    error = response_data['error'] || response_data['error_message']
-
-    Rails.logger.info "[AtlasCloudImageService] Parsed status: #{status}, output: #{output ? output[0..50] : 'nil'}, error: #{error}"
-
+    error = response_data['error_message'] || response_data['error']
+    
     {
       'status' => status,
       'output' => output,
       'progress' => response_data['progress'],
       'error' => error
     }
-  rescue AtlasCloudImageService::Error => e
-    if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
-      Rails.logger.warn "[AtlasCloudImageService] Task #{prediction_id} not found (404)"
-      return { 'status' => 'not_found', 'output' => nil, 'error' => 'Task not found' }
-    end
-    raise
+  rescue => e
+    Rails.logger.error "[AtlasCloudImageService] Status check error: #{e.message}"
+    { 'status' => 'error', 'output' => nil, 'error' => e.message }
   end
 
+  # Alias for backwards compatibility
+  alias_method :generate_image, :generate_gpt_image
+
+  # Check if service is configured
   def configured?
     @api_key.present?
   end
 
   private
 
-  def fetch_api_key
-    ENV['ATLASCLOUD_IMAGE_API_KEY'] ||
-      ENV['CLACKY_ATLASCLOUD_IMAGE_API_KEY'] ||
-      Rails.application.config.x.atlascloud_image_api_key ||
-      Rails.application.config_for(:application)['ATLASCLOUD_IMAGE_API_KEY']
-  end
-
-  def parse_aspect_ratio(size)
+  def map_size(size)
+    # Convert "1024x1024" format to "1:1" format
     case size
-    when '1024x1024'
+    when '1024x1024', '1:1', 'square'
       '1:1'
-    when '1024x1792', '1792x1024'
+    when '1024x1536', '9:16', 'portrait'
       '9:16'
-    when '512x512'
-      '1:1'
-    when '256x256'
-      '1:1'
-    when '1024x768', '768x1024'
-      '4:3'
+    when '1536x1024', '16:9', 'landscape'
+      '16:9'
+    when '1024x1792', '9:19'
+      '9:19'
     else
       '1:1'
     end
   end
 
+  def fetch_api_key
+    # Image service should use the dedicated image API key
+    ENV['ATLASCLOUD_IMAGE_API_KEY'] ||
+      ENV['CLACKY_ATLASCLOUD_IMAGE_API_KEY'] ||
+      ENV['ATLAS_CLOUD_IMAGE_API_KEY'] ||
+      ENV['CLACKY_ATLAS_CLOUD_IMAGE_API_KEY'] ||
+      ENV['ATLAS_CLOUD_API_KEY'] ||
+      ENV['CLACKY_ATLAS_CLOUD_API_KEY'] ||
+      ENV['ATLASCLOUD_API_KEY'] ||
+      ENV['CLACKY_ATLASCLOUD_API_KEY'] ||
+      Rails.application.config.x.atlas_cloud_image_api_key ||
+      Rails.application.config_for(:application)['ATLASCLOUD_IMAGE_API_KEY'] ||
+      Rails.application.config_for(:application)['ATLAS_CLOUD_IMAGE_API_KEY'] ||
+      Rails.application.config.x.atlas_cloud_api_key ||
+      Rails.application.config_for(:application)['ATLAS_CLOUD_API_KEY'] ||
+      Rails.application.config_for(:application)['ATLASCLOUD_API_KEY']
+  end
+
   def post_request(endpoint, body)
     url = "#{@base_url}#{endpoint}"
-    Rails.logger.debug "[AtlasCloudImageService] Using API key: #{@api_key ? @api_key[0..10] + '...' : 'nil'}"
     response = HTTParty.post(url, body: body.to_json, headers: request_headers, timeout: TIMEOUT)
     handle_response(response)
   end
@@ -162,32 +152,22 @@ class AtlasCloudImageService
     {
       'Content-Type' => 'application/json',
       'Authorization' => "Bearer #{@api_key}",
+      'x-api-key' => @api_key,
       'User-Agent' => 'UltimateSocialMedia/1.0'
     }
   end
 
   def handle_response(response)
     parsed = response.parsed_response
-
+    
     Rails.logger.debug "[AtlasCloudImageService] Raw response code: #{response.code}, body: #{response.body}"
-
+    
     case response.code
     when 200..299
-      # Check for actual errors - not "success" messages
-      if parsed.is_a?(Hash)
-        # Only treat as error if there's an actual error field or status is 'error'
-        error_field = parsed['error'] || parsed.dig('error', 'message')
-        status = parsed['status']
-        message = parsed['message']
-        
-        # Ignore "success" messages - they're not errors
-        if error_field.present? && error_field != 'success'
-          Rails.logger.error "[AtlasCloudImageService] API returned error: #{error_field}"
-          raise Error, "API error: #{error_field}"
-        elsif status == 'error' && message != 'success'
-          Rails.logger.error "[AtlasCloudImageService] API returned error status: #{message}"
-          raise Error, "API error: #{message}"
-        end
+      if parsed.is_a?(Hash) && (parsed['error'] || parsed['message'] || parsed['status'] == 'error')
+        error_msg = parsed['error'] || parsed['message'] || parsed.dig('error', 'message')
+        Rails.logger.error "[AtlasCloudImageService] API returned error: #{error_msg}"
+        raise Error, "API error: #{error_msg}"
       end
       parsed
     when 401
@@ -195,31 +175,12 @@ class AtlasCloudImageService
     when 402
       error_msg = parsed.dig('error', 'message') || 'Insufficient credits - please top up your Atlas Cloud account'
       raise Error, error_msg
-    when 403
-      raise AuthenticationError, "Access forbidden - #{response.body}"
     when 429
       raise Error, 'Rate limit exceeded - please try again later'
     when 500..599
-      # Check if it's a credit/token issue
-      error_msg = parsed.dig('msg') || parsed.dig('error', 'message') || parsed.dig('message')
-      if error_msg && (error_msg.include?('令牌') || error_msg.include?('token') || error_msg.include?('credit') || error_msg.include?('unavailable'))
-        raise Error, 'Image generation service unavailable - please check your account credits or contact support'
-      end
-      raise Error, "Server error: #{response.code} - #{error_msg || response.body[0..200]}"
-    when 400
-      error_msg = parsed.dig('msg') || parsed.dig('error', 'message') || parsed.dig('message') || parsed['error']
-      # Check for specific error types
-      if error_msg
-        if error_msg.include?('not found') || error_msg.include?('model')
-          raise Error, 'Image generation model unavailable - please contact support'
-        elsif error_msg.include?('invalid') || error_msg.include?('key')
-          raise AuthenticationError, 'Invalid API key - please check your Atlas Cloud configuration'
-        end
-      end
-      raise Error, "Bad request: #{error_msg || response.body[0..200]}"
+      raise Error, "Server error: #{response.code}"
+    else
+      raise Error, "Unexpected response: #{response.code} - #{response.body}"
     end
-  rescue Error => e
-    Rails.logger.error "[AtlasCloudImageService] Error details - Code: #{response.code}, Body: #{response.body}, Parsed: #{parsed.inspect}"
-    raise
   end
 end

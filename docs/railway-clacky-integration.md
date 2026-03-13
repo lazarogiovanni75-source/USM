@@ -1,6 +1,6 @@
 # Railway + ClackyAI Integration Guide
 
-This guide covers connecting your Ultimate Social Media platform with Railway for deployment and configuring all external service integrations (ElevenLabs, OpenAI, Zapier, Poyo.ai).
+This guide covers connecting your Ultimate Social Media platform with Railway for deployment and configuring all external service integrations (ElevenLabs, OpenAI, Zapier, Atlas Cloud).
 
 ## Architecture Overview
 
@@ -35,7 +35,7 @@ Your application uses a dual-backend architecture:
    # Required - Get from respective service websites
    ELEVENLABS_API_KEY=your_elevenlabs_api_key
    OPENAI_API_KEY=your_openai_api_key
-   POYO_API_KEY=your_poyo_api_key
+   ATLAS_CLOUD_API_KEY=your_atlas_cloud_api_key
    MAKEAI_API_KEY=your_makeai_api_key
    
    # Service Configuration
@@ -63,7 +63,7 @@ Your application uses a dual-backend architecture:
    # (These are already configured in application.yml)
    CLACKY_ELEVENLABS_API_KEY=your_elevenlabs_api_key
    CLACKY_OPENAI_API_KEY=your_openai_api_key
-   CLACKY_POYo_API_KEY=your_poyo_api_key
+   CLACKY_ATLAS_CLOUD_API_KEY=your_atlas_cloud_api_key
    ```
 
 2. **Update API Configuration**
@@ -135,16 +135,16 @@ The Rails backend already has Zapier integration at `app/services/zapier_integra
 
 ---
 
-### 2.4: Poyo.ai (Video Generation - Sora 2)
+### 2.4: Atlas Cloud (Video Generation)
 
-**Purpose**: Create AI-generated videos using OpenAI Sora 2 models.
+**Purpose**: Create AI-generated videos using Atlas Cloud.
 
 **Setup Steps**:
-1. Go to [Poyo.ai](https://poyo.ai) and create account
+1. Go to [Atlas Cloud](https://atlascloud.ai) and create account
 2. Get your API Key from Dashboard > API
 3. Add to Railway variables:
    ```
-   POYO_API_KEY=your_poyo_api_key_here
+   ATLAS_CLOUD_API_KEY=your_atlas_cloud_api_key_here
    ```
 
 **Testing**:
@@ -178,7 +178,7 @@ curl -X POST https://your-railway-app.up.railway.app/api/video/generate \
 |----------|----------|-------------|
 | `ELEVENLABS_API_KEY` | Yes | ElevenLabs API key for text-to-speech |
 | `OPENAI_API_KEY` | Yes | OpenAI API key for AI content generation |
-| `POYO_API_KEY` | Yes | Poyo.ai API key for video generation (Sora 2) |
+| `ATLAS_CLOUD_API_KEY` | Yes | Atlas Cloud API key for video generation |
 | `MAKEAI_API_KEY` | No | Make.com API key for automation |
 | `ZAPIER_WEBHOOK_URL` | No | Zapier webhook URL for triggers |
 | `PORT` | No | Server port (default: 3000) |
@@ -192,7 +192,7 @@ curl -X POST https://your-railway-app.up.railway.app/api/video/generate \
 | `RAILWAY_BACKEND_URL` | URL of your Railway deployment |
 | `CLACKY_ELEVENLABS_API_KEY` | (Optional) Override Railway config |
 | `CLACKY_OPENAI_API_KEY` | (Optional) Override Railway config |
-| `CLACKY_POYo_API_KEY` | (Optional) Override Railway config |
+| `CLACKY_ATLAS_CLOUD_API_KEY` | (Optional) Override Railway config |
 
 ## Part 4: Testing Your Integrations
 
@@ -249,7 +249,7 @@ curl -X POST http://localhost:3000/api/video/generate \
 - **401 Error**: Invalid or expired API key
 - **429 Error**: Rate limit - implement backoff or upgrade tier
 
-### Poyo.ai Issues
+### Atlas Cloud Issues
 
 - **Stage vs Production**: Use `stage` environment for testing
 - Render time: Video generation takes 1-2 minutes

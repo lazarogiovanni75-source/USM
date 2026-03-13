@@ -11,6 +11,7 @@ class VoiceCommand < ApplicationRecord
   enum command_type: {
     create_campaign: 'create_campaign',
     generate_content: 'generate_content',
+    generate_image: 'generate_image',
     generate_video: 'generate_video',
     schedule_post: 'schedule_post',
     analyze_performance: 'analyze_performance',

@@ -12,7 +12,7 @@ class AiAutopilotService < ApplicationService
 
   def call
     if @command
-      process_voice_cd yoy ommand
+      process_voice_command
     elsif @action == 'generate_content'
       generate_content
     elsif @action == 'generate_video'
@@ -72,7 +72,8 @@ class AiAutopilotService < ApplicationService
     elsif text.include?('campaign') || text.include?('new campaign') || text.include?('create campaign')
       'create_campaign'
     # Image detection - require explicit intent (generate image, create image, make image, draw)
-    elsif text.match?(/\b(generate image|create image|make image|draw|create a picture|make a picture)\b/i)
+    # Match patterns like "generate an image", "create image", "make image", etc.
+    elsif text.match?(/\b(generate|create|make|draw)\b.*\b(image|picture|photo)\b/i)
       'generate_image'
     elsif text.include?('schedule') && text.include?('publish')
       'schedule_and_publish'
@@ -386,11 +387,38 @@ class AiAutopilotService < ApplicationService
     )
     
     # Step 3: Generate image (if requested)
+    draft = nil
     image_url = nil
     if text.include?('image') || text.include?('photo') || text.include?('picture')
       begin
         image_result = ImageGenerationService.generate_image(prompt: content_result[:body][0..200])
-        image_url = image_result[:url] if image_result
+        
+        if image_result && image_result[:success]
+          # Create DraftContent for the image with task_id for polling
+          draft = DraftContent.create!(
+            user: user,
+            title: "Auto Image - #{topic[0..40]}",
+            content: content_result[:body][0..200],
+            content_type: 'image',
+            platform: platform,
+            status: 'pending',
+            media_url: nil,
+            metadata: { 
+              'task_id' => image_result[:task_id], 
+              'service' => image_result[:service], 
+              'model' => image_result.dig(:metadata, :model)
+            }
+          )
+          
+          # If image is immediately available, save it
+          if image_result[:output_url].present?
+            draft.update!(media_url: image_result[:output_url], status: 'draft')
+            image_url = image_result[:output_url]
+          else
+            # Start polling job
+            ImagePollJob.perform_later(draft.id, image_result[:task_id], image_result[:service])
+          end
+        end
       rescue => e
         Rails.logger.error "Image generation failed: #{e.message}"
       end
@@ -419,7 +447,15 @@ class AiAutopilotService < ApplicationService
     confirmation += "📝 Content: Generated with hashtags & CTA\n"
     confirmation += "🏷️ Hashtags: #{content_result[:hashtags]}\n" if content_result[:hashtags]
     confirmation += "🔗 CTA: #{content_result[:cta]}\n" if content_result[:cta]
-    confirmation += "🖼️ Image: #{image_url ? 'Generated!' : 'Not requested'}\n\n"
+    
+    if draft
+      confirmation += "🖼️ Image: Generation started! Check Drafts page.\n"
+    elsif image_url
+      confirmation += "🖼️ Image: Generated!\n"
+    else
+      confirmation += "🖼️ Image: Not requested\n"
+    end
+    confirmation += "\n"
     
     if schedule_time && schedule_time > Time.current
       confirmation += "📅 Scheduled: #{schedule_time.strftime('%B %d at %I:%M %p')}\n"
@@ -432,7 +468,7 @@ class AiAutopilotService < ApplicationService
     confirmation += "💡 Say 'how am I doing' anytime to check performance!"
     
     @command.update!(status: 'completed', response_text: confirmation)
-    { campaign: campaign, content: content, scheduled_post: scheduled_post, image_url: image_url }
+    { campaign: campaign, content: content, scheduled_post: scheduled_post, draft: draft, image_url: image_url }
   rescue => e
     Rails.logger.error "Full automation failed: #{e.message}"
     confirmation = "⚠️ Automation encountered an issue: #{e.message}\n"\
@@ -474,29 +510,52 @@ class AiAutopilotService < ApplicationService
     begin
       result = ImageGenerationService.generate_image(prompt: topic)
       
-      unless result
+      unless result && result[:success]
         confirmation = "⚠️ Image generation service is currently unavailable."
         @command.update!(status: 'completed', response_text: confirmation)
         return nil
       end
       
-      content = Content.create!(
+      # Create DraftContent with task_id for polling
+      draft = DraftContent.create!(
         user: @command.user,
-        campaign: @command.user.campaigns.last,
-        title: "Image Content - #{topic}",
-        body: "AI-generated image for: #{topic}",
-        content_type: 'post',
+        title: "Image - #{topic[0..50]}",
+        content: "AI-generated image for: #{topic}",
+        content_type: 'image',
         platform: 'general',
-        status: 'draft'
+        status: 'pending',
+        media_url: nil,
+        metadata: { 
+          'task_id' => result[:task_id], 
+          'service' => result[:service], 
+          'model' => result.dig(:metadata, :model),
+          'prompt' => topic
+        }
       )
       
-      confirmation = "🖼️ Image generated!\n\n"\
-        "📝 Prompt: #{topic}\n"\
-        "🖼️ Image URL: #{result[:url]}\n\n"\
-        "💡 You can now schedule or publish this with the image!"
+      # If image is immediately available, save it
+      if result[:output_url].present?
+        draft.update!(media_url: result[:output_url], status: 'draft')
+        image_url = result[:output_url]
+      else
+        # Start polling job to check for completion
+        ImagePollJob.perform_later(draft.id, result[:task_id], result[:service])
+        image_url = nil
+      end
+      
+      confirmation = "🖼️ Image generation started!\n\n"\
+        "📝 Prompt: #{topic}\n"
+      
+      if image_url
+        confirmation += "🖼️ Image URL: #{image_url}\n\n"
+        confirmation += "💡 You can now schedule or publish this with the image!"
+      else
+        confirmation += "⏳ I'm generating your image now. Check back in a few moments!\n\n"\
+          "💡 Visit the Drafts page to see when it's ready."
+      end
       
       @command.update!(status: 'completed', response_text: confirmation)
-      { content: content, image_url: result[:url] }
+      { draft: draft, image_url: image_url }
     rescue => e
       Rails.logger.error "Image generation failed: #{e.message}"
       confirmation = "⚠️ Image generation failed: #{e.message}"

@@ -98,7 +98,7 @@ class PublishQueueService
     content_data = queue_item.content_data
     platform = queue_item.platform
     
-    # Mark as processed - integration with Defapi for social media posting
+    # Mark as processed - integration with Atlas Cloud for social media posting
     # In production, this would call the appropriate social media API
     result = { success: true, post_id: "post_#{SecureRandom.hex(8)}" }
     

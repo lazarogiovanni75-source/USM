@@ -37,8 +37,12 @@ class ContentCreationController < ApplicationController
         max_tokens: 1500
       )
 
-      # Parse the JSON response
-      ideas = JSON.parse(content)
+      # Parse the JSON response - handle markdown code blocks
+      json_content = content.strip
+      # Remove markdown code block markers if present
+      json_content = json_content.sub(/^```json\s*/i, '').sub(/\s*```$/i, '')
+      json_content = json_content.sub(/^```\s*/i, '').sub(/\s*```$/i, '')
+      ideas = JSON.parse(json_content)
 
       ideas.each do |idea|
         current_user.content_suggestions.create!(
@@ -73,39 +77,25 @@ class ContentCreationController < ApplicationController
       if result[:success]
         service = result[:service]
         model = result.dig(:metadata, :model) || 'gpt-image-1.5'
+        task_id = result[:task_id]
         
-        if result[:output_url]
-          # Secondary service (OpenAI DALL-E) returns URL directly
-          draft = current_user.draft_contents.create!(
-            title: "Image - #{prompt[0..50]}",
-            content: prompt,
-            content_type: 'image',
-            platform: 'general',
-            status: 'published',
-            media_url: result[:output_url],
-            metadata: { 'service' => service, 'model' => model }
-          )
-          
-          redirect_to draft_path(draft), notice: 'Image generated successfully!'
-        else
-          # Primary service (Defapi) returns task_id for polling
-          draft = current_user.draft_contents.create!(
-            title: "Image - #{prompt[0..50]}",
-            content: prompt,
-            content_type: 'image',
-            platform: 'general',
-            status: 'pending',
-            media_url: nil,
-            metadata: { 
-              'task_id' => result[:task_id], 
-              'service' => service, 
-              'model' => model 
-            }
-          )
+        # Always use polling to ensure we get the final URL
+        draft = current_user.draft_contents.create!(
+          title: "Image - #{prompt[0..50]}",
+          content: prompt,
+          content_type: 'image',
+          platform: 'general',
+          status: 'pending',
+          media_url: nil,
+          metadata: { 
+            'task_id' => task_id, 
+            'service' => service, 
+            'model' => model 
+          }
+        )
 
-          ImagePollJob.perform_later(draft.id, result[:task_id])
-          redirect_to draft_path(draft), notice: 'Image generation started! Check back in a few moments.'
-        end
+        ImagePollJob.perform_later(draft.id, task_id, service)
+        redirect_to draft_path(draft), notice: 'Image generation started! Check back in a few moments.'
       else
         redirect_to content_creation_index_path, alert: "Image generation failed: #{result[:error]}"
       end
@@ -155,7 +145,7 @@ class ContentCreationController < ApplicationController
         )
 
         # Start polling job
-        SoraPollJob.perform_later(draft.id, result[:task_id], service)
+        VideoPollJob.perform_later(draft.id, result[:task_id], service)
 
         redirect_to draft_path(draft), notice: 'Video generation started! Check back in a few moments.'
       else
@@ -172,11 +162,11 @@ class ContentCreationController < ApplicationController
     rescue AtlasCloudService::Error => e
       Rails.logger.error "[ContentCreation] Atlas Cloud Error: #{e.message}"
       redirect_to content_creation_index_path, alert: "Video generation error: #{e.message}"
-    rescue PoyoService::AuthenticationError => e
-      Rails.logger.error "[ContentCreation] Poyo.ai Authentication Error: #{e.message}"
+    rescue AtlasCloudService::AuthenticationError => e
+      Rails.logger.error "[ContentCreation] Atlas Cloud Authentication Error: #{e.message}"
       redirect_to content_creation_index_path, alert: 'Video generation authentication failed. Please check your API configuration.'
-    rescue PoyoService::Error => e
-      Rails.logger.error "[ContentCreation] Poyo.ai Error: #{e.message}"
+    rescue AtlasCloudService::Error => e
+      Rails.logger.error "[ContentCreation] Atlas Cloud Error: #{e.message}"
       redirect_to content_creation_index_path, alert: "Video generation error: #{e.message}"
     rescue ArgumentError => e
       redirect_to content_creation_index_path, alert: e.message
@@ -254,7 +244,7 @@ class ContentCreationController < ApplicationController
             }
           )
 
-          ImagePollJob.perform_later(new_draft.id, result[:task_id])
+          ImagePollJob.perform_later(new_draft.id, result[:task_id], service)
           redirect_to draft_path(new_draft), notice: 'Image editing started! Check back in a few moments.'
         end
       else

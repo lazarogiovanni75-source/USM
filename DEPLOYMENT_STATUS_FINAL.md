@@ -206,7 +206,7 @@ Added `"preDeployCommand": "bundle exec rails db:migrate"` to `railway.json`.
 - ✅ `DATABASE_URL` - Connected to Postgres service
 - ✅ `SECRET_KEY_BASE` - Exists (shown in screenshot)
 - ✅ `RAILS_ENV` - Set to `production`
-- ✅ `CLACKY_DEFAPI_API_KEY` - API key set
+- ✅ `CLACKY_ATLAS_CLOUD_API_KEY` - API key set
 - ✅ `CLACKY_OPENAI_API_KEY` - API key set
 - ✅ `CLACKY_POSTFORME_API_KEY` - API key set
 - ✅ `CLACKY_PUBLIC_HOST` - Domain set

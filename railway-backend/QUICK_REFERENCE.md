@@ -43,7 +43,7 @@ PORT=3000
 NODE_ENV=production
 ALLOWED_ORIGINS=https://ultimatesocialmedia01.com
 OPENAI_API_KEY=sk-xxxxx
-DEFAPI_API_KEY=your-key
+ATLAS_CLOUD_API_KEY=your-key
 ```
 
 ---

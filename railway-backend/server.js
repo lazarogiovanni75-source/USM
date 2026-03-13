@@ -49,8 +49,8 @@ app.use(sanitizeInput);
 
 // API configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const POYO_API_KEY = process.env.POYO_API_KEY || process.env.DEFAPI_API_KEY;
-const POYO_BASE_URL = 'https://api.poyo.ai';
+const ATLAS_CLOUD_API_KEY = process.env.ATLASCLOUD_API_KEY || process.env.ATLAS_CLOUD_API_KEY;
+const ATLAS_CLOUD_BASE_URL = 'https://api.atlascloud.ai';
 
 // =====================
 // MONITORING ENDPOINTS
@@ -268,15 +268,15 @@ app.post('/video/start',
   asyncHandler(async (req, res) => {
     const { prompt, userName = 'Anonymous', userEmail = 'anonymous@example.com' } = req.body;
     
-    if (!POYO_API_KEY) {
-      throw new AppError('PoYo AI API key not configured', 503, 'SERVICE_UNAVAILABLE');
+    if (!ATLAS_CLOUD_API_KEY) {
+      throw new AppError('Atlas Cloud API key not configured', 503, 'SERVICE_UNAVAILABLE');
     }
 
     try {
       const response = await axios.post(
-        `${POYO_BASE_URL}/api/generate/submit`,
+        `${ATLAS_CLOUD_BASE_URL}/api/generate/submit`,
         {
-          model: 'sora-2',
+          model: 'seedance-v1-pro',
           input: {
             prompt: prompt,
             duration: 15,
@@ -285,7 +285,7 @@ app.post('/video/start',
         },
         {
           headers: {
-            'Authorization': `Bearer ${POYO_API_KEY}`,
+            'Authorization': `Bearer ${ATLAS_CLOUD_API_KEY}`,
             'Content-Type': 'application/json'
           },
           timeout: 30000
@@ -323,16 +323,16 @@ app.get('/video/status/:jobId',
   asyncHandler(async (req, res) => {
     const { jobId } = req.params;
     
-    if (!POYO_API_KEY) {
-      throw new AppError('PoYo AI API key not configured', 503, 'SERVICE_UNAVAILABLE');
+    if (!ATLAS_CLOUD_API_KEY) {
+      throw new AppError('Atlas Cloud API key not configured', 503, 'SERVICE_UNAVAILABLE');
     }
 
     try {
       const response = await axios.get(
-        `${POYO_BASE_URL}/api/task/${jobId}`,
+        `${ATLAS_CLOUD_BASE_URL}/api/task/${jobId}`,
         {
           headers: {
-            'Authorization': `Bearer ${POYO_API_KEY}`
+            'Authorization': `Bearer ${ATLAS_CLOUD_API_KEY}`
           },
           timeout: 10000
         }

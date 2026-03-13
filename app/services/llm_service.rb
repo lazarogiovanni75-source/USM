@@ -500,7 +500,9 @@ class LlmService < ApplicationService
     ENV.fetch('CLACKY_OPENAI_API_KEY') do
       ENV.fetch('OPENAI_API_KEY') do
         ENV.fetch('LLM_API_KEY') do
-          raise LlmError, "LLM_API_KEY not configured (tried CLACKY_OPENAI_API_KEY, OPENAI_API_KEY, LLM_API_KEY)"
+          ENV.fetch('CLACKY_LLM_API_KEY') do
+            raise LlmError, "LLM_API_KEY not configured (tried CLACKY_OPENAI_API_KEY, OPENAI_API_KEY, LLM_API_KEY, CLACKY_LLM_API_KEY)"
+          end
         end
       end
     end

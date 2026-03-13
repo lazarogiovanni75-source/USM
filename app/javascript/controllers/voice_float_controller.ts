@@ -176,28 +176,44 @@ export default class VoiceFloatController extends Controller {
   }
 
   openModal(): void {
-    console.log("[VoiceFloat] Opening modal")
+    console.log("[VoiceFloat] Opening modal - ensuring structure first")
+    this.updateDebugStatus("Opening modal...")
     
-    // Clean up old subscription if exists
-    if (this.channel) {
-      this.channel.unsubscribe()
-      this.channel = null
-    }
-    
+    // Ensure modal structure exists BEFORE trying to open
     this.ensureModalStructure()
-
-    if (this.modalElement) {
-      this.modalElement.classList.remove("hidden")
-      this.modalElement.classList.add("flex")
-    } else {
-      console.error("[VoiceFloat] Modal element is null!")
+    this.updateDebugStatus("Modal created, showing...")
+    
+    // Modal should now exist after ensureModalStructure
+    // (or it already existed from before)
+    if (!this.modalElement) {
+      console.error("[VoiceFloat] Modal element is STILL null after ensureModalStructure!")
+      this.updateDebugStatus("ERROR: Modal not found!")
+      // Try to find it directly in DOM as fallback
+      this.modalElement = document.getElementById("voice-modal") as HTMLElement
     }
+    
+    if (!this.modalElement) {
+      console.error("[VoiceFloat] Could not find or create modal at all!")
+      this.updateDebugStatus("ERROR: Cannot create modal!")
+      console.error("[VoiceFloat] Please refresh and try again")
+      return
+    }
+    
+    this.updateDebugStatus("Showing modal...")
+    console.log("[VoiceFloat] Modal element found, showing it")
+    this.modalElement.classList.remove("hidden")
+    this.modalElement.classList.add("flex")
 
     // Subscribe to ActionCable channels BEFORE starting to listen
-    // This ensures we don't miss any messages that arrive while processing
+    console.log("[VoiceFloat] Initializing ActionCable...")
+    this.updateDebugStatus("Connecting to server...")
     this.initializeActionCable()
 
+    // Start recording after a short delay
+    console.log("[VoiceFloat] Scheduling WebAudio recording in 500ms...")
+    this.updateDebugStatus("Starting microphone...")
     setTimeout(() => {
+      console.log("[VoiceFloat] Timeout fired, calling startWebAudioRecording...")
       this.startWebAudioRecording()
     }, 500)
   }
@@ -411,10 +427,14 @@ export default class VoiceFloatController extends Controller {
   private handleToolExecutionStarted(tool: string): void {
     console.log(`[VoiceFloat] Tool started: ${tool}`)
     this.showToolExecutionStatus(`Running ${tool}...`)
+    // Stop any current speech when tool starts
+    window.speechSynthesis?.cancel()
   }
 
   private handleToolExecutionCompleted(tool: string, result: any): void {
     console.log(`[VoiceFloat] Tool completed: ${tool}`, result)
+    this.hideLoading()
+    
     let message = `Completed: ${tool}`
     if (result?.message) {
       message = result.message
@@ -425,13 +445,16 @@ export default class VoiceFloatController extends Controller {
     
     // Speak the result
     this.speakResponse(message)
+    // After speaking, the onend callback will restart listening
   }
 
   private handleToolExecutionFailed(tool: string, error: string): void {
     console.log(`[VoiceFloat] Tool failed: ${tool}`, error)
+    this.hideLoading()
     const message = `Failed to execute ${tool}: ${error}`
     this.showToolExecutionStatus(message)
     this.speakResponse(message)
+    // After speaking, the onend callback will restart listening
   }
 
   private handleAwaitingConfirmation(tool: string): void {
@@ -449,8 +472,10 @@ export default class VoiceFloatController extends Controller {
   }
 
   private async startWebAudioRecording(): Promise<void> {
+    console.log("[VoiceFloat] startWebAudioRecording called")
+    this.updateDebugStatus("Requesting microphone...")
     try {
-      console.log("[VoiceFloat] Requesting microphone access")
+      console.log("[VoiceFloat] Requesting microphone access via navigator.mediaDevices.getUserMedia")
       this.updateTranscript("Accessing microphone...")
 
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -463,11 +488,14 @@ export default class VoiceFloatController extends Controller {
         }
       })
 
-      console.log("[VoiceFloat] Microphone access granted")
+      console.log("[VoiceFloat] Microphone access GRANTED, mediaStream:", this.mediaStream?.id)
+      this.updateDebugStatus("Mic granted, setting up audio...")
       this.updateConnectionStatus("connected", "Ready")
       this.updateTranscript("Listening... Speak now!")
       this.isListening = true
 
+      console.log("[VoiceFloat] Creating AudioContext with sampleRate: 48000")
+      this.updateDebugStatus("AudioContext created, starting recording...")
       this.audioContext = new AudioContext({ sampleRate: 48000 })
       const source = this.audioContext.createMediaStreamSource(this.mediaStream)
 
@@ -479,6 +507,7 @@ export default class VoiceFloatController extends Controller {
       this.wavEncoder = new WAVEncoder()
       this.wavEncoder.sampleRate = this.audioContext.sampleRate
 
+      console.log("[VoiceFloat] Setting up audio processor")
       this.processor.onaudioprocess = (e) => {
         if (!this.isListening) return
         const inputData = e.inputBuffer.getChannelData(0)
@@ -493,6 +522,7 @@ export default class VoiceFloatController extends Controller {
       this.silenceStartTime = 0
       this.isSpeaking = false
       
+      console.log("[VoiceFloat] Starting recording interval")
       this.recordingInterval = setInterval(() => {
         this.checkRecordingDuration()
         this.checkForSilence()
@@ -500,7 +530,11 @@ export default class VoiceFloatController extends Controller {
 
     } catch (error) {
       console.error("[VoiceFloat] Microphone error:", error)
+      console.error("[VoiceFloat] Error name:", (error as Error).name)
+      console.error("[VoiceFloat] Error message:", (error as Error).message)
+      this.updateDebugStatus(`ERROR: ${(error as Error).message || 'Mic denied'}`)
       this.updateConnectionStatus("error", "Microphone access denied")
+      this.updateTranscript(`Error: ${(error as Error).message || 'Microphone access denied'}`)
     }
   }
 
@@ -621,17 +655,10 @@ export default class VoiceFloatController extends Controller {
           console.log("[VoiceFloat] Updated conversation ID to:", this.currentConversationId)
         }
 
-        // Display user transcript in a separate area
+        // Show user transcript (but DON'T clear AI response - keep it visible)
         if (data.text && data.text.trim().length > 0) {
           // Show user's input
           this.updateTranscript(`You: ${data.text}`)
-        }
-
-        // Clear AI response area for new response
-        const aiResponseEl = document.getElementById('voice-ai-response')
-        if (aiResponseEl) {
-          aiResponseEl.innerHTML = ""
-          aiResponseEl.classList.add("hidden")
         }
 
         this.processingAudio = false
@@ -793,8 +820,12 @@ export default class VoiceFloatController extends Controller {
       el.textContent = text
       console.log("[VoiceFloat] Updated transcript to:", text)
     } else {
-      console.error("[VoiceFloat] Could not find voice-transcript element!")
+      // Fallback: try to find transcript in modal, or create temporary display
+      console.warn("[VoiceFloat] Could not find voice-transcript element!")
+      // Don't throw error - just log it
     }
+    // Also update debug status
+    this.updateDebugStatus(text)
     this.currentTranscript = text
   }
 
@@ -804,6 +835,14 @@ export default class VoiceFloatController extends Controller {
       el.textContent = message
       el.className = `connection-status ${status}`
     }
+  }
+
+  private updateDebugStatus(text: string): void {
+    const el = document.getElementById("voice-debug-status")
+    if (el) {
+      el.textContent = text
+    }
+    console.log("[VoiceFloat] DEBUG:", text)
   }
 
   private showLoading(): void {
@@ -831,16 +870,16 @@ export default class VoiceFloatController extends Controller {
   }
 
   private ensureModalStructure(): void {
-    console.log("[VoiceFloat] Ensuring modal structure")
+    console.log("[VoiceFloat] ensureModalStructure called")
 
     const existingModal = document.getElementById("voice-modal")
     if (existingModal) {
-      console.log("[VoiceFloat] Modal already exists")
+      console.log("[VoiceFloat] Modal already exists in DOM")
       this.modalElement = existingModal as HTMLElement
       return
     }
 
-    console.log("[VoiceFloat] Creating new modal")
+    console.log("[VoiceFloat] Creating new modal element")
 
     const modal = document.createElement("div")
     modal.id = "voice-modal"
@@ -879,8 +918,11 @@ export default class VoiceFloatController extends Controller {
           </label>
         </div>
         
-        <div id="voice-connection-status" class="connection-status idle text-sm text-gray-500 mb-4">
+        <div id="voice-connection-status" class="connection-status idle text-sm text-gray-500 mb-2">
           Connecting...
+        </div>
+        <div id="voice-debug-status" class="text-xs text-blue-600 mb-4 p-2 bg-blue-50 rounded text-center">
+          Loading...
         </div>
         <div class="flex flex-col items-center justify-center py-4">
           <div id="voice-transcript" class="text-lg text-gray-700 dark:text-gray-300 text-center min-h-[3rem] mb-4 w-full font-medium">
@@ -906,13 +948,17 @@ export default class VoiceFloatController extends Controller {
       </div>
     `
 
+    console.log("[VoiceFloat] Appending modal to body")
     document.body.appendChild(modal)
+    console.log("[VoiceFloat] Modal appended, now adding event listeners")
 
     const closeBtn = document.getElementById("voice-close-btn")
+    console.log("[VoiceFloat] closeBtn found:", !!closeBtn)
     closeBtn?.addEventListener("click", () => this.closeModal())
 
     // Stop button handler - closes the modal and stops all processing
     const stopBtn = document.getElementById("voice-stop-btn")
+    console.log("[VoiceFloat] stopBtn found:", !!stopBtn)
     stopBtn?.addEventListener("click", () => {
       console.log("[VoiceFloat] Stop button clicked")
       window.speechSynthesis?.cancel()
@@ -921,6 +967,7 @@ export default class VoiceFloatController extends Controller {
 
     // Wake word toggle handler
     const wakeToggle = document.getElementById("wake-word-toggle")
+    console.log("[VoiceFloat] wakeToggle found:", !!wakeToggle)
     wakeToggle?.addEventListener("change", (e) => {
       const target = e.target as HTMLInputElement
       this.wakeWordEnabled = target.checked
@@ -933,5 +980,6 @@ export default class VoiceFloatController extends Controller {
     })
 
     this.modalElement = modal
+    console.log("[VoiceFloat] Modal setup complete, modalElement assigned")
   }
 }

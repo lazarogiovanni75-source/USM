@@ -1,7 +1,7 @@
 {
   "name": "ultimate-social-media-api",
   "version": "1.0.0",
-  "description": "Production-Grade Backend API for Ultimate Social Media Platform - Third-party service integration for OpenAI, DefAPI, and more",
+  "description": "Production-Grade Backend API for Ultimate Social Media Platform - Third-party service integration for OpenAI, Atlas Cloud, and more",
   "main": "server.js",
   "engines": {
     "node": ">=18.0.0",

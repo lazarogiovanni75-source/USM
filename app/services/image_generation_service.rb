@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 # Image Generation Service
-# Primary: Atlas Cloud/Gemini 2.5 Flash (https://api.atlascloud.ai)
-# Note: Poyo.ai disabled by user
+# Primary: Atlas Cloud/Z-Image Turbo (https://api.atlascloud.ai)
 class ImageGenerationService
   class ImageGenerationError < StandardError; end
   class ServiceUnavailableError < ImageGenerationError; end
@@ -15,7 +14,7 @@ class ImageGenerationService
   # @return [Hash] Result with task_id and metadata
   #
   def self.generate_image(prompt:, size: '1024x1024', quality: 'high')
-    # Try primary service (Atlas Cloud Gemini 2.5 Flash)
+    # Use Atlas Cloud Z-Image Turbo
     result = try_primary_image(prompt: prompt, size: size, quality: quality)
     
     # If primary succeeded with a task_id, return it (polling will handle completion)
@@ -30,9 +29,7 @@ class ImageGenerationService
     service_obj = service_to_object(service)
     
     if service_obj.is_a?(AtlasCloudImageService)
-      service_obj.task_status(task_id)
-    elsif service_obj.is_a?(DefapiService)
-      service_obj.gpt_image_status(task_id)
+      service_obj.image_status(task_id)
     else
       # OpenAI generates synchronously, so no polling needed
       { 'status' => 'success', 'output' => task_id }
@@ -47,7 +44,7 @@ class ImageGenerationService
   end
 
   def self.try_primary_image(prompt:, size:, quality:)
-    Rails.logger.info "[ImageGeneration] Trying primary service: Atlas Cloud/Flux Schnell"
+    Rails.logger.info "[ImageGeneration] Trying Atlas Cloud/Z-Image Turbo"
     
     service = AtlasCloudImageService.new
     
@@ -64,31 +61,31 @@ class ImageGenerationService
       )
 
       # In sync mode, output_url may be returned immediately
-      if result['prediction_id'].present?
+      if result['task_id'].present?
         output_url = result['output'] || result.dig('data', 'outputs')&.first
         
         if output_url.present?
           Rails.logger.info "[ImageGeneration] Primary service succeeded - image ready immediately"
           {
             success: true,
-            task_id: result['prediction_id'],
+            task_id: result['task_id'],
             service: 'atlas_cloud_image',
             output_url: output_url,
-            metadata: { model: 'flux-schnell', size: size, quality: quality }
+            metadata: { model: 'z-image/turbo', size: size, quality: quality }
           }
         else
           # Fallback: task was started but needs polling
-          Rails.logger.info "[ImageGeneration] Primary service started task: #{result['prediction_id']}"
+          Rails.logger.info "[ImageGeneration] Primary service started task: #{result['task_id']}"
           {
             success: true,
-            task_id: result['prediction_id'],
+            task_id: result['task_id'],
             service: 'atlas_cloud_image',
             output_url: nil,
-            metadata: { model: 'flux-schnell', size: size, quality: quality }
+            metadata: { model: 'z-image/turbo', size: size, quality: quality }
           }
         end
       else
-        Rails.logger.error "[ImageGeneration] Primary service returned no prediction_id: #{result.inspect}"
+        Rails.logger.error "[ImageGeneration] Primary service returned no task_id: #{result.inspect}"
         { success: false, error: result['error'] || 'Failed to generate image' }
       end
     rescue AtlasCloudImageService::Error => e
@@ -103,13 +100,13 @@ class ImageGenerationService
   end
 
   def self.try_secondary_image(prompt:, size:, quality:)
-    Rails.logger.info "[ImageGeneration] Trying secondary service: Poyo.ai (fallback)"
+    Rails.logger.info "[ImageGeneration] Trying secondary service: Atlas Cloud (fallback)"
     
-    service = PoyoImageService.new
+    service = AtlasCloudImageService.new
     
     unless service.configured?
       Rails.logger.warn "[ImageGeneration] Secondary service not configured"
-      return { success: false, error: "Poyo.ai not configured" }
+      return { success: false, error: "Atlas Cloud not configured" }
     end
 
     begin
@@ -124,7 +121,7 @@ class ImageGenerationService
         {
           success: true,
           task_id: result['task_id'],
-          service: 'poyo',
+          service: 'atlas_cloud_image',
           output_url: result['output'],
           metadata: { model: 'gpt-image-1', size: size, quality: quality }
         }
@@ -133,7 +130,7 @@ class ImageGenerationService
         {
           success: true,
           task_id: result['task_id'],
-          service: 'poyo',
+          service: 'atlas_cloud_image',
           output_url: nil,
           metadata: { model: 'gpt-image-1', size: size, quality: quality }
         }
@@ -151,10 +148,8 @@ class ImageGenerationService
     case service_name
     when 'atlas_cloud_image'
       AtlasCloudImageService.new
-    when 'poyo'
-      PoyoImageService.new
-    when 'defapi'
-      DefapiService.new
+    when 'atlas_cloud_image'
+      AtlasCloudImageService.new
     when 'openai'
       OpenaiImageService.new
     else
