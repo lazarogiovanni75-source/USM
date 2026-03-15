@@ -1,6 +1,6 @@
-# This project uses S3 storage via CLACKY_ environment variables
-# Configure in Railway/Clacky dashboard with:
-# CLACKY_STORAGE_BUCKET_NAME, CLACKY_STORAGE_BUCKET_REGION, etc.
+# This project uses S3 storage via VYROPILOT_ environment variables
+# Configure in Railway/Vyropilot dashboard with:
+# VYROPILOT_STORAGE_BUCKET_NAME, VYROPILOT_STORAGE_BUCKET_REGION, etc.
 
 test:
   service: Disk
@@ -13,10 +13,10 @@ local:
 # S3 storage for production videos/images
 amazon:
   service: S3
-  access_key_id: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID", "") %>
-  secret_access_key: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_SECRET_ACCESS_KEY", "") %>
-  region: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_REGION", "us-east-1") %>
-  bucket: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_NAME", "ultimate-social-media-production") %>
+  access_key_id: <%= ENV.fetch("VYROPILOT_STORAGE_BUCKET_ACCESS_KEY_ID", "") %>
+  secret_access_key: <%= ENV.fetch("VYROPILOT_STORAGE_BUCKET_SECRET_ACCESS_KEY", "") %>
+  region: <%= ENV.fetch("VYROPILOT_STORAGE_BUCKET_REGION", "us-east-1") %>
+  bucket: <%= ENV.fetch("VYROPILOT_STORAGE_BUCKET_NAME", "ultimate-social-media-production") %>
   http_open_timeout: 5
   http_read_timeout: 5
   retry_limit: 3
@@ -24,7 +24,7 @@ amazon:
 # Legacy storage_bucket config (kept for backward compatibility)
 storage_bucket:
   service: S3
-  access_key_id: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID", "") %>
-  secret_access_key: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_SECRET_ACCESS_KEY", "") %>
-  region: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_REGION", "us-east-1") %>
-  bucket: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_NAME", "") %>
+  access_key_id: <%= ENV.fetch("VYROPILOT_STORAGE_BUCKET_ACCESS_KEY_ID", "") %>
+  secret_access_key: <%= ENV.fetch("VYROPILOT_STORAGE_BUCKET_SECRET_ACCESS_KEY", "") %>
+  region: <%= ENV.fetch("VYROPILOT_STORAGE_BUCKET_REGION", "us-east-1") %>
+  bucket: <%= ENV.fetch("VYROPILOT_STORAGE_BUCKET_NAME", "") %>
