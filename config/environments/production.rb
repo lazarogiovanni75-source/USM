@@ -27,9 +27,9 @@ Rails.application.configure do
   # config.action_dispatch.x_sendfile_header = "X-Sendfile" # for Apache
   # config.action_dispatch.x_sendfile_header = "X-Accel-Redirect" # for NGINX
 
-  # Store uploaded files in S3 (configure via CLACKY_STORAGE_BUCKET_* variables)
+  # Store uploaded files in S3 (configure via VYROPILOT_STORAGE_BUCKET_* variables)
 # Falls back to local storage if S3 not configured
-config.active_storage.service = (ENV["CLACKY_STORAGE_BUCKET_NAME"].present? && ENV["CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID"].present?) ? :amazon : :local
+config.active_storage.service = (ENV["VYROPILOT_STORAGE_BUCKET_NAME"].present? && ENV["VYROPILOT_STORAGE_BUCKET_ACCESS_KEY_ID"].present?) ? :amazon : :local
 
   # Mount Action Cable outside main process or domain.
   config.action_cable.disable_request_forgery_protection = true
@@ -75,7 +75,7 @@ config.active_storage.service = (ENV["CLACKY_STORAGE_BUCKET_NAME"].present? && E
   # want to log everything, set the level to "debug".
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
 
-  # Clacky: Enable caching
+  # Vyropilot: Enable caching
   config.cache_store = :memory_store
 
   # Use a real queuing backend for Active Job (and separate queues per environment).
