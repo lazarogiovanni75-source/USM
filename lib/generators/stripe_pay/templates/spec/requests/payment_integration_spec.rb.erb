@@ -32,20 +32,20 @@ RSpec.describe "Payment Integration", type: :request do
         end
       end
 
-      # Check CLACKY_TODO_SUBSCRIPTION if any model uses subscription mode
+      # Check VYROPILOT_TODO_SUBSCRIPTION if any model uses subscription mode
       if has_subscription_mode
         service_file = Rails.root.join('app/services/stripe_payment_service.rb')
         content = File.read(service_file) if File.exist?(service_file)
-        if content&.include?('CLACKY_TODO_SUBSCRIPTION')
-          fail "CLACKY_TODO_SUBSCRIPTION found in stripe_payment_service.rb - implement subscription webhooks!"
+        if content&.include?('VYROPILOT_TODO_SUBSCRIPTION')
+          fail "VYROPILOT_TODO_SUBSCRIPTION found in stripe_payment_service.rb - implement subscription webhooks!"
         end
       end
     end
   end
 
-  describe "CLACKY_TODO validation" do
-    it "validates that all payment CLACKY_TODOs have been resolved" do
-      check_clacky_todos([
+  describe "VYROPILOT_TODO validation" do
+    it "validates that all payment VYROPILOT_TODOs have been resolved" do
+      check_vyropilot_todos([
         'app/controllers/payments_controller.rb',
         'app/controllers/admin/payments_controller.rb',
         'app/services/stripe_payment_service.rb'
