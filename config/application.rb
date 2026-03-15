@@ -59,9 +59,9 @@ module Myapp
     # Configure GoodJob as the Active Job queue adapter
     config.active_job.queue_adapter = :good_job
 
-    # Configure GoodJob - inline mode for stability
-    config.good_job.execution_mode = :inline
-    config.good_job.max_threads = 1
+    # Configure GoodJob - async mode for background job processing
+    config.good_job.execution_mode = :async
+    config.good_job.max_threads = 5
 
     # Disable cron temporarily for debugging
     # config.good_job.enable_cron = true
