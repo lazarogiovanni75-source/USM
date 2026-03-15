@@ -61,8 +61,8 @@ RSpec.describe "Authenticated Access", type: :request do
       user_dropdown_file = 'app/views/shared/_user_dropdown.html.erb'
       nav_links_file = 'app/views/shared/_nav_links.html.erb'
 
-      # Check CLACKY_TODOs are resolved in all navbar components
-      check_clacky_todos([navbar_file, user_dropdown_file, nav_links_file])
+      # Check VYROPILOT_TODOs are resolved in all navbar components
+      check_vyropilot_todos([navbar_file, user_dropdown_file, nav_links_file])
     end
 
     it "validates nav_links does not contain current_user checks or placeholder links" do
