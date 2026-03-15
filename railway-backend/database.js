@@ -23,7 +23,7 @@ class DatabaseManager {
           port: process.env.POSTGRE_SQL_INNER_PORT || '5432',
           user: process.env.POSTGRE_SQL_USER || 'postgres',
           password: process.env.POSTGRE_SQL_PASSWORD || 'pgBqpmYZ',
-          database: process.env.POSTGRE_SQL_DB || 'clacky_app_db',
+          database: process.env.POSTGRE_SQL_DB || 'vyropilot_app_db',
           ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
           max: 20,
           idleTimeoutMillis: 30000,
