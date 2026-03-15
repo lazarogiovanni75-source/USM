@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 # Atlas Cloud Image Generation Service
-# Uses GPT Image 1.5 via Atlas Cloud unified API
+# Model: z-image/turbo
 # API Documentation: https://api.atlascloud.ai
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
+  DEFAULT_MODEL = 'z-image/turbo'
   TIMEOUT = 120
 
   class Error < StandardError; end
@@ -16,7 +17,7 @@ class AtlasCloudImageService
     @base_url = BASE_URL
   end
 
-  # Generate image using GPT Image 1.5 via Atlas Cloud unified API
+  # Generate image using z-image/turbo via Atlas Cloud
   #
   # @param prompt [String] Text prompt describing the image
   # @param size [String] Image size (1:1, 16:9, 9:16, etc.)
@@ -27,11 +28,10 @@ class AtlasCloudImageService
                         size: '1:1',
                         quality: 'high',
                         n: 1)
-    # Map size format from "1024x1024" to "1:1" etc
     size_value = map_size(size)
-    
+
     body = {
-      model: 'gpt-image-1.5',
+      model: DEFAULT_MODEL,
       input: {
         prompt: prompt,
         size: size_value,
