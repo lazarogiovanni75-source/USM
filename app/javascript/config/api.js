@@ -1,7 +1,7 @@
-// API Configuration for Ultimate Social Media Platform
+// API Configuration for Vyropilot Platform
 // Railway backend URL comes from Rails environment variable
 // In development: defaults to hardcoded URL
-// In production: uses CLACKY_RAILWAY_BACKEND_URL environment variable
+// In production: uses VYROPILOT_RAILWAY_BACKEND_URL environment variable
 const RAILWAY_API_URL = document.querySelector('meta[name="railway-backend-url"]')?.content || 'https://backend-api-production-00f5.up.railway.app';
 
 export const apiConfig = {
