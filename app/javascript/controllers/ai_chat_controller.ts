@@ -859,7 +859,7 @@ export default class extends Controller<HTMLElement> {
             </path>
           </svg>
         </div>
-        <h3 class="text-xl font-bold text-primary mb-2">Otto-Pilot</h3>
+        <h3 class="text-xl font-bold text-primary mb-2">Pilot</h3>
         <p class="text-muted text-center max-w-md mb-6">
           Ask me anything about content creation, scheduling, or marketing strategy
         </p>
