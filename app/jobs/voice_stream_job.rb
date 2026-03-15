@@ -84,7 +84,7 @@ class VoiceStreamJob < ApplicationJob
     prompt
   end
 
-  # Retry on transient 503 errors from Clacky/Whisper
+  # Retry on transient 503 errors from Vyropilot/Whisper
   def transcribe_with_retry(audio_data, retries = 3)
     Rails.logger.info "[VoiceStreamJob] Attempting transcription (retries: #{retries})"
 
@@ -114,7 +114,7 @@ class VoiceStreamJob < ApplicationJob
     require 'base64'
     require 'stringio'
     
-    api_key = ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY']
+    api_key = ENV['OPENAI_API_KEY'] || ENV['VYROPILOT_OPENAI_API_KEY']
     
     # Extract base64 data
     audio_base64 = audio_data.sub(/^data:audio\/\w+;base64,/, '')
@@ -230,7 +230,7 @@ class VoiceStreamJob < ApplicationJob
       require 'httparty'
       require 'base64'
       
-      api_key = ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY']
+      api_key = ENV['OPENAI_API_KEY'] || ENV['VYROPILOT_OPENAI_API_KEY']
       
       # Use gpt-4o-mini-tts for premium quality voice (same as voice_chat_controller)
       # Available voices: alloy, echo, fable, onyx, nova, shimmer
