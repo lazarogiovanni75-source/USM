@@ -14,7 +14,7 @@ Rails.application.routes.draw do
     cookie_hash = Rails.application.config.session_options[:cookie_options]
     # Set session cookie
     "".tap do |response|
-      Rack::Response.new([], 302, {'Location' => '/', 'Set-Cookie' => "_clacky_app_session=; path=/"}).finish
+      Rack::Response.new([], 302, {'Location' => '/', 'Set-Cookie' => "_vyropilot_session=; path=/"}).finish
     end
   }
 
