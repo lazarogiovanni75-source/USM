@@ -1,6 +1,6 @@
 class User < ApplicationRecord
   MIN_PASSWORD = 4
-  GENERATED_EMAIL_SUFFIX = "@generated-mail.clacky.ai"
+  GENERATED_EMAIL_SUFFIX = "@generated-mail.vyropilot.com"
 
   has_secure_password validations: false
 
@@ -163,7 +163,7 @@ class User < ApplicationRecord
     pro? || entrepreneur? || admin? || moderator?
   end
 
-  # AI Auto-generation features (Otto-Pilot proactive content creation)
+  # AI Auto-generation features (Pilot proactive content creation)
   # Starter = Manual input only
   # Entrepreneur = Voice command autopilot (assists when prompted, no autonomous workflows)
   # Pro = Full automation + workflows (can run autonomously)
@@ -251,7 +251,7 @@ class User < ApplicationRecord
     sessions.where.not(id: Current.session).delete_all
   end
 
-  # Associations for Ultimate Social Media platform
+  # Associations for Vyropilot platform
   has_many :campaigns, dependent: :destroy
   has_many :contents, dependent: :destroy
   has_many :social_accounts, dependent: :destroy
