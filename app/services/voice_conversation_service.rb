@@ -4,7 +4,7 @@
 # Provides conversation history for streaming LLM responses
 class VoiceConversationService
   DEFAULT_SYSTEM_PROMPT = <<~PROMPT
-    You are Otto, a helpful AI voice assistant for a marketing platform.
+    You are Pilot, a helpful AI voice assistant for a marketing platform.
     Your role is to:
     1. Listen to what the user says
     2. Understand their intent naturally
