@@ -1,6 +1,6 @@
 class User < ApplicationRecord
   MIN_PASSWORD = 4
-  GENERATED_EMAIL_SUFFIX = "@generated-mail.clacky.ai"
+  GENERATED_EMAIL_SUFFIX = "@generated-mail.vyropilot.com"
 
   has_secure_password validations: false
 
