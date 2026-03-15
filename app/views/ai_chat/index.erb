@@ -1,4 +1,4 @@
-<% content_for :title, "Otto-Chat" %>
+<% content_for :title, "Pilot-Chat" %>
 <!-- stimulus-validator: disable-next-line -->
 
 <div class="bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-purple-900 dark:via-gray-900 dark:to-purple-900 relative" 
@@ -20,7 +20,7 @@
             <%= lucide_icon "bot", class: "w-6 h-6 text-white" %>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-purple-700 dark:text-white">Otto-Chat</h1>
+            <h1 class="text-2xl font-bold text-purple-700 dark:text-white">Pilot-Chat</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">Your intelligent marketing companion</p>
           </div>
         </div>
@@ -52,9 +52,9 @@
   </div>
 
   <!-- Main Content -->
-  <%# Otto-Chat page: Show the navbar voice button here too %>
+  <%# Pilot-Chat page: Show the navbar voice button here too %>
 <style>
-  /* No hiding - show the button on Otto-Chat */
+  /* No hiding - show the button on Pilot-Chat */
 </style>
 
 <div class="container-xl mx-auto px-4 py-6 relative min-h-screen">
@@ -87,7 +87,7 @@
           <%= lucide_icon "mic", class: "w-5 h-5" %>
           Voice Prompts
         </h2>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Try saying these commands to Otto-Pilot:</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Try saying these commands to Pilot:</p>
         
         <div id="voice-prompts-list" class="space-y-3 max-h-[400px] overflow-y-auto">
           <div class="prompt-category">
@@ -134,11 +134,11 @@
         </div>
       </div>
       
-      <!-- Otto Settings (RIGHT) -->
+      <!-- Pilot Settings (RIGHT) -->
       <div class="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-200 dark:border-purple-700 p-5">
         <h2 class="text-lg font-bold text-purple-700 dark:text-white mb-4 flex items-center gap-2">
           <%= lucide_icon "user-cog", class: "w-5 h-5" %>
-          Otto Settings
+          Pilot Settings
         </h2>
         
         <!-- Auto-Speak Toggle with Test Button -->
@@ -211,7 +211,7 @@
   </div>
 </div>
 
-<%= render 'ai_chat/otto_pilot_button' %>
+<%= render 'ai_chat/pilot_button' %>
 
 <!-- Voice Command Modal -->
 <div id="voice-command-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center" data-controller="voice-command-toggle">
@@ -221,7 +221,7 @@
       <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg animate-pulse">
         <%= lucide_icon "mic", class: "w-12 h-12 text-white" %>
       </div>
-      <h2 class="text-2xl font-bold text-primary mb-2">Otto-Chat</h2>
+      <h2 class="text-2xl font-bold text-primary mb-2">Pilot-Chat</h2>
       <p class="text-gray-600 dark:text-gray-300 mb-6">Speak your commands to create campaigns, generate content, and manage your social media</p>
       
       <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-4 mb-4 min-h-[80px]">
