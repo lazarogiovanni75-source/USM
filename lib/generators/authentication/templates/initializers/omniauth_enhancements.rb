@@ -24,9 +24,9 @@ module OmniAuth
 
     private
 
-    # Check if Clacky environment variables are provided
+    # Check if Vyropilot environment variables are provided
     def clacky_env_provided?
-      ENV['CLACKY_AUTH_CLIENT_ID'].present? && ENV['CLACKY_AUTH_CLIENT_SECRET'].present? && ENV['CLACKY_AUTH_HOST'].present?
+      ENV['VYROPILOT_AUTH_CLIENT_ID'].present? && ENV['VYROPILOT_AUTH_CLIENT_SECRET'].present? && ENV['VYROPILOT_AUTH_HOST'].present?
     end
 
     # Check if it's a supported OAuth provider
@@ -37,7 +37,7 @@ module OmniAuth
 
     # Enhance OAuth provider configuration
     def enhance_oauth_provider(klass, args, user_opts = {}, &block)
-      # Apply Clacky Auth fallback logic
+      # Apply Vyropilot Auth fallback logic
       client_id, client_secret = args[0], args[1]
 
       # Build final options
@@ -51,8 +51,8 @@ module OmniAuth
     def build_provider_options(klass, base_opts, client_id)
       opts = base_opts.dup
 
-      # Check if using Clacky Auth
-      if using_clacky_auth?(client_id)
+      # Check if using Vyropilot Auth
+      if using_vyropilot_auth?(client_id)
         # Deep merge so nested hashes like client_options are merged instead of overwritten
         opts = opts.deep_merge(clacky_auth_options(klass, client_id))
       end
@@ -60,15 +60,15 @@ module OmniAuth
       opts
     end
 
-    # Check if using Clacky Auth
-    def using_clacky_auth?(client_id)
-      clacky_auth_client_id = ENV['CLACKY_AUTH_CLIENT_ID']
+    # Check if using Vyropilot Auth
+    def using_vyropilot_auth?(client_id)
+      clacky_auth_client_id = ENV['VYROPILOT_AUTH_CLIENT_ID']
       client_id == clacky_auth_client_id
     end
 
-    # Get Clacky Auth options configuration
+    # Get Vyropilot Auth options configuration
     def clacky_auth_options(klass, client_id)
-      clacky_auth_host = ENV['CLACKY_AUTH_HOST']
+      clacky_auth_host = ENV['VYROPILOT_AUTH_HOST']
       provider_path = provider_oauth_path(klass)
 
       opts = {
@@ -86,7 +86,7 @@ module OmniAuth
       opts
     end
 
-    # Get provider path in Clacky Auth
+    # Get provider path in Vyropilot Auth
     def provider_oauth_path(klass)
       case klass.to_sym
       when :google_oauth2
