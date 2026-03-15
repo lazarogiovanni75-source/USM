@@ -345,7 +345,7 @@ class ProcessVoiceCommandJob < ApplicationJob
   end
 
   def generate_ai_response(prompt, user)
-    system_prompt = "You are Otto-Pilot, a friendly marketing assistant."
+    system_prompt = "You are Pilot, a friendly marketing assistant."
 
     begin
       response = ''
@@ -359,7 +359,7 @@ class ProcessVoiceCommandJob < ApplicationJob
       end
       response
     rescue => e
-      "Hi! I'm Otto, your social media assistant. I can help you create campaigns, generate content, schedule posts, or analyze performance. What would you like to do?"
+      "Hi! I'm Pilot, your social media assistant. I can help you create campaigns, generate content, schedule posts, or analyze performance. What would you like to do?"
     end
   end
 end
