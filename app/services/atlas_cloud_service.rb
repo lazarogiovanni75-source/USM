@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
-# Atlas Cloud Service - Image to Video Generation
-# Model: vidu/q3-pro/start-end-to-video
+# Atlas Cloud Service - Video Generation
+# Image-to-Video model: vidu/q3-pro/start-end-to-video
+# Text-to-Video model:  vidu/q3-pro/text-to-video
 # API: https://api.atlascloud.ai
 class AtlasCloudService
   BASE_URL = 'https://api.atlascloud.ai'
   DEFAULT_MODEL = 'vidu/q3-pro/start-end-to-video'
+  TEXT_TO_VIDEO_MODEL = 'vidu/q3-pro/text-to-video'
   TIMEOUT = 120
 
   class Error < StandardError; end
@@ -49,6 +51,39 @@ class AtlasCloudService
 
     if task_id.present?
       Rails.logger.info "[AtlasCloudService] Video job started, task_id: #{task_id}"
+      { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
+    else
+      Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
+      { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || 'Failed to start video generation' }
+    end
+  end
+
+  # Generate video from a text prompt
+  #
+  # @param prompt [String] Text description of the video to generate
+  # @param duration [Integer] Video duration in seconds (default: 4)
+  # @param aspect_ratio [String] Aspect ratio e.g. "16:9", "9:16", "1:1"
+  # @param model [String] Override the default text-to-video model
+  #
+  def generate_video_from_text(prompt:,
+                                duration: 4,
+                                aspect_ratio: '16:9',
+                                model: nil)
+    body = {
+      model: model || TEXT_TO_VIDEO_MODEL,
+      prompt: prompt,
+      duration: duration.to_i,
+      aspect_ratio: aspect_ratio
+    }
+
+    Rails.logger.info "[AtlasCloudService] Submitting text-to-video job with model: #{body[:model]}"
+
+    result = post_request('/api/v1/model/generateVideo', body)
+
+    task_id = result.dig('data', 'id') || result['task_id']
+
+    if task_id.present?
+      Rails.logger.info "[AtlasCloudService] Text-to-video job started, task_id: #{task_id}"
       { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
     else
       Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
