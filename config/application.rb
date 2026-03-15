@@ -2,7 +2,7 @@ require_relative "boot"
 require "rails/all"
 
 Bundler.require(*Rails.groups)
-require_relative '../lib/middleware/clacky_health_check'
+require_relative '../lib/middleware/vyropilot_health_check'
 require_relative '../lib/env_checker'
 
 require 'open-uri'
@@ -34,7 +34,7 @@ module Myapp
     config.load_defaults 7.2
 
     config.autoload_lib(ignore: %w[assets tasks generators rails middleware source_mapping])
-    config.middleware.insert_before Rails::Rack::Logger, ClackyHealthCheck
+    config.middleware.insert_before Rails::Rack::Logger, VyropilotHealthCheck
 
     # Configuration for the application, engines, and railties goes here.
     #
@@ -48,7 +48,7 @@ module Myapp
     config.x.appname = File.read(Rails.root.join('config', 'appname.txt')).strip
 
     # Postforme API key configuration
-    config.x.postforme_api_key = ENV['POSTFORME_API_KEY'] || ENV['CLACKY_POSTFORME_API_KEY'] || 'pfm_live_4NJHWqt7cUTpmVkXAqxCRa'
+    config.x.postforme_api_key = ENV['POSTFORME_API_KEY'] || ENV['VYROPILOT_POSTFORME_API_KEY'] || 'pfm_live_4NJHWqt7cUTpmVkXAqxCRa'
 
     # Use vips for Active Storage variants
     config.active_storage.variant_processor = :vips
