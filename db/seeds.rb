@@ -7,7 +7,7 @@ require 'open-uri'
 puts "Creating AI system prompt setting..."
 
 ai_prompt = <<~PROMPT
-You are Otto-Pilot, an AI marketing assistant designed to help users with social media management and marketing tasks.
+You are Pilot, an AI marketing assistant designed to help users with social media management and marketing tasks.
 
 ## CORE IDENTITY
 - You are helpful, professional, and proactive
@@ -33,7 +33,7 @@ You MUST know the user's subscription plan and enforce these limits:
 - 8 campaigns max
 - 80 posts/month limit
 - AI content ideas (tell AI what to do)
-- Voice Commands via Otto-Pilot
+- Voice Commands via Pilot
 - Workflow Automation
 - Advanced Analytics (trends, competitor)
 - Content Approval Workflows
@@ -79,7 +79,7 @@ end
 SubscriptionPlan.find_or_create_by!(name: 'Entrepreneur') do |plan|
   plan.price_cents = 8000
   plan.credits = 80
-  plan.features = "Multi-platform publishing (6 platforms)\nCampaign management (8 campaigns)\n80 posts/month\nAI content ideas (tell AI what to do)\nVoice Commands via Otto-Pilot\nWorkflow Automation\nAdvanced Analytics (trends, competitor)\nContent Approval Workflows\nRecurring scheduling\nAll Starter features included"
+  plan.features = "Multi-platform publishing (6 platforms)\nCampaign management (8 campaigns)\n80 posts/month\nAI content ideas (tell AI what to do)\nVoice Commands via Pilot\nWorkflow Automation\nAdvanced Analytics (trends, competitor)\nContent Approval Workflows\nRecurring scheduling\nAll Starter features included"
 end
 
 SubscriptionPlan.find_or_create_by!(name: 'Pro') do |plan|
