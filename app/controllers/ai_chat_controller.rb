@@ -10,7 +10,7 @@ class AiChatController < ApplicationController
     )
     @messages = @current_conversation.ai_messages.order(created_at: :desc)
     
-    # Handle voice_message param from Otto-Pilot redirect
+    # Handle voice_message param from Pilot redirect
     @voice_message = params[:voice_message].presence
     if @voice_message
       Rails.logger.info "[AiChat] Voice message from URL: #{@voice_message[0..50]}"
