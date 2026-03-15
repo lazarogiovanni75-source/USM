@@ -119,21 +119,8 @@ class AtlasCloudImageService
   end
 
   def fetch_api_key
-    # Image service should use the dedicated image API key
-    ENV['ATLASCLOUD_IMAGE_API_KEY'] ||
-      ENV['CLACKY_ATLASCLOUD_IMAGE_API_KEY'] ||
-      ENV['ATLAS_CLOUD_IMAGE_API_KEY'] ||
-      ENV['CLACKY_ATLAS_CLOUD_IMAGE_API_KEY'] ||
-      ENV['ATLAS_CLOUD_API_KEY'] ||
-      ENV['CLACKY_ATLAS_CLOUD_API_KEY'] ||
-      ENV['ATLASCLOUD_API_KEY'] ||
-      ENV['CLACKY_ATLASCLOUD_API_KEY'] ||
-      Rails.application.config.x.atlas_cloud_image_api_key ||
-      Rails.application.config_for(:application)['ATLASCLOUD_IMAGE_API_KEY'] ||
-      Rails.application.config_for(:application)['ATLAS_CLOUD_IMAGE_API_KEY'] ||
-      Rails.application.config.x.atlas_cloud_api_key ||
-      Rails.application.config_for(:application)['ATLAS_CLOUD_API_KEY'] ||
-      Rails.application.config_for(:application)['ATLASCLOUD_API_KEY']
+    ENV['ATLASCLOUD_API_KEY'] ||
+      ENV['ATLAS_CLOUD_API_KEY']
   end
 
   def post_request(endpoint, body)
@@ -153,7 +140,7 @@ class AtlasCloudImageService
       'Content-Type' => 'application/json',
       'Authorization' => "Bearer #{@api_key}",
       'x-api-key' => @api_key,
-      'User-Agent' => 'UltimateSocialMedia/1.0'
+      'User-Agent' => 'Vyropilot/1.0'
     }
   end
 
