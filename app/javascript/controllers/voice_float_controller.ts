@@ -110,7 +110,7 @@ export default class VoiceFloatController extends Controller {
   private wavEncoder: WAVEncoder | null = null
   private recordingStartTime: number = 0
   private recordingInterval: ReturnType<typeof setInterval> | null = null
-  private wakePhrase: string = "hey Otto"
+  private wakePhrase: string = "hey Pilot"
   private processingAudio: boolean = false
   private wakeWordEnabled: boolean = false
   private lastProcessedTime: number = 0
