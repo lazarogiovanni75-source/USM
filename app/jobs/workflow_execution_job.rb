@@ -1,17 +1,39 @@
 class WorkflowExecutionJob < ApplicationJob
   queue_as :default
 
-  # DO NOT add retry_on/discard_on here - ApplicationJob manages all retry strategies
-  # DO NOT rescue exceptions unless you re-raise them
-  # All uncaught exceptions are automatically reported to frontend via SystemMonitor Channel
-  #
-  # Consider syncing results to frontend via ActionCable:
-  #
-  #   ActionCable.server.broadcast("xxx_#{id}", {
-  #     type: 'update',  # REQUIRED: type field routes to client handler method
-  #     data: your_data  # Frontend MUST implement xxxController#handleUpdate() method
-  #   })
   def perform(workflow_id)
-    WorkflowService.execute_workflow(workflow_id)
+    workflow = Workflow.find(workflow_id)
+    stream_name = "workflow_#{workflow_id}_#{workflow.user_id}"
+
+    ActionCable.server.broadcast(stream_name, {
+      type: "workflow_started",
+      workflow_id: workflow_id,
+      status: "running",
+      message: "Workflow is running..."
+    })
+
+    result = WorkflowService.execute_workflow(workflow_id)
+    workflow.reload
+
+    ActionCable.server.broadcast(stream_name, {
+      type: "workflow_completed",
+      workflow_id: workflow_id,
+      status: workflow.status,
+      message: "Workflow completed successfully.",
+      result: result
+    })
+  rescue => e
+    begin
+      wf = Workflow.find_by(id: workflow_id)
+      wf&.update(status: :failed)
+      ActionCable.server.broadcast("workflow_#{workflow_id}_#{wf&.user_id}", {
+        type: "workflow_failed",
+        workflow_id: workflow_id,
+        status: "failed",
+        message: "Workflow failed: #{e.message}"
+      })
+    rescue
+    end
+    raise
   end
 end
