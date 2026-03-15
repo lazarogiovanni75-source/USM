@@ -25,7 +25,7 @@ Rails.application.configure do
 
   # config.action_controller.perform_caching = false
   # config.cache_store = :null_store
-  # Clacky: Enable caching
+  # Vyropilot: Enable caching
   config.action_controller.perform_caching = true
   config.action_controller.enable_fragment_cache_logging = true
   config.cache_store = :memory_store
@@ -65,7 +65,7 @@ Rails.application.configure do
   # Tell Active Support which deprecation messages to disallow.
   config.active_support.disallowed_deprecation_warnings = []
 
-  # Clacky: customize pages at concerns
+  # Vyropilot: customize pages at concerns
   config.active_record.migration_error = false
 
   # Highlight code that triggered database queries in logs.
