@@ -187,13 +187,13 @@ class VoicePipelineService
   def fetch_api_key(service)
     case service
     when :openai
-      ENV['OPENAI_API_KEY'] || ENV['CLACKY_OPENAI_API_KEY'] || Figaro.env.openai_api_key
+      ENV['OPENAI_API_KEY'] || ENV['VYROPILOT_OPENAI_API_KEY'] || Figaro.env.openai_api_key
     end
   end
 
   def default_ai_prompt
     <<~PROMPT
-      You are Otto, a helpful AI voice assistant for a marketing platform.
+      You are Pilot, a helpful AI voice assistant for a marketing platform.
       Keep responses conversational and concise (1-3 sentences).
       Help with: marketing campaigns, social media content, scheduling, analytics.
     PROMPT
