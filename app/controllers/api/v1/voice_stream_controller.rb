@@ -47,7 +47,7 @@ class Api::V1::VoiceStreamController < ApplicationController
       end
 
       # Check wake word if enabled
-      wake_phrase = params[:wake_phrase] || 'hey Otto'
+      wake_phrase = params[:wake_phrase] || 'hey Pilot'
       wake_word_detected = false
       if detect_wake_word
         wake_word_detected = transcribed_text.downcase.include?(wake_phrase.downcase)
