@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-# Atlas Cloud Service for Video Generation
-# API Documentation: https://api.atlascloud.ai
-# Model: bytedance/seedance-v1-pro-fast/text-to-video
+# Atlas Cloud Service - Image to Video Generation
+# Model: vidu/q3-pro/start-end-to-video
+# API: https://api.atlascloud.ai
 class AtlasCloudService
   BASE_URL = 'https://api.atlascloud.ai'
+  DEFAULT_MODEL = 'vidu/q3-pro/start-end-to-video'
   TIMEOUT = 120
 
   class Error < StandardError; end
@@ -16,81 +17,68 @@ class AtlasCloudService
     @base_url = BASE_URL
   end
 
-  # Generate video from text prompt
-  # API Documentation: https://api.atlascloud.ai
+  # Generate video from a start image and end image
   #
-  # @param prompt [String] Text prompt describing the video to generate
-  # @param duration [Integer] Video duration (2-12 seconds)
-  # @param aspect_ratio [String] Aspect ratio ("16:9" default or "9:16" for vertical)
-  # @param model [String] Model identifier (default: bytedance/seedance-v1-pro-fast/text-to-video)
-  # @param resolution [String] Resolution ("480p", "720p", "1080p")
+  # @param start_image_url [String] URL of the starting frame image
+  # @param end_image_url [String] URL of the ending frame image
+  # @param prompt [String] Optional text prompt to guide the generation
+  # @param duration [Integer] Video duration in seconds (default: 4)
+  # @param aspect_ratio [String] Aspect ratio e.g. "16:9", "9:16", "1:1"
+  # @param model [String] Override the default model
   #
-  def generate_video(prompt:,
-                     duration: 5,
+  def generate_video(start_image_url:,
+                     end_image_url:,
+                     prompt: '',
+                     duration: 4,
                      aspect_ratio: '16:9',
-                     model: nil,
-                     resolution: '720p')
-    # Validate duration (must be 2-12)
-    duration_value = duration.to_i
-    duration_value = 5 unless (2..12).include?(duration_value)
-
-    # Build input payload with correct format
+                     model: nil)
     body = {
-      model: model || 'bytedance/seedance-v1-pro-fast/text-to-video',
+      model: model || DEFAULT_MODEL,
+      start_image_url: start_image_url,
+      end_image_url: end_image_url,
       prompt: prompt,
-      duration: duration_value,
-      aspect_ratio: aspect_ratio,
-      resolution: resolution
+      duration: duration.to_i,
+      aspect_ratio: aspect_ratio
     }
 
-    Rails.logger.debug "[AtlasCloudService] Sending request with body: #{body.inspect}"
-    
-    result = post_request('/api/v1/model/generateVideo', body)
-    
-    Rails.logger.debug "[AtlasCloudService] Response: #{result.inspect}"
+    Rails.logger.info "[AtlasCloudService] Submitting image-to-video job with model: #{body[:model]}"
 
-    # Parse response - task ID is in result['data']['id']
-    response_data = result.dig('data')
-    task_id = response_data&.dig('id')
-    
+    result = post_request('/api/v1/model/generateVideo', body)
+
+    task_id = result.dig('data', 'id') || result['task_id']
+
     if task_id.present?
-      Rails.logger.info "[AtlasCloudService] Generated video task_id: #{task_id}"
-      return { 'task_id' => task_id, 'output' => nil }
+      Rails.logger.info "[AtlasCloudService] Video job started, task_id: #{task_id}"
+      { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
     else
       Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
-      return { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || result.dig('error', 'message'), 'raw_response' => result }
+      { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || 'Failed to start video generation' }
     end
   end
 
-  # Get generation task status
+  # Poll the status of a video generation task
+  #
+  # @param task_id [String] Task ID returned from generate_video
+  # @return [Hash] { status:, output:, progress:, error: }
+  #
   def task_status(task_id)
     result = get_request("/api/v1/model/prediction/#{task_id}")
-    
-    Rails.logger.info "[AtlasCloudService] Task status response: #{result.inspect}"
-    
-    # Handle response - API wraps everything in 'data' key
-    response_data = result.dig('data')
-    return { 'status' => 'unknown', 'output' => nil, 'error' => 'No response data' } unless response_data
-    
-    # Parse status from response
-    status = response_data['status'] || 'unknown'
-    
-    # Get output/video URL from outputs array
+
+    Rails.logger.info "[AtlasCloudService] Task status for #{task_id}: #{result.inspect}"
+
+    data = result.dig('data') || result
+    status = data['status'] || 'unknown'
+
     output = nil
-    if response_data['outputs'].present? && response_data['outputs'].is_a?(Array) && response_data['outputs'].any?
-      output = response_data['outputs'].first
+    if data['outputs'].is_a?(Array) && data['outputs'].any?
+      output = data['outputs'].first
     end
-    
-    # Get error message if present
-    error = response_data['error']
-    
-    Rails.logger.info "[AtlasCloudService] Parsed status: #{status}, output: #{output ? output[0..50] : 'nil'}, error: #{error}"
-    
+
     {
       'status' => status,
       'output' => output,
-      'progress' => nil,
-      'error' => error
+      'progress' => data['progress'],
+      'error' => data['error']
     }
   rescue AtlasCloudService::Error => e
     # If 404, return not_found so polling continues
@@ -114,21 +102,8 @@ class AtlasCloudService
   private
 
   def fetch_api_key
-    # Video generation should use the main ATLASCLOUD_API_KEY
     ENV['ATLASCLOUD_API_KEY'] ||
-      ENV['CLACKY_ATLASCLOUD_API_KEY'] ||
-      ENV['ATLAS_CLOUD_API_KEY'] ||
-      ENV['CLACKY_ATLAS_CLOUD_API_KEY'] ||
-      Rails.application.config.x.atlas_cloud_api_key ||
-      Rails.application.config_for(:application)['ATLASCLOUD_API_KEY'] ||
-      Rails.application.config_for(:application)['ATLAS_CLOUD_API_KEY'] ||
-      # Fallback to image-to-video key if main key not available
-      ENV['ATLASCLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
-      ENV['CLACKY_ATLASCLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
-      ENV['ATLAS_CLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
-      ENV['CLACKY_ATLAS_CLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
-      Rails.application.config_for(:application)['ATLASCLOUD_IMAGE_TO_VIDEO_API_KEY'] ||
-      Rails.application.config_for(:application)['ATLAS_CLOUD_IMAGE_TO_VIDEO_API_KEY']
+      ENV['ATLAS_CLOUD_API_KEY']
   end
 
   def post_request(endpoint, body)
@@ -148,7 +123,7 @@ class AtlasCloudService
       'Content-Type' => 'application/json',
       'Authorization' => "Bearer #{@api_key}",
       'x-api-key' => @api_key,
-      'User-Agent' => 'UltimateSocialMedia/1.0'
+      'User-Agent' => 'Vyropilot/1.0'
     }
   end
 
