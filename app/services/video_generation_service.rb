@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# Video Generation Service with Primary/Secondary Fallback
-# Primary: Atlas Cloud/Seedance v1 Pro (https://api.atlascloud.ai)
-# Secondary: Atlas Cloud (deprecated - fallback only)
+# Video Generation Service
+# Uses AtlasCloudService with vidu/q3-pro/text-to-video for text-to-video
+# and vidu/q3-pro/start-end-to-video for image-to-video
 class VideoGenerationService
   class VideoGenerationError < StandardError; end
   class ServiceUnavailableError < VideoGenerationError; end
@@ -36,17 +36,17 @@ class VideoGenerationService
   private
 
   def self.try_primary_video(prompt:, duration:, aspect_ratio:)
-    Rails.logger.info "[VideoGeneration] Trying primary service: Atlas Cloud (Seedance v1 Pro)"
-    
+    Rails.logger.info "[VideoGeneration] Trying Atlas Cloud text-to-video (vidu/q3-pro/text-to-video)"
+
     service = AtlasCloudService.new
-    
+
     unless service.configured?
-      Rails.logger.warn "[VideoGeneration] Primary service not configured"
+      Rails.logger.warn "[VideoGeneration] Atlas Cloud not configured"
       return { success: false, error: "Atlas Cloud not configured" }
     end
 
     begin
-      result = service.generate_video(
+      result = service.generate_video_from_text(
         prompt: prompt,
         duration: duration.to_i,
         aspect_ratio: aspect_ratio
@@ -71,19 +71,19 @@ class VideoGenerationService
   end
 
   def self.try_secondary_video(prompt:, duration:, aspect_ratio:)
-    Rails.logger.info "[VideoGeneration] Trying secondary service: Atlas Cloud (fallback)"
-    
+    Rails.logger.info "[VideoGeneration] Retrying Atlas Cloud text-to-video (fallback attempt)"
+
     service = AtlasCloudService.new
-    
+
     unless service.configured?
-      Rails.logger.warn "[VideoGeneration] Secondary service not configured"
+      Rails.logger.warn "[VideoGeneration] Atlas Cloud not configured for fallback"
       return { success: false, error: "Atlas Cloud not configured" }
     end
 
     begin
-      result = service.generate_video(
+      result = service.generate_video_from_text(
         prompt: prompt,
-        duration: duration,
+        duration: duration.to_i,
         aspect_ratio: aspect_ratio
       )
 
