@@ -108,7 +108,7 @@ class VoiceChatController < ApplicationController
       {
         model: "gpt-4o",
         messages: [
-          { role: "system", content: "You are Otto-Pilot, a helpful marketing assistant." },
+          { role: "system", content: "You are Pilot, a helpful marketing assistant." },
           { role: "user", content: message }
         ]
       }.to_json,
