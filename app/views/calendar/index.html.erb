@@ -5,7 +5,7 @@
   <div class="flex-1">
     <!-- Calendar Navigation -->
     <div class="bg-white rounded-xl shadow-sm border border-border/50 p-4 mb-4">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <button 
             class="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
@@ -32,7 +32,24 @@
           </button>
         </div>
         
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3">
+          <!-- Status Filter -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-muted">Status:</span>
+            <select 
+              class="text-sm border border-border rounded-lg px-3 py-1.5 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+              data-action="calendar#filterByStatus"
+              data-calendar-target="statusFilter"
+            >
+              <option value="all" <%= 'selected' if @status_filter == 'all' %>>All</option>
+              <option value="scheduled" <%= 'selected' if @status_filter == 'scheduled' %>>Scheduled</option>
+              <option value="draft" <%= 'selected' if @status_filter == 'draft' %>>Draft</option>
+              <option value="published" <%= 'selected' if @status_filter == 'published' %>>Published</option>
+              <option value="failed" <%= 'selected' if @status_filter == 'failed' %>>Failed</option>
+              <option value="cancelled" <%= 'selected' if @status_filter == 'cancelled' %>>Cancelled</option>
+            </select>
+          </div>
+          
           <button 
             class="px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
             data-action="calendar#goToToday"

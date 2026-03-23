@@ -4,6 +4,10 @@ class ScheduledPost < ApplicationRecord
   belongs_to :user, optional: true
   has_many :performance_metrics, dependent: :destroy
   has_one :postforme_analytic, dependent: :destroy
+  has_one :post_analytic, dependent: :destroy
+
+  # Fields for caching latest analytics (optional, for quick access)
+  attr_accessor :last_engagement_count, :last_impressions_count, :last_analytics_fetched_at
 
   delegate :platform, :platform_username, to: :social_account, allow_nil: true
 
@@ -18,8 +22,8 @@ class ScheduledPost < ApplicationRecord
     cancelled: 'cancelled'
   }
 
-  # Valid target platforms
-  PLATFORMS = %w[instagram twitter linkedin facebook tiktok youtube].freeze
+  # Valid target platforms (all supported via Postforme API)
+  PLATFORMS = %w[instagram facebook tiktok bluesky pinterest linkedin youtube threads x twitter].freeze
 
   validates :scheduled_at, presence: true
   validates :target_platforms, presence: true, unless: -> { platform.present? }
@@ -62,6 +66,22 @@ class ScheduledPost < ApplicationRecord
   def has_assets?
     image_url.present? || video_url.present? || asset_url.present? ||
     content&.media_url.present? || (content&.media_urls.present? && content.media_urls.any?)
+  end
+
+  def post_analytics_data
+    post_analytic || postforme_analytic
+  end
+
+  def total_engagement
+    post_analytics_data&.total_engagement || 0
+  end
+
+  def engagement_rate
+    post_analytics_data&.engagement_rate || 0
+  end
+
+  def performance_score
+    post_analytics_data&.performance_score || 0
   end
 
   def optimal_posting_time

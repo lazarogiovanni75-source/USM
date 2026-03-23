@@ -498,6 +498,13 @@ Rails.application.routes.draw do
   
   # Postforme Integration
   resources :postforme_webhooks, only: [:create]
+
+  # Postforme Analytics Dashboard
+  resources :postforme_analytics, only: [:index] do
+    collection do
+      post :refresh
+    end
+  end
   
   # Pages
   get 'pages/features', to: 'pages#features'

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_24_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_24_112702) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -565,6 +565,28 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_24_000001) do
     t.index ["scheduled_post_id"], name: "index_performance_metrics_on_scheduled_post_id"
   end
 
+  create_table "post_analytics", force: :cascade do |t|
+    t.bigint "scheduled_post_id", null: false
+    t.string "postforme_post_id"
+    t.integer "likes", default: 0
+    t.integer "comments", default: 0
+    t.integer "shares", default: 0
+    t.integer "saves", default: 0
+    t.integer "clicks", default: 0
+    t.integer "impressions", default: 0
+    t.integer "reach", default: 0
+    t.integer "views", default: 0
+    t.decimal "engagement_rate", precision: 5, scale: 2, default: "0.0"
+    t.json "raw_data", default: {}
+    t.datetime "fetched_at"
+    t.datetime "posted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fetched_at"], name: "index_post_analytics_on_fetched_at"
+    t.index ["postforme_post_id"], name: "index_post_analytics_on_postforme_post_id"
+    t.index ["scheduled_post_id"], name: "index_post_analytics_on_scheduled_post_id"
+  end
+
   create_table "post_metrics", force: :cascade do |t|
     t.string "post_type", null: false
     t.bigint "post_id", null: false
@@ -1026,6 +1048,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_24_000001) do
   add_foreign_key "clients", "users", column: "agency_user_id"
   add_foreign_key "content_suggestions", "draft_contents"
   add_foreign_key "content_template_variables", "content_templates"
+  add_foreign_key "post_analytics", "scheduled_posts"
   add_foreign_key "postforme_analytics", "scheduled_posts"
   add_foreign_key "publish_queues", "users"
   add_foreign_key "response_templates", "users"

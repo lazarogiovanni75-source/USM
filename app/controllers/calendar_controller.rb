@@ -5,12 +5,14 @@ class CalendarController < ApplicationController
   def index
     @date = params[:date] ? Date.parse(params[:date]) : Date.current
     @current_view = params[:view] || 'month'
+    @status_filter = params[:status].presence || 'all'
     @start_date = @date.beginning_of_month.beginning_of_week
     @end_date = @date.end_of_month.end_of_week
     
-    # Get all content for the month
+    # Get all content for the month with optional status filter
     @scheduled_posts = current_user.scheduled_posts
       .where('scheduled_at >= ? AND scheduled_at <= ?', @start_date, @end_date)
+      .then { |scope| @status_filter == 'all' ? scope : scope.where(status: @status_filter) }
       .includes(:content)
       .order(:scheduled_at)
     

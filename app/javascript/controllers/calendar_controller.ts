@@ -249,6 +249,17 @@ export default class extends Controller<HTMLElement> {
     }
   }
 
+  filterByStatus(event: Event): void {
+    event.preventDefault()
+    const target = event.currentTarget as HTMLSelectElement
+    const status = target.value
+    
+    const params = new URLSearchParams(window.location.search)
+    params.set('status', status)
+    
+    window.location.search = params.toString()
+  }
+
   newPost(event: Event): void {
     event.preventDefault()
     const target = event.currentTarget as HTMLElement
