@@ -17,11 +17,17 @@ class ScheduledPostPublishJob < ApplicationJob
       scheduled_post.update!(status: 'published', posted_at: Time.current)
       Rails.logger.info "Successfully published scheduled post #{scheduled_post.id}"
       
+      # Trigger automation for published post
+      trigger_automation('post_published', scheduled_post)
+      
       # Send notification to user
       send_publish_notification(scheduled_post, 'success')
     rescue => e
       scheduled_post.update!(status: 'failed', error_message: e.message)
       Rails.logger.error "Error publishing scheduled post #{scheduled_post.id}: #{e.message}"
+      
+      # Trigger automation for failed post
+      trigger_automation('post_failed', scheduled_post)
       
       # Send notification to user
       send_publish_notification(scheduled_post, 'error', e.message)
@@ -30,8 +36,18 @@ class ScheduledPostPublishJob < ApplicationJob
 
   private
 
+  def trigger_automation(event_type, post)
+    return unless post.user
+    service = AutomationRulesService.new(post.user)
+    service.execute_rules(event_type, { post: post, user: post.user })
+  rescue => e
+    Rails.logger.error "[Automation] Error: #{e.message}"
+  end
+
   def send_publish_notification(scheduled_post, status, error_message = nil)
-    # Create notification for user
+    # Skip notification creation if Notification model doesn't exist
+    return unless defined?(Notification) && Notification
+    
     Notification.create!(
       user: scheduled_post.user,
       title: case status
@@ -47,5 +63,7 @@ class ScheduledPostPublishJob < ApplicationJob
       type: status == 'success' ? 'success' : 'error',
       notifiable: scheduled_post
     )
+  rescue => e
+    Rails.logger.warn "[Notification] Failed to create notification: #{e.message}"
   end
 end

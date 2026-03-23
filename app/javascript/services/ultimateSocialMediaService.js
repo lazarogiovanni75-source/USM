@@ -1,6 +1,6 @@
-// Vyropilot Service
+// Ultimate Social Media Service
 
-// Main Vyropilot Service - Coordinates all Railway backend calls
+// Main Ultimate Social Media Service - Coordinates all Railway backend calls
 import voiceService from './voiceService';
 import aiService from './aiService';
 import videoService from './videoService';

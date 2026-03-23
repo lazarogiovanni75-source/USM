@@ -21,7 +21,7 @@
 class ConversationOrchestrator < ApplicationService
   # Constants
   MAX_HISTORY_MESSAGES = 15
-  CHAT_MODEL = "gpt-4o"
+  CLAUDE_MODEL = "claude-sonnet-4-20250514"
   CHAT_TEMPERATURE = 0.8
   CHAT_MAX_TOKENS = 4000
   
@@ -121,7 +121,7 @@ class ConversationOrchestrator < ApplicationService
       role: 'assistant',
       content: content,
       message_type: 'text',
-      metadata: { model: CHAT_MODEL, created_at: Time.current }
+      metadata: { model: CLAUDE_MODEL, created_at: Time.current }
     )
     
     Rails.logger.info "[ConversationOrchestrator] Assistant message saved - conversation: #{conversation.id}, length: #{content.length}"
@@ -261,23 +261,23 @@ CONTEXT
     
     # Log the exact message array being sent to OpenAI
     Rails.logger.info "[ConversationOrchestrator] Chat message array: #{history.to_json}"
-    Rails.logger.info "[ConversationOrchestrator] Calling OpenAI model: #{CHAT_MODEL}, temperature: #{CHAT_TEMPERATURE}, max_tokens: #{CHAT_MAX_TOKENS}"
+    Rails.logger.info "[ConversationOrchestrator] Calling Claude model: #{CLAUDE_MODEL}, temperature: #{CHAT_TEMPERATURE}, max_tokens: #{CHAT_MAX_TOKENS}"
     
-    api_key = ENV.fetch('OPENAI_API_KEY') { ENV.fetch('CLACKY_OPENAI_API_KEY', nil) }
+    api_key = ENV.fetch('ANTHROPIC_API_KEY')
     unless api_key
-      error_msg = "OpenAI API key not configured"
+      error_msg = "Anthropic API key not configured"
       Rails.logger.error "[ConversationOrchestrator] #{error_msg}"
       broadcast_error(error_msg)
       return error_msg
     end
     
-    client = OpenAI::Client.new(access_token: api_key)
+    client = Anthropic::Client.new(api_key: api_key)
     
     @assistant_response = ""
     
     # Build API parameters
     api_params = {
-      model: CHAT_MODEL,
+      model: CLAUDE_MODEL,
       messages: history,
       temperature: CHAT_TEMPERATURE,
       max_tokens: CHAT_MAX_TOKENS
@@ -289,29 +289,28 @@ CONTEXT
     has_tool_calls = false
     
     begin
-      client.chat(
+      client.messages.stream(
         parameters: api_params.merge(
           stream: proc { |chunk, _bytesize|
             Rails.logger.debug "[ConversationOrchestrator] Stream chunk received"
             
-            # Handle content delta
-            delta = chunk.dig("choices", 0, "delta", "content")
+            # Handle content delta (Anthropic format: chunk.delta.text)
+            delta = chunk.delta&.text
             
             if delta.present?
               @assistant_response += delta
               broadcast_content(delta)
             end
             
-            # Handle tool call deltas
-            if tools.present? && chunk.dig("choices", 0, "delta", "tool_calls")
-              chunk["choices"][0]["delta"]["tool_calls"].each do |tc|
-                idx = tc["index"]
-                tool_calls_buffer[idx] ||= { "id" => "", "function" => { "name" => "", "arguments" => "" } }
-                tool_calls_buffer[idx]["id"] += tc["id"].to_s if tc["id"]
-                tool_calls_buffer[idx]["function"]["name"] += tc["function"]["name"].to_s if tc["function"] && tc["function"]["name"]
-                tool_calls_buffer[idx]["function"]["arguments"] += tc["function"]["arguments"].to_s if tc["function"] && tc["function"]["arguments"]
-                has_tool_calls = true
-              end
+            # Handle tool use deltas (Anthropic format: chunk.delta.partial_tool_use)
+            if tools.present? && chunk.delta&.partial_tool_use
+              tc = chunk.delta.partial_tool_use
+              idx = tc.id&.hash || tool_calls_buffer.size
+              tool_calls_buffer[idx] ||= { "id" => tc.id || "", "function" => { "name" => "", "arguments" => "" } }
+              tool_calls_buffer[idx]["id"] = tc.id if tc.id
+              tool_calls_buffer[idx]["function"]["name"] += tc.name.to_s if tc.name
+              tool_calls_buffer[idx]["function"]["arguments"] += tc.input.to_s if tc.input
+              has_tool_calls = true
             end
           }
         )
@@ -352,18 +351,18 @@ CONTEXT
     Rails.logger.info "[ConversationOrchestrator] Chat message array: #{history.to_json}"
     Rails.logger.info "[ConversationOrchestrator] Calling OpenAI model: #{CHAT_MODEL}, temperature: #{CHAT_TEMPERATURE}, max_tokens: #{CHAT_MAX_TOKENS}"
     
-    api_key = ENV.fetch('OPENAI_API_KEY') { ENV.fetch('CLACKY_OPENAI_API_KEY', nil) }
+    api_key = ENV.fetch('ANTHROPIC_API_KEY')
     unless api_key
-      error_msg = "OpenAI API key not configured"
+      error_msg = "Anthropic API key not configured"
       Rails.logger.error "[ConversationOrchestrator] #{error_msg}"
       return error_msg
     end
     
-    client = OpenAI::Client.new(access_token: api_key)
+    client = Anthropic::Client.new(api_key: api_key)
     
     # Build API parameters
     api_params = {
-      model: CHAT_MODEL,
+      model: CLAUDE_MODEL,
       messages: history,
       temperature: CHAT_TEMPERATURE,
       max_tokens: CHAT_MAX_TOKENS
@@ -371,21 +370,33 @@ CONTEXT
     api_params[:tools] = tools if tools.present?
     
     begin
-      response = client.chat(parameters: api_params)
+      response = client.messages.create(parameters: api_params)
       
-      # Check for tool calls in response
-      message = response.dig("choices", 0, "message")
-      tool_calls = message&.dig("tool_calls")
+      # Check for tool uses in response (Anthropic format)
+      message = response
+      tool_uses = message.content.select { |c| c.type == "tool_use" }
       
-      if tool_calls.present? && tool_calls.any?
-        Rails.logger.info "[ConversationOrchestrator] Tool calls detected: #{tool_calls.size}"
+      if tool_uses.present? && tool_uses.any?
+        Rails.logger.info "[ConversationOrchestrator] Tool calls detected: #{tool_uses.size}"
         
         # Save the assistant's initial response if content exists
-        content = message["content"]
+        text_content = message.content.find { |c| c.type == "text" }
+        content = text_content&.text
         if content.present?
           @assistant_response = content
           save_assistant_message(content)
           broadcast_content(content) if stream_channel
+        end
+        
+        # Convert Anthropic tool_use format to OpenAI-like format for compatibility
+        tool_calls = tool_uses.map do |tc|
+          {
+            "id" => tc.id,
+            "function" => {
+              "name" => tc.name,
+              "arguments" => tc.input.to_json
+            }
+          }
         end
         
         # Execute tools and continue conversation
@@ -393,7 +404,9 @@ CONTEXT
         return final_response
       end
       
-      @assistant_response = message&.dig("content") || ""
+      # Get text content
+      text_content = message.content.find { |c| c.type == "text" }
+      @assistant_response = text_content&.text || ""
       
       Rails.logger.info "[ConversationOrchestrator] Response received - length: #{@assistant_response.length}"
       
@@ -468,12 +481,12 @@ CONTEXT
   end
 
   def log_message_array(messages)
-    Rails.logger.info "[ConversationOrchestrator] Message array sent to OpenAI:"
+    Rails.logger.info "[ConversationOrchestrator] Message array sent to Claude:"
     messages.each_with_index do |msg, idx|
       content_preview = msg[:content].to_s[0..100]
       Rails.logger.info "  [#{idx}] role=#{msg[:role]}, content=#{content_preview}..."
     end
-    Rails.logger.info "[ConversationOrchestrator] Model: #{CHAT_MODEL}, Temperature: #{CHAT_TEMPERATURE}, Max tokens: #{CHAT_MAX_TOKENS}"
+    Rails.logger.info "[ConversationOrchestrator] Model: #{CLAUDE_MODEL}, Temperature: #{CHAT_TEMPERATURE}, Max tokens: #{CHAT_MAX_TOKENS}"
   end
   
   # Handle tool calls, execute them, and continue conversation
@@ -629,19 +642,20 @@ CONTEXT
     Rails.logger.info "[ConversationOrchestrator] Continuing streaming with #{valid_messages.size} messages"
     Rails.logger.info "[ConversationOrchestrator] Validated message history: #{valid_messages.to_json[0..500]}..."
     
-    api_key = ENV.fetch('OPENAI_API_KEY') { ENV.fetch('CLACKY_OPENAI_API_KEY', nil) }
-    client = OpenAI::Client.new(access_token: api_key)
+    api_key = ENV.fetch('ANTHROPIC_API_KEY')
+    client = Anthropic::Client.new(api_key: api_key)
     
     @assistant_response = ""
     
-    client.chat(
+    client.messages.stream(
       parameters: {
-        model: CHAT_MODEL,
+        model: CLAUDE_MODEL,
         messages: valid_messages,
         temperature: CHAT_TEMPERATURE,
         max_tokens: CHAT_MAX_TOKENS,
         stream: proc { |chunk, _bytesize|
-          delta = chunk.dig("choices", 0, "delta", "content")
+          # Handle content delta (Anthropic format)
+          delta = chunk.delta&.text
           
           if delta.present?
             @assistant_response += delta
@@ -655,9 +669,8 @@ CONTEXT
     broadcast_completion
     
     @assistant_response
-  rescue OpenAI::Error => e
-    Rails.logger.error "[ConversationOrchestrator] OpenAI API error: #{e.message}"
-    Rails.logger.error "[ConversationOrchestrator] Error details: #{e.response.inspect}" if e.respond_to?(:response)
+  rescue Anthropic::Errors::Error => e
+    Rails.logger.error "[ConversationOrchestrator] Anthropic API error: #{e.message}"
     error_msg = "Error communicating with AI: #{e.message}"
     save_assistant_message(error_msg)
     error_msg
@@ -671,19 +684,21 @@ CONTEXT
   
   # Continue with blocking call after tool execution
   def continue_blocking(history)
-    api_key = ENV.fetch('OPENAI_API_KEY') { ENV.fetch('CLACKY_OPENAI_API_KEY', nil) }
-    client = OpenAI::Client.new(access_token: api_key)
+    api_key = ENV.fetch('ANTHROPIC_API_KEY')
+    client = Anthropic::Client.new(api_key: api_key)
     
-    response = client.chat(
+    response = client.messages.create(
       parameters: {
-        model: CHAT_MODEL,
+        model: CLAUDE_MODEL,
         messages: history,
         temperature: CHAT_TEMPERATURE,
         max_tokens: CHAT_MAX_TOKENS
       }
     )
     
-    @assistant_response = response.dig("choices", 0, "message", "content") || ""
+    # Get text content (Anthropic format)
+    text_content = response.content.find { |c| c.type == "text" }
+    @assistant_response = text_content&.text || ""
     save_assistant_message(@assistant_response)
     
     @assistant_response

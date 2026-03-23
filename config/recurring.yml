@@ -29,3 +29,19 @@ weekly_strategy_analysis:
   queue: "default"
   description: "Generate AI marketing strategy for all users weekly"
   args:
+
+# Publish scheduled posts - Every 5 minutes
+publish_scheduled_posts:
+  cron: "*/5 * * * *"  # Every 5 minutes
+  class: "PublishScheduledPostsJob"
+  queue: "default"
+  description: "Publish scheduled posts that are due"
+  args:
+
+# Execute due AI tasks - Every 15 minutes
+execute_due_ai_tasks:
+  cron: "*/15 * * * *"  # Every 15 minutes
+  class: "ExecuteDueAiTasksJob"
+  queue: "default"
+  description: "Execute scheduled AI tasks that are due"
+  args:

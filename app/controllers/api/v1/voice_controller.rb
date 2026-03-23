@@ -14,7 +14,7 @@ class Api::V1::VoiceController < ApplicationController
 
     begin
       # Generate AI response
-      api_key = ENV['OPENAI_API_KEY'] || ENV['VYROPILOT_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
+      api_key = ENV['ANTHROPIC_API_KEY'] || ENV['OPENAI_API_KEY'] || ENV['ULTIMATE_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
       llm_model = Rails.application.config_for(:application)['LLM_MODEL'] || 'gpt-4o'
 
       system_prompt = <<~PROMPT
@@ -99,7 +99,7 @@ class Api::V1::VoiceController < ApplicationController
       require 'net/http'
       require 'uri'
 
-      api_key = ENV['OPENAI_API_KEY'] || ENV['VYROPILOT_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
+      api_key = ENV['ANTHROPIC_API_KEY'] || ENV['OPENAI_API_KEY'] || ENV['ULTIMATE_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
       uri = URI.parse('https://api.openai.com/v1/audio/transcriptions')
       boundary = "----RubyMultipartBoundary#{SecureRandom.hex(16)}"
 
@@ -277,7 +277,7 @@ class Api::V1::VoiceController < ApplicationController
 
   def generate_ai_response(text)
     # Use OpenAI to generate intelligent, contextual responses
-    api_key = ENV['OPENAI_API_KEY'] || ENV['VYROPILOT_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
+    api_key = ENV['ANTHROPIC_API_KEY'] || ENV['OPENAI_API_KEY'] || ENV['ULTIMATE_OPENAI_API_KEY'] || Figaro.env.openai_api_key || Rails.application.config.x.openai_api_key
     # Use configured LLM model (default: gpt-4o-mini)
     llm_model = Rails.application.config_for(:application)['LLM_MODEL'] || 'gpt-4o'
     uri = URI.parse('https://api.openai.com/v1/chat/completions')

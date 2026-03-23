@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_12_201517) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_24_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -85,6 +85,32 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_12_201517) do
     t.index ["created_at"], name: "index_ai_conversations_on_created_at"
     t.index ["session_type"], name: "index_ai_conversations_on_session_type"
     t.index ["user_id"], name: "index_ai_conversations_on_user_id"
+  end
+
+  create_table "ai_generated_contents", force: :cascade do |t|
+    t.string "topic", null: false
+    t.string "brand_voice", default: "professional"
+    t.string "platform", null: false
+    t.string "content_type", default: "caption"
+    t.text "caption"
+    t.text "blog_post"
+    t.text "ad_copy"
+    t.text "hashtags"
+    t.text "thread_story"
+    t.text "email_marketing"
+    t.text "additional_context"
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "custom_system_prompt"
+    t.string "output_format", default: "short_form"
+    t.boolean "is_edited", default: false
+    t.index ["content_type"], name: "index_ai_generated_contents_on_content_type"
+    t.index ["is_edited"], name: "index_ai_generated_contents_on_is_edited"
+    t.index ["output_format"], name: "index_ai_generated_contents_on_output_format"
+    t.index ["platform"], name: "index_ai_generated_contents_on_platform"
+    t.index ["user_id", "created_at"], name: "index_ai_generated_contents_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_ai_generated_contents_on_user_id"
   end
 
   create_table "ai_messages", force: :cascade do |t|
@@ -686,6 +712,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_12_201517) do
     t.string "buffer_update_id"
     t.string "postforme_post_id"
     t.text "internal_note"
+    t.text "error_message"
     t.index ["content_id"], name: "index_scheduled_posts_on_content_id"
     t.index ["social_account_id"], name: "index_scheduled_posts_on_social_account_id"
   end
@@ -980,6 +1007,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_12_201517) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "admin_oplogs", "administrators"
+  add_foreign_key "ai_generated_contents", "users"
   add_foreign_key "ai_task_results", "users"
   add_foreign_key "auto_response_triggers", "users"
   add_foreign_key "auto_responses", "auto_response_triggers"

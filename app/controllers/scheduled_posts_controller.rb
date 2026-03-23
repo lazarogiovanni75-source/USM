@@ -49,6 +49,9 @@ class ScheduledPostsController < ApplicationController
         @scheduled_post.update!(scheduled_at: optimal_time)
       end
       
+      # Trigger automation for scheduled post
+      trigger_automation('post_scheduled', @scheduled_post)
+      
       redirect_to scheduled_post_path(@scheduled_post), notice: 'Post was successfully scheduled.'
     else
       render :new, status: :unprocessable_entity
@@ -67,6 +70,7 @@ class ScheduledPostsController < ApplicationController
   # DELETE /scheduled_posts/1
   def destroy
     @scheduled_post.destroy
+    trigger_automation('post_cancelled', @scheduled_post)
     redirect_to scheduled_posts_url, notice: 'Scheduled post was successfully deleted.'
   end
 
@@ -286,5 +290,13 @@ class ScheduledPostsController < ApplicationController
 
     def scheduled_post_params
       params.require(:scheduled_post).permit(:content_id, :social_account_id, :scheduled_at, :status, :posted_at)
+    end
+
+    def trigger_automation(event_type, post)
+      return unless current_user
+      service = AutomationRulesService.new(current_user)
+      service.execute_rules(event_type, { post: post, user: current_user })
+    rescue => e
+      Rails.logger.error "[Automation] Error: #{e.message}"
     end
 end

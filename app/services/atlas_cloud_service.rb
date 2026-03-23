@@ -1,3 +1,4 @@
+
 # frozen_string_literal: true
 
 # Atlas Cloud Service - Video Generation
@@ -158,7 +159,7 @@ class AtlasCloudService
       'Content-Type' => 'application/json',
       'Authorization' => "Bearer #{@api_key}",
       'x-api-key' => @api_key,
-      'User-Agent' => 'Vyropilot/1.0'
+      'User-Agent' => 'UltimateSocialMedia/1.0'
     }
   end
 

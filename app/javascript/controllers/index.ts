@@ -1,77 +1,117 @@
-import { Application } from "@hotwired/stimulus"
-
+import { application } from "./custom"
+import ClipboardController from "./clipboard_controller"
 import ThemeController from "./theme_controller"
 import DropdownController from "./dropdown_controller"
-import SdkIntegrationController from "./sdk_integration_controller"
-import ClipboardController from "./clipboard_controller"
-import TomSelectController from "./tom_select_controller"
-import FlatpickrController from "./flatpickr_controller"
-import SystemMonitorController from "./system_monitor_controller"
-import FlashController from "./flash_controller"
-import VoiceInteractionController from "./voice_interaction_controller"
-import VoiceCommandController from "./voice_command_controller"
-import ContentIndexController from "./content_index_controller"
-import ContentNewController from "./content_new_controller"
-import ContentCreationController from "./content_creation_controller"
-import ScheduledPostNewController from "./scheduled_post_new_controller"
-import CalendarController from "./calendar_controller"
-import PwaInstallController from "./pwa_install_controller"
-import MobileWebviewController from "./mobile_webview_controller"
-import ScheduledPostsController from "./scheduled_posts_controller"
-import VoiceFloatController from "./voice_float_controller"
-import SimpleVoiceController from "./simple_voice_controller"
-import VoiceCommandToggleController from "./voice_command_toggle_controller"
-import VideoProgressController from "./video_progress_controller"
-import AiChatController from "./ai_chat_controller"
-import AiVoiceChatController from "./ai_voice_chat_controller"
-import VoiceToggleController from "./voice_toggle_controller"
-import ResponseTestController from "./response_test_controller"
-import AiMarketingStrategyController from "./ai_marketing_strategy_controller"
-import DashboardAutopilotController from "./dashboard_autopilot_controller"
-import SocialAccountConnectionsController from "./social_account_connections_controller"
-import CampaignWorkflowController from "./campaign_workflow_controller"
-import AssemblyAiVoiceController from "./assembly_ai_voice_controller"
-import ContinuousVoiceController from "./continuous_voice_controller"
-import VoiceChatController from "./voice_chat_controller"
-import PolicySettingsController from "./policy_settings_controller"
-import StrategyTrendController from "./strategy_trend_controller"
 
-const application = Application.start()
-
+application.register("clipboard", ClipboardController)
 application.register("theme", ThemeController)
 application.register("dropdown", DropdownController)
-application.register("sdk-integration", SdkIntegrationController)
-application.register("clipboard", ClipboardController)
-application.register("tom-select", TomSelectController)
-application.register("flatpickr", FlatpickrController)
-application.register("system-monitor", SystemMonitorController)
-application.register("flash", FlashController)
-application.register("voice-interaction", VoiceInteractionController)
-application.register("voice-command", VoiceCommandController)
-application.register("content-index", ContentIndexController)
-application.register("content-new", ContentNewController)
-application.register("content-creation", ContentCreationController)
-application.register("scheduled-post-new", ScheduledPostNewController)
-application.register("calendar", CalendarController)
-application.register("pwa-install", PwaInstallController)
-application.register("mobile-webview", MobileWebviewController)
-application.register("scheduled-posts", ScheduledPostsController)
-application.register("voice-float", VoiceFloatController)
-application.register("simple-voice", SimpleVoiceController)
-application.register("voice-command-toggle", VoiceCommandToggleController)
-application.register("video-progress", VideoProgressController)
+
+// AI Content Controller
+import AiContentController from "./ai_content_controller"
+application.register("ai-content", AiContentController)
+
+// Editable Content Controller
+import EditableContentController from "./editable_content_controller"
+application.register("editable-content", EditableContentController)
+
+// Workflow Controller
+import WorkflowController from "./workflow_controller"
+application.register("workflow", WorkflowController)
+
+// Additional Controllers
+import AiChatController from "./ai_chat_controller"
 application.register("ai-chat", AiChatController)
-application.register("ai-voice-chat", AiVoiceChatController)
-application.register("voice-toggle", VoiceToggleController)
-application.register("response-test", ResponseTestController)
+
+import AiMarketingStrategyController from "./ai_marketing_strategy_controller"
 application.register("ai-marketing-strategy", AiMarketingStrategyController)
-application.register("dashboard-autopilot", DashboardAutopilotController)
-application.register("social-account-connections", SocialAccountConnectionsController)
-application.register("campaign-workflow", CampaignWorkflowController)
-application.register("continuous-voice", ContinuousVoiceController)
+
+import AiVoiceChatController from "./ai_voice_chat_controller"
+application.register("ai-voice-chat", AiVoiceChatController)
+
+import AssemblyAiVoiceController from "./assembly_ai_voice_controller"
 application.register("assembly-ai-voice", AssemblyAiVoiceController)
-application.register("voice-chat", VoiceChatController)
+
+import CalendarController from "./calendar_controller"
+application.register("calendar", CalendarController)
+
+import CampaignWorkflowController from "./campaign_workflow_controller"
+application.register("campaign-workflow", CampaignWorkflowController)
+
+import ContentCreationController from "./content_creation_controller"
+application.register("content-creation", ContentCreationController)
+
+import ContentIndexController from "./content_index_controller"
+application.register("content-index", ContentIndexController)
+
+import ContentNewController from "./content_new_controller"
+application.register("content-new", ContentNewController)
+
+import ContinuousVoiceController from "./continuous_voice_controller"
+application.register("continuous-voice", ContinuousVoiceController)
+
+import DashboardAutopilotController from "./dashboard_autopilot_controller"
+application.register("dashboard-autopilot", DashboardAutopilotController)
+
+import FlashController from "./flash_controller"
+application.register("flash", FlashController)
+
+import FlatpickrController from "./flatpickr_controller"
+application.register("flatpickr", FlatpickrController)
+
+import MobileWebviewController from "./mobile_webview_controller"
+application.register("mobile-webview", MobileWebviewController)
+
+import PolicySettingsController from "./policy_settings_controller"
 application.register("policy-settings", PolicySettingsController)
+
+import PwaInstallController from "./pwa_install_controller"
+application.register("pwa-install", PwaInstallController)
+
+import ResponseTestController from "./response_test_controller"
+application.register("response-test", ResponseTestController)
+
+import ScheduledPostNewController from "./scheduled_post_new_controller"
+application.register("scheduled-post-new", ScheduledPostNewController)
+
+import ScheduledPostsController from "./scheduled_posts_controller"
+application.register("scheduled-posts", ScheduledPostsController)
+
+import SdkIntegrationController from "./sdk_integration_controller"
+application.register("sdk-integration", SdkIntegrationController)
+
+import SimpleVoiceController from "./simple_voice_controller"
+application.register("simple-voice", SimpleVoiceController)
+
+import SocialAccountConnectionsController from "./social_account_connections_controller"
+application.register("social-account-connections", SocialAccountConnectionsController)
+
+import StrategyTrendController from "./strategy_trend_controller"
 application.register("strategy-trend", StrategyTrendController)
 
-window.Stimulus = application
+import SystemMonitorController from "./system_monitor_controller"
+application.register("system-monitor", SystemMonitorController)
+
+import TomSelectController from "./tom_select_controller"
+application.register("tom-select", TomSelectController)
+
+import VideoProgressController from "./video_progress_controller"
+application.register("video-progress", VideoProgressController)
+
+import VoiceChatController from "./voice_chat_controller"
+application.register("voice-chat", VoiceChatController)
+
+import VoiceCommandController from "./voice_command_controller"
+application.register("voice-command", VoiceCommandController)
+
+import VoiceCommandToggleController from "./voice_command_toggle_controller"
+application.register("voice-command-toggle", VoiceCommandToggleController)
+
+import VoiceFloatController from "./voice_float_controller"
+application.register("voice-float", VoiceFloatController)
+
+import VoiceInteractionController from "./voice_interaction_controller"
+application.register("voice-interaction", VoiceInteractionController)
+
+import VoiceToggleController from "./voice_toggle_controller"
+application.register("voice-toggle", VoiceToggleController)

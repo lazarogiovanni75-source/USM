@@ -66,7 +66,7 @@ class ApplicationController < ActionController::Base
 
   def check_session_cookie_availability
     # Check if session cookie is available (privacy + iframe mode detection)
-    if request.session.id.nil? || !cookies.key?('_vyropilot_app_session')
+    if request.session.id.nil? || !cookies.key?('_ultimate_social_media_session')
       @privacy_iframe_mode = true
       flash.now[:alert] = "Your browser may be in privacy + iframe mode. " \
                           "Login features may not work properly. " \

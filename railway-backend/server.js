@@ -394,7 +394,7 @@ async function startServer() {
     server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`
 ╔════════════════════════════════════════════════════════╗
-║  🚀 Vyropilot API Server                  ║
+║  🚀 Ultimate Social Media API Server                  ║
 ║  📡 Port: ${PORT}                                       ║
 ║  🌍 Environment: ${process.env.NODE_ENV || 'development'}                     ║
 ║  ✅ Status: Running                                    ║

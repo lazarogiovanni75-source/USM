@@ -1,0 +1,21 @@
+<%# Turbo Stream response for content generation %>
+<%= turbo_stream.update 'content_result' do %>
+  <%= render partial: 'result', locals: { content: @content } %>
+<% end %>
+
+<%= turbo_stream.update 'generate_button' do %>
+  <div id="generate_button" data-controller="ai-content" data-ai-content-target="generateBtn">
+    <button
+      type="submit"
+      data-action="ai-content#generate"
+      class="btn btn-secondary w-full"
+    >
+      <%= lucide_icon "sparkles", class: "w-5 h-5" %>
+      Generate New Content
+    </button>
+  </div>
+<% end %>
+
+<%= turbo_stream.update 'loading' do %>
+  <div id="loading" class="hidden"></div>
+<% end %>

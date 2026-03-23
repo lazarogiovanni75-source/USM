@@ -1,0 +1,257 @@
+<%# AI Content Generation Index Page %>
+<div class="min-h-screen bg-gradient-to-br from-base-100 to-base-200 py-8" data-controller="ai-content">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <%# Header %>
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-primary">AI Content Studio</h1>
+      <p class="mt-2 text-base-content/70">Generate captions, blog posts, ad copy, and hashtags with Anthropic Claude</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <%# Left Column - Generation Form %>
+      <div class="lg:col-span-1">
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">
+              <%= lucide_icon "sparkles", class: "w-6 h-6 text-primary" %>
+              Create Content
+            </h2>
+
+            <%= form_with url: generate_ai_content_index_path, method: :post, data: { ai_content_target: "form", turbo_frame: "content_result" } do |f| %>
+              <%# Topic Input %>
+              <div class="form-control mb-4">
+                <label class="label">
+                  <span class="label-text font-semibold">Topic *</span>
+                </label>
+                <textarea
+                  id="topic"
+                  name="topic"
+                  data-ai-content-target="topic"
+                  class="textarea textarea-bordered h-24"
+                  placeholder="Enter your topic or content idea..."
+                  required
+                ></textarea>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/50">Be specific for better results</span>
+                </label>
+              </div>
+
+              <%# Platform Selection %>
+              <div class="form-control mb-4">
+                <label class="label">
+                  <span class="label-text font-semibold">Target Platform *</span>
+                </label>
+                <select
+                  id="platform"
+                  name="platform"
+                  data-ai-content-target="platform"
+                  class="select select-bordered w-full"
+                >
+                  <option value="instagram">Instagram</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="x">X (Twitter)</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="pinterest">Pinterest</option>
+                  <option value="threads">Threads</option>
+                </select>
+              </div>
+
+              <%# Brand Voice Selection %>
+              <div class="form-control mb-4">
+                <label class="label">
+                  <span class="label-text font-semibold">Brand Voice *</span>
+                </label>
+                <select
+                  id="brand_voice"
+                  name="brand_voice"
+                  data-ai-content-target="brandVoice"
+                  class="select select-bordered w-full"
+                >
+                  <option value="professional">Professional</option>
+                  <option value="casual">Casual</option>
+                  <option value="playful">Playful</option>
+                  <option value="inspirational">Inspirational</option>
+                  <option value="authoritative">Authoritative</option>
+                  <option value="friendly">Friendly</option>
+                  <option value="witty">Witty</option>
+                  <option value="bold">Bold</option>
+                </select>
+              </div>
+
+              <%# Output Format Selection %>
+              <div class="form-control mb-4">
+                <label class="label">
+                  <span class="label-text font-semibold">Output Format</span>
+                </label>
+                <select
+                  id="output_format"
+                  name="output_format"
+                  data-ai-content-target="outputFormat"
+                  class="select select-bordered w-full"
+                >
+                  <option value="short_form">Short Form</option>
+                  <option value="long_form">Long Form</option>
+                  <option value="carousel">Carousel</option>
+                  <option value="thread">Thread</option>
+                  <option value="newsletter">Newsletter</option>
+                </select>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/50">Determines length and structure</span>
+                </label>
+              </div>
+
+              <%# Content Type Selection %>
+              <div class="form-control mb-4">
+                <label class="label">
+                  <span class="label-text font-semibold">Content Type</span>
+                </label>
+                <select
+                  id="content_type"
+                  name="content_type"
+                  data-ai-content-target="contentType"
+                  class="select select-bordered w-full"
+                >
+                  <option value="all">Generate All Types</option>
+                  <option value="caption">Caption</option>
+                  <option value="blog_post">Blog Post</option>
+                  <option value="ad_copy">Ad Copy</option>
+                  <option value="hashtag">Hashtags</option>
+                  <option value="thread_story">Thread/Story</option>
+                  <option value="email_marketing">Email Marketing</option>
+                </select>
+              </div>
+
+              <%# Custom System Prompt / Brand Persona %>
+              <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-2">
+                  <input type="checkbox" id="use_custom_prompt" data-ai-content-target="useCustomPrompt" data-action="ai-content#toggleCustomPrompt" class="checkbox checkbox-primary checkbox-sm">
+                  <span class="label-text font-semibold">Use Custom Brand Persona</span>
+                </label>
+              </div>
+
+              <div id="custom_prompt_section" data-ai-content-target="customPromptSection" class="hidden mb-4">
+                <label class="label">
+                  <span class="label-text font-semibold">Brand Persona / Custom Instructions</span>
+                </label>
+                <textarea
+                  id="custom_system_prompt"
+                  name="custom_system_prompt"
+                  data-ai-content-target="customPrompt"
+                  class="textarea textarea-bordered h-32"
+                  placeholder="E.g., 'You are a sustainable fashion brand focused on eco-friendly materials. Your tone is earthy, honest, and educational. Always mention material sourcing and environmental impact...'"
+                ></textarea>
+                <label class="label">
+                  <span class="label-text-alt text-base-content/50">Overrides brand voice with custom persona</span>
+                </label>
+              </div>
+
+              <%# Additional Context %>
+              <div class="form-control mb-6">
+                <label class="label">
+                  <span class="label-text font-semibold">Additional Context</span>
+                </label>
+                <textarea
+                  id="additional_context"
+                  name="additional_context"
+                  data-ai-content-target="additionalContext"
+                  class="textarea textarea-bordered h-20"
+                  placeholder="Target audience, key message, product details, etc."
+                ></textarea>
+              </div>
+
+              <%# Generate Button %>
+              <div id="generate_button" data-controller="ai-content" data-ai-content-target="generateBtn">
+                <button
+                  type="submit"
+                  data-action="ai-content#generate"
+                  class="btn btn-primary w-full"
+                >
+                  <%= lucide_icon "zap", class: "w-5 h-5" %>
+                  Generate Content
+                </button>
+              </div>
+
+              <%# Loading State %>
+              <div id="loading" data-ai-content-target="loading" class="hidden mt-4">
+                <div class="flex flex-col items-center justify-center py-4">
+                  <span class="loading loading-spinner loading-lg text-primary"></span>
+                  <p class="mt-2 text-base-content/70">Generating content with Claude...</p>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <%# Tips Card %>
+        <div class="card bg-base-100 shadow-xl mt-6">
+          <div class="card-body">
+            <h3 class="card-title text-lg">
+              <%= lucide_icon "lightbulb", class: "w-5 h-5 text-warning" %>
+              Tips for Great Content
+            </h3>
+            <ul class="text-sm text-base-content/70 space-y-2">
+              <li>• Be specific about your topic</li>
+              <li>• Mention your target audience</li>
+              <li>• Include key points to cover</li>
+              <li>• Add context about your brand</li>
+              <li>• Use custom persona for consistency</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <%# Right Column - Results %>
+      <div class="lg:col-span-2">
+        <div id="content_result" data-ai-content-target="result">
+          <%# Empty State %>
+          <div class="card bg-base-100 shadow-xl">
+            <div class="card-body items-center text-center py-16">
+              <%= lucide_icon "file-text", class: "w-16 h-16 text-base-content/20 mb-4" %>
+              <h3 class="text-xl font-semibold text-base-content/50">Your Generated Content</h3>
+              <p class="text-base-content/40 max-w-md">
+                Fill in the form and click "Generate Content" to create captions, blog posts, ad copy, and hashtags using AI.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%# History Section %>
+    <% if user_signed_in? && @contents.any? %>
+      <div class="mt-12">
+        <h2 class="text-2xl font-bold mb-4">Recent Generations</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% @contents.first(6).each do |content| %>
+            <div class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+              <div class="card-body p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex gap-1">
+                    <span class="badge badge-primary badge-sm"><%= content.platform %></span>
+                    <span class="badge badge-secondary badge-sm"><%= content.output_format_display %></span>
+                  </div>
+                  <span class="text-xs text-base-content/50"><%= time_ago_in_words(content.created_at) %> ago</span>
+                </div>
+                <h3 class="font-semibold text-sm truncate"><%= content.topic %></h3>
+                <p class="text-xs text-base-content/60 line-clamp-2"><%= content.caption&.first(100) %>...</p>
+                <div class="flex items-center justify-between mt-2">
+                  <% if content.is_edited? %>
+                    <span class="badge badge-warning badge-xs">
+                      <%= lucide_icon "edit-2", class: "w-3 h-3" %>
+                      Edited
+                    </span>
+                  <% else %>
+                    <span></span>
+                  <% end %>
+                  <%= link_to "View", ai_content_path(content), class: "btn btn-ghost btn-xs" %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

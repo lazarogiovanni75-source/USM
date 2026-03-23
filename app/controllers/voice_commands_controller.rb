@@ -7,20 +7,7 @@ class VoiceCommandsController < ApplicationController
   end
 
   def show
-    respond_to do |format|
-      format.html
-      format.json do
-        render json: {
-          id: @voice_command.id,
-          command_text: @voice_command.transcribed_text,
-          command_type: @voice_command.command_type,
-          status: @voice_command.status,
-          result: @voice_command.result,
-          error_message: @voice_command.error_message,
-          created_at: @voice_command.created_at
-        }
-      end
-    end
+    # HTML response is default, no respond_to needed
   end
 
   def create
@@ -29,7 +16,12 @@ class VoiceCommandsController < ApplicationController
                    params.dig(:voice_command, :command_text)
 
     if command_text.blank?
-      render json: { success: false, error: "Command text is required" }, status: :bad_request
+      # Return error via turbo_stream if requested, otherwise raise error
+      if request.format == :json || request.headers['Accept']&.include?('application/json')
+        render partial: 'error', status: :bad_request, locals: { error: "Command text is required" }
+      else
+        head :bad_request
+      end
       return
     end
 
@@ -41,34 +33,21 @@ class VoiceCommandsController < ApplicationController
 
     if @voice_command.save
       ProcessVoiceCommandJob.perform_later(@voice_command.id)
-      render json: {
-        success: true,
-        voice_command_id: @voice_command.id,
-        command_type: @voice_command.command_type,
-        status: @voice_command.status
-      }
+      # For turbo stream, render a success message
+      # For traditional requests, use flash or redirect
+      flash[:notice] = "Voice command queued for processing"
+      redirect_to voice_commands_path
     else
-      render json: {
-        success: false,
-        errors: @voice_command.errors.full_messages
-      }, status: :unprocessable_entity
+      flash[:error] = @voice_command.errors.full_messages.join(", ")
+      redirect_to voice_commands_path, status: :unprocessable_entity
     end
   end
 
   def execute
     @voice_command.update!(status: :pending, error_message: nil)
     ProcessVoiceCommandJob.perform_later(@voice_command.id)
-
-    respond_to do |format|
-      format.json do
-        render json: {
-          success: true,
-          status: "processing",
-          voice_command_id: @voice_command.id
-        }
-      end
-      format.html { redirect_to voice_commands_path, notice: "Command is being executed." }
-    end
+    flash[:notice] = "Command is being executed."
+    redirect_to voice_commands_path
   end
 
   private

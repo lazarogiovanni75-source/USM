@@ -14,7 +14,7 @@ Rails.application.routes.draw do
     cookie_hash = Rails.application.config.session_options[:cookie_options]
     # Set session cookie
     "".tap do |response|
-      Rack::Response.new([], 302, {'Location' => '/', 'Set-Cookie' => "_vyropilot_session=; path=/"}).finish
+      Rack::Response.new([], 302, {'Location' => '/', 'Set-Cookie' => "_ultimate_social_media_session=; path=/"}).finish
     end
   }
 
@@ -230,6 +230,18 @@ Rails.application.routes.draw do
     end
   end
 
+  # AI Content Generation routes
+  resources :ai_content, only: [:index, :show, :new, :create] do
+    collection do
+      post :generate
+    end
+    member do
+      post :regenerate
+      post :update_content
+    end
+  end
+  # End routes for AI content
+
   # Application routes
   resource :profile, only: [:show, :edit] do
     member do
@@ -387,8 +399,8 @@ Rails.application.routes.draw do
   # Automation Rules
   resources :automation_rules do
     member do
-      post 'toggle'
-      post 'execute_now'
+      post 'toggle_status'
+      post 'test_rule'
     end
     collection do
       get 'statistics'

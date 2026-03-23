@@ -24,9 +24,9 @@ module OmniAuth
 
     private
 
-    # Check if Vyropilot environment variables are provided
+    # Check if Ultimate Social Media environment variables are provided
     def clacky_env_provided?
-      ENV['VYROPILOT_AUTH_CLIENT_ID'].present? && ENV['VYROPILOT_AUTH_CLIENT_SECRET'].present? && ENV['VYROPILOT_AUTH_HOST'].present?
+      ENV['ULTIMATE_AUTH_CLIENT_ID'].present? && ENV['ULTIMATE_AUTH_CLIENT_SECRET'].present? && ENV['ULTIMATE_AUTH_HOST'].present?
     end
 
     # Check if it's a supported OAuth provider
@@ -37,7 +37,7 @@ module OmniAuth
 
     # Enhance OAuth provider configuration
     def enhance_oauth_provider(klass, args, user_opts = {}, &block)
-      # Apply Vyropilot Auth fallback logic
+      # Apply Ultimate Auth logic
       client_id, client_secret = args[0], args[1]
 
       # Build final options
@@ -51,30 +51,30 @@ module OmniAuth
     def build_provider_options(klass, base_opts, client_id)
       opts = base_opts.dup
 
-      # Check if using Vyropilot Auth
-      if using_vyropilot_auth?(client_id)
+      # Check if using Ultimate Auth
+      if using_ultimate_auth?(client_id)
         # Deep merge so nested hashes like client_options are merged instead of overwritten
-        opts = opts.deep_merge(clacky_auth_options(klass, client_id))
+        opts = opts.deep_merge(ultimate_auth_options(klass, client_id))
       end
 
       opts
     end
 
-    # Check if using Vyropilot Auth
-    def using_vyropilot_auth?(client_id)
-      clacky_auth_client_id = ENV['VYROPILOT_AUTH_CLIENT_ID']
-      client_id == clacky_auth_client_id
+    # Check if using Ultimate Auth
+    def using_ultimate_auth?(client_id)
+      ultimate_auth_client_id = ENV['ULTIMATE_AUTH_CLIENT_ID']
+      client_id == ultimate_auth_client_id
     end
 
-    # Get Vyropilot Auth options configuration
-    def clacky_auth_options(klass, client_id)
-      clacky_auth_host = ENV['VYROPILOT_AUTH_HOST']
+    # Get Ultimate Auth options configuration
+    def ultimate_auth_options(klass, client_id)
+      ultimate_auth_host = ENV['ULTIMATE_AUTH_HOST']
       provider_path = provider_oauth_path(klass)
 
       opts = {
         client_options: {
-          authorize_url: "#{clacky_auth_host}/oauth2/#{provider_path}/auth",
-          token_url: "#{clacky_auth_host}/oauth2/#{provider_path}/token"
+          authorize_url: "#{ultimate_auth_host}/oauth2/#{provider_path}/auth",
+          token_url: "#{ultimate_auth_host}/oauth2/#{provider_path}/token"
         }
       }
 
@@ -86,7 +86,7 @@ module OmniAuth
       opts
     end
 
-    # Get provider path in Vyropilot Auth
+    # Get provider path in Ultimate Auth
     def provider_oauth_path(klass)
       case klass.to_sym
       when :google_oauth2

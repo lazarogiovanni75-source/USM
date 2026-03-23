@@ -5,7 +5,7 @@ class ScheduledPost < ApplicationRecord
   has_many :performance_metrics, dependent: :destroy
   has_one :postforme_analytic, dependent: :destroy
 
-  delegate :platform, to: :social_account, allow_nil: true
+  delegate :platform, :platform_username, to: :social_account, allow_nil: true
 
   after_create :trigger_make_webhook
 

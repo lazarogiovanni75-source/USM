@@ -1,0 +1,271 @@
+<%# Turbo Stream Result Partial with Editable Content Cards %>
+<div class="space-y-6">
+    <%# Metadata Header %>
+    <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/60">
+      <span class="badge badge-primary">
+        <%= lucide_icon "tv", class: "w-3 h-3 mr-1" %>
+        <%= content.platform_display %>
+      </span>
+      <span class="badge badge-secondary">
+        <%= lucide_icon "mic", class: "w-3 h-3 mr-1" %>
+        <%= content.brand_voice_display %>
+      </span>
+      <span class="badge badge-accent">
+        <%= lucide_icon "layout", class: "w-3 h-3 mr-1" %>
+        <%= content.output_format_display %>
+      </span>
+      <span class="badge badge-outline">
+        <%= lucide_icon "hash", class: "w-3 h-3 mr-1" %>
+        <%= content.topic %>
+      </span>
+    </div>
+
+    <%# Caption Card %>
+    <% if content.caption.present? %>
+      <div class="card bg-base-100 shadow-xl" data-controller="clipboard editable-content" data-editable-content-url-value="<%= update_content_ai_content_path(content, content_field: 'caption') %>" data-editable-content-id-value="<%= content.id %>">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title text-lg">
+              <span class="w-3 h-3 rounded-full bg-primary mr-2"></span>
+              Caption
+            </h2>
+            <div class="flex gap-1" data-controller="clipboard">
+              <input type="hidden" data-clipboard-target="source" value="<%= content.caption %>">
+              <button data-action="click->clipboard#copy" class="btn btn-ghost btn-xs tooltip" data-tip="Copy">
+                <%= lucide_icon "copy", class: "w-4 h-4" %>
+              </button>
+              <button data-action="editable-content#edit" class="btn btn-ghost btn-xs tooltip" data-tip="Edit">
+                <%= lucide_icon "pencil", class: "w-4 h-4" %>
+              </button>
+            </div>
+          </div>
+          <div id="caption_display" class="prose prose-sm max-w-none">
+            <div data-editable-content-target="display"><%= simple_format(content.caption) %></div>
+          </div>
+          <div id="caption_edit" class="hidden">
+            <textarea
+              data-editable-content-target="editor"
+              class="textarea textarea-bordered w-full h-32"
+              placeholder="Edit your caption..."
+            ><%= content.caption %></textarea>
+            <div class="flex justify-end gap-2 mt-2">
+              <button data-action="editable-content#cancel" class="btn btn-ghost btn-sm">Cancel</button>
+              <button data-action="editable-content#save" class="btn btn-primary btn-sm">
+                <%= lucide_icon "save", class: "w-4 h-4 mr-1" %>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Hashtags Card %>
+    <% if content.hashtags.present? %>
+      <div class="card bg-base-100 shadow-xl" data-controller="clipboard editable-content" data-editable-content-url-value="<%= update_content_ai_content_path(content, content_field: 'hashtags') %>" data-editable-content-id-value="<%= content.id %>">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title text-lg">
+              <span class="w-3 h-3 rounded-full bg-secondary mr-2"></span>
+              Hashtags
+            </h2>
+            <div class="flex gap-1" data-controller="clipboard">
+              <input type="hidden" data-clipboard-target="source" value="<%= content.hashtags %>">
+              <button data-action="click->clipboard#copy" class="btn btn-ghost btn-xs tooltip" data-tip="Copy">
+                <%= lucide_icon "copy", class: "w-4 h-4" %>
+              </button>
+              <button data-action="editable-content#edit" class="btn btn-ghost btn-xs tooltip" data-tip="Edit">
+                <%= lucide_icon "pencil", class: "w-4 h-4" %>
+              </button>
+            </div>
+          </div>
+          <div id="hashtags_display" class="prose prose-sm max-w-none">
+            <div data-editable-content-target="display"><%= simple_format(content.hashtags) %></div>
+          </div>
+          <div id="hashtags_edit" class="hidden">
+            <textarea
+              data-editable-content-target="editor"
+              class="textarea textarea-bordered w-full h-32"
+              placeholder="Edit your hashtags..."
+            ><%= content.hashtags %></textarea>
+            <div class="flex justify-end gap-2 mt-2">
+              <button data-action="editable-content#cancel" class="btn btn-ghost btn-sm">Cancel</button>
+              <button data-action="editable-content#save" class="btn btn-primary btn-sm">
+                <%= lucide_icon "save", class: "w-4 h-4 mr-1" %>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Blog Post Card %>
+    <% if content.blog_post.present? %>
+      <div class="card bg-base-100 shadow-xl lg:col-span-2" data-controller="clipboard editable-content" data-editable-content-url-value="<%= update_content_ai_content_path(content, content_field: 'blog_post') %>" data-editable-content-id-value="<%= content.id %>">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title text-lg">
+              <span class="w-3 h-3 rounded-full bg-accent mr-2"></span>
+              Blog Post
+            </h2>
+            <div class="flex gap-1" data-controller="clipboard">
+              <input type="hidden" data-clipboard-target="source" value="<%= content.blog_post %>">
+              <button data-action="click->clipboard#copy" class="btn btn-ghost btn-xs tooltip" data-tip="Copy">
+                <%= lucide_icon "copy", class: "w-4 h-4" %>
+              </button>
+              <button data-action="editable-content#edit" class="btn btn-ghost btn-xs tooltip" data-tip="Edit">
+                <%= lucide_icon "pencil", class: "w-4 h-4" %>
+              </button>
+            </div>
+          </div>
+          <div id="blog_post_display" class="prose prose-sm max-w-none max-h-80 overflow-y-auto">
+            <div data-editable-content-target="display"><%= simple_format(content.blog_post) %></div>
+          </div>
+          <div id="blog_post_edit" class="hidden">
+            <textarea
+              data-editable-content-target="editor"
+              class="textarea textarea-bordered w-full h-48"
+              placeholder="Edit your blog post..."
+            ><%= content.blog_post %></textarea>
+            <div class="flex justify-end gap-2 mt-2">
+              <button data-action="editable-content#cancel" class="btn btn-ghost btn-sm">Cancel</button>
+              <button data-action="editable-content#save" class="btn btn-primary btn-sm">
+                <%= lucide_icon "save", class: "w-4 h-4 mr-1" %>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Ad Copy Card %>
+    <% if content.ad_copy.present? %>
+      <div class="card bg-base-100 shadow-xl lg:col-span-2" data-controller="clipboard editable-content" data-editable-content-url-value="<%= update_content_ai_content_path(content, content_field: 'ad_copy') %>" data-editable-content-id-value="<%= content.id %>">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title text-lg">
+              <span class="w-3 h-3 rounded-full bg-warning mr-2"></span>
+              Ad Copy
+            </h2>
+            <div class="flex gap-1" data-controller="clipboard">
+              <input type="hidden" data-clipboard-target="source" value="<%= content.ad_copy %>">
+              <button data-action="click->clipboard#copy" class="btn btn-ghost btn-xs tooltip" data-tip="Copy">
+                <%= lucide_icon "copy", class: "w-4 h-4" %>
+              </button>
+              <button data-action="editable-content#edit" class="btn btn-ghost btn-xs tooltip" data-tip="Edit">
+                <%= lucide_icon "pencil", class: "w-4 h-4" %>
+              </button>
+            </div>
+          </div>
+          <div id="ad_copy_display" class="prose prose-sm max-w-none max-h-80 overflow-y-auto">
+            <div data-editable-content-target="display"><%= simple_format(content.ad_copy) %></div>
+          </div>
+          <div id="ad_copy_edit" class="hidden">
+            <textarea
+              data-editable-content-target="editor"
+              class="textarea textarea-bordered w-full h-48"
+              placeholder="Edit your ad copy..."
+            ><%= content.ad_copy %></textarea>
+            <div class="flex justify-end gap-2 mt-2">
+              <button data-action="editable-content#cancel" class="btn btn-ghost btn-sm">Cancel</button>
+              <button data-action="editable-content#save" class="btn btn-primary btn-sm">
+                <%= lucide_icon "save", class: "w-4 h-4 mr-1" %>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Thread Story Card %>
+    <% if content.thread_story.present? %>
+      <div class="card bg-base-100 shadow-xl lg:col-span-2" data-controller="clipboard editable-content" data-editable-content-url-value="<%= update_content_ai_content_path(content, content_field: 'thread_story') %>" data-editable-content-id-value="<%= content.id %>">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title text-lg">
+              <span class="w-3 h-3 rounded-full bg-info mr-2"></span>
+              Thread / Story
+            </h2>
+            <div class="flex gap-1" data-controller="clipboard">
+              <input type="hidden" data-clipboard-target="source" value="<%= content.thread_story %>">
+              <button data-action="click->clipboard#copy" class="btn btn-ghost btn-xs tooltip" data-tip="Copy">
+                <%= lucide_icon "copy", class: "w-4 h-4" %>
+              </button>
+              <button data-action="editable-content#edit" class="btn btn-ghost btn-xs tooltip" data-tip="Edit">
+                <%= lucide_icon "pencil", class: "w-4 h-4" %>
+              </button>
+            </div>
+          </div>
+          <div id="thread_story_display" class="prose prose-sm max-w-none max-h-80 overflow-y-auto">
+            <div data-editable-content-target="display"><%= simple_format(content.thread_story) %></div>
+          </div>
+          <div id="thread_story_edit" class="hidden">
+            <textarea
+              data-editable-content-target="editor"
+              class="textarea textarea-bordered w-full h-48"
+              placeholder="Edit your thread/story..."
+            ><%= content.thread_story %></textarea>
+            <div class="flex justify-end gap-2 mt-2">
+              <button data-action="editable-content#cancel" class="btn btn-ghost btn-sm">Cancel</button>
+              <button data-action="editable-content#save" class="btn btn-primary btn-sm">
+                <%= lucide_icon "save", class: "w-4 h-4 mr-1" %>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Email Marketing Card %>
+    <% if content.email_marketing.present? %>
+      <div class="card bg-base-100 shadow-xl lg:col-span-2" data-controller="clipboard editable-content" data-editable-content-url-value="<%= update_content_ai_content_path(content, content_field: 'email_marketing') %>" data-editable-content-id-value="<%= content.id %>">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title text-lg">
+              <span class="w-3 h-3 rounded-full bg-success mr-2"></span>
+              Email Marketing
+            </h2>
+            <div class="flex gap-1" data-controller="clipboard">
+              <input type="hidden" data-clipboard-target="source" value="<%= content.email_marketing %>">
+              <button data-action="click->clipboard#copy" class="btn btn-ghost btn-xs tooltip" data-tip="Copy">
+                <%= lucide_icon "copy", class: "w-4 h-4" %>
+              </button>
+              <button data-action="editable-content#edit" class="btn btn-ghost btn-xs tooltip" data-tip="Edit">
+                <%= lucide_icon "pencil", class: "w-4 h-4" %>
+              </button>
+            </div>
+          </div>
+          <div id="email_marketing_display" class="prose prose-sm max-w-none max-h-80 overflow-y-auto">
+            <div data-editable-content-target="display"><%= simple_format(content.email_marketing) %></div>
+          </div>
+          <div id="email_marketing_edit" class="hidden">
+            <textarea
+              data-editable-content-target="editor"
+              class="textarea textarea-bordered w-full h-48"
+              placeholder="Edit your email marketing content..."
+            ><%= content.email_marketing %></textarea>
+            <div class="flex justify-end gap-2 mt-2">
+              <button data-action="editable-content#cancel" class="btn btn-ghost btn-sm">Cancel</button>
+              <button data-action="editable-content#save" class="btn btn-primary btn-sm">
+                <%= lucide_icon "save", class: "w-4 h-4 mr-1" %>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%# View Full Button %>
+  <div class="mt-6 flex justify-center">
+    <%= link_to ai_content_path(content), class: "btn btn-outline btn-primary" do %>
+      <%= lucide_icon "external-link", class: "w-4 h-4" %>
+      View Full Content & Edit
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,231 @@
+<% content_for :title, @rule.name %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+  <div class="container-xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center gap-4 mb-4">
+        <%= link_to automation_rules_path, class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors" do %>
+          <%= lucide_icon "arrow-left", class: "w-5 h-5 text-primary" %>
+        <% end %>
+        <div class="flex-1">
+          <div class="flex items-center gap-3">
+            <h1 class="text-3xl font-bold text-primary"><%= @rule.name %></h1>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <%= @rule.is_active? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' %>">
+              <div class="w-2 h-2 rounded-full mr-2 <%= @rule.is_active? ? 'bg-green-400' : 'bg-gray-400' %>"></div>
+              <%= @rule.is_active? ? 'Active' : 'Inactive' %>
+            </span>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <%= button_to toggle_status_automation_rule_path(@rule), method: :post, 
+              class: "btn-secondary flex items-center gap-2" do %>
+            <%= lucide_icon @rule.is_active? ? 'pause' : 'play', class: "w-4 h-4" %>
+            <%= @rule.is_active? ? 'Pause' : 'Activate' %>
+          <% end %>
+          <%= link_to edit_automation_rule_path(@rule), class: "btn-secondary flex items-center gap-2" do %>
+            <%= lucide_icon "edit-2", class: "w-4 h-4" %>
+            Edit
+          <% end %>
+          <%= button_to @rule, method: :delete, data: { confirm: "Are you sure?" }, 
+              class: "btn-danger flex items-center gap-2" do %>
+            <%= lucide_icon "trash-2", class: "w-4 h-4" %>
+            Delete
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <%= lucide_icon "zap", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Total Executions</p>
+            <p class="text-2xl font-bold text-primary"><%= @rule.rule_executions.count %></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+            <%= lucide_icon "check-circle", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Successful</p>
+            <p class="text-2xl font-bold text-primary"><%= @rule.rule_executions.where(status: 'executed').count %></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+            <%= lucide_icon "x-circle", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Failed</p>
+            <p class="text-2xl font-bold text-primary"><%= @rule.rule_executions.where(status: 'failed').count %></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+            <%= lucide_icon "clock", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Last Run</p>
+            <p class="text-lg font-bold text-primary"><%= @rule.rule_executions.last&.created_at ? time_ago_in_words(@rule.rule_executions.last.created_at) + ' ago' : 'Never' %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Rule Details -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Configuration -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-semibold text-primary mb-4">Configuration</h3>
+          <dl class="grid grid-cols-2 gap-4">
+            <div>
+              <dt class="text-sm text-muted">Trigger Type</dt>
+              <dd class="text-lg font-medium text-primary"><%= @rule.trigger_type&.gsub('_', ' ')&.titleize || 'Not set' %></dd>
+            </div>
+            <div>
+              <dt class="text-sm text-muted">Action Type</dt>
+              <dd class="text-lg font-medium text-primary"><%= @rule.action_type&.gsub('_', ' ')&.titleize || 'Not set' %></dd>
+            </div>
+            <div>
+              <dt class="text-sm text-muted">Status</dt>
+              <dd class="text-lg font-medium <%= @rule.is_active? ? 'text-green-600' : 'text-gray-600' %>"><%= @rule.is_active? ? 'Active' : 'Inactive' %></dd>
+            </div>
+            <div>
+              <dt class="text-sm text-muted">Created</dt>
+              <dd class="text-lg font-medium text-primary"><%= @rule.created_at.strftime('%B %d, %Y') %></dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Conditions & Actions -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-semibold text-primary mb-4">Conditions & Actions</h3>
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <h4 class="text-sm font-medium text-muted mb-2">Conditions</h4>
+              <% if @rule.conditions.present? && @rule.conditions.any? %>
+                <ul class="space-y-2">
+                  <% @rule.conditions.each do |condition| %>
+                    <li class="p-3 bg-surface-elevated rounded-lg">
+                      <code class="text-sm text-primary"><%= condition[:field] %> <%= condition[:operator] %> <%= condition[:value] %></code>
+                    </li>
+                  <% end %>
+                </ul>
+              <% else %>
+                <p class="text-sm text-muted">No conditions - always runs</p>
+              <% end %>
+            </div>
+            <div>
+              <h4 class="text-sm font-medium text-muted mb-2">Actions</h4>
+              <% if @rule.actions.present? && @rule.actions.any? %>
+                <ul class="space-y-2">
+                  <% @rule.actions.each do |key, value| %>
+                    <li class="p-3 bg-surface-elevated rounded-lg">
+                      <code class="text-sm text-primary"><%= key %>: <%= value %></code>
+                    </li>
+                  <% end %>
+                </ul>
+              <% else %>
+                <p class="text-sm text-muted">No custom actions</p>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Executions -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-semibold text-primary mb-4">Recent Executions</h3>
+          <% if @executions.any? %>
+            <div class="space-y-3">
+              <% @executions.each do |execution| %>
+                <div class="flex items-center justify-between p-4 bg-surface-elevated rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center <%= execution.status == 'executed' ? 'bg-green-100' : 'bg-red-100' %>">
+                      <%= lucide_icon execution.status == 'executed' ? 'check' : 'x', class: "w-5 h-5 #{execution.status == 'executed' ? 'text-green-600' : 'text-red-600'}" %>
+                    </div>
+                    <div>
+                      <p class="font-medium text-primary"><%= execution.status.titleize %></p>
+                      <p class="text-sm text-muted"><%= execution.created_at.strftime('%B %d at %I:%M %p') %></p>
+                    </div>
+                  </div>
+                  <% if execution.execution_details.present? %>
+                    <span class="text-sm text-muted"><%= execution.execution_details[:action] || execution.execution_details[:error] %></span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-8">
+              <%= lucide_icon "zap", class: "w-12 h-12 text-muted mx-auto mb-3" %>
+              <p class="text-muted">No executions yet</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-semibold text-primary mb-4">Quick Actions</h3>
+          <div class="space-y-3">
+            <%= button_to test_rule_automation_rule_path(@rule), method: :post, 
+                class: "btn-secondary w-full justify-start" do %>
+              <%= lucide_icon "play", class: "w-4 h-4 mr-2" %>
+              Test Rule
+            <% end %>
+            <%= button_to toggle_status_automation_rule_path(@rule), method: :post, 
+                class: "btn-secondary w-full justify-start" do %>
+              <%= lucide_icon @rule.is_active? ? 'pause' : 'play', class: "w-4 h-4 mr-2" %>
+              <%= @rule.is_active? ? 'Pause Rule' : 'Activate Rule' %>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-semibold text-primary mb-4">Statistics</h3>
+          <div class="space-y-4">
+            <div class="flex justify-between">
+              <span class="text-muted">Success Rate</span>
+              <span class="font-medium text-primary">
+                <% total = @rule.rule_executions.count %>
+                <% successful = @rule.rule_executions.where(status: 'executed').count %>
+                <%= total > 0 ? ((successful.to_f / total) * 100).round(1) : 0 %>%
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted">Total Executions</span>
+              <span class="font-medium text-primary"><%= @rule.rule_executions.count %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted">First Execution</span>
+              <span class="font-medium text-primary">
+                <%= @rule.rule_executions.order(:created_at).first&.created_at ? @rule.rule_executions.order(:created_at).first.created_at.strftime('%b %d') : 'Never' %>
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted">Last Execution</span>
+              <span class="font-medium text-primary">
+                <%= @rule.rule_executions.last&.created_at ? time_ago_in_words(@rule.rule_executions.last.created_at) + ' ago' : 'Never' %>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

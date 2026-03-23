@@ -1,0 +1,9 @@
+<%# Turbo Stream response for content regeneration %>
+<%= turbo_stream.update "content_#{content_type}" do %>
+  <%= render partial: 'regenerate_result', locals: { content: content, content_type: content_type } %>
+<% end %>
+
+<% flash.clear %>
+<%= turbo_stream.replace 'flash_messages' do %>
+  <div id="flash_messages"></div>
+<% end %>
