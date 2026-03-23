@@ -155,6 +155,153 @@ class CalendarController < ApplicationController
     redirect_to calendar_path, alert: "Optimization failed: #{e.message}"
   end
 
+  # Edit scheduled post
+  def edit_post
+    @post = current_user.scheduled_posts.find(params[:id])
+    
+    if request.format turbo_stream?
+      render 'edit_post', formats: :turbo_stream
+    end
+  end
+
+  # Update scheduled post
+  def update_post
+    @post = current_user.scheduled_posts.find(params[:id])
+    
+    unless @post.can_edit?
+      redirect_to calendar_path, alert: 'This post can no longer be edited'
+      return
+    end
+    
+    if @post.update(post_params)
+      if request.format turbo_stream?
+        render 'update_post', formats: :turbo_stream
+      else
+        redirect_to calendar_path, notice: 'Post updated successfully'
+      end
+    else
+      if request.format turbo_stream?
+        render 'edit_post_error', formats: :turbo_stream, status: :unprocessable_entity
+      else
+        redirect_to calendar_path, alert: @post.errors.full_messages.join(', ')
+      end
+    end
+  end
+
+  # Cancel scheduled post
+  def cancel_post
+    @post = current_user.scheduled_posts.find(params[:id])
+    
+    unless @post.can_cancel?
+      redirect_to calendar_path, alert: 'This post cannot be cancelled'
+      return
+    end
+    
+    @post.update!(status: :cancelled)
+    
+    if request.format turbo_stream?
+      render 'cancel_post', formats: :turbo_stream
+    else
+      redirect_to calendar_path, notice: 'Post cancelled successfully'
+    end
+  rescue => e
+    redirect_to calendar_path, alert: "Failed to cancel post: #{e.message}"
+  end
+
+  # Retry failed post
+  def retry_post
+    @post = current_user.scheduled_posts.find(params[:id])
+    
+    unless @post.can_retry?
+      redirect_to calendar_path, alert: 'This post cannot be retried'
+      return
+    end
+    
+    @post.update!(status: :scheduled, error_message: nil)
+    
+    # Re-enqueue for publishing
+    SocialMediaAgentWorker.perform_async({ post_id: @post.id })
+    
+    if request.format turbo_stream?
+      render 'retry_post', formats: :turbo_stream
+    else
+      redirect_to calendar_path, notice: 'Post has been requeued for publishing'
+    end
+  rescue => e
+    redirect_to calendar_path, alert: "Failed to retry post: #{e.message}"
+  end
+
+  # Publish post immediately
+  def publish_now
+    @post = current_user.scheduled_posts.find(params[:id])
+    
+    if @post.status == :published
+      redirect_to calendar_path, alert: 'This post has already been published'
+      return
+    end
+    
+    unless @post.has_assets?
+      redirect_to calendar_path, alert: 'This post needs assets before it can be published'
+      return
+    end
+    
+    # Queue for immediate publishing
+    SocialMediaAgentWorker.perform_async({ post_id: @post.id })
+    
+    if request.format turbo_stream?
+      render 'publish_now', formats: :turbo_stream
+    else
+      redirect_to calendar_path, notice: 'Post is being published...'
+    end
+  rescue => e
+    redirect_to calendar_path, alert: "Failed to publish post: #{e.message}"
+  end
+
+  # Get post details for modal - redirect to show_post
+  def post_details
+    @post = current_user.scheduled_posts.includes(:content, :social_account).find(params[:id])
+    
+    render 'calendar/show_post'
+  end
+
+  # Show post details page
+  def show_post
+    @post = current_user.scheduled_posts.includes(:content, :social_account).find(params[:id])
+    
+    render 'calendar/show_post'
+  end
+
+  # Bulk cancel posts
+  def bulk_cancel
+    post_ids = params[:post_ids]
+    
+    return redirect_to(calendar_path, alert: 'No posts selected') unless post_ids.present?
+    
+    posts = current_user.scheduled_posts.where(id: post_ids).where(status: %w[draft scheduled])
+    count = posts.update_all(status: :cancelled)
+    
+    redirect_to calendar_path, notice: "#{count} posts cancelled successfully"
+  rescue => e
+    redirect_to calendar_path, alert: "Failed to cancel posts: #{e.message}"
+  end
+
+  # Bulk reschedule posts
+  def bulk_reschedule
+    post_ids = params[:post_ids]
+    new_date = Date.parse(params[:new_date])
+    new_time = Time.parse(params[:new_time])
+    
+    return redirect_to(calendar_path, alert: 'No posts selected') unless post_ids.present?
+    
+    posts = current_user.scheduled_posts.where(id: post_ids).where(status: %w[draft scheduled])
+    new_datetime = new_date.to_datetime.change(hour: new_time.hour, min: new_time.min)
+    count = posts.update_all(scheduled_at: new_datetime)
+    
+    redirect_to calendar_path, notice: "#{count} posts rescheduled successfully"
+  rescue => e
+    redirect_to calendar_path, alert: "Failed to reschedule posts: #{e.message}"
+  end
+
   def suggestions
     # Get AI-powered content suggestions for the calendar
     @suggestions = CalendarService.generate_weekly_content_ideas(current_user, Date.current.beginning_of_week)
@@ -187,6 +334,19 @@ class CalendarController < ApplicationController
   def set_current_month
     @current_month = params[:month] || Date.current.month
     @current_year = params[:year] || Date.current.year
+  end
+
+  def post_params
+    params.require(:scheduled_post).permit(
+      :scheduled_at,
+      :content_id,
+      :social_account_id,
+      :status,
+      :image_url,
+      :video_url,
+      :asset_url,
+      target_platforms: []
+    )
   end
 
   def generate_available_slots(date)

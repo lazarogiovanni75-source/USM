@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_24_000000) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_24_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -713,6 +713,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_24_000000) do
     t.string "postforme_post_id"
     t.text "internal_note"
     t.text "error_message"
+    t.string "image_url"
+    t.string "video_url"
+    t.string "asset_url"
+    t.jsonb "target_platforms"
     t.index ["content_id"], name: "index_scheduled_posts_on_content_id"
     t.index ["social_account_id"], name: "index_scheduled_posts_on_social_account_id"
   end

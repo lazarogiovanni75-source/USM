@@ -307,6 +307,17 @@ Rails.application.routes.draw do
       post 'reschedule'
       get 'suggestions'
       post 'bulk_schedule'
+      post 'bulk_cancel'
+      post 'bulk_reschedule'
+      get 'post_details'
+      get 'show_post'
+    end
+    member do
+      get 'edit_post'
+      patch 'update_post'
+      post 'cancel_post'
+      post 'retry_post'
+      post 'publish_now'
     end
   end
   

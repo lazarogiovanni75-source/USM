@@ -45,3 +45,12 @@ execute_due_ai_tasks:
   queue: "default"
   description: "Execute scheduled AI tasks that are due"
   args:
+
+# Agentic Loop - Every 5 minutes (Autonomous AI posting)
+agentic_loop:
+  cron: "*/5 * * * *"  # Every 5 minutes
+  class: "AgenticLoopJob"
+  queue: "default"
+  description: "Run autonomous AI agent for scheduled social media posts"
+  args:
+    - 0.50  # max_budget_usd per run

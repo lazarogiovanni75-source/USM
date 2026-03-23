@@ -18,6 +18,10 @@ class ContentCreationController < ApplicationController
       .where.not(media_url: nil)
       .order(updated_at: :desc)
       .first
+
+    # Available models for UI
+    @image_models = AtlasCloudImageService.available_models
+    @video_models = AtlasCloudService.available_video_models
   end
 
   def generate_ideas
@@ -64,19 +68,20 @@ class ContentCreationController < ApplicationController
 
   def generate_image
     prompt = params[:prompt]
-    size = params[:size] || '1024x1024'
+    size = params[:size] || '1:1'
+    model = params[:model] || 'black-forest-labs/flux-1.1-pro'
 
     begin
-      # Use unified service with primary/secondary fallback
+      # Use unified service
       result = ImageGenerationService.generate_image(
         prompt: prompt,
         size: size,
-        quality: 'high'
+        quality: 'high',
+        model: model
       )
 
       if result[:success]
         service = result[:service]
-        model = result.dig(:metadata, :model) || 'gpt-image-1.5'
         task_id = result[:task_id]
         
         # Always use polling to ensure we get the final URL
@@ -90,7 +95,8 @@ class ContentCreationController < ApplicationController
           metadata: { 
             'task_id' => task_id, 
             'service' => service, 
-            'model' => model 
+            'model' => model,
+            'aspect_ratio' => size
           }
         )
 
@@ -109,6 +115,10 @@ class ContentCreationController < ApplicationController
 
   def generate_video
     prompt = params[:prompt]
+    model = params[:model] || 'atlascloud/magi-1-24b'
+    aspect_ratio = params[:aspect_ratio] || '16:9'
+    duration = params[:duration] || '5'
+    source_image_url = params[:source_image_url]
 
     begin
       # Validate prompt
@@ -116,16 +126,27 @@ class ContentCreationController < ApplicationController
         raise ArgumentError, 'Please provide a more detailed prompt (at least 10 characters)'
       end
 
-      # Use unified service with primary/secondary fallback
-      result = VideoGenerationService.generate_video(
-        prompt: prompt,
-        duration: '10',
-        aspect_ratio: '16:9'
-      )
+      if source_image_url.present?
+        # Image-to-video generation
+        result = VideoGenerationService.generate_video_from_image(
+          image_url: source_image_url,
+          prompt: prompt,
+          model: model,
+          aspect_ratio: aspect_ratio,
+          duration: duration
+        )
+      else
+        # Text-to-video generation
+        result = VideoGenerationService.generate_video(
+          prompt: prompt,
+          duration: duration,
+          aspect_ratio: aspect_ratio,
+          model: model
+        )
+      end
 
       if result[:success]
         service = result[:service]
-        model = result.dig(:metadata, :model) || 'seedance-v1-pro'
         
         # Save as a draft with task_id for polling
         draft = current_user.draft_contents.create!(
@@ -139,8 +160,9 @@ class ContentCreationController < ApplicationController
             'task_id' => result[:task_id], 
             'service' => service, 
             'model' => model,
-            'duration' => result.dig(:metadata, :duration),
-            'aspect_ratio' => result.dig(:metadata, :aspect_ratio)
+            'duration' => duration,
+            'aspect_ratio' => aspect_ratio,
+            'source_image_url' => source_image_url
           }
         )
 
@@ -156,12 +178,6 @@ class ContentCreationController < ApplicationController
     rescue VideoGenerationService::ServiceUnavailableError => e
       Rails.logger.error "[ContentCreation] Video service unavailable: #{e.message}"
       redirect_to content_creation_index_path, alert: e.message
-    rescue AtlasCloudService::AuthenticationError => e
-      Rails.logger.error "[ContentCreation] Atlas Cloud Authentication Error: #{e.message}"
-      redirect_to content_creation_index_path, alert: 'Video generation authentication failed. Please check your API configuration.'
-    rescue AtlasCloudService::Error => e
-      Rails.logger.error "[ContentCreation] Atlas Cloud Error: #{e.message}"
-      redirect_to content_creation_index_path, alert: "Video generation error: #{e.message}"
     rescue AtlasCloudService::AuthenticationError => e
       Rails.logger.error "[ContentCreation] Atlas Cloud Authentication Error: #{e.message}"
       redirect_to content_creation_index_path, alert: 'Video generation authentication failed. Please check your API configuration.'
@@ -200,13 +216,13 @@ class ContentCreationController < ApplicationController
       # Generate a new image based on the edit prompt
       result = ImageGenerationService.generate_image(
         prompt: combined_prompt,
-        size: '1024x1024',
+        size: draft.metadata.dig('aspect_ratio') || '1:1',
         quality: 'high'
       )
 
       if result[:success]
         service = result[:service]
-        model = result.dig(:metadata, :model) || 'gpt-image-1.5'
+        model = result.dig(:metadata, :model) || 'black-forest-labs/flux-1.1-pro'
         
         if result[:output_url]
           # Create a new draft with the edited image
@@ -248,238 +264,11 @@ class ContentCreationController < ApplicationController
           redirect_to draft_path(new_draft), notice: 'Image editing started! Check back in a few moments.'
         end
       else
-        redirect_to content_creation_index_path, alert: "Failed to edit image: #{result[:error]}"
+        redirect_to content_creation_index_path, alert: "Image editing failed: #{result[:error]}"
       end
     rescue => e
       Rails.logger.error "Image Edit Error: #{e.message}"
-      redirect_to content_creation_index_path, alert: "Failed to edit image: #{e.message}"
+      redirect_to content_creation_index_path, alert: "Image editing failed: #{e.message}"
     end
-  rescue ActiveRecord::RecordNotFound
-    redirect_to content_creation_index_path, alert: 'Draft not found'
-  end
-
-  def create_draft
-    draft = current_user.draft_contents.create!(
-      title: params[:title],
-      content: params[:content],
-      content_type: params[:content_type] || 'post',
-      platform: params[:platform] || 'general',
-      status: 'draft'
-    )
-
-    # Trigger automation for draft_created
-    trigger_automation('draft_created', draft)
-
-    @draft = draft
-    flash[:notice] = 'Draft created successfully'
-    redirect_to draft_path(draft)
-  end
-
-  def update_draft
-    draft = current_user.draft_contents.find(params[:id])
-    
-    if draft.update(
-      title: params[:title],
-      content: params[:content],
-      content_type: params[:content_type],
-      platform: params[:platform],
-      status: params[:status] || 'draft'
-    )
-      @draft = draft
-      flash[:notice] = 'Draft updated successfully'
-      redirect_to draft_path(draft)
-    else
-      flash[:alert] = draft.errors.full_messages.join(', ')
-      redirect_to edit_draft_path(draft)
-    end
-  end
-
-  def generate_content
-    topic = params[:topic]
-    content_type = params[:content_type] || 'post'
-    platform = params[:platform] || 'general'
-    template_id = params[:template_id]
-
-    # Use template if provided
-    if template_id.present?
-      template = ContentTemplate.find(template_id)
-      prompt = "Generate content using this template: #{template.content}. Topic: #{topic}. Platform: #{platform}."
-    else
-      prompt = "Create a #{content_type} for #{platform} about: #{topic}. Be creative, engaging, and platform-appropriate."
-    end
-
-    # Try LLM service first (OpenAI or Gemini)
-    if ENV['OPENAI_API_KEY'].present? || ENV['LLM_API_KEY'].present?
-      response = call_llm_service(prompt, platform)
-
-      if response[:success] && response[:content].present?
-        # Save as draft with AI-generated content
-        draft = current_user.draft_contents.create!(
-          title: "#{content_type.titleize} - #{topic}",
-          content: response[:content],
-          content_type: content_type,
-          platform: platform,
-          status: 'draft'
-        )
-
-        redirect_to draft_path(draft), notice: 'Content generated successfully'
-      else
-        # Fallback to sample content
-        generate_fallback_content(topic, content_type, platform)
-      end
-    else
-      # No LLM configured, use fallback
-      generate_fallback_content(topic, content_type, platform)
-    end
-  end
-
-  def publish_content
-    draft = current_user.draft_contents.find(params[:id])
-    
-    # Find or create a default campaign for the user
-    campaign = current_user.campaigns.first_or_create(
-      name: 'Default Campaign',
-      status: 'active'
-    )
-    
-    # Convert draft to published content
-    content = current_user.contents.create!(
-      campaign_id: campaign.id,
-      title: draft.title,
-      body: draft.content,
-      content_type: draft.content_type,
-      platform: draft.platform,
-      status: 'published',
-      media_urls: []
-    )
-
-    # Update draft status
-    draft.update(status: 'published')
-
-    # Trigger automation for content_published
-    trigger_automation('content_published', content)
-
-    @content = content
-    flash[:notice] = 'Content published successfully'
-    redirect_to content_path(content)
-  rescue => e
-    Rails.logger.error "Publish Error: #{e.message}"
-    redirect_to content_creation_index_path, alert: "Failed to publish: #{e.message}"
-  end
-
-  def schedule_content
-    draft = current_user.draft_contents.find(params[:id])
-    scheduled_time = params[:scheduled_at]
-    social_account_id = params[:social_account_id]
-
-    # Create scheduled post
-    scheduled_post = current_user.scheduled_posts.create!(
-      content_id: draft.content.id,
-      social_account_id: social_account_id,
-      scheduled_time: scheduled_time,
-      status: 'pending'
-    )
-
-    # Update draft status
-    draft.update(status: 'scheduled')
-
-    @scheduled_post = scheduled_post
-    flash[:notice] = 'Content scheduled successfully'
-    redirect_to scheduled_post_path(scheduled_post)
-  end
-
-  private
-
-  def generate_fallback_content(topic, content_type, platform)
-    # Generate sample content without AI backend
-    sample_content = case platform
-    when 'instagram'
-      "✨ #{topic}
-
-Here's something special for you! 💫
-
-#content #socialmedia #{topic.downcase.gsub(/\s+/, '#')}"
-    when 'twitter'
-      "🧵 #{topic}
-
-#{topic.capitalize} is changing everything. Here's what you need to know 👇
-
-#{topic.capitalize} #trending"
-    when 'linkedin'
-      "💡 Insight on #{topic}
-
-After deep analysis, here's what I found:
-
-1. #{topic.capitalize} is evolving
-2. Early adopters see 3x results
-3. The key is consistency
-
-What's your experience with #{topic}?
-
-#ProfessionalDevelopment #{topic.capitalize}"
-    else
-      "📝 #{topic}
-
-Check out this new content about #{topic}!
-
-#content #socialmedia"
-    end
-
-    draft = current_user.draft_contents.create!(
-      title: "#{content_type.titleize} - #{topic}",
-      content: sample_content,
-      content_type: content_type,
-      platform: platform,
-      status: 'draft'
-    )
-
-    redirect_to draft_path(draft), notice: 'Content generated successfully (sample)'
-  end
-
-  def call_llm_service(prompt, platform)
-    # Build context-aware prompt based on platform
-    platform_guidance = case platform
-    when 'instagram'
-      'Keep it visually engaging, use minimal hashtags (max 5), conversational tone, include call-to-action'
-    when 'twitter'
-      'Concise and punchy, max 280 characters, engaging hooks, relevant hashtags (2-3 max)'
-    when 'linkedin'
-      'Professional yet approachable, data-driven insights, thought leadership style, industry relevant hashtags'
-    when 'tiktok'
-      'Trendy, Gen Z friendly, conversational, viral-style hooks, includes trending sounds reference'
-    when 'youtube'
-      'Engaging title-style hook, description with timestamps, call-to-action for engagement'
-    else
-      'Engaging and platform-appropriate content'
-    end
-
-    enhanced_prompt = "#{prompt}
-
-Platform guidelines: #{platform_guidance}
-
-Please return only the content body without any introduction or explanation."
-
-    # Use LlmService (supports OpenAI, Gemini, DeepSeek)
-    content = LlmService.call(
-      prompt: enhanced_prompt,
-      system: "You are an expert social media content creator. Create engaging, platform-optimized content.",
-      temperature: 0.8,
-      max_tokens: 1000
-    )
-
-    if content.present? && content.is_a?(String)
-      { success: true, content: content }
-    else
-      { success: false, error: 'LLM generation failed' }
-    end
-  end
-
-  def trigger_automation(event_type, content)
-    return unless current_user
-    
-    service = AutomationRulesService.new(current_user)
-    service.execute_rules(event_type, { content: content, draft: content, user: current_user })
-  rescue => e
-    Rails.logger.error "[Automation] Error triggering #{event_type}: #{e.message}"
   end
 end

@@ -1,0 +1,18 @@
+# Sidekiq Cron Configuration
+# https://github.com/sidekiq-cron/sidekiq-cron
+
+# Social Media Agent - Check for scheduled posts every 5 minutes
+social_media_agent:
+  cron: "*/5 * * * *"
+  class: "SocialMediaAgentWorker"
+  queue: "default"
+  description: "Check for scheduled posts due to go live and publish them"
+  args: "{}"
+
+# Cleanup old jobs daily
+cleanup_jobs:
+  cron: "0 3 * * *"
+  class: "CleanupQueueLocksJob"
+  queue: "default"
+  description: "Clean up stale queue locks"
+  args: "{}"

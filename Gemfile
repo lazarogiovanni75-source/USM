@@ -25,6 +25,9 @@ gem "aws-sdk-s3", "~> 1.206"
 gem "httparty", "~> 0.21.0"
 gem "ruby-openai", "~> 8.3"
 gem "anthropic"
+gem "sidekiq", "~> 7.3"
+gem "sidekiq-cron", "~> 1.12"
+gem "redis", "~> 4.8"
 gem "csv", "~> 3.3"  # Suppress Ruby 3.4 deprecation warning
 
 group :development do

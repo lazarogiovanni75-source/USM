@@ -119,9 +119,8 @@ export default class extends Controller<HTMLElement> {
     const target = event.currentTarget as HTMLElement
     const postId = target.dataset.postId
     
-    // Simple modal or redirect for now
     if (postId) {
-      window.location.href = `/drafts/${postId}`
+      window.location.href = `/calendar/${postId}/show_post`
     }
   }
 
@@ -132,23 +131,72 @@ export default class extends Controller<HTMLElement> {
     const postId = target.dataset.postId
     
     if (postId) {
-      window.location.href = `/drafts/${postId}/edit`
+      window.location.href = `/calendar/${postId}/edit_post`
     }
+  }
+
+  cancelPost(event: Event): void {
+    event.preventDefault()
+    event.stopPropagation()
+    const target = event.currentTarget as HTMLElement
+    const postId = target.dataset.postId
+    
+    if (!postId) {
+      this.showNotification('Post ID not found', 'error')
+      return
+    }
+    
+    // Submit form using Turbo Stream pattern
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = `/calendar/${postId}/cancel_post`
+    form.style.display = 'none'
+    
+    const csrfInput = document.createElement('input')
+    csrfInput.type = 'hidden'
+    csrfInput.name = 'authenticity_token'
+    csrfInput.value = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''
+    form.appendChild(csrfInput)
+    
+    document.body.appendChild(form)
+    form.submit()
+    document.body.removeChild(form)
+  }
+
+  publishNow(event: Event): void {
+    event.preventDefault()
+    event.stopPropagation()
+    const target = event.currentTarget as HTMLElement
+    const postId = target.dataset.postId
+    
+    if (!postId) {
+      this.showNotification('Post ID not found', 'error')
+      return
+    }
+    
+    this.showNotification('Publishing post...', 'info')
+    
+    // Submit form using Turbo Stream pattern
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = `/calendar/${postId}/publish_now`
+    form.style.display = 'none'
+    
+    const csrfInput = document.createElement('input')
+    csrfInput.type = 'hidden'
+    csrfInput.name = 'authenticity_token'
+    csrfInput.value = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''
+    form.appendChild(csrfInput)
+    
+    document.body.appendChild(form)
+    form.submit()
+    document.body.removeChild(form)
   }
 
   deletePost(event: Event): void {
     event.preventDefault()
     event.stopPropagation()
     
-    // Use notification approach instead of confirm
-    this.showNotification('Are you sure you want to delete this scheduled post?', 'info')
-    // In a real implementation, this would show a custom modal
-    // For now, just proceed with the action
-    this.performDelete(event)
-  }
-
-  performDelete(event: Event): void {
-    event.preventDefault()
     const target = event.currentTarget as HTMLElement
     const postId = target.dataset.postId
     
@@ -186,7 +234,7 @@ export default class extends Controller<HTMLElement> {
     const date = target.dataset.date
     
     if (date) {
-      window.location.href = `/drafts/new?date=${date}`
+      window.location.href = `/scheduled_posts/new?scheduled_at=${date}`
     }
   }
 
@@ -197,7 +245,7 @@ export default class extends Controller<HTMLElement> {
     const hour = target.dataset.hour
     
     if (date) {
-      window.location.href = `/drafts/new?date=${date}&time=${hour}`
+      window.location.href = `/scheduled_posts/new?scheduled_at=${date}T${hour}:00`
     }
   }
 
@@ -207,9 +255,9 @@ export default class extends Controller<HTMLElement> {
     const date = target.dataset.date
     
     if (date) {
-      window.location.href = `/drafts/new?date=${date}`
+      window.location.href = `/scheduled_posts/new?scheduled_at=${date}`
     } else {
-      window.location.href = '/drafts/new'
+      window.location.href = '/scheduled_posts/new'
     }
   }
 
@@ -285,6 +333,16 @@ export default class extends Controller<HTMLElement> {
     if (modal) {
       modal.classList.add('hidden')
     }
+    
+    // Close turbo frame modal
+    const frame = document.querySelector('turbo-frame#post_modal') as HTMLFrameElement
+    if (frame) {
+      frame.innerHTML = ''
+    }
+  }
+
+  preventClose(event: Event): void {
+    event.stopPropagation()
   }
 
   // Utility Methods

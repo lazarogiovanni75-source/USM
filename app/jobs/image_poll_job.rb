@@ -5,14 +5,17 @@
 class ImagePollJob < ApplicationJob
   queue_as :default
 
-  MAX_ATTEMPTS = 120 # Poll for up to 10 minutes (120 * 5 seconds)
-  POLL_INTERVAL = 5.seconds
+  MAX_ATTEMPTS = 300 # Poll for up to 10 minutes (300 * 2 seconds)
+  POLL_INTERVAL = 2.seconds
 
   def perform(draft_id, task_id = nil, service = nil, attempt = 0)
     # Add delay for first few attempts to allow generation to start
     # In inline mode, jobs run immediately, so we need to wait for the API
     if attempt < 3
       Rails.logger.info "ImagePollJob: Waiting before poll attempt #{attempt + 1}"
+      sleep(2)
+    elsif attempt > 0
+      # Wait 2 seconds between polls as per Atlas Cloud async polling spec
       sleep(2)
     end
 

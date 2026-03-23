@@ -1,7 +1,9 @@
+
 # frozen_string_literal: true
 
 # Image Generation Service
-# Primary: Atlas Cloud/Z-Image Turbo (https://api.atlascloud.ai)
+# Primary: Atlas Cloud unified API (https://api.atlascloud.ai)
+# Uses POST /api/v1/model/generateImage
 class ImageGenerationService
   class ImageGenerationError < StandardError; end
   class ServiceUnavailableError < ImageGenerationError; end
@@ -11,11 +13,15 @@ class ImageGenerationService
   # @param prompt [String] Text prompt for image
   # @param size [String] Image size
   # @param quality [String] Image quality
+  # @param model [String] Model to use (default: black-forest-labs/flux-1.1-pro)
   # @return [Hash] Result with task_id and metadata
   #
-  def self.generate_image(prompt:, size: '1024x1024', quality: 'high')
-    # Use Atlas Cloud Z-Image Turbo
-    result = try_primary_image(prompt: prompt, size: size, quality: quality)
+  def self.generate_image(prompt:, size: '1:1', quality: 'high', model: nil)
+    # Map size to aspect_ratio format
+    aspect_ratio = map_size_to_aspect_ratio(size)
+    
+    # Use Atlas Cloud unified API
+    result = try_primary_image(prompt: prompt, aspect_ratio: aspect_ratio, model: model)
     
     # If primary succeeded with a task_id, return it (polling will handle completion)
     return result if result[:success] && result[:task_id].present?
@@ -43,56 +49,42 @@ class ImageGenerationService
     { success: false, error: "Image editing not supported. Please generate a new image instead." }
   end
 
-  def self.try_primary_image(prompt:, size:, quality:)
-    Rails.logger.info "[ImageGeneration] Trying Atlas Cloud/Z-Image Turbo"
+  def self.try_primary_image(prompt:, aspect_ratio:, model: nil)
+    Rails.logger.info "[ImageGeneration] Trying Atlas Cloud unified API"
     
     service = AtlasCloudImageService.new
     
     unless service.configured?
-      Rails.logger.warn "[ImageGeneration] Primary service not configured"
-      return { success: false, error: "Atlas Cloud not configured" }
+      Rails.logger.warn "[ImageGeneration] Atlas Cloud not configured"
+      return { success: false, error: "Atlas Cloud not configured. Please add your ATLASCLOUD_API_KEY." }
     end
 
     begin
       result = service.generate_image(
         prompt: prompt,
-        size: size,
-        quality: quality
+        model: model || 'black-forest-labs/flux-1.1-pro',
+        aspect_ratio: aspect_ratio
       )
 
-      # In sync mode, output_url may be returned immediately
       if result['task_id'].present?
-        output_url = result['output'] || result.dig('data', 'outputs')&.first
-        
-        if output_url.present?
-          Rails.logger.info "[ImageGeneration] Primary service succeeded - image ready immediately"
-          {
-            success: true,
-            task_id: result['task_id'],
-            service: 'atlas_cloud_image',
-            output_url: output_url,
-            metadata: { model: 'z-image/turbo', size: size, quality: quality }
-          }
-        else
-          # Fallback: task was started but needs polling
-          Rails.logger.info "[ImageGeneration] Primary service started task: #{result['task_id']}"
-          {
-            success: true,
-            task_id: result['task_id'],
-            service: 'atlas_cloud_image',
-            output_url: nil,
-            metadata: { model: 'z-image/turbo', size: size, quality: quality }
-          }
-        end
+        Rails.logger.info "[ImageGeneration] Primary service started task: #{result['task_id']}"
+        {
+          success: true,
+          task_id: result['task_id'],
+          service: 'atlas_cloud',
+          output_url: nil,
+          metadata: { model: model || 'black-forest-labs/flux-1.1-pro', aspect_ratio: aspect_ratio }
+        }
       else
         Rails.logger.error "[ImageGeneration] Primary service returned no task_id: #{result.inspect}"
         { success: false, error: result['error'] || 'Failed to generate image' }
       end
+    rescue AtlasCloudImageService::AuthenticationError => e
+      Rails.logger.error "[ImageGeneration] Authentication error: #{e.message}"
+      { success: false, error: "Atlas Cloud API key is invalid. Please check your configuration." }
     rescue AtlasCloudImageService::Error => e
       Rails.logger.error "[ImageGeneration] Primary service error: #{e.message}"
-      # Check if it's a credit/account issue - should trigger fallback
-      retryable = e.message.include?('credit') || e.message.include?('unavailable') || e.message.include?('insufficient') || e.message.include?('令牌')
-      { success: false, error: e.message, retry: retryable }
+      { success: false, error: e.message }
     rescue => e
       Rails.logger.error "[ImageGeneration] Primary service unexpected error: #{e.message}"
       { success: false, error: e.message }
@@ -100,60 +92,38 @@ class ImageGenerationService
   end
 
   def self.try_secondary_image(prompt:, size:, quality:)
-    Rails.logger.info "[ImageGeneration] Trying secondary service: Atlas Cloud (fallback)"
+    Rails.logger.info "[ImageGeneration] Trying secondary service (same API)"
     
-    service = AtlasCloudImageService.new
-    
-    unless service.configured?
-      Rails.logger.warn "[ImageGeneration] Secondary service not configured"
-      return { success: false, error: "Atlas Cloud not configured" }
-    end
-
-    begin
-      result = service.generate_gpt_image(
-        prompt: prompt,
-        size: size,
-        quality: quality
-      )
-
-      if result['task_id'].present? && result['output'].present?
-        Rails.logger.info "[ImageGeneration] Secondary service succeeded"
-        {
-          success: true,
-          task_id: result['task_id'],
-          service: 'atlas_cloud_image',
-          output_url: result['output'],
-          metadata: { model: 'gpt-image-1', size: size, quality: quality }
-        }
-      elsif result['task_id'].present?
-        Rails.logger.info "[ImageGeneration] Secondary service started task: #{result['task_id']}"
-        {
-          success: true,
-          task_id: result['task_id'],
-          service: 'atlas_cloud_image',
-          output_url: nil,
-          metadata: { model: 'gpt-image-1', size: size, quality: quality }
-        }
-      else
-        Rails.logger.error "[ImageGeneration] Secondary service returned no task_id"
-        { success: false, error: result['error'] || 'Failed to start generation' }
-      end
-    rescue => e
-      Rails.logger.error "[ImageGeneration] Secondary service error: #{e.message}"
-      { success: false, error: e.message }
-    end
+    # Same API, just different model
+    aspect_ratio = map_size_to_aspect_ratio(size)
+    try_primary_image(prompt: prompt, aspect_ratio: aspect_ratio, model: 'z-image/turbo')
   end
 
   def self.service_to_object(service_name)
     case service_name
-    when 'atlas_cloud_image'
-      AtlasCloudImageService.new
-    when 'atlas_cloud_image'
+    when 'atlas_cloud', 'atlas_cloud_image'
       AtlasCloudImageService.new
     when 'openai'
       OpenaiImageService.new
     else
       AtlasCloudImageService.new
+    end
+  end
+
+  def self.map_size_to_aspect_ratio(size)
+    case size
+    when '1024x1024', '1:1', 'square'
+      '1:1'
+    when '1792x1024', '16:9', 'landscape'
+      '16:9'
+    when '1024x1792', '9:16', 'portrait'
+      '9:16'
+    when '1024x1536', '3:4'
+      '3:4'
+    when '1536x1024', '4:3'
+      '4:3'
+    else
+      '1:1'
     end
   end
 end

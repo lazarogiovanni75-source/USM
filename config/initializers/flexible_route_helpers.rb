@@ -141,3 +141,14 @@ end
 Rails.application.config.to_prepare do
   ActionDispatch::Routing::UrlFor.prepend(FlexibleRouteHelpers)
 end
+
+# VYROPILOT TODO validation helper
+def check_vyropilot_todos(file_paths)
+  file_paths.each do |path|
+    next unless File.exist?(path)
+    content = File.read(path)
+    if content.include?('# TODO')
+      raise "#{path} contains unresolved TODOs"
+    end
+  end
+end

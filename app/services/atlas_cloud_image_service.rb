@@ -1,12 +1,21 @@
 # frozen_string_literal: true
 
 # Atlas Cloud Image Generation Service
-# Model: z-image/turbo
-# API Documentation: https://api.atlascloud.ai
+# Uses unified API: POST /api/v1/model/generateImage
+# API Base: https://api.atlascloud.ai
+# Authentication: Bearer token via ATLASCLOUD_API_KEY environment variable
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
-  DEFAULT_MODEL = 'z-image/turbo'
+  DEFAULT_MODEL = 'black-forest-labs/flux-1.1-pro'
   TIMEOUT = 120
+
+  # Available image models
+  AVAILABLE_MODELS = {
+    'black-forest-labs/flux-1.1-pro' => 'Flux 1.1 Pro (Recommended)',
+    'black-forest-labs/flux-1-pro' => 'Flux 1 Pro',
+    'black-forest-labs/flux-schnell' => 'Flux Schnell (Fast)',
+    'z-image/turbo' => 'Z-Image Turbo'
+  }.freeze
 
   class Error < StandardError; end
   class AuthenticationError < Error; end
@@ -17,105 +26,122 @@ class AtlasCloudImageService
     @base_url = BASE_URL
   end
 
-  # Generate image using z-image/turbo via Atlas Cloud
+  # Generate image using Atlas Cloud unified API
   #
   # @param prompt [String] Text prompt describing the image
-  # @param size [String] Image size (1:1, 16:9, 9:16, etc.)
-  # @param quality [String] Quality - 'high' maps to default
+  # @param model [String] Model ID (default: black-forest-labs/flux-1.1-pro)
+  # @param aspect_ratio [String] Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
   # @param n [Integer] Number of images to generate
+  # @return [Hash] { task_id:, output:, status: }
   #
-  def generate_gpt_image(prompt:,
-                        size: '1:1',
-                        quality: 'high',
-                        n: 1)
-    size_value = map_size(size)
-
+  def generate_image(prompt:,
+                     model: DEFAULT_MODEL,
+                     aspect_ratio: '1:1',
+                     n: 1)
     body = {
-      model: DEFAULT_MODEL,
-      input: {
-        prompt: prompt,
-        size: size_value,
-        n: n
-      }
+      model: model,
+      prompt: prompt,
+      aspect_ratio: aspect_ratio
     }
 
-    result = post_request('/api/generate/submit', body)
-    
-    # Extract task_id from response
-    task_id = result.dig('data', 'task_id') || result['task_id']
-    
+    # Add n if more than 1 image requested
+    body[:n] = n if n > 1
+
+    Rails.logger.info "[AtlasCloudImageService] Generating image with model: #{model}, aspect_ratio: #{aspect_ratio}"
+
+    result = post_request('/api/v1/model/generateImage', body)
+
+    task_id = extract_task_id(result)
+
     if task_id.present?
       Rails.logger.info "[AtlasCloudImageService] Image generation started, task_id: #{task_id}"
-      { 'task_id' => task_id, 'output' => nil, 'status' => 'not_started' }
+      { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
     else
       Rails.logger.error "[AtlasCloudImageService] No task_id in response: #{result.inspect}"
       { 'task_id' => nil, 'output' => nil, 'error' => result['message'] || 'Failed to start generation' }
     end
   end
 
+  # Alias for backwards compatibility
+  alias_method :generate_gpt_image, :generate_image
+
   # Get image task status
+  #
+  # @param task_id [String] Task ID from generate_image
+  # @return [Hash] { status:, output:, progress:, error: }
+  #
   def image_status(task_id)
-    result = get_request("/api/generate/status/#{task_id}")
-    
-    Rails.logger.info "[AtlasCloudImageService] Task status response: #{result.inspect}"
-    
+    result = get_request("/api/v1/model/prediction/#{task_id}")
+
+    Rails.logger.debug "[AtlasCloudImageService] Task status response: #{result.inspect}"
+
     # Handle response - API wraps everything in 'data' key
-    response_data = result
-    response_data = result['data'] if result.is_a?(Hash) && result['data'].present?
-    
-    # Parse status from response
-    status = response_data['status'] || 'unknown'
-    
-    # Get output/image URL from files array
+    data = result.dig('data') || result
+
+    # Normalize status
+    status = normalize_status(data['status'] || 'unknown')
+
+    # Get output/image URL
     output = nil
-    if response_data['files'].present? && response_data['files'].is_a?(Array)
-      image_file = response_data['files'].find { |f| f['file_type'] == 'image' } || response_data['files'].first
-      output = image_file['file_url'] if image_file
+    if data['outputs'].is_a?(Array) && data['outputs'].any?
+      output = data['outputs'].first
+    elsif data['output'].present?
+      output = data['output']
+    elsif data['url'].present?
+      output = data['url']
     end
-    
-    # Fallback: try direct fields
-    output ||= response_data['image_url']
-    output ||= response_data['url']
-    output ||= response_data['output']
-    
+
     # Get error message if present
-    error = response_data['error_message'] || response_data['error']
-    
+    error = data['error'] || data['error_message']
+
     {
       'status' => status,
       'output' => output,
-      'progress' => response_data['progress'],
+      'progress' => data['progress'],
       'error' => error
     }
   rescue => e
     Rails.logger.error "[AtlasCloudImageService] Status check error: #{e.message}"
+    if e.message.include?('404') || e.message.include?('Not Found')
+      return { 'status' => 'not_found', 'output' => nil, 'error' => 'Task not found - may still be processing' }
+    end
     { 'status' => 'error', 'output' => nil, 'error' => e.message }
   end
 
   # Alias for backwards compatibility
-  alias_method :generate_image, :generate_gpt_image
+  alias_method :task_status, :image_status
 
-  # Check if service is configured
   def configured?
     @api_key.present?
   end
 
+  # Get available models for UI display
+  def self.available_models
+    AVAILABLE_MODELS
+  end
+
   private
 
-  def map_size(size)
-    # Convert "1024x1024" format to "1:1" format
-    case size
-    when '1024x1024', '1:1', 'square'
-      '1:1'
-    when '1024x1536', '9:16', 'portrait'
-      '9:16'
-    when '1536x1024', '16:9', 'landscape'
-      '16:9'
-    when '1024x1792', '9:19'
-      '9:19'
+  def normalize_status(status)
+    case status&.downcase
+    when 'success', 'completed', 'done', 'ready', 'succeeded'
+      'success'
+    when 'failed', 'error', 'cancelled'
+      'failed'
+    when 'pending', 'queued', 'submitted', 'not_started'
+      'pending'
+    when 'processing', 'in_progress', 'running', 'starting'
+      'processing'
     else
-      '1:1'
+      status || 'unknown'
     end
+  end
+
+  def extract_task_id(result)
+    result.dig('data', 'id') ||
+      result.dig('data', 'task_id') ||
+      result['id'] ||
+      result['task_id']
   end
 
   def fetch_api_key
@@ -146,9 +172,9 @@ class AtlasCloudImageService
 
   def handle_response(response)
     parsed = response.parsed_response
-    
-    Rails.logger.debug "[AtlasCloudImageService] Raw response code: #{response.code}, body: #{response.body}"
-    
+
+    Rails.logger.debug "[AtlasCloudImageService] Response code: #{response.code}, body: #{response.body[0..500]}"
+
     case response.code
     when 200..299
       if parsed.is_a?(Hash) && (parsed['error'] || parsed['message'] || parsed['status'] == 'error')
@@ -157,7 +183,7 @@ class AtlasCloudImageService
         raise Error, "API error: #{error_msg}"
       end
       parsed
-    when 401
+    when 401, 403
       raise AuthenticationError, 'Invalid API key - please check your Atlas Cloud API key configuration'
     when 402
       error_msg = parsed.dig('error', 'message') || 'Insufficient credits - please top up your Atlas Cloud account'
@@ -167,7 +193,7 @@ class AtlasCloudImageService
     when 500..599
       raise Error, "Server error: #{response.code}"
     else
-      raise Error, "Unexpected response: #{response.code} - #{response.body}"
+      raise Error, "Unexpected response: #{response.code} - #{response.body[0..200]}"
     end
   end
 end

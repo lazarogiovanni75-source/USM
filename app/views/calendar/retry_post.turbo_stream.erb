@@ -1,0 +1,18 @@
+<%= turbo_stream.update "post_modal" do %>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+      <div class="text-center">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+          <%= lucide_icon "refresh-cw", class: "w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" %>
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Post Requeued</h3>
+        <p class="text-gray-600 dark:text-gray-400">Your post has been requeued for publishing.</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  </script>
+<% end %>

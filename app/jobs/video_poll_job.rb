@@ -6,8 +6,8 @@
 class VideoPollJob < ApplicationJob
   queue_as :default
 
-  MAX_ATTEMPTS = 1440 # Poll for up to 2 hours (1440 * 5 seconds)
-  POLL_INTERVAL = 5.seconds
+  MAX_ATTEMPTS = 3600 # Poll for up to 2 hours (3600 * 2 seconds)
+  POLL_INTERVAL = 2.seconds
 
   def perform(draft_id, task_id = nil, service = nil, attempt = 0)
     # Add delay for first few attempts to allow generation to start
@@ -15,6 +15,9 @@ class VideoPollJob < ApplicationJob
     if attempt < 3
       Rails.logger.info "VideoPollJob: Waiting before poll attempt #{attempt + 1}"
       sleep(3)
+    elsif attempt > 0
+      # Wait 2 seconds between polls as per Atlas Cloud async polling spec
+      sleep(2)
     end
 
     draft = DraftContent.find(draft_id)

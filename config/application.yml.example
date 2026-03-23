@@ -75,6 +75,27 @@ IMAGE_GEN_MODEL: '<%= ENV.fetch("CLACKY_IMAGE_GEN_MODEL", "gemini-2.5-flash-imag
 IMAGE_GEN_SIZE: '<%= ENV.fetch("CLACKY_IMAGE_GEN_SIZE", "1024x1024") %>'
 # Image Generation Service Configuration end
 
+# Atlas Cloud Configuration (Image & Video Generation)
+# Get your API key from: https://atlascloud.ai/dashboard/api-keys
+ATLASCLOUD_API_KEY: '<%= ENV.fetch("ATLASCLOUD_API_KEY", "") %>'
+# Atlas Cloud Configuration end
+
+# Anthropic Claude API Configuration (Agentic Loop)
+# Get your API key from: https://console.anthropic.com/
+ANTHROPIC_API_KEY: '<%= ENV.fetch("ANTHROPIC_API_KEY", "") %>'
+ANTHROPIC_BASE_URL: '<%= ENV.fetch("ANTHROPIC_BASE_URL", "https://api.anthropic.com") %>'
+# Anthropic Claude Configuration end
+
+# Redis Configuration for Sidekiq (Railway)
+# Get your Redis URL from: https://railway.app/dashboard
+REDIS_URL: '<%= ENV.fetch("REDIS_URL", "redis://localhost:6379/0") %>'
+# Redis Configuration end
+
+# Sidekiq Configuration
+SIDEKIQ_CONCURRENCY: '<%= ENV.fetch("SIDEKIQ_CONCURRENCY", "5") %>'
+SIDEKIQ_MAX_MEMORY_PER_WORKER: '<%= ENV.fetch("SIDEKIQ_MAX_MEMORY_PER_WORKER", "250") %>'
+# Sidekiq Configuration end
+
 # Stripe Configuration
 STRIPE_PUBLISHABLE_KEY: <%= ENV["CLACKY_STRIPE_PUBLISHABLE_KEY"] %>
 STRIPE_SECRET_KEY: <%= ENV["CLACKY_STRIPE_SECRET_KEY"] %>

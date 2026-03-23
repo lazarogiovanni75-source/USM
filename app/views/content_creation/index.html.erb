@@ -132,7 +132,7 @@
         <!-- AI Image Generation -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Image Generation</h3>
-          <p class="text-sm text-gray-600 mb-4">Create images with AI</p>
+          <p class="text-sm text-gray-600 mb-4">Powered by Atlas Cloud</p>
           <form action="/content_creation/generate_image" method="post" class="space-y-4">
             <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <div>
@@ -140,11 +140,22 @@
               <textarea name="prompt" rows="3" class="form-input w-full" placeholder="Describe the image you want..." required></textarea>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Size</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+              <select name="model" class="form-select w-full">
+                <option value="black-forest-labs/flux-1.1-pro">Flux 1.1 Pro (Recommended)</option>
+                <option value="black-forest-labs/flux-1-pro">Flux 1 Pro</option>
+                <option value="black-forest-labs/flux-schnell">Flux Schnell (Fast)</option>
+                <option value="z-image/turbo">Z-Image Turbo</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Aspect Ratio</label>
               <select name="size" class="form-select w-full">
-                <option value="1024x1024">Square (1024x1024)</option>
-                <option value="1792x1024">Landscape (1792x1024)</option>
-                <option value="1024x1792">Portrait (1024x1792)</option>
+                <option value="1:1">Square (1:1)</option>
+                <option value="16:9">Landscape (16:9)</option>
+                <option value="9:16">Portrait (9:16)</option>
+                <option value="4:3">Standard (4:3)</option>
+                <option value="3:4">Portrait (3:4)</option>
               </select>
             </div>
             <button type="submit" class="btn-primary w-full">
@@ -187,12 +198,42 @@
         <!-- AI Video Generation -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Video Generation</h3>
-          <p class="text-sm text-gray-600 mb-4">Create videos with AI</p>
+          <p class="text-sm text-gray-600 mb-4">Powered by Atlas Cloud</p>
           <form action="/content_creation/generate_video" method="post" class="space-y-4">
             <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Video Description</label>
               <textarea name="prompt" rows="3" class="form-input w-full" placeholder="Describe the video you want..." required></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+              <select name="model" class="form-select w-full">
+                <option value="atlascloud/magi-1-24b">Magi-1 24B (Recommended)</option>
+                <option value="vidu/q3-pro/text-to-video">Vidu Q3-Pro Text-to-Video</option>
+                <option value="vidu/q3-pro/start-end-to-video">Vidu Q3-Pro Start-End-to-Video</option>
+                <option value="alibaba/wan-2.5/image-to-video">Wan 2.5 Image-to-Video</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Aspect Ratio</label>
+                <select name="aspect_ratio" class="form-select w-full">
+                  <option value="16:9">Landscape (16:9)</option>
+                  <option value="9:16">Portrait (9:16)</option>
+                  <option value="1:1">Square (1:1)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+                <select name="duration" class="form-select w-full">
+                  <option value="5">5 seconds</option>
+                  <option value="10">10 seconds</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Source Image URL (optional)</label>
+              <input type="url" name="source_image_url" class="form-input w-full" placeholder="https://... (for image-to-video)">
             </div>
             <button type="submit" class="btn-primary w-full">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

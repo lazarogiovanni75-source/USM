@@ -1,15 +1,36 @@
 
 # frozen_string_literal: true
 
-# Atlas Cloud Service - Video Generation
-# Image-to-Video model: vidu/q3-pro/start-end-to-video
-# Text-to-Video model:  vidu/q3-pro/text-to-video
-# API: https://api.atlascloud.ai
+# Atlas Cloud Unified Service - Image and Video Generation
+# API Base: https://api.atlascloud.ai
+# Authentication: Bearer token via ATLASCLOUD_API_KEY environment variable
+#
+# Image Generation: POST /api/v1/model/generateImage
+# Video Generation: POST /api/v1/model/generateVideo
+# Status Polling:   GET  /api/v1/model/prediction/{id}
 class AtlasCloudService
   BASE_URL = 'https://api.atlascloud.ai'
-  DEFAULT_MODEL = 'vidu/q3-pro/start-end-to-video'
-  TEXT_TO_VIDEO_MODEL = 'vidu/q3-pro/text-to-video'
   TIMEOUT = 120
+
+  # Available video models
+  TEXT_TO_VIDEO_MODELS = {
+    'atlascloud/magi-1-24b' => 'Magi-1 24B (High Quality)',
+    'vidu/q3-pro/text-to-video' => 'Vidu Q3-Pro Text-to-Video'
+  }.freeze
+
+  IMAGE_TO_VIDEO_MODELS = {
+    'atlascloud/magi-1-24b' => 'Magi-1 24B (Image-to-Video)',
+    'vidu/q3-pro/start-end-to-video' => 'Vidu Q3-Pro (Start-End-to-Video)',
+    'alibaba/wan-2.5/image-to-video' => 'Wan 2.5 Image-to-Video'
+  }.freeze
+
+  # Image models
+  IMAGE_MODELS = {
+    'black-forest-labs/flux-1.1-pro' => 'Flux 1.1 Pro (Recommended)',
+    'black-forest-labs/flux-1-pro' => 'Flux 1 Pro',
+    'black-forest-labs/flux-schnell' => 'Flux Schnell (Fast)',
+    'z-image/turbo' => 'Z-Image Turbo'
+  }.freeze
 
   class Error < StandardError; end
   class AuthenticationError < Error; end
@@ -20,71 +41,63 @@ class AtlasCloudService
     @base_url = BASE_URL
   end
 
-  # Generate video from a start image and end image
+  # Generate image using Atlas Cloud unified API
   #
-  # @param start_image_url [String] URL of the starting frame image
-  # @param end_image_url [String] URL of the ending frame image
-  # @param prompt [String] Optional text prompt to guide the generation
-  # @param duration [Integer] Video duration in seconds (default: 4)
-  # @param aspect_ratio [String] Aspect ratio e.g. "16:9", "9:16", "1:1"
-  # @param model [String] Override the default model
+  # @param prompt [String] Text prompt describing the image
+  # @param model [String] Model ID (default: black-forest-labs/flux-1.1-pro)
+  # @param aspect_ratio [String] Aspect ratio (16:9, 9:16, 1:1, 4:3, 3:4)
+  # @return [Hash] { task_id:, output:, status: }
   #
-  def generate_video(start_image_url:,
-                     end_image_url:,
-                     prompt: '',
-                     duration: 4,
-                     aspect_ratio: '16:9',
-                     model: nil)
+  def generate_image(prompt:, model: 'black-forest-labs/flux-1.1-pro', aspect_ratio: '1:1')
     body = {
-      model: model || DEFAULT_MODEL,
-      start_image_url: start_image_url,
-      end_image_url: end_image_url,
+      model: model,
       prompt: prompt,
-      duration: duration.to_i,
       aspect_ratio: aspect_ratio
     }
 
-    Rails.logger.info "[AtlasCloudService] Submitting image-to-video job with model: #{body[:model]}"
+    Rails.logger.info "[AtlasCloudService] Generating image with model: #{model}"
 
-    result = post_request('/api/v1/model/generateVideo', body)
+    result = post_request('/api/v1/model/generateImage', body)
 
-    task_id = result.dig('data', 'id') || result['task_id']
+    task_id = extract_task_id(result)
 
     if task_id.present?
-      Rails.logger.info "[AtlasCloudService] Video job started, task_id: #{task_id}"
+      Rails.logger.info "[AtlasCloudService] Image generation started, task_id: #{task_id}"
       { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
     else
       Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
-      { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || 'Failed to start video generation' }
+      { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || 'Failed to start image generation' }
     end
   end
 
-  # Generate video from a text prompt
+  # Generate video from text prompt
   #
-  # @param prompt [String] Text description of the video to generate
-  # @param duration [Integer] Video duration in seconds (default: 4)
-  # @param aspect_ratio [String] Aspect ratio e.g. "16:9", "9:16", "1:1"
-  # @param model [String] Override the default text-to-video model
+  # @param prompt [String] Text description of the video
+  # @param model [String] Model ID (default: atlascloud/magi-1-24b)
+  # @param aspect_ratio [String] Aspect ratio (default: 16:9)
+  # @param duration [Integer] Video duration in seconds (default: 5)
+  # @return [Hash] { task_id:, output:, status: }
   #
   def generate_video_from_text(prompt:,
-                                duration: 4,
+                                model: 'atlascloud/magi-1-24b',
                                 aspect_ratio: '16:9',
-                                model: nil)
+                                duration: 5)
     body = {
-      model: model || TEXT_TO_VIDEO_MODEL,
+      model: model,
       prompt: prompt,
-      duration: duration.to_i,
-      aspect_ratio: aspect_ratio
+      aspect_ratio: aspect_ratio,
+      resolution: '480p',
+      duration: duration
     }
 
-    Rails.logger.info "[AtlasCloudService] Submitting text-to-video job with model: #{body[:model]}"
+    Rails.logger.info "[AtlasCloudService] Submitting text-to-video with model: #{model}"
 
     result = post_request('/api/v1/model/generateVideo', body)
 
-    task_id = result.dig('data', 'id') || result['task_id']
+    task_id = extract_task_id(result)
 
     if task_id.present?
-      Rails.logger.info "[AtlasCloudService] Text-to-video job started, task_id: #{task_id}"
+      Rails.logger.info "[AtlasCloudService] Video generation started, task_id: #{task_id}"
       { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
     else
       Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
@@ -92,22 +105,64 @@ class AtlasCloudService
     end
   end
 
-  # Poll the status of a video generation task
+  # Generate video from an image (image-to-video)
   #
-  # @param task_id [String] Task ID returned from generate_video
+  # @param image_url [String] URL of the source image
+  # @param prompt [String] Optional text prompt to guide the generation
+  # @param model [String] Model ID (default: atlascloud/magi-1-24b)
+  # @param aspect_ratio [String] Aspect ratio (default: 16:9)
+  # @param duration [Integer] Video duration in seconds (default: 5)
+  # @return [Hash] { task_id:, output:, status: }
+  #
+  def generate_video_from_image(image_url:,
+                                 prompt: '',
+                                 model: 'atlascloud/magi-1-24b',
+                                 aspect_ratio: '16:9',
+                                 duration: 5)
+    body = {
+      model: model,
+      prompt: prompt,
+      image_url: image_url,
+      aspect_ratio: aspect_ratio,
+      resolution: '480p',
+      duration: duration
+    }
+
+    Rails.logger.info "[AtlasCloudService] Submitting image-to-video with model: #{model}"
+
+    result = post_request('/api/v1/model/generateVideo', body)
+
+    task_id = extract_task_id(result)
+
+    if task_id.present?
+      Rails.logger.info "[AtlasCloudService] Image-to-video started, task_id: #{task_id}"
+      { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
+    else
+      Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
+      { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || 'Failed to start video generation' }
+    end
+  end
+
+  # Poll the status of a generation task
+  #
+  # @param task_id [String] Task ID returned from generate_* methods
   # @return [Hash] { status:, output:, progress:, error: }
   #
   def task_status(task_id)
     result = get_request("/api/v1/model/prediction/#{task_id}")
 
-    Rails.logger.info "[AtlasCloudService] Task status for #{task_id}: #{result.inspect}"
+    Rails.logger.debug "[AtlasCloudService] Task status for #{task_id}: #{result.inspect}"
 
     data = result.dig('data') || result
-    status = data['status'] || 'unknown'
+    status = normalize_status(data['status'] || 'unknown')
 
     output = nil
     if data['outputs'].is_a?(Array) && data['outputs'].any?
       output = data['outputs'].first
+    elsif data['output'].present?
+      output = data['output']
+    elsif data['url'].present?
+      output = data['url']
     end
 
     {
@@ -117,25 +172,78 @@ class AtlasCloudService
       'error' => data['error']
     }
   rescue AtlasCloudService::Error => e
-    # If 404, return not_found so polling continues
-    if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('task not found')
+    if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
       Rails.logger.warn "[AtlasCloudService] Task #{task_id} not found (404)"
       return { 'status' => 'not_found', 'output' => nil, 'error' => 'Task not found' }
     end
     raise
   end
 
-  # Get user credit balance
-  def credit_balance
-    # Atlas Cloud may have different endpoint for user info
-    nil
-  end
-
   def configured?
     @api_key.present?
   end
 
+  # Backwards-compatible alias for generate_video_from_text
+  # Used by GenerateVideoJob and legacy code
+  # @deprecated Use generate_video_from_text or generate_video_from_image instead
+  def generate_video(start_image_url: nil,
+                     end_image_url: nil,
+                     prompt: '',
+                     duration: 4,
+                     aspect_ratio: '16:9',
+                     model: nil)
+    if start_image_url.present? || end_image_url.present?
+      # Image-to-video with start/end images (legacy behavior)
+      generate_video_from_image(
+        image_url: start_image_url,
+        prompt: prompt,
+        model: model || TEXT_TO_VIDEO_MODELS.keys.first,
+        aspect_ratio: aspect_ratio,
+        duration: duration
+      )
+    else
+      # Text-to-video
+      generate_video_from_text(
+        prompt: prompt,
+        model: model || TEXT_TO_VIDEO_MODELS.keys.first,
+        aspect_ratio: aspect_ratio,
+        duration: duration
+      )
+    end
+  end
+
+  # Get available models (for UI display)
+  def self.available_video_models
+    TEXT_TO_VIDEO_MODELS.merge(IMAGE_TO_VIDEO_MODELS)
+  end
+
+  def self.available_image_models
+    IMAGE_MODELS
+  end
+
   private
+
+  def normalize_status(status)
+    case status&.downcase
+    when 'success', 'completed', 'done', 'finished', 'ready', 'succeeded'
+      'success'
+    when 'failed', 'error', 'cancelled'
+      'failed'
+    when 'pending', 'queued', 'submitted', 'not_started'
+      'pending'
+    when 'processing', 'in_progress', 'running', 'starting'
+      'processing'
+    else
+      status || 'unknown'
+    end
+  end
+
+  def extract_task_id(result)
+    result.dig('data', 'id') ||
+      result.dig('data', 'task_id') ||
+      result['id'] ||
+      result['task_id']
+  end
 
   def fetch_api_key
     ENV['ATLASCLOUD_API_KEY'] ||
@@ -165,20 +273,20 @@ class AtlasCloudService
 
   def handle_response(response)
     parsed = response.parsed_response
-    
-    Rails.logger.debug "[AtlasCloudService] Raw response code: #{response.code}, body: #{response.body}"
-    
+
+    Rails.logger.debug "[AtlasCloudService] Response code: #{response.code}, body: #{response.body[0..500]}"
+
     case response.code
     when 200..299
-      # Check if response indicates an error even with 200 status
-      # Note: message can be empty string "" which is truthy, so use present? check
-      error_msg = parsed['error'] || (parsed['message'].presence) || (parsed['status'] == 'error' ? 'Status error' : nil)
+      error_msg = parsed['error'] ||
+                  (parsed['message'].presence) ||
+                  (parsed['status'] == 'error' ? 'Status error' : nil)
       if error_msg
         Rails.logger.error "[AtlasCloudService] API returned error: #{error_msg}"
         raise Error, "API error: #{error_msg}"
       end
       parsed
-    when 401
+    when 401, 403
       raise AuthenticationError, 'Invalid API key - please check your Atlas Cloud API key configuration'
     when 402
       error_msg = parsed.dig('error', 'message') || 'Insufficient credits - please top up your Atlas Cloud account'
@@ -188,7 +296,7 @@ class AtlasCloudService
     when 500..599
       raise Error, "Server error: #{response.code}"
     else
-      raise Error, "Unexpected response: #{response.code} - #{response.body}"
+      raise Error, "Unexpected response: #{response.code} - #{response.body[0..200]}"
     end
   end
 end
