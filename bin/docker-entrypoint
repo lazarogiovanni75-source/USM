@@ -33,33 +33,13 @@ fi
 echo "If running the rails server then create or migrate existing database"
 
 if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
-  echo "Running database migrations for all databases..."
-  
-  # Handle legacy solid_cable migration that may already be applied
-  echo "Checking for legacy solid_cable migration..."
-  ./bin/rails runner '
-    begin
-      version = "20251102144858"
-      if ActiveRecord::Base.connection.table_exists?("schema_migrations")
-        unless ActiveRecord::SchemaMigration.where(version: version).exists?
-          ActiveRecord::SchemaMigration.create!(version: version)
-          puts "Marked solid_cable migration #{version} as applied"
-        else
-          puts "Migration #{version} already recorded"
-        end
-      end
-    rescue => e
-      puts "Could not check migration status: #{e.message}"
-    end
-  ' > /dev/null 2>&1 || echo "Migration check failed, continuing..."
+  echo "Running database migrations..."
   
   # Run migrations for primary database
-  echo "Running primary database migrations..."
   ./bin/rails db:migrate || echo "Primary migration failed, continuing..."
   
-  # Run migrations for cable database
-  echo "Running cable database migrations..."
-  ./bin/rails db:migrate:cable || echo "Cable migration failed, continuing..."
+  # Run migrations for cable database (if any exist)
+  ./bin/rails db:migrate:cable 2>/dev/null || echo "No cable migrations or already migrated"
   
   echo "Database setup complete"
 fi
