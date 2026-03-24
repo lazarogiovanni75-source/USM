@@ -1,0 +1,9 @@
+<!-- Waitlist Signup Form Partial -->
+<%= form_with(url: waitlist_signup_path, local: true, class: "flex flex-col sm:flex-row gap-3", id: "waitlist-form") do |form| %>
+  <%= form.email_field :email, 
+      placeholder: "Enter your email address", 
+      required: true,
+      class: "flex-1 px-4 py-3 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500" %>
+  <%= form.submit "Join Waitlist", 
+      class: "bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors whitespace-nowrap" %>
+<% end %>

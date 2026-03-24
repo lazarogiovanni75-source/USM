@@ -1,0 +1,7 @@
+{
+  "extends": ["plugin:@typescript-eslint/recommended"],
+  "rules": {
+    "max-len": "off",
+    "@typescript-eslint/no-empty-function": "off"
+  }
+}

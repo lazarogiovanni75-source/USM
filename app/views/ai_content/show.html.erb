@@ -1,0 +1,176 @@
+<%# AI Content Show Page - Display generated content %>
+<div class="min-h-screen bg-gradient-to-br from-base-100 to-base-200 py-8" data-controller="ai-content">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <%# Back Button %>
+    <div class="mb-6">
+      <%= link_to ai_content_index_path, class: "btn btn-ghost btn-sm" do %>
+        <%= lucide_icon "arrow-left", class: "w-4 h-4" %>
+        Back to AI Content Studio
+      <% end %>
+    </div>
+
+    <%# Content Header %>
+    <div class="card bg-base-100 shadow-xl mb-6">
+      <div class="card-body">
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <span class="badge badge-primary badge-lg"><%= @content.platform.titleize %></span>
+          <span class="badge badge-secondary badge-lg"><%= @content.brand_voice.titleize %></span>
+          <span class="badge badge-accent badge-lg"><%= @content.content_type.humanize %></span>
+        </div>
+        <h1 class="text-3xl font-bold"><%= @content.topic %></h1>
+        <% if @content.additional_context.present? %>
+          <p class="text-base-content/70 mt-2"><%= @content.additional_context %></p>
+        <% end %>
+        <p class="text-sm text-base-content/50 mt-2">Generated <%= time_ago_in_words(@content.created_at) %> ago</p>
+      </div>
+    </div>
+
+    <%# Content Grid %>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <%# Caption %>
+      <% if @content.caption.present? %>
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="card-title">
+                <%= lucide_icon "message-circle", class: "w-5 h-5 text-primary" %>
+                Caption
+              </h2>
+              <div class="flex gap-2">
+                <%= button_to regenerate_ai_content_path(@content, content_type: 'caption'), method: :post, class: "btn btn-ghost btn-xs" do %>
+                  <%= lucide_icon "refresh-cw", class: "w-4 h-4" %>
+                <% end %>
+              </div>
+            </div>
+            <div id="caption_content" class="prose prose-sm max-w-none">
+              <%= simple_format(@content.caption) %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Hashtags %>
+      <% if @content.hashtags.present? %>
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="card-title">
+                <%= lucide_icon "hash", class: "w-5 h-5 text-secondary" %>
+                Hashtags
+              </h2>
+              <div class="flex gap-2">
+                <%= button_to regenerate_ai_content_path(@content, content_type: 'hashtag'), method: :post, class: "btn btn-ghost btn-xs" do %>
+                  <%= lucide_icon "refresh-cw", class: "w-4 h-4" %>
+                <% end %>
+              </div>
+            </div>
+            <div id="hashtags_content" class="prose prose-sm max-w-none">
+              <%= simple_format(@content.hashtags) %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Blog Post - Full Width %>
+      <% if @content.blog_post.present? %>
+        <div class="card bg-base-100 shadow-xl lg:col-span-2">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="card-title">
+                <%= lucide_icon "file-text", class: "w-5 h-5 text-accent" %>
+                Blog Post
+              </h2>
+              <div class="flex gap-2">
+                <%= button_to regenerate_ai_content_path(@content, content_type: 'blog_post'), method: :post, class: "btn btn-ghost btn-xs" do %>
+                  <%= lucide_icon "refresh-cw", class: "w-4 h-4" %>
+                <% end %>
+              </div>
+            </div>
+            <div id="blog_post_content" class="prose prose-sm max-w-none">
+              <%= simple_format(@content.blog_post) %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Ad Copy %>
+      <% if @content.ad_copy.present? %>
+        <div class="card bg-base-100 shadow-xl lg:col-span-2">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="card-title">
+                <%= lucide_icon "megaphone", class: "w-5 h-5 text-warning" %>
+                Ad Copy
+              </h2>
+              <div class="flex gap-2">
+                <%= button_to regenerate_ai_content_path(@content, content_type: 'ad_copy'), method: :post, class: "btn btn-ghost btn-xs" do %>
+                  <%= lucide_icon "refresh-cw", class: "w-4 h-4" %>
+                <% end %>
+              </div>
+            </div>
+            <div id="ad_copy_content" class="prose prose-sm max-w-none">
+              <%= simple_format(@content.ad_copy) %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Thread Story %>
+      <% if @content.thread_story.present? %>
+        <div class="card bg-base-100 shadow-xl lg:col-span-2">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="card-title">
+                <%= lucide_icon "list", class: "w-5 h-5 text-info" %>
+                Thread / Story
+              </h2>
+              <div class="flex gap-2">
+                <%= button_to regenerate_ai_content_path(@content, content_type: 'thread_story'), method: :post, class: "btn btn-ghost btn-xs" do %>
+                  <%= lucide_icon "refresh-cw", class: "w-4 h-4" %>
+                <% end %>
+              </div>
+            </div>
+            <div id="thread_story_content" class="prose prose-sm max-w-none">
+              <%= simple_format(@content.thread_story) %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Email Marketing %>
+      <% if @content.email_marketing.present? %>
+        <div class="card bg-base-100 shadow-xl lg:col-span-2">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="card-title">
+                <%= lucide_icon "mail", class: "w-5 h-5 text-success" %>
+                Email Marketing
+              </h2>
+              <div class="flex gap-2">
+                <%= button_to regenerate_ai_content_path(@content, content_type: 'email_marketing'), method: :post, class: "btn btn-ghost btn-xs" do %>
+                  <%= lucide_icon "refresh-cw", class: "w-4 h-4" %>
+                <% end %>
+              </div>
+            </div>
+            <div id="email_marketing_content" class="prose prose-sm max-w-none">
+              <%= simple_format(@content.email_marketing) %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Additional Context - hidden target for controller %>
+    <div id="additional_context" data-ai-content-target="additionalContext" class="hidden"><%= @content.additional_context %></div>
+    <div id="content_result" data-ai-content-target="result" class="hidden"></div>
+  </div>
+
+  <%# Action Buttons %>
+    <div class="mt-8 flex flex-wrap gap-4 justify-center">
+      <%= link_to ai_content_index_path, class: "btn btn-primary btn-lg" do %>
+        <%= lucide_icon "plus", class: "w-5 h-5" %>
+        Generate More Content
+      <% end %>
+    </div>
+  </div>
+</div>

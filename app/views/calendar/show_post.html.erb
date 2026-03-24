@@ -1,0 +1,118 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" data-controller="calendar" data-action="click->calendar#closeModal">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4" data-action="click->calendar#preventClose">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Post Details</h3>
+        <button 
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          data-action="calendar#closeModal"
+        >
+          <%= lucide_icon "x", class: "w-5 h-5" %>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+            <% if @post.content&.media_url.present? %>
+              <%= image_tag @post.content.media_url, class: "w-10 h-10 rounded-full object-cover" %>
+            <% else %>
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                <%= @post.platform&.first&.upcase || '?' %>
+              </span>
+            <% end %>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-900 dark:text-white">
+              <%= @post.content&.title || 'Untitled Post' %>
+            </h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              <%= @post.all_platforms.join(', ').titleize %>
+            </p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span class="text-gray-500 dark:text-gray-400">Scheduled:</span>
+            <span class="ml-1 font-medium text-gray-900 dark:text-white">
+              <%= @post.scheduled_at.strftime("%b %d, %Y at %I:%M %p") %>
+            </span>
+          </div>
+          <div>
+            <span class="text-gray-500 dark:text-gray-400">Status:</span>
+            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+              <%= @post.status == 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                  @post.status == 'scheduled' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                  @post.status == 'draft' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400' :
+                  @post.status == 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400' %>">
+              <%= @post.status.titleize %>
+            </span>
+          </div>
+        </div>
+        
+        <% if @post.content&.body.present? %>
+          <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+              <%= @post.content.body %>
+            </p>
+          </div>
+        <% end %>
+        
+        <% if @post.error_message.present? %>
+          <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p class="text-sm text-red-700 dark:text-red-400">
+              <strong>Error:</strong> <%= @post.error_message %>
+            </p>
+          </div>
+        <% end %>
+        
+        <% if @post.content&.media_url.present? || @post.image_url.present? %>
+          <div class="mt-4">
+            <% image_url = @post.content&.media_url || @post.image_url %>
+            <%= image_tag image_url, class: "w-full h-48 object-cover rounded-lg" %>
+          </div>
+        <% end %>
+      </div>
+      
+      <div class="mt-6 flex justify-end gap-3">
+        <% if @post.can_edit? %>
+          <%= link_to edit_post_calendar_path(@post),
+              class: "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors inline-flex items-center" do %>
+            <%= lucide_icon "edit-2", class: "w-4 h-4 mr-1" %>
+            Edit
+          <% end %>
+        <% end %>
+        
+        <% if @post.can_cancel? %>
+          <%= button_to cancel_post_calendar_path(@post),
+              method: :post,
+              class: "px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors inline-flex items-center",
+              data: { confirm: "Are you sure you want to cancel this post?" } do %>
+            <%= lucide_icon "x", class: "w-4 h-4 mr-1" %>
+            Cancel
+          <% end %>
+        <% end %>
+        
+        <% if @post.status == 'scheduled' || @post.status == 'draft' %>
+          <%= button_to publish_now_calendar_path(@post),
+              method: :post,
+              class: "px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors inline-flex items-center" do %>
+            <%= lucide_icon "send", class: "w-4 h-4 mr-1" %>
+            Publish Now
+          <% end %>
+        <% end %>
+        
+        <% if @post.can_retry? %>
+          <%= button_to retry_post_calendar_path(@post),
+              method: :post,
+              class: "px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors inline-flex items-center" do %>
+            <%= lucide_icon "refresh-cw", class: "w-4 h-4 mr-1" %>
+            Retry
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

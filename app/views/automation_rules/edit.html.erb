@@ -1,0 +1,102 @@
+<% content_for :title, "Edit #{@rule.name}" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+  <div class="container-xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center gap-4 mb-4">
+        <%= link_to automation_rule_path(@rule), class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors" do %>
+          <%= lucide_icon "arrow-left", class: "w-5 h-5 text-primary" %>
+        <% end %>
+        <h1 class="text-3xl font-bold text-primary">Edit Automation Rule</h1>
+      </div>
+      <p class="text-muted">Update your automation rule configuration</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Main Form -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <%= form_with(model: @rule, url: automation_rule_path(@rule), local: true, method: :patch) do |f| %>
+            <!-- Basic Info -->
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-primary mb-4">Basic Information</h3>
+              <div class="space-y-4">
+                <div>
+                  <%= f.label :name, "Rule Name", class: "block text-sm font-medium text-primary mb-2" %>
+                  <%= f.text_field :name, class: "form-input w-full", placeholder: "e.g., Auto-schedule new content" %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Trigger Type -->
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-primary mb-4">Trigger Event</h3>
+              <p class="text-sm text-muted mb-4">When should this automation run?</p>
+              <div class="grid grid-cols-2 gap-3">
+                <% ['content_created', 'content_published', 'engagement_received', 'draft_approved', 'scheduled_time', 'daily'].each do |trigger| %>
+                  <label class="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-surface-elevated <%= @rule.trigger_type == trigger ? 'border-primary bg-primary/5' : '' %>">
+                    <%= f.radio_button :trigger_type, trigger, class: "w-4 h-4 text-primary" %>
+                    <span class="ml-2 text-sm"><%= trigger.humanize %></span>
+                  </label>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Action Type -->
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-primary mb-4">Action</h3>
+              <p class="text-sm text-muted mb-4">What should happen?</p>
+              <div class="grid grid-cols-2 gap-3">
+                <% ['auto_schedule', 'auto_notice', 'auto_tag', 'auto_move', 'auto_ai_response'].each do |action| %>
+                  <label class="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-surface-elevated <%= @rule.action_type == action ? 'border-primary bg-primary/5' : '' %>">
+                    <%= f.radio_button :action_type, action, class: "w-4 h-4 text-primary" %>
+                    <span class="ml-2 text-sm"><%= action.humanize %></span>
+                  </label>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex justify-end gap-4">
+              <%= link_to "Cancel", automation_rule_path(@rule), class: "btn-secondary" %>
+              <%= f.submit "Update Rule", class: "btn-primary" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Rule Status -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-semibold text-primary mb-4">Rule Status</h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-muted">Current Status</span>
+              <span class="px-3 py-1 rounded-full text-sm font-medium <%= @rule.is_active? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' %>">
+                <%= @rule.is_active? ? 'Active' : 'Inactive' %>
+              </span>
+            </div>
+            <%= button_to toggle_status_automation_rule_path(@rule), method: :post, 
+                class: "btn-secondary w-full justify-start" do %>
+              <%= lucide_icon @rule.is_active? ? 'pause' : 'play', class: "w-4 h-4 mr-2" %>
+              <%= @rule.is_active? ? 'Pause Rule' : 'Activate Rule' %>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="bg-white rounded-2xl shadow-sm border border-red-200 p-6">
+          <h3 class="text-lg font-semibold text-red-600 mb-4">Danger Zone</h3>
+          <p class="text-sm text-muted mb-4">Once you delete a rule, there is no going back.</p>
+          <%= button_to @rule, method: :delete, data: { confirm: "Are you sure? This action cannot be undone." }, 
+              class: "btn-danger w-full" do %>
+            <%= lucide_icon "trash-2", class: "w-4 h-4 mr-2" %>
+            Delete Rule
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

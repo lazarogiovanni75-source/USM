@@ -1,0 +1,26 @@
+<div class="flex items-center justify-center min-h-[60vh]">
+  <div class="text-center max-w-md mx-auto p-8">
+    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+      <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </div>
+    
+    <h1 class="text-2xl font-bold text-gray-900 mb-4">Payment Failed</h1>
+    
+    <p class="text-gray-600 mb-6">
+      Unfortunately, your payment could not be processed. Please try again or use a different payment method.
+    </p>
+    
+    <% if defined?(error_message) && error_message.present? %>
+      <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <p class="text-sm text-red-600"><%= error_message %></p>
+      </div>
+    <% end %>
+    
+    <div class="space-y-3">
+      <%= link_to 'Try Again', new_payment_path, class: 'block w-full bg-primary text-white py-3 px-4 rounded-lg hover:bg-primary/90 transition-colors text-center' %>
+      <%= link_to 'Go to Dashboard', dashboard_path, class: 'block w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors text-center' %>
+    </div>
+  </div>
+</div>

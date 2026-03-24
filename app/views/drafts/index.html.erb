@@ -1,0 +1,198 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Content Drafts</h1>
+        <p class="text-gray-600 mt-2">Manage your content drafts and AI suggestions</p>
+      </div>
+      <%= link_to "New Draft", new_draft_path, 
+                  class: "btn-primary flex items-center gap-2" %>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div class="flex flex-wrap gap-4 items-center">
+        <div class="flex-1 min-w-64">
+          <%= form_with url: search_drafts_path, method: :get, class: "flex gap-2" do |form| %>
+            <%= form.search_field :q, 
+                  placeholder: "Search drafts...", 
+                  value: params[:q],
+                  class: "form-input flex-1" %>
+            <%= form.submit "Search", class: "btn-secondary" %>
+          <% end %>
+        </div>
+        <div class="flex gap-2">
+          <%= link_to "All", drafts_path, 
+                      class: "btn-secondary #{'btn-primary' unless params[:status]}" %>
+          <%= link_to "Drafts", drafts_path(status: "draft"), 
+                      class: "btn-secondary #{'btn-primary' if params[:status] == 'draft'}" %>
+          <%= link_to "Reviewing", drafts_path(status: "reviewing"), 
+                      class: "btn-secondary #{'btn-primary' if params[:status] == 'reviewing'}" %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6" id="bulk-actions" style="display: none;">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-600">
+          <span id="selected-count">0</span> drafts selected
+        </span>
+        <div class="flex gap-2">
+          <%= button_to "Publish Selected", bulk_actions_drafts_path, 
+                        method: :post, 
+                        params: { bulk_action: 'publish' },
+                        class: "btn-primary text-sm" %>
+          <%= button_to "Archive Selected", bulk_actions_drafts_path, 
+                        method: :post, 
+                        params: { bulk_action: 'archive' },
+                        class: "btn-secondary text-sm" %>
+          <%= button_to "Delete Selected", bulk_actions_drafts_path, 
+                        method: :post, 
+                        params: { bulk_action: 'delete' },
+                        class: "btn-danger text-sm",
+                        data: { confirm: "Are you sure?" } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drafts Grid -->
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <% @drafts.each do |draft| %>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          <div class="p-6">
+            <!-- Draft Header -->
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" 
+                       class="draft-checkbox" 
+                       value="<%= draft.id %>"
+                       data-draft-id="<%= draft.id %>">
+                <span class="badge badge-<%= draft.status %>"><%= draft.status.humanize %></span>
+              </div>
+              <div class="flex gap-1">
+                <%= link_to "Edit", edit_draft_path(draft), 
+                            class: "text-gray-400 hover:text-gray-600" %>
+                <%= link_to "Duplicate", duplicate_draft_path(draft), 
+                            method: :post,
+                            class: "text-gray-400 hover:text-gray-600",
+                            data: { confirm: "Duplicate this draft?" } %>
+              </div>
+            </div>
+
+            <!-- Draft Content -->
+            <div class="mb-4">
+              <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">
+                <%= draft.title || "Untitled Draft" %>
+              </h3>
+              <p class="text-sm text-gray-600 line-clamp-3 mb-3">
+                <%= truncate(strip_tags(draft.content), length: 120) %>
+              </p>
+              
+              <div class="flex flex-wrap gap-2 mb-3">
+                <span class="badge badge-outline"><%= draft.platform.titleize %></span>
+                <span class="badge badge-outline"><%= draft.content_type.titleize %></span>
+                <% if draft.content_suggestions.pending.any? %>
+                  <span class="badge badge-info">
+                    <%= draft.content_suggestions.pending.count %> suggestions
+                  </span>
+                <% end %>
+              </div>
+
+              <div class="text-xs text-gray-500">
+                Updated <%= time_ago_in_words(draft.updated_at) %> ago
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2">
+              <%= link_to "View", draft_path(draft), 
+                          class: "btn-secondary btn-sm flex-1 text-center" %>
+              <% if draft.content_suggestions.pending.any? %>
+                <%= link_to "Suggestions", draft_path(draft, anchor: "suggestions"), 
+                            class: "btn-info btn-sm flex-1 text-center" %>
+              <% end %>
+              <%= button_to "Publish", convert_to_content_draft_path(draft), 
+                            method: :post,
+                            class: "btn-primary btn-sm",
+                            data: { confirm: "Convert to published content?" } %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Empty State -->
+    <% if @drafts.empty? %>
+      <div class="text-center py-12">
+        <div class="text-gray-400 mb-4">
+          <%= lucide_icon "file-text", class: "w-16 h-16 mx-auto" %>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No drafts yet</h3>
+        <p class="text-gray-600 mb-6">Start creating your first content draft</p>
+        <%= link_to "Create Draft", new_draft_path, 
+                    class: "btn-primary" %>
+      </div>
+    <% end %>
+
+    <!-- Recent AI Suggestions -->
+    <% if @suggestions.any? %>
+      <div class="mt-12">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent AI Suggestions</h2>
+        <div class="space-y-4">
+          <% @suggestions.first(5).each do |suggestion| %>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <h4 class="font-medium text-blue-900"><%= suggestion.topic %></h4>
+                  <p class="text-blue-800 mt-1"><%= suggestion.suggestion %></p>
+                  <div class="flex items-center gap-4 mt-2 text-sm text-blue-700">
+                    <span><%= suggestion.content_type.titleize %></span>
+                    <span>Confidence: <%= (suggestion.confidence * 100).round %>%</span>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <%= button_to "Accept", 
+                                content_suggestion_path(suggestion), 
+                                method: :patch,
+                                params: { content_suggestion: { status: 'accepted' } },
+                                class: "btn-sm btn-primary" %>
+                  <%= button_to "Reject", 
+                                content_suggestion_path(suggestion), 
+                                method: :patch,
+                                params: { content_suggestion: { status: 'rejected' } },
+                                class: "btn-sm btn-secondary" %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+// Handle bulk actions
+document.addEventListener('DOMContentLoaded', function() {
+  const checkboxes = document.querySelectorAll('.draft-checkbox');
+  const bulkActions = document.getElementById('bulk-actions');
+  const selectedCount = document.getElementById('selected-count');
+  
+  function updateBulkActions() {
+    const checked = Array.from(checkboxes).filter(cb => cb.checked);
+    if (checked.length > 0) {
+      bulkActions.style.display = 'block';
+      selectedCount.textContent = checked.length;
+    } else {
+      bulkActions.style.display = 'none';
+    }
+  }
+  
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', updateBulkActions);
+  });
+});
+</script>

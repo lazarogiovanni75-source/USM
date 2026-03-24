@@ -1,0 +1,128 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-4">
+          <li>
+            <div>
+              <%= link_to "Dashboard", dashboards_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div>
+              <%= link_to "Scheduled Posts", scheduled_posts_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <span class="text-gray-500">New Schedule</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+      
+      <div class="mt-4">
+        <h1 class="text-3xl font-bold text-gray-900">Schedule New Post</h1>
+        <p class="mt-2 text-gray-600">Choose content and schedule it for optimal engagement times.</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white shadow rounded-lg">
+      <div class="p-6">
+        <%= form_with(model: @scheduled_post, local: true, data: { controller: "scheduled-post-new" }) do |form| %>
+          <div class="space-y-6">
+            <!-- Content Selection -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Select Content</h3>
+              <div class="grid gap-4">
+                <% if @available_content.present? %>
+                  <% @available_content.each do |content| %>
+                    <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" data-scheduled-post-new-target="contentCard" data-content-id="<%= content.id %>">
+                      <div class="flex items-start space-x-4">
+                        <input type="radio" name="content_id" value="<%= content.id %>" class="mt-1" required data-scheduled-post-new-target="contentRadio">
+                        <div class="flex-1">
+                          <h4 class="font-medium text-gray-900"><%= content.title %></h4>
+                          <p class="text-sm text-gray-500 mt-1"><%= content.body.truncate(100) %></p>
+                          <div class="mt-2 flex items-center space-x-4 text-xs text-gray-400">
+                            <span class="capitalize"><%= content.content_type %></span>
+                            <span>•</span>
+                            <span><%= content.platform.capitalize %></span>
+                            <span>•</span>
+                            <span class="capitalize"><%= content.status %></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <div class="text-center py-8">
+                    <p class="text-gray-500">No approved content available.</p>
+                    <%= link_to "Create Content First", new_content_path, class: "mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200" %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Scheduling Options -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Scheduling Options</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Platform -->
+                <div>
+                  <%= form.label :platform, "Platform", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.select :platform, 
+                               options_for_select([
+                                 ['Instagram', 'instagram'],
+                                 ['TikTok', 'tiktok'], 
+                                 ['Twitter', 'twitter'],
+                                 ['Facebook', 'facebook'],
+                                 ['LinkedIn', 'linkedin']
+                               ]), 
+                               { prompt: "Select Platform" }, 
+                               { class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500", required: true } %>
+                </div>
+
+                <!-- Scheduled Date & Time -->
+                <div>
+                  <%= form.label :scheduled_at, "Scheduled Date & Time", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.datetime_field :scheduled_at, 
+                                        class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                        required: true %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optimization -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Optimization</h3>
+              <div class="space-y-4">
+                <div class="flex items-center">
+                  <input type="checkbox" name="optimize_timing" id="optimize_timing" class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                  <label for="optimize_timing" class="ml-2 block text-sm text-gray-700">
+                    Calculate optimal posting time based on audience engagement patterns
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <%= link_to "Cancel", scheduled_posts_path, 
+                          class: "px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+              <%= form.submit "Schedule Post", 
+                             class: "px-4 py-2 bg-purple-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-purple-700" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,62 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
+    <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+      Unlock the full potential of your social media marketing with our flexible subscription plans.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+    <% @plans.each do |plan| %>
+      <div class="relative bg-white rounded-2xl shadow-lg border <%= plan.is_popular ? 'border-primary ring-2 ring-primary' : 'border-gray-200' %> overflow-hidden">
+        <% if plan.is_popular %>
+          <div class="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+            POPULAR
+          </div>
+        <% end %>
+
+        <div class="p-8">
+          <h3 class="text-2xl font-bold text-gray-900 mb-2"><%= plan.name %></h3>
+          <div class="mb-4">
+            <span class="text-4xl font-bold text-gray-900">$<%= plan.price_dollars.to_i %></span>
+            <span class="text-gray-500">/month</span>
+          </div>
+
+          <% if plan.description.present? %>
+            <p class="text-gray-600 mb-6"><%= plan.description %></p>
+          <% end %>
+
+          <ul class="space-y-3 mb-8">
+            <% plan.features_list.each do |feature| %>
+              <li class="flex items-start">
+                <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span class="text-gray-600"><%= feature %></span>
+              </li>
+            <% end %>
+          </ul>
+
+          <% if @current_subscription&.subscription_plan_id == plan.id %>
+            <button disabled class="w-full bg-gray-100 text-gray-400 font-semibold py-3 px-4 rounded-lg cursor-not-allowed">
+              Current Plan
+            </button>
+          <% elsif user_signed_in? %>
+            <%= button_to 'Subscribe Now', 
+                subscriptions_path(plan_id: plan.id), 
+                method: :post,
+                class: "w-full #{plan.is_popular ? 'bg-primary hover:bg-primary/90' : 'bg-gray-900 hover:bg-gray-800'} text-white font-semibold py-3 px-4 rounded-lg transition-colors" %>
+          <% else %>
+            <%= link_to 'Sign Up to Subscribe', sign_up_path, 
+                class: "block w-full text-center #{plan.is_popular ? 'bg-primary hover:bg-primary/90' : 'bg-gray-900 hover:bg-gray-800'} text-white font-semibold py-3 px-4 rounded-lg transition-colors" %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="text-center mt-12">
+    <p class="text-gray-500">All plans include 24/7 support and can be cancelled anytime.</p>
+    <p class="text-gray-500 mt-2">Questions? <a href="mailto:support@ultimatesocialmedia.com" class="text-primary hover:underline">Contact us</a></p>
+  </div>
+</div>

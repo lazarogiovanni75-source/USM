@@ -1,0 +1,130 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-4">
+          <li>
+            <div>
+              <%= link_to "Dashboard", dashboards_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div>
+              <%= link_to "Social Accounts", social_accounts_path, class: "text-gray-400 hover:text-gray-500" %>
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <span class="text-gray-500">Edit</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+      
+      <div class="mt-4">
+        <h1 class="text-3xl font-bold text-gray-900">Edit <%= @social_account.platform.capitalize %> Account</h1>
+        <p class="mt-2 text-gray-600">Update your account details and connection status.</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white shadow rounded-lg">
+      <div class="p-6">
+        <%= form_with(model: @social_account, local: true) do |form| %>
+          <div class="space-y-6">
+            <!-- Account Details -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Account Details</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <%= form.label :platform, "Platform", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.select :platform, 
+                               options_for_select([
+                                 ['Instagram', 'instagram'],
+                                 ['TikTok', 'tiktok'], 
+                                 ['Twitter', 'twitter'],
+                                 ['Facebook', 'facebook'],
+                                 ['LinkedIn', 'linkedin']
+                               ], @social_account.platform), 
+                               {}, 
+                               { class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500", required: true } %>
+                </div>
+
+                <div>
+                  <%= form.label :account_name, "Account Name", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.text_field :account_name, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500" %>
+                </div>
+
+                <div>
+                  <%= form.label :account_url, "Account URL", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.url_field :account_url, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500" %>
+                </div>
+
+                <div>
+                  <%= form.label :access_token, "Access Token", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.text_field :access_token, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                   placeholder: "Optional - for API access" %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Postforme Integration -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Postforme Integration</h3>
+              <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p class="text-sm text-purple-700">
+                  <%= lucide_icon "info", class: "w-4 h-4 inline mr-2" %>
+                  Postforme is used for scheduling and posting to social media platforms.
+                </p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <%= form.label :postforme_api_key, "Postforme API Key", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.text_field :postforme_api_key, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                   placeholder: "pfm_live_..." %>
+                </div>
+
+                <div>
+                  <%= form.label :postforme_profile_id, "Postforme Profile ID", class: "block text-sm font-medium text-gray-700" %>
+                  <%= form.text_field :postforme_profile_id, 
+                                   class: "mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500",
+                                   placeholder: "Profile ID from Postforme" %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Connection Status -->
+            <div>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Connection Status</h3>
+              <div class="space-y-4">
+                <div class="flex items-center">
+                  <%= form.check_box :is_connected, class: "h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded" %>
+                  <%= form.label :is_connected, "Account is connected and ready for posting", class: "ml-2 block text-sm text-gray-700" %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <%= link_to "Cancel", social_account_path(@social_account), 
+                          class: "px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+              <%= form.submit "Update Account", 
+                             class: "px-4 py-2 bg-purple-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-purple-700" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

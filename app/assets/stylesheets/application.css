@@ -1,0 +1,188 @@
+/*
+ * AI MUST READ - AVAILABLE COMPONENTS (DO NOT RECREATE THESE)
+ *
+ * Buttons: .btn-primary, .btn-secondary, .btn-success, .btn-warning, .btn-danger, .btn-ghost, .btn-outline, .btn-outline-primary
+ *          Sizes: .btn-xs, .btn-sm, .btn-md, .btn-lg, .btn-xl
+ * Cards: .card, .card-elevated, .card-flat + .card-header, .card-body, .card-footer
+ * Alerts: .alert-success, .alert-warning, .alert-danger, .alert-info
+ * Badges: .badge-primary, .badge-secondary, .badge-success, .badge-warning, .badge-danger, .badge-neutral
+ * Forms: .form-input, .form-textarea, .form-select, .form-label, .form-error, .form-help
+ * Enhanced Forms: Tom Select (searchable select), Flatpickr (date/time picker)
+ * Tables: .table, .table-header, .table-row, .table-cell, .table-header-cell
+ * Containers: .container-sm (login), .container-md (forms), .container-lg (detail), .container-xl (lists)
+ * Utils: .loading-spinner, .skeleton, .text-balance, .transition-default, .focus-ring
+ *
+ * All components defined in components.css - READ ONLY, DO NOT MODIFY
+ * Custom components go in "CUSTOM COMPONENTS" section at bottom of this file
+ */
+/* Import design system components - DO NOT MODIFY components.css */
+@import "components";
+
+/* Import third-party CSS libraries */
+@import "tom-select/dist/css/tom-select.css";
+@import "flatpickr/dist/flatpickr.css";
+@import "vendors"; /* Custom themes for third-party libraries */
+
+@tailwind base;
+@tailwind components;
+@layer components {
+
+  /*
+   * Design System Variables
+   *
+   * Usage:
+   * - Text: text-primary/secondary/muted
+   * - Surface: surface/surface-elevated
+   * - Brand: primary/secondary
+   * - Status: success/warning/danger/info
+   *
+   * NEVER use direct colors: text-white, bg-white, text-black, bg-black, etc.
+   * Use semantic variables only for maintainability and theme consistency.
+   */
+  :root {
+    /* Modern SaaS Platform - Vibrant Purple & Blue Brand Colors */
+    --color-primary: 262 84% 70%;        /* Vibrant purple */
+    --color-primary-light: 270 90% 80%;   /* Light purple */
+    --color-primary-dark: 262 70% 60%;    /* Dark purple */
+
+    --color-secondary: 221 83% 60%;      /* Vibrant blue */
+    --color-secondary-light: 225 90% 75%; /* Light blue */
+    --color-secondary-dark: 221 83% 45%; /* Dark blue */
+
+    /* Text colors - high contrast for readability */
+    --color-text-primary: 262 50% 12%;    /* Deep purple headings */
+    --color-text-secondary: 262 25% 35%;  /* Medium purple text */
+    --color-text-muted: 262 15% 55%;     /* Light purple muted text */
+
+    /* Surface colors - for backgrounds and borders */
+    --color-surface: 0 0% 100%;           /* Main background (white) */
+    --color-surface-elevated: 262 20% 98%; /* Light purple elevated surfaces */
+    --color-border: 262 15% 85%;         /* Purple borders */
+
+    /*  Neutral color - use only in special cases, avoid for text */
+    --color-neutral: 262 10% 65%;
+
+    /* Status colors with purple/blue theme */
+    --color-success: 142 76% 36%;         /* Keep green for success */
+    --color-warning: 45 95% 60%;          /* Keep yellow for warning */
+    --color-danger: 0 84% 60%;            /* Keep red for danger */
+    --color-info: 221 83% 60%;            /* Use blue for info */
+
+    /* Status background colors with subtle purple tints */
+    --color-success-bg: 142 76% 96%;
+    --color-warning-bg: 45 100% 96%;
+    --color-danger-bg: 0 93% 97%;
+    --color-info-bg: 221 83% 96%;        /* Blue background */
+
+    --font-family-sans: 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
+    --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+    --border-radius-sm: 0.5rem;
+    --border-radius: 0.75rem;
+    --border-radius-md: 1rem;
+    --border-radius-lg: 1.5rem;
+    --border-radius-xl: 2rem;
+
+    --shadow-xs: 0 1px 2px 0 rgb(262 70% 20% / 0.08);
+    --shadow-sm: 0 1px 3px 0 rgb(262 70% 20% / 0.12), 0 1px 2px -1px rgb(262 70% 20% / 0.08);
+    --shadow: 0 4px 6px -1px rgb(262 70% 20% / 0.1), 0 2px 4px -2px rgb(262 70% 20% / 0.06);
+    --shadow-md: 0 10px 15px -3px rgb(262 70% 20% / 0.12), 0 4px 6px -4px rgb(262 70% 20% / 0.08);
+    --shadow-lg: 0 20px 25px -5px rgb(262 70% 20% / 0.15), 0 8px 10px -6px rgb(262 70% 20% / 0.1);
+    --shadow-xl: 0 25px 50px -12px rgb(262 70% 20% / 0.25);
+
+    /* Additional Modern SaaS Colors */
+    --gradient-primary: linear-gradient(135deg, hsl(262 84% 70%), hsl(221 83% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(262 84% 75%) 0%, hsl(221 83% 65%) 100%);
+    --gradient-surface: linear-gradient(135deg, hsl(262 20% 99%) 0%, hsl(262 15% 95%) 100%);
+  }
+
+  /*
+   * Dark Mode - Comprehensive optimization for contrast and visual effects
+   * Follows WCAG AA standards with minimum 4.5:1 text contrast ratio
+   */
+  .dark {
+    /* Dark mode - Vibrant purple & blue with enhanced brightness */
+    --color-primary: 262 100% 80%;        /* Bright vibrant purple for dark mode */
+    --color-primary-light: 270 100% 90%;  /* Very light purple */
+    --color-primary-dark: 262 85% 70%;    /* Medium purple */
+
+    --color-secondary: 221 100% 75%;      /* Bright vibrant blue */
+    --color-secondary-light: 225 100% 85%; /* Very light blue */
+    --color-secondary-dark: 221 85% 65%; /* Medium blue */
+
+    /* Text colors - high contrast for readability */
+    --color-text-primary: 262 30% 98%;    /* Near white with purple tint */
+    --color-text-secondary: 262 20% 85%; /* Light purple text */
+    --color-text-muted: 262 15% 65%;     /* Muted purple text */
+
+    /* Surface colors - layered dark system with purple tones */
+    --color-surface: 262 25% 8%;          /* Very dark purple background */
+    --color-surface-elevated: 262 20% 12%; /* Card background with purple tint */
+    --color-border: 262 15% 25%;          /* Purple-tinted borders */
+
+    /* Status colors optimization for dark mode - brighter and more saturated */
+    --color-success: 145 80% 55%;          /* Brighter green */
+    --color-warning: 45 95% 65%;          /* Brighter yellow */
+    --color-danger: 0 85% 70%;            /* Brighter red */
+    --color-info: 221 100% 70%;           /* Bright blue */
+
+    /* Status background colors - semi-transparent for dark mode */
+    --color-success-bg: 145 80% 50% / 0.15; /* Semi-transparent green */
+    --color-warning-bg: 45 95% 60% / 0.15;  /* Semi-transparent yellow */
+    --color-danger-bg: 0 85% 65% / 0.15;    /* Semi-transparent red */
+    --color-info-bg: 221 100% 70% / 0.15;   /* Semi-transparent blue */
+
+    /* Neutral color adjustment for dark mode with purple tones */
+    --color-neutral: 262 10% 75%;          /* Purple-tinted neutral */
+
+    /* Shadows for dark mode - purple tinted and softer */
+    --shadow-xs: 0 1px 2px 0 rgb(262 70% 40% / 0.3);
+    --shadow-sm: 0 1px 3px 0 rgb(262 70% 40% / 0.4), 0 1px 2px -1px rgb(262 70% 40% / 0.3);
+    --shadow: 0 4px 6px -1px rgb(262 70% 40% / 0.4), 0 2px 4px -2px rgb(262 70% 40% / 0.2);
+    --shadow-md: 0 10px 15px -3px rgb(262 70% 40% / 0.45), 0 4px 6px -4px rgb(262 70% 40% / 0.3);
+    --shadow-lg: 0 20px 25px -5px rgb(262 70% 40% / 0.5), 0 8px 10px -6px rgb(262 70% 40% / 0.35);
+    --shadow-xl: 0 25px 50px -12px rgb(262 70% 40% / 0.6);
+
+    /* Additional Dark Mode Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 100% 80%), hsl(221 100% 75%));
+    --gradient-hero: linear-gradient(135deg, hsl(262 85% 25%) 0%, hsl(221 75% 20%) 100%);
+    --gradient-surface: linear-gradient(135deg, hsl(262 20% 12%) 0%, hsl(262 15% 8%) 100%);
+  }
+
+  /* Add your custom components here */
+
+  /* Force visible text in textareas - fixes browser autofill issues */
+  textarea {
+    -webkit-text-fill-color: #111827 !important;
+    color: #111827 !important;
+  }
+
+  .dark textarea {
+    -webkit-text-fill-color: #f9fafb !important;
+    color: #f9fafb !important;
+  }
+
+  /* Handle autofill specifically */
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  textarea:-webkit-autofill:active {
+    -webkit-text-fill-color: #111827 !important;
+    color: #111827 !important;
+    background-color: #ffffff !important;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  .dark textarea:-webkit-autofill,
+  .dark textarea:-webkit-autofill:hover,
+  .dark textarea:-webkit-autofill:focus,
+  .dark textarea:-webkit-autofill:active {
+    -webkit-text-fill-color: #f9fafb !important;
+    color: #f9fafb !important;
+    background-color: #1f2937 !important;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+} /* End of @layer components */
+
+@tailwind utilities;

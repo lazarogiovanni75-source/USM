@@ -1,0 +1,123 @@
+<% content_for :title, "Automation" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+  <!-- Header -->
+  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+    <div class="container-xl mx-auto px-4 py-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+            <%= lucide_icon "zap", class: "w-7 h-7 text-white" %>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-primary">Automation</h1>
+            <p class="text-sm text-muted">Automate your workflows</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <%= link_to new_automation_rule_path, class: "btn-primary" do %>
+            <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>New Rule
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container-xl mx-auto px-4 py-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <%= lucide_icon "zap", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Executions</p>
+            <p class="text-2xl font-bold text-primary"><%= @statistics[:total_executions] || 0 %></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+            <%= lucide_icon "check-circle", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Successful</p>
+            <p class="text-2xl font-bold text-primary"><%= @statistics[:successful_executions] || 0 %></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+            <%= lucide_icon "x-circle", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Failed</p>
+            <p class="text-2xl font-bold text-primary"><%= @statistics[:failed_executions] || 0 %></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+            <%= lucide_icon "percent", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Success Rate</p>
+            <p class="text-2xl font-bold text-primary"><%= @statistics[:success_rate] || 0 %>%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rules -->
+    <div class="bg-white rounded-2xl shadow-sm border border-border/50">
+      <div class="bg-gradient-to-r from-primary/10 to-secondary/10 px-6 py-4 border-b border-border/30">
+        <h2 class="text-lg font-bold text-primary">Automation Rules</h2>
+      </div>
+      <% if @rules&.any? %>
+        <div class="divide-y divide-border/30">
+          <% @rules.each do |rule| %>
+            <div class="p-6">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <h3 class="text-lg font-medium text-primary mr-3"><%= rule.name %></h3>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= rule.is_active? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' %>">
+                      <div class="w-1.5 h-1.5 rounded-full mr-1.5 <%= rule.is_active? ? 'bg-green-400' : 'bg-gray-400' %>"></div>
+                      <%= rule.is_active? ? 'Active' : 'Inactive' %>
+                    </span>
+                  </div>
+                  <p class="text-sm text-muted mb-3"><%= rule.trigger_type %></p>
+                  <div class="flex flex-wrap gap-2">
+                    <span class="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary"><%= rule.action_type&.gsub('_', ' ')&.titleize %></span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 ml-4">
+                  <%= link_to edit_automation_rule_path(rule), class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors" do %>
+                    <%= lucide_icon "edit-2", class: "w-4 h-4 text-primary" %>
+                  <% end %>
+                  <%= button_to toggle_status_automation_rule_path(rule), method: :post, class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors" do %>
+                    <%= lucide_icon rule.active? ? 'pause' : 'play', class: "w-4 h-4 text-primary" %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="p-12 text-center">
+          <%= lucide_icon "zap", class: "w-16 h-16 text-muted mx-auto mb-4" %>
+          <h3 class="text-xl font-bold text-primary mb-2">No Automation Rules</h3>
+          <p class="text-muted mb-6">Create your first rule to automate your workflow</p>
+          <%= link_to new_automation_rule_path, class: "btn-primary" do %>
+            <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>Create Rule
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

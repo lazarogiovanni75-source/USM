@@ -1,0 +1,108 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Add to Queue</h1>
+      <%= link_to publish_queues_path, class: "btn-secondary inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors" do %>
+        <%= lucide_icon "arrow-left", class: "w-4 h-4 mr-2" %>
+        Back to Queue
+      <% end %>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- From Scheduled Posts -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">From Scheduled Posts</h2>
+        
+        <%= form_with url: publish_queues_path, method: :post, local: true do |f| %>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Scheduled Post
+              </label>
+              <%= select_tag :scheduled_post_id, 
+                   options_from_collection_for_select(@scheduled_posts, :id, :platform_and_title),
+                   { prompt: "Choose a scheduled post..." }, 
+                   class: "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500" %>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Priority
+              </label>
+              <%= select_tag :priority, 
+                   options_for_select([['Low', 'low'], ['Normal', 'normal'], ['High', 'high'], ['Urgent', 'urgent']], 'normal'),
+                   class: "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500" %>
+            </div>
+            
+            <%= f.submit "Add to Queue", class: "w-full btn-primary px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- From Existing Content -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">From Existing Content</h2>
+        
+        <%= form_with url: publish_queues_path, method: :post, local: true do |f| %>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Content Title
+              </label>
+              <%= text_field_tag :title, '', 
+                   class: "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500",
+                   placeholder: "Enter title..." %>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Content Body
+              </label>
+              <%= text_area_tag :body, '', 
+                   class: "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 h-24",
+                   placeholder: "Enter content body..." %>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Platform
+              </label>
+              <%= select_tag :platform, 
+                   options_for_select([['Instagram', 'instagram'], ['Twitter', 'twitter'], ['LinkedIn', 'linkedin'], ['Facebook', 'facebook'], ['TikTok', 'tiktok']]),
+                   class: "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500" %>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Date
+                </label>
+                <%= date_field_tag :scheduled_date, '', 
+                     class: "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500" %>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Time
+                </label>
+                <%= time_field_tag :scheduled_time, '', 
+                     class: "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500" %>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Priority
+              </label>
+              <%= select_tag :priority, 
+                   options_for_select([['Low', 'low'], ['Normal', 'normal'], ['High', 'high'], ['Urgent', 'urgent']], 'normal'),
+                   class: "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500" %>
+            </div>
+            
+            <%= f.submit "Add to Queue", class: "w-full btn-primary px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

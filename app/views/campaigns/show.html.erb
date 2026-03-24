@@ -1,0 +1,244 @@
+<% content_for :title, @campaign.name %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+  <!-- Header -->
+  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+    <div class="container-xl mx-auto px-4 py-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <%= link_to campaigns_path, class: "w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center hover:shadow-md transition-shadow" do %>
+            <%= lucide_icon "arrow-left", class: "w-5 h-5 text-primary" %>
+          <% end %>
+          <div>
+            <div class="flex items-center gap-3 mb-1">
+              <h1 class="text-2xl font-bold text-primary"><%= @campaign.name %></h1>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium <%= @campaign.active? ? 'bg-green-100 text-green-700' : @campaign.draft? ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700' %>">
+                <%= @campaign.status&.titleize || 'Unknown' %>
+              </span>
+            </div>
+            <p class="text-sm text-muted"><%= @campaign.description || 'No description' %></p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <%= link_to edit_campaign_path(@campaign), class: "btn-secondary" do %>
+            <%= lucide_icon "edit-2", class: "w-4 h-4 mr-2" %>Edit
+          <% end %>
+          <%= button_to @campaign, method: :delete, class: "btn-danger" do %>
+            <%= lucide_icon "trash-2", class: "w-4 h-4 mr-2" %>Delete
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container-xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left Column -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Progress Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <%= lucide_icon "file-text", class: "w-5 h-5 text-white" %>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-primary"><%= @campaign.contents.count %></p>
+            <p class="text-xs text-muted">Total Content</p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                <%= lucide_icon "check-circle", class: "w-5 h-5 text-white" %>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-primary"><%= @campaign.contents.published.count %></p>
+            <p class="text-xs text-muted">Published</p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                <%= lucide_icon "eye", class: "w-5 h-5 text-white" %>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-primary"><%= @campaign.engagement_rate %>%</p>
+            <p class="text-xs text-muted">Engagement</p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+                <%= lucide_icon "percent", class: "w-5 h-5 text-white" %>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-primary"><%= @campaign.content_progress.round(0) %>%</p>
+            <p class="text-xs text-muted">Complete</p>
+          </div>
+        </div>
+
+        <!-- Content List -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
+          <div class="bg-gradient-to-r from-primary/10 to-secondary/10 px-6 py-4 border-b border-border/30 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-primary flex items-center gap-2">
+              <%= lucide_icon "layers", class: "w-5 h-5 text-primary" %>
+              Campaign Content
+            </h2>
+            <%= link_to new_content_path(campaign_id: @campaign.id), class: "text-sm text-primary hover:text-primary-dark font-medium" do %>
+              <%= lucide_icon "plus", class: "w-4 h-4 mr-1" %>Add Content
+            <% end %>
+          </div>
+          <% if @contents.any? %>
+            <div class="divide-y divide-border/30">
+              <% @contents.each do |content| %>
+                <div class="p-4 hover:bg-surface-elevated/50 transition-colors">
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                      <h4 class="text-sm font-medium text-primary truncate"><%= content.title || 'Untitled' %></h4>
+                      <div class="flex items-center gap-2 mt-1">
+                        <span class="text-xs text-muted"><%= content.content_type&.titleize || 'Post' %></span>
+                        <span class="text-xs text-muted">•</span>
+                        <span class="text-xs text-muted"><%= content.created_at.strftime('%b %e, %Y') %></span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="px-2.5 py-1 rounded-full text-xs <%= content.published? ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700' %>">
+                        <%= content.status.titleize %>
+                      </span>
+                      <%= link_to content, class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors" do %>
+                        <%= lucide_icon "chevron-right", class: "w-4 h-4 text-muted" %>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="p-8 text-center">
+              <%= lucide_icon "file-plus", class: "w-12 h-12 text-muted mx-auto mb-3" %>
+              <p class="text-muted mb-3">No content created yet</p>
+              <%= link_to new_content_path(campaign_id: @campaign.id), class: "btn-primary" do %>
+                <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>Create Content
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Scheduled Posts -->
+        <% if @scheduled_posts.any? %>
+          <div class="bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
+            <div class="bg-gradient-to-r from-primary/10 to-secondary/10 px-6 py-4 border-b border-border/30">
+              <h2 class="text-lg font-bold text-primary flex items-center gap-2">
+                <%= lucide_icon "calendar", class: "w-5 h-5 text-primary" %>
+                Scheduled Posts
+              </h2>
+            </div>
+            <div class="divide-y divide-border/30">
+              <% @scheduled_posts.each do |post| %>
+                <div class="p-4 hover:bg-surface-elevated/50 transition-colors">
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                      <h4 class="text-sm font-medium text-primary"><%= post.content&.title || 'Scheduled Post' %></h4>
+                      <p class="text-xs text-muted mt-1">
+                        <%= post.scheduled_at.strftime('%b %e, %Y at %I:%M %p') %>
+                        <span class="mx-1">•</span>
+                        <%= post.social_account&.platform&.titleize || 'Unknown' %>
+                      </p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-xs <%= post.published? ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' %>">
+                      <%= post.status.titleize %>
+                    </span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Right Column -->
+      <div class="space-y-6">
+        <!-- Campaign Details -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "info", class: "w-5 h-5 text-primary" %>
+            Details
+          </h3>
+          <dl class="space-y-4">
+            <% if @campaign.start_date && @campaign.end_date %>
+              <div class="flex justify-between py-2 border-b border-border/30">
+                <dt class="text-sm text-muted">Duration</dt>
+                <dd class="text-sm font-medium text-primary"><%= @campaign.duration_days %> days</dd>
+              </div>
+            <% end %>
+            <% if @campaign.goal %>
+              <div class="flex justify-between py-2 border-b border-border/30">
+                <dt class="text-sm text-muted">Goal</dt>
+                <dd class="text-sm font-medium text-primary"><%= @campaign.goal.titleize %></dd>
+              </div>
+            <% end %>
+            <% if @campaign.platforms.any? %>
+              <div class="py-2">
+                <dt class="text-sm text-muted mb-2">Platforms</dt>
+                <dd class="flex flex-wrap gap-1">
+                  <% @campaign.platforms.each do |platform| %>
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary"><%= platform.titleize %></span>
+                  <% end %>
+                </dd>
+              </div>
+            <% end %>
+          </dl>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "zap", class: "w-5 h-5 text-primary" %>
+            Quick Actions
+          </h3>
+          <div class="space-y-2">
+            <%= button_to schedule_all_campaign_path(@campaign), method: :post, class: "w-full btn-secondary justify-start" do %>
+              <%= lucide_icon "calendar", class: "w-4 h-4 mr-2" %>Schedule All Content
+            <% end %>
+            <%= button_to publish_now_campaign_path(@campaign), method: :post, class: "w-full btn-secondary justify-start" do %>
+              <%= lucide_icon "send", class: "w-4 h-4 mr-2" %>Publish Now
+            <% end %>
+            <%= link_to duplicate_campaign_path(@campaign), method: :post, class: "w-full btn-secondary justify-start" do %>
+              <%= lucide_icon "copy", class: "w-4 h-4 mr-2" %>Duplicate Campaign
+            <% end %>
+            <%= link_to analytics_campaign_path(@campaign), class: "w-full btn-secondary justify-start" do %>
+              <%= lucide_icon "bar-chart-2", class: "w-4 h-4 mr-2" %>View Analytics
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Dates -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "calendar", class: "w-5 h-5 text-primary" %>
+            Timeline
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                <%= lucide_icon "play", class: "w-4 h-4 text-green-600" %>
+              </div>
+              <div>
+                <p class="text-xs text-muted">Started</p>
+                <p class="text-sm font-medium text-primary"><%= @campaign.start_date&.strftime('%b %e, %Y') || 'Not set' %></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                <%= lucide_icon "flag", class: "w-4 h-4 text-red-600" %>
+              </div>
+              <div>
+                <p class="text-xs text-muted">Ends</p>
+                <p class="text-sm font-medium text-primary"><%= @campaign.end_date&.strftime('%b %e, %Y') || 'Not set' %></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

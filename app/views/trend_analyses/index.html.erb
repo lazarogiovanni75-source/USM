@@ -1,0 +1,148 @@
+<% content_for :title, "Trends" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+  <!-- Header -->
+  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+    <div class="container-xl mx-auto px-4 py-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+            <%= lucide_icon "trending-up", class: "w-7 h-7 text-white" %>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-primary">Trend Analysis</h1>
+            <p class="text-sm text-muted">AI-powered insights for your content</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button class="btn-secondary">
+            <%= lucide_icon "download", class: "w-4 h-4 mr-2" %>Export
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container-xl mx-auto px-4 py-6">
+    <!-- AI Insights -->
+    <% if @insights&.any? %>
+      <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+            <%= lucide_icon "brain", class: "w-5 h-5 text-white" %>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-primary mb-2">AI Insights</h3>
+            <div class="space-y-2">
+              <% @insights.each do |insight| %>
+                <p class="text-sm text-primary">• <%= insight %></p>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Trend Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Content Trends -->
+      <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-primary">Content Types</h2>
+          <%= lucide_icon "file-text", class: "w-5 h-5 text-muted" %>
+        </div>
+        <% if @trends[:content_trends]&.any? %>
+          <div class="space-y-3">
+            <% @trends[:content_trends].first(3).each do |trend| %>
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-primary capitalize"><%= trend[:content_type] %></p>
+                  <p class="text-xs text-muted"><%= trend[:current_count] %> posts</p>
+                </div>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <%= trend[:trend_direction] == 'rising' ? 'bg-green-100 text-green-700' : trend[:trend_direction] == 'declining' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700' %>">
+                  <%= lucide_icon trend[:trend_direction] == 'rising' ? 'trending-up' : trend[:trend_direction] == 'declining' ? 'trending-down' : 'minus', class: "w-3 h-3 mr-1" %>
+                  <%= trend[:trend_direction] == 'rising' ? '+' : '' %><%= trend[:change_percent] %>%
+                </span>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-muted text-center py-4">No content trends available</p>
+        <% end %>
+      </div>
+
+      <!-- Platform Trends -->
+      <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-primary">Platform Performance</h2>
+          <%= lucide_icon "share-2", class: "w-5 h-5 text-muted" %>
+        </div>
+        <% if @trends[:platform_trends]&.any? %>
+          <div class="space-y-3">
+            <% @trends[:platform_trends].first(3).each do |trend| %>
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-primary capitalize"><%= trend[:platform] %></p>
+                  <p class="text-xs text-muted"><%= trend[:current_engagement] %>% engagement</p>
+                </div>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <%= trend[:trend_direction] == 'improving' ? 'bg-green-100 text-green-700' : trend[:trend_direction] == 'declining' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700' %>">
+                  <%= lucide_icon trend[:trend_direction] == 'improving' ? 'trending-up' : trend[:trend_direction] == 'declining' ? 'trending-down' : 'minus', class: "w-3 h-3 mr-1" %>
+                  <%= trend[:trend_direction] == 'improving' ? '+' : '' %><%= trend[:change_percent] %>%
+                </span>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-muted text-center py-4">No platform trends available</p>
+        <% end %>
+      </div>
+
+      <!-- Optimal Timing -->
+      <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-primary">Optimal Timing</h2>
+          <%= lucide_icon "clock", class: "w-5 h-5 text-muted" %>
+        </div>
+        <% if @trends[:timing_trends]&.any? %>
+          <div class="space-y-3">
+            <% @trends[:timing_trends].first(3).each do |timing| %>
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-primary"><%= timing[:hour] %>:00</p>
+                  <p class="text-xs text-muted"><%= timing[:avg_engagement] %>% engagement</p>
+                </div>
+                <span class="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
+                  <%= timing[:performance_score].titleize %>
+                </span>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-muted text-center py-4">No timing data available</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Topic Trends -->
+    <% if @trends[:topic_trends]&.any? %>
+      <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+        <h2 class="text-lg font-bold text-primary mb-4">Topic Trends</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <% @trends[:topic_trends].first(6).each do |topic| %>
+            <div class="bg-surface-elevated rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-primary capitalize"><%= topic[:keyword] %></span>
+                <%= lucide_icon topic[:trend_direction] == 'rising' ? 'trending-up' : topic[:trend_direction] == 'declining' ? 'trending-down' : 'minus', class: "w-4 h-4 #{topic[:trend_direction] == 'rising' ? 'text-green-500' : topic[:trend_direction] == 'declining' ? 'text-red-500' : 'text-muted'}" %>
+              </div>
+              <p class="text-xs text-muted mb-2">Frequency: <%= topic[:recent_frequency] %></p>
+              <div class="h-2 bg-white rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-primary to-secondary rounded-full" style="width: <%= [topic[:change_percent].abs, 100].min %>%"></div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

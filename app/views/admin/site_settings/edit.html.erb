@@ -1,0 +1,57 @@
+<% content_for :title, "AI System Prompt" %>
+
+<div class="container-md">
+  <div class="flex items-center space-x-4 mb-6">
+    <%= link_to admin_site_settings_path, class: "btn-ghost text-sm py-1 px-3" do %>
+      <%= lucide_icon "arrow-left", class: "w-4 h-4 mr-2" %>
+      Back to Site settings
+    <% end %>
+  </div>
+
+  <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50 mt-4 mb-2">🤖 AI System Prompt</h1>
+  <p class="text-gray-600 dark:text-gray-400 mb-8">Configure the global rules and behavior for Pilot AI assistant.</p>
+
+  <!-- Form -->
+  <div class="card bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+    <div class="card-body">
+      <%= form_with model: [:admin, @site_setting], local: true, class: "space-y-6" do |form| %>
+        <!-- Key (read-only for AI prompt) -->
+        <div class="form-group">
+          <%= form.label :key, "Setting Key" %>
+          <%= form.text_field :key, readonly: true, class: "bg-gray-100 dark:bg-gray-800" %>
+          <p class="text-xs text-gray-500 mt-1">This key controls Pilot's behavior</p>
+        </div>
+
+        <!-- Value - System Prompt -->
+        <div class="form-group">
+          <%= form.label :value, "System Prompt (AI Rules)" %>
+          <%= form.text_area :value, rows: 12, 
+              placeholder: "You are Pilot, a helpful marketing assistant...",
+              class: "font-mono text-sm" %>
+          <p class="text-xs text-gray-500 mt-1">Define how Pilot should behave, respond, and what rules to follow.</p>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-3">
+          <%= link_to admin_site_settings_path, class: "btn-ghost" do %>
+            Cancel
+          <% end %>
+          <%= form.submit "Update AI Prompt", class: "btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Preview Section -->
+  <div class="mt-8 card bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+    <div class="card-body">
+      <h3 class="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2">💡 Tips for Writing AI Prompts</h3>
+      <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+        <li>• <strong>Define the role:</strong> "You are a professional social media manager..."</li>
+        <li>• <strong>Set tone:</strong> "Be friendly, concise, and use emojis sparingly"</li>
+        <li>• <strong>Add constraints:</strong> "Never exceed 280 characters for Twitter/X posts"</li>
+        <li>• <strong>Specify format:</strong> "Always include a call-to-action in your responses"</li>
+      </ul>
+    </div>
+  </div>
+</div>

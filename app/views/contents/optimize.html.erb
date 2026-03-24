@@ -1,0 +1,142 @@
+<!-- Content Optimization -->
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">AI Content Optimization</h1>
+          <p class="mt-1 text-gray-600">Improve your content with AI-powered suggestions</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <%= link_to "Back to Content", @content, class: "bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium" %>
+          <%= button_to "Apply Optimization", apply_optimization_content_path(@content), 
+                        method: :post, class: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- Original vs Optimized Comparison -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div class="p-6 border-b border-gray-100">
+            <h2 class="text-xl font-semibold text-gray-900">Original Content</h2>
+          </div>
+          <div class="p-6">
+            <h3 class="font-medium text-gray-900 mb-2"><%= @content.title %></h3>
+            <div class="text-gray-700 whitespace-pre-wrap"><%= @content.body %></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div class="p-6 border-b border-gray-100">
+            <h2 class="text-xl font-semibold text-gray-900">AI-Optimized Version</h2>
+          </div>
+          <div class="p-6">
+            <% if @optimized_content %>
+              <h3 class="font-medium text-gray-900 mb-2"><%= @content.title %> (Optimized)</h3>
+              <div class="text-gray-700 whitespace-pre-wrap"><%= @optimized_content[:body] %></div>
+            <% else %>
+              <div class="text-gray-500 italic">AI optimization suggestions will appear here</div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Optimization Suggestions -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div class="p-6 border-b border-gray-100">
+            <h2 class="text-xl font-semibold text-gray-900">AI Suggestions</h2>
+          </div>
+          <div class="p-6">
+            <div class="space-y-4">
+              <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                  <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span class="font-medium text-green-900">Improve Readability</span>
+                </div>
+                <p class="text-sm text-green-700">Break up long sentences and use bullet points for better engagement.</p>
+              </div>
+
+              <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                  <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                  </svg>
+                  <span class="font-medium text-blue-900">Add Hashtags</span>
+                </div>
+                <p class="text-sm text-blue-700">Include relevant hashtags to increase discoverability and reach.</p>
+              </div>
+
+              <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                  <svg class="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  <span class="font-medium text-purple-900">Call to Action</span>
+                </div>
+                <p class="text-sm text-purple-700">Add a compelling call-to-action to drive user engagement and conversions.</p>
+              </div>
+
+              <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                  <svg class="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="font-medium text-orange-900">Optimal Timing</span>
+                </div>
+                <p class="text-sm text-orange-700">Schedule this content for Tuesday at 2:00 PM for maximum engagement.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div class="p-6 border-b border-gray-100">
+            <h2 class="text-xl font-semibold text-gray-900">Expected Performance</h2>
+          </div>
+          <div class="p-6">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Engagement Rate</span>
+                <div class="flex items-center">
+                  <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
+                  </div>
+                  <span class="text-sm font-medium">+12%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Reach Potential</span>
+                <div class="flex items-center">
+                  <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 78%"></div>
+                  </div>
+                  <span class="text-sm font-medium">+8%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Click-through Rate</span>
+                <div class="flex items-center">
+                  <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-purple-500 h-2 rounded-full" style="width: 92%"></div>
+                  </div>
+                  <span class="text-sm font-medium">+15%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

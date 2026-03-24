@@ -1,0 +1,393 @@
+<% content_for :title, "Dashboard" %>
+
+<!-- Dashboard with Enhanced Design -->
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated relative overflow-hidden">
+  <!-- Decorative Background Bubbles -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-20 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute top-40 right-20 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+    <div class="absolute bottom-20 left-1/3 w-80 h-80 bg-success/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    <div class="absolute top-1/2 left-1/4 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 3s;"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="bg-surface-elevated/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 relative">
+    <div class="container-xl mx-auto px-4 py-6">
+      <!-- Centralized App Title -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl border border-primary/20">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+            <%= lucide_icon "rocket", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-primary tracking-tight">Ultimate Social Media</h1>
+            <p class="text-xs text-muted uppercase tracking-wider">AI-Powered Marketing Platform</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <!-- Welcome Section with User Avatar -->
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg ring-4 ring-primary/10">
+            <span class="text-white font-bold text-xl"><%= current_user.name.present? ? current_user.name.first : current_user.email.first.upcase %></span>
+          </div>
+          <div>
+            <% hour = Time.current.hour
+   greeting = if hour >= 5 && hour < 12
+                 'Good morning'
+               elsif hour >= 12 && hour < 17
+                 'Good afternoon'
+               elsif hour >= 17 && hour < 21
+                 'Good evening'
+               else
+                 'Good night'
+               end
+   user_name = current_user.name.present? ? current_user.name.split.first : 'there'
+%>
+<h1 class="text-xl font-bold text-primary"><%= greeting %>, <%= user_name %>! 👋</h1>
+            <p class="text-sm text-muted flex items-center gap-2">
+              <span class="w-2 h-2 bg-success rounded-full animate-pulse"></span>
+              Your social media command center
+            </p>
+          </div>
+        </div>
+        
+        <!-- Right Side: Metrics Cards -->
+          <div class="flex flex-wrap gap-3">
+          <!-- Messages -->
+          <div class="group relative bg-white rounded-2xl px-5 py-3 shadow-sm border border-border/50 hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer">
+            <div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <%= lucide_icon "message-circle", class: "w-5 h-5 text-white" %>
+              </div>
+              <div>
+                <p class="text-xs text-muted">Messages</p>
+                <p class="text-xl font-bold text-primary"><%= @ai_conversations_count || 0 %></p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Content -->
+          <div class="group relative bg-white rounded-2xl px-5 py-3 shadow-sm border border-border/50 hover:shadow-lg hover:border-secondary/30 transition-all cursor-pointer">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                <%= lucide_icon "file-text", class: "w-5 h-5 text-white" %>
+              </div>
+              <div>
+                <p class="text-xs text-muted">Content</p>
+                <p class="text-xl font-bold text-primary"><%= @total_contents || 0 %></p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Scheduled -->
+          <div class="group relative bg-white rounded-2xl px-5 py-3 shadow-sm border border-border/50 hover:shadow-lg hover:border-pink-500/30 transition-all cursor-pointer">
+            <div class="absolute inset-0 bg-gradient-to-r from-pink-500/5 to-rose-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                <%= lucide_icon "calendar", class: "w-5 h-5 text-white" %>
+              </div>
+              <div>
+                <p class="text-xs text-muted">Scheduled</p>
+                <p class="text-xl font-bold text-primary"><%= @scheduled_posts_count || 0 %></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container-xl mx-auto px-4 py-6">
+    <!-- Social Media Accounts Analytics Section -->
+    <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6 mb-6 overflow-x-auto">
+      <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+        <%= lucide_icon "share-2", class: "w-5 h-5 text-primary" %>Social Media Accounts
+      </h2>
+      <% if @social_accounts && @social_accounts.any? %>
+        <table class="w-full">
+          <thead>
+            <tr class="text-left border-b border-gray-100">
+              <th class="pb-3 text-sm font-semibold text-primary">Account</th>
+              <th class="pb-3 text-sm font-semibold text-primary text-center">Status</th>
+              <th class="pb-3 text-sm font-semibold text-primary text-center">Followers</th>
+              <th class="pb-3 text-sm font-semibold text-primary text-center">Following</th>
+              <th class="pb-3 text-sm font-semibold text-primary text-center">Posts</th>
+              <th class="pb-3 text-sm font-semibold text-primary text-center">Engagement</th>
+              <th class="pb-3 text-sm font-semibold text-primary text-center">Likes</th>
+              <th class="pb-3 text-sm font-semibold text-primary text-center">Views</th>
+              <th class="pb-3 text-sm font-semibold text-primary text-center">Shares</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @social_accounts.each do |account| %>
+              <% analytics = @social_accounts_analytics[account.id] || {} %>
+              <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <td class="py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br <%= account.platform == 'twitter' || account.platform == 'x' ? 'from-blue-400 to-blue-600' : account.platform == 'instagram' ? 'from-pink-500 to-purple-600' : account.platform == 'facebook' ? 'from-blue-600 to-blue-800' : account.platform == 'linkedin' ? 'from-blue-700 to-blue-900' : account.platform == 'tiktok' ? 'from-gray-800 to-black' : 'from-green-400 to-green-600' %> flex items-center justify-center text-white text-lg">
+                      <%= case account.platform
+                      when 'instagram' then '📷'
+                      when 'twitter' then '𝕏'
+                      when 'x' then '𝕏'
+                      when 'facebook' then '📘'
+                      when 'linkedin' then '💼'
+                      when 'tiktok' then '🎵'
+                      when 'youtube' then '▶️'
+                      when 'pinterest' then '📌'
+                      else '🌐'
+                      end %>
+                    </div>
+                    <div>
+                      <p class="font-medium text-primary text-sm"><%= account.platform_username.presence || account.platform.titleize %></p>
+                      <p class="text-xs text-muted capitalize"><%= account.platform %></p>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 text-center">
+                  <span class="px-2 py-1 text-xs font-medium rounded-full <%= account.is_connected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' %>">
+                    <%= account.is_connected ? 'Active' : 'Inactive' %>
+                  </span>
+                </td>
+                <td class="py-3 text-center">
+                  <p class="text-sm font-semibold text-primary"><%= number_with_delimiter(account.followers || 0) %></p>
+                </td>
+                <td class="py-3 text-center">
+                  <p class="text-sm font-semibold text-primary"><%= number_with_delimiter(account.messages || 0) %></p>
+                </td>
+                <td class="py-3 text-center">
+                  <p class="text-sm font-semibold text-primary"><%= analytics[:posts] || 0 %></p>
+                </td>
+                <td class="py-3 text-center">
+                  <p class="text-sm font-semibold text-green-600"><%= account.engagement || 0 %>%</p>
+                </td>
+                <td class="py-3 text-center">
+                  <p class="text-sm font-semibold text-pink-600"><%= number_with_delimiter(account.likes || 0) %></p>
+                </td>
+                <td class="py-3 text-center">
+                  <p class="text-sm font-semibold text-purple-600"><%= number_with_delimiter(account.views || 0) %></p>
+                </td>
+                <td class="py-3 text-center">
+                  <p class="text-sm font-semibold text-blue-600"><%= number_with_delimiter(account.shares || 0) %></p>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="text-center py-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+            <%= lucide_icon "users", class: "w-8 h-8 text-gray-400" %>
+          </div>
+          <p class="text-gray-500 mb-4">No social media accounts connected yet</p>
+          <%= link_to "Connect Accounts", social_account_connections_path, class: "btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+    
+    <!-- Unified Comments Dashboard Section -->
+    <div id="comments-section" class="bg-white rounded-2xl shadow-sm border border-border/50 p-6 mb-6">
+      <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+        <%= lucide_icon "message-square", class: "w-5 h-5 text-primary" %>Post Comments & Engagement
+      </h2>
+      
+      <!-- Comment Stats Summary -->
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 text-center">
+          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-blue-500/10 flex items-center justify-center">
+            <%= lucide_icon "message-circle", class: "w-6 h-6 text-blue-600" %>
+          </div>
+          <p class="text-2xl font-bold text-blue-600"><%= @total_comments %></p>
+          <p class="text-xs text-muted">Total Comments</p>
+        </div>
+        <div class="bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-xl p-4 text-center">
+          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-pink-500/10 flex items-center justify-center">
+            <%= lucide_icon "heart", class: "w-6 h-6 text-pink-600" %>
+          </div>
+          <p class="text-2xl font-bold text-pink-600"><%= @total_likes %></p>
+          <p class="text-xs text-muted">Total Likes</p>
+        </div>
+        <div class="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4 text-center">
+          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-green-500/10 flex items-center justify-center">
+            <%= lucide_icon "share-2", class: "w-6 h-6 text-green-600" %>
+          </div>
+          <p class="text-2xl font-bold text-green-600"><%= @total_shares %></p>
+          <p class="text-xs text-muted">Total Shares</p>
+        </div>
+      </div>
+      
+      <!-- Posts with Comments List -->
+      <% if @all_scheduled_posts && @all_scheduled_posts.any? %>
+        <div class="space-y-4">
+          <% @all_scheduled_posts.each do |post| %>
+            <% analytic = post.postforme_analytic %>
+            <div class="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-2">
+                    <% if post.social_account %>
+                      <div class="w-8 h-8 rounded-lg bg-gradient-to-br <%= post.social_account.platform == 'twitter' ? 'from-blue-400 to-blue-600' : 'from-pink-500 to-purple-600' %> flex items-center justify-center">
+                        <%= lucide_icon post.social_account.platform == 'twitter' ? 'twitter' : 'instagram', class: "w-4 h-4 text-white" %>
+                      </div>
+                      <span class="text-sm font-medium text-primary"><%= post.social_account.username %></span>
+                    <% end %>
+                    <span class="text-xs text-muted">• <%= post.scheduled_at&.strftime('%b %d, %Y %H:%M') || 'Not scheduled' %></span>
+                    <span class="px-2 py-0.5 text-xs rounded-full <%= post.status == 'published' ? 'bg-green-100 text-green-700' : post.status == 'scheduled' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600' %>">
+                      <%= post.status || 'draft' %>
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-700 line-clamp-2 mb-2">
+                    <%= post.content&.body&.truncate(150) || 'No content' %>
+                  </p>
+                  
+                  <!-- Engagement Stats -->
+                  <div class="flex items-center gap-4 text-sm">
+                    <% if analytic %>
+                      <span class="flex items-center gap-1 text-blue-600">
+                        <%= lucide_icon "message-circle", class: "w-4 h-4" %>
+                        <%= analytic.comments || 0 %>
+                      </span>
+                      <span class="flex items-center gap-1 text-pink-600">
+                        <%= lucide_icon "heart", class: "w-4 h-4" %>
+                        <%= analytic.likes || 0 %>
+                      </span>
+                      <span class="flex items-center gap-1 text-green-600">
+                        <%= lucide_icon "share-2", class: "w-4 h-4" %>
+                        <%= analytic.shares || 0 %>
+                      </span>
+                      <% if analytic.impressions && analytic.impressions > 0 %>
+                        <span class="flex items-center gap-1 text-purple-600">
+                          <%= lucide_icon "eye", class: "w-4 h-4" %>
+                          <%= analytic.impressions %>
+                        </span>
+                      <% end %>
+                    <% else %>
+                      <span class="text-muted text-xs">No analytics data yet</span>
+                    <% end %>
+                  </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-col gap-2">
+                  <%= link_to scheduled_post_path(post), class: "p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors", title: "View Details" do %>
+                    <%= lucide_icon "external-link", class: "w-4 h-4" %>
+                  <% end %>
+                  <%= link_to add_note_scheduled_post_path(post, internal_note: "Checked on #{Date.today}"), 
+                        method: :post,
+                        class: "p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors",
+                        title: "Mark as Checked" do %>
+                    <%= lucide_icon "sticky-note", class: "w-4 h-4" %>
+                  <% end %>
+                </div>
+              </div>
+              
+              <!-- Internal Note Display (if exists) -->
+              <% if post.internal_note.present? %>
+                <div class="mt-3 p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
+                  <div class="flex items-start gap-2">
+                    <%= lucide_icon "sticky-note", class: "w-4 h-4 text-yellow-600 mt-0.5" %>
+                    <div>
+                      <p class="text-xs font-medium text-yellow-800">Internal Note</p>
+                      <p class="text-sm text-yellow-700"><%= post.internal_note %></p>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+        
+        <% if @all_scheduled_posts.count >= 50 %>
+          <div class="mt-4 text-center">
+            <%= link_to "View All Posts", scheduled_posts_path, class: "btn-secondary" %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="text-center py-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+            <%= lucide_icon "message-square", class: "w-8 h-8 text-gray-400" %>
+          </div>
+          <p class="text-gray-500 mb-4">No scheduled posts yet</p>
+          <%= link_to "Schedule a Post", new_scheduled_post_path, class: "btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Feature Action Tabs -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h2 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "zap", class: "w-5 h-5 text-primary" %>Quick Actions
+          </h2>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+            <%= link_to scheduled_posts_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl border border-blue-500/20 hover:from-blue-500/20 hover:to-cyan-500/20 hover:border-blue-500/30 transition-all group" do %>
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <%= lucide_icon "calendar", class: "w-6 h-6 text-white" %>
+              </div>
+              <span class="text-sm font-semibold text-gray-800 text-center">Scheduling</span>
+              <span class="text-xs text-muted text-center">Schedule</span>
+            <% end %>
+
+            <%= link_to campaigns_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/20 hover:from-green-500/20 hover:to-emerald-500/20 hover:border-green-500/30 transition-all group" do %>
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <%= lucide_icon "megaphone", class: "w-6 h-6 text-white" %>
+              </div>
+              <span class="text-sm font-semibold text-gray-800 text-center">Campaigns</span>
+            <% end %>
+
+            <%= link_to ai_marketing_strategy_index_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/20 hover:from-green-500/20 hover:to-emerald-500/20 hover:border-green-500/30 transition-all group" do %>
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <%= lucide_icon "trending-up", class: "w-6 h-6 text-white" %>
+              </div>
+              <span class="text-sm font-semibold text-gray-800 text-center">Strategy</span>
+              <span class="text-xs text-muted text-center">AI insights</span>
+            <% end %>
+
+
+            <%= link_to ai_chat_index_path, class: "flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 rounded-xl border border-indigo-500/20 hover:from-indigo-500/20 hover:to-violet-500/20 hover:border-indigo-500/30 transition-all group" do %>
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <%= lucide_icon "message-square", class: "w-6 h-6 text-white" %>
+              </div>
+              <span class="text-sm font-semibold text-gray-800 text-center">Pilot-Chat</span>
+              <span class="text-xs text-muted text-center">Auto chat</span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Sidebar -->
+      <div class="space-y-6">
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "activity", class: "w-5 h-5 text-primary" %>Recent Activity
+          </h3>
+          <div class="space-y-4">
+            <% if @scheduled_posts && @scheduled_posts.any? %>
+              <% @scheduled_posts.each do |post| %>
+                <div class="flex items-start gap-3 pb-3 border-b border-border/30 last:border-0">
+                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                    <%= lucide_icon "clock", class: "w-4 h-4 text-white" %>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-primary truncate"><%= post.content&.title || 'Scheduled Post' %></p>
+                    <p class="text-xs text-muted"><%= post.scheduled_at&.strftime('%b %e, %l:%M %p') || 'No time' %></p>
+                  </div>
+                </div>
+              <% end %>
+            <% else %>
+              <p class="text-sm text-muted text-center py-4">No scheduled posts</p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

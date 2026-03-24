@@ -1,0 +1,92 @@
+<% content_for :title, "Edit Auto Response Trigger" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated py-8">
+  <div class="container-xl mx-auto px-4">
+    <!-- Header -->
+    <div class="mb-6">
+      <%= link_to auto_response_triggers_path, class: "inline-flex items-center text-sm text-muted hover:text-primary transition-colors mb-4" do %>
+        <%= lucide_icon "arrow-left", class: "w-4 h-4 mr-2" %>
+        Back to Auto Responses
+      <% end %>
+      <h1 class="text-3xl font-bold text-primary">Edit Trigger: <%= @trigger.name %></h1>
+      <p class="text-muted mt-2">Update your auto response trigger settings</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+      <%= form_with model: @trigger, url: auto_response_trigger_path(@trigger), method: :patch, local: true, class: "space-y-6" do |f| %>
+        <!-- Name -->
+        <div>
+          <%= f.label :name, "Trigger Name", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.text_field :name, class: "form-input w-full", placeholder: "e.g., Reply to Comments" %>
+          <% if @trigger.errors[:name].any? %>
+            <p class="mt-1 text-sm text-red-600"><%= @trigger.errors[:name].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <%= f.label :description, "Description", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.text_area :description, rows: 3, class: "form-input w-full", placeholder: "Describe what this trigger does..." %>
+        </div>
+
+        <!-- Trigger Type -->
+        <div>
+          <%= f.label :trigger_type, "Trigger Type", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.select :trigger_type, 
+              AutoResponseTrigger.trigger_types.keys.map { |k| [k.titleize, k] },
+              {},
+              class: "form-input w-full" %>
+          <% if @trigger.errors[:trigger_type].any? %>
+            <p class="mt-1 text-sm text-red-600"><%= @trigger.errors[:trigger_type].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Response Type -->
+        <div>
+          <%= f.label :response_type, "Response Type", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.select :response_type,
+              AutoResponseTrigger.response_types.keys.map { |k| [k.titleize, k] },
+              {},
+              class: "form-input w-full" %>
+          <% if @trigger.errors[:response_type].any? %>
+            <p class="mt-1 text-sm text-red-600"><%= @trigger.errors[:response_type].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <%= f.label :status, "Status", class: "block text-sm font-medium text-primary mb-2" %>
+          <div class="flex items-center gap-4">
+            <label class="inline-flex items-center">
+              <%= f.radio_button :status, 'active', class: "form-radio" %>
+              <span class="ml-2 text-sm text-primary">Active</span>
+            </label>
+            <label class="inline-flex items-center">
+              <%= f.radio_button :status, 'inactive', class: "form-radio" %>
+              <span class="ml-2 text-sm text-primary">Inactive</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Conditions (Advanced) -->
+        <div class="border-t border-border/30 pt-6">
+          <h3 class="text-lg font-medium text-primary mb-4">Advanced Settings</h3>
+          
+          <div>
+            <%= f.label :conditions, "Conditions (JSON array)", class: "block text-sm font-medium text-primary mb-2" %>
+            <%= f.text_area :conditions, value: @trigger.conditions.to_json, rows: 4, class: "form-input w-full font-mono text-sm" %>
+            <p class="mt-1 text-xs text-muted">Define conditions as JSON array</p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 pt-4">
+          <%= f.submit "Update Trigger", class: "btn-primary" %>
+          <%= link_to "Cancel", auto_response_triggers_path, class: "btn-secondary" %>
+          <%= button_to "Delete", auto_response_trigger_path(@trigger), method: :delete, data: { confirm: "Are you sure?" }, class: "btn-danger ml-auto" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

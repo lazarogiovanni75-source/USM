@@ -1,0 +1,231 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <%= link_to "← Back to Drafts", drafts_path, class: "hover:text-blue-600" %>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900"><%= @draft.title || "Untitled Draft" %></h1>
+            <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+              <span class="badge badge-<%= @draft.status %>"><%= @draft.status.humanize %></span>
+              <span><%= @draft.platform.titleize %></span>
+              <span><%= @draft.content_type.titleize %></span>
+              <span>Updated <%= time_ago_in_words(@draft.updated_at) %> ago</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <%= link_to "Edit", edit_draft_path(@draft), class: "btn-secondary" %>
+          <% if @draft.content_type.in?(['video', 'image']) && @draft.status == 'failed' %>
+            <%= button_to "Retry Checking Status", retry_video_status_draft_path(@draft), method: :post, class: "btn-warning" %>
+          <% end %>
+          <%= button_to "Publish", convert_to_content_draft_path(@draft), method: :post, class: "btn-primary", data: { confirm: "Convert to published content?" } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generated Media Display -->
+    <% display_url = @draft.media_display_url %>
+    <% if display_url.present? %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Generated Media</h2>
+        <div class="flex justify-center">
+          <% if @draft.content_type == 'image' %>
+            <img src="<%= display_url %>" alt="Generated Image" class="max-w-full rounded-lg shadow-md">
+          <% elsif @draft.content_type == 'video' %>
+            <video src="<%= display_url %>" controls class="max-w-full rounded-lg shadow-md">
+              Your browser does not support video playback.
+            </video>
+          <% end %>
+        </div>
+        <div class="mt-4 text-center">
+          <a href="<%= display_url %>" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
+            Open in new tab ↗
+          </a>
+        </div>
+      </div>
+    <% elsif @draft.status == 'failed' %>
+      <div class="bg-white rounded-lg shadow-sm border border-red-200 p-6 mb-6">
+        <div class="text-center py-8">
+          <div class="text-red-500 text-5xl mb-4">⚠️</div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Generation Failed</h3>
+          <p class="text-gray-600"><%= @draft.metadata['error'] || 'An unknown error occurred during generation.' %></p>
+          <p class="text-sm text-gray-500 mt-2">This may be due to an invalid API key or the service being unavailable.</p>
+          <div class="mt-4 flex justify-center gap-4">
+            <%= button_to "Retry Checking Status", retry_video_status_draft_path(@draft), method: :post, class: "btn-secondary" %>
+            <%= link_to "Try Again", content_creation_index_path, class: "btn-primary" %>
+          </div>
+        </div>
+      </div>
+    <% elsif @draft.content_type.in?(['image', 'video']) && @draft.status == 'pending' %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="text-center py-8">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p class="text-gray-600">Media is being generated...</p>
+          <p class="text-sm text-gray-500 mt-2">This may take a few moments. Refresh the page to check status.</p>
+        </div>
+      </div>
+    <% elsif @draft.content_type.in?(['image', 'video']) %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="text-center py-8">
+          <div class="text-gray-400 text-5xl mb-4">🎬</div>
+          <p class="text-gray-600">No media generated yet</p>
+          <p class="text-sm text-gray-500 mt-2">Generate media from the content creation page.</p>
+          <%= link_to "Generate Media", content_creation_index_path, class: "btn-primary mt-4" %>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Main Content -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Draft Content -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Content</h2>
+            <div class="text-sm text-gray-500">
+              <%= @draft.content.length %> characters
+            </div>
+          </div>
+          
+          <div class="prose max-w-none">
+            <% if @draft.content.present? %>
+              <%= simple_format(@draft.content) %>
+            <% else %>
+              <p class="text-gray-500 italic">No content yet</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- AI Suggestions -->
+        <% if @suggestions && @suggestions.any? %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="suggestions">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold text-gray-900">AI Suggestions</h2>
+              <%= link_to "Regenerate", edit_draft_path(@draft), class: "btn-secondary btn-sm" %>
+            </div>
+            
+            <div class="space-y-4">
+              <% @suggestions.each do |suggestion| %>
+                <div class="border border-gray-200 rounded-lg p-4">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <h4 class="font-medium text-gray-900"><%= suggestion.topic %></h4>
+                      <p class="text-gray-700 mt-1"><%= suggestion.suggestion %></p>
+                      <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                        <span>Confidence: <%= (suggestion.confidence * 100).round %>%</span>
+                        <span class="badge badge-info"><%= suggestion.status.humanize %></span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2 ml-4">
+                      <%= button_to "Accept", content_suggestion_path(suggestion), method: :patch, params: { content_suggestion: { status: 'accepted' } }, class: "btn-sm btn-primary" %>
+                      <%= button_to "Reject", content_suggestion_path(suggestion), method: :patch, params: { content_suggestion: { status: 'rejected' } }, class: "btn-sm btn-secondary" %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          
+          <div class="space-y-3">
+            <button class="btn-primary w-full" onclick="analyzeDraft()">
+              Analyze Content
+            </button>
+            
+            <%= link_to "Duplicate", duplicate_draft_path(@draft), method: :post, class: "btn-secondary w-full text-center", data: { confirm: "Duplicate this draft?" } %>
+            
+            <%= button_to "Delete", draft_path(@draft), method: :delete, class: "btn-danger w-full", data: { confirm: "Are you sure you want to delete this draft?" } %>
+          </div>
+        </div>
+
+        <!-- Share to Social Media -->
+        <% connected_accounts = current_user.social_accounts.where.not(postforme_profile_id: nil) %>
+        <% if connected_accounts.any? && @draft.status != 'published' %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Share to Social Media</h3>
+            <p class="text-sm text-gray-600 mb-4">Post this content directly to your connected accounts</p>
+            
+            <%= form_with url: share_to_social_media_social_account_connections_path, method: :post do |f| %>
+              <%= f.hidden_field :draft_id, value: @draft.id %>
+              <div class="mb-4">
+                <%= f.label :social_account_id, "Select Account", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.select :social_account_id, 
+                    options_from_collection_for_select(connected_accounts, :id, ->(a) { "#{a.name || a.platform.titleize} (#{a.username})" }),
+                    { prompt: "Choose an account" },
+                    class: "form-select w-full" %>
+              </div>
+              <%= f.submit "Share Now", class: "btn-primary w-full", data: { confirm: "Are you sure you want to post this content now?" } %>
+            <% end %>
+          </div>
+        <% elsif @draft.status != 'published' %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Share to Social Media</h3>
+            <p class="text-sm text-gray-600 mb-4">No connected accounts</p>
+            <%= link_to "Connect Accounts", social_account_connections_path, class: "btn-secondary w-full text-center" %>
+          </div>
+        <% end %>
+
+        <!-- Draft Information -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Information</h3>
+          
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Platform:</span>
+              <span class="font-medium"><%= @draft.platform.titleize %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Type:</span>
+              <span class="font-medium"><%= @draft.content_type.titleize %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Status:</span>
+              <span class="font-medium"><%= @draft.status.humanize %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Word Count:</span>
+              <span class="font-medium"><%= @draft.content.split.length %> words</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Created:</span>
+              <span class="font-medium"><%= time_ago_in_words(@draft.created_at) %> ago</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Updated:</span>
+              <span class="font-medium"><%= time_ago_in_words(@draft.updated_at) %> ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- stimulus-validator: allow-script -->
+<script>
+<% if @draft.content_type.in?(['video', 'image']) && @draft.status == 'pending' %>
+// Auto-refresh the page every 5 seconds while pending
+setTimeout(function() {
+  window.location.reload();
+}, 5000);
+<% end %>
+
+function analyzeDraft() {
+  // Implement content analysis functionality
+  alert('Content analysis feature coming soon!');
+}
+
+function regenerateSuggestions() {
+  // Implement suggestion regeneration
+  alert('Suggestion regeneration feature coming soon!');
+}
+</script>

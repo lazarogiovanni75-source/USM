@@ -1,0 +1,108 @@
+<!-- Continuous Voice Interface - ChatGPT Style -->
+<div class="bg-white rounded-xl shadow-lg p-8" data-controller="continuous-voice"
+     data-continuous-voice-user-id-value="<%= current_user.id %>"
+     data-continuous-voice-conversation-id-value="<%= @current_conversation&.id || '' %>">
+  
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+      </svg>
+    </div>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Continuous Voice - ChatGPT Style</h2>
+    <p class="text-gray-600">Stays open for back-and-forth conversation. Click once and keep talking!</p>
+  </div>
+
+  <!-- Voice Control Panel -->
+  <div class="bg-gray-50 rounded-xl p-6 mb-6">
+    <div class="flex flex-col items-center space-y-6">
+      
+      <!-- Microphone Button -->
+      <button class="voice-button group relative" data-action="continuous-voice#toggleRecording" 
+              data-continuous-voice-target="voiceButton">
+        <div class="w-24 h-24 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+          <svg class="w-10 h-10 text-white microphone-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+          </svg>
+          <!-- Stop icon (hidden by default) -->
+          <svg class="w-10 h-10 text-white stop-icon hidden" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="6" width="12" height="12" rx="2"/>
+          </svg>
+        </div>
+        <div class="absolute -inset-1 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-200"></div>
+      </button>
+
+      <!-- Status -->
+      <div class="text-center">
+        <div data-continuous-voice-target="status" class="text-lg font-medium text-gray-600">
+          Click microphone to start
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Click once, then keep talking!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transcription Display -->
+  <div class="mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-3">What You Said</h3>
+    <div data-continuous-voice-target="transcription" class="min-h-[60px] p-4 bg-white border border-gray-200 rounded-lg">
+      <div class="text-gray-500 text-sm italic">
+        Your speech will appear here
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Response Section -->
+  <div class="mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-3">Pilot's Response</h3>
+    <div data-continuous-voice-target="response" class="min-h-[120px]">
+      <div class="text-gray-500 text-sm text-center py-8">
+        Pilot's responses will appear here
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Section -->
+  <div class="mt-8 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-100">
+    <h4 class="font-semibold text-gray-900 mb-2 flex items-center">
+      <svg class="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      How It Works
+    </h4>
+    <div class="text-sm text-gray-700 space-y-2">
+      <p>1. <strong>Click the microphone once</strong> to start</p>
+      <p>2. <strong>Keep talking</strong> - it captures continuously like ChatGPT</p>
+      <p>3. <strong>Back-and-forth conversation</strong> - no need to click again!</p>
+      <p>4. <strong>Click again</strong> to stop when done</p>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+.voice-button.recording .microphone-icon {
+  display: none;
+}
+
+.voice-button.recording .stop-icon {
+  display: block;
+}
+
+.voice-button.recording > div:first-child {
+  animation: pulse-recording 1.5s infinite;
+  background: linear-gradient(to right, #ef4444, #dc2626);
+}
+
+@keyframes pulse-recording {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+  }
+}
+</style>

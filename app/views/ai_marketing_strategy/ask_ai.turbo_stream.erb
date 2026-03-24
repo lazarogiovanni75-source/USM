@@ -1,0 +1,29 @@
+<%= turbo_stream.replace "strategy-qa-result" do %>
+  <div id="strategy-qa-result" class="mt-4">
+    <div class="p-4 bg-success/10 border border-success/30 rounded-xl">
+      <p class="text-primary"><%= @answer %></p>
+    </div>
+  </div>
+<% end %>
+
+<%= turbo_stream.update "strategy-question" do %>
+  <%= form_with url: ask_ai_ai_marketing_strategy_path, method: :post, data: { turbo_stream: true } do |f| %>
+    <div class="space-y-4">
+      <%= f.text_area :question, 
+          id: "strategy-question",
+          class: "w-full px-4 py-3 bg-surface border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none text-primary placeholder:text-text-muted",
+          rows: 2,
+          placeholder: "Ask anything about your marketing strategy..." %>
+      <div class="flex justify-end">
+        <div data-ai-marketing-strategy-target="submitBtn">
+          <%= f.submit "Ask AI", 
+              id: "ask-strategy-btn",
+              class: "btn-primary cursor-pointer" do %>
+            <%= lucide_icon "send", class: "w-4 h-4 mr-2" %>
+            Ask AI
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+<% end %>

@@ -1,0 +1,8 @@
+# Voice Generation Service Configuration
+
+# Node.js Voice Service URL (where your voice service runs)
+VOICE_SERVICE_URL=http://localhost:3001
+
+# ElevenLabs API Key (used by Node.js service, not Rails)
+# This should be set in the Node.js service environment variables
+# ELEVENLABS_API_KEY=your_elevenlabs_api_key_here

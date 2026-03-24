@@ -1,0 +1,304 @@
+<% content_for :title, "AI Marketing Strategy" %>
+
+<!-- stimulus-validator: disable-next-line -->
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated relative overflow-hidden" 
+     data-controller="ai-marketing-strategy">
+  <!-- Decorative Background -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-20 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute top-40 right-20 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+    <div class="absolute bottom-20 left-1/3 w-80 h-80 bg-success/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="bg-surface-elevated/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 relative">
+    <div class="container-xl mx-auto px-4 py-6">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg ring-4 ring-green-500/10">
+            <%= lucide_icon "trending-up", class: "w-7 h-7 text-white" %>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-primary">AI Marketing Strategy</h1>
+            <p class="text-sm text-muted">Analyze your social media data & get AI-powered recommendations</p>
+          </div>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- History Link -->
+          <%= link_to history_ai_marketing_strategy_index_path,
+              class: "btn-ghost cursor-pointer" do %>
+            <%= lucide_icon "history", class: "w-4 h-4 mr-2" %>
+            History
+          <% end %>
+          
+          <!-- Execute Strategy Button -->
+          <%= button_to execute_ai_marketing_strategy_index_path(focus_area: 'comprehensive'),
+              method: :post,
+              class: "btn-primary cursor-pointer",
+              data: { confirm: "This will create 5 scheduled draft posts based on AI recommendations. Continue?" } do %>
+            <%= lucide_icon "play", class: "w-4 h-4 mr-2" %>
+            Execute Strategy
+          <% end %>
+          
+          <!-- Time Range Selector -->
+          <%= form_with url: analyze_ai_marketing_strategy_index_path, method: :post, local: true, class: "flex items-center gap-2" do |f| %>
+            <%= f.select :time_range, 
+                { 'Last Week' => 'week', 'Last Month' => 'month', 'Last Quarter' => 'quarter' },
+                { selected: 'month' },
+                class: "px-3 py-2 bg-white border border-border/50 rounded-lg text-sm text-primary focus:ring-2 focus:ring-primary/20" %>
+            <%= f.submit "Analyze", class: "btn-primary cursor-pointer" %>
+          <% end %>
+          
+          <!-- Generate Full Report -->
+          <%= button_to generate_report_ai_marketing_strategy_index_path(focus_area: 'comprehensive'), 
+              method: :post,
+              class: "btn-secondary cursor-pointer" do %>
+            <%= lucide_icon "file-text", class: "w-4 h-4 mr-2" %>
+            Generate Report
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container-xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left: Quick Insights -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Overall Score Card -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "zap", class: "w-5 h-5 text-amber-500" %>
+            Performance Score
+          </h3>
+          <div class="flex items-center justify-center mb-4">
+            <div class="relative w-32 h-32">
+              <svg class="w-full h-full transform -rotate-90">
+                <circle cx="64" cy="64" r="56" stroke="currentColor" stroke-width="8" fill="none" class="text-gray-200"/>
+                <circle cx="64" cy="64" r="56" stroke="currentColor" stroke-width="8" fill="none" 
+                        stroke-dasharray="<%= (@insights[:overall_score] || 0) * 3.52 %> 352"
+                        class="text-success transition-all duration-1000"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-3xl font-bold text-primary"><%= @insights[:overall_score] || 0 %>%</span>
+              </div>
+            </div>
+          </div>
+          <p class="text-sm text-muted text-center">Based on engagement, growth, and activity</p>
+        </div>
+        
+        <!-- Key Metrics -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "bar-chart-2", class: "w-5 h-5 text-primary" %>
+            Quick Metrics
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted">Top Platform</span>
+              <span class="text-sm font-semibold text-primary"><%= @insights[:top_performing_platform]&.dig(:platform)&.titleize || 'N/A' %></span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted">Growth Trend</span>
+              <span class="inline-flex items-center gap-1 text-sm font-semibold 
+                <%= case @insights[:growth_trend]
+                    when 'positive' then 'text-success'
+                    when 'negative' then 'text-error'
+                    else 'text-muted'
+                    end %>">
+                <%= lucide_icon (@insights[:growth_trend] == 'positive' ? 'trending-up' : @insights[:growth_trend] == 'negative' ? 'trending-down' : 'minus'), class: "w-4 h-4" %>
+                <%= @insights[:growth_trend]&.titleize || 'N/A' %>
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted">Key Opportunity</span>
+              <span class="text-sm font-medium text-primary text-right max-w-[60%]"><%= @insights[:key_opportunity] || 'Connect accounts' %></span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Recommended Action -->
+        <div class="bg-gradient-to-br from-success/10 to-emerald-500/10 rounded-2xl border border-success/30 p-6">
+          <h3 class="text-lg font-bold text-primary mb-2 flex items-center gap-2">
+            <%= lucide_icon "lightbulb", class: "w-5 h-5 text-amber-500" %>
+            Recommended Action
+          </h3>
+          <p class="text-sm text-primary"><%= @insights[:recommended_action] || 'Connect social accounts to get recommendations' %></p>
+        </div>
+      </div>
+      
+      <!-- Right: AI Analysis & Strategy -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- AI Insights -->
+        <div id="analysis-results" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "brain", class: "w-5 h-5 text-primary" %>
+            AI Analysis
+          </h3>
+          <% if @analysis %>
+            <div class="space-y-4">
+              <div class="p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl">
+                <h4 class="text-sm font-semibold text-primary mb-2">Summary</h4>
+                <p class="text-sm text-muted"><%= @analysis[:insights][:summary] || 'Analysis complete' %></p>
+              </div>
+              
+              <% if @analysis[:strategy][:key_recommendations].present? %>
+                <div>
+                  <h4 class="text-sm font-semibold text-primary mb-3">Key Recommendations</h4>
+                  <ul class="space-y-2">
+                    <% @analysis[:strategy][:key_recommendations].first(5).each do |rec| %>
+                      <li class="flex items-start gap-2 text-sm text-muted">
+                        <span class="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <%= lucide_icon "check", class: "w-3 h-3 text-success" %>
+                        </span>
+                        <%= rec %>
+                      </li>
+                    <% end %>
+                  </ul>
+                </div>
+              <% end %>
+              
+              <% if @analysis[:strategy][:content_themes].present? %>
+                <div>
+                  <h4 class="text-sm font-semibold text-primary mb-3">Suggested Content Themes</h4>
+                  <div class="flex flex-wrap gap-2">
+                    <% @analysis[:strategy][:content_themes].each do |theme| %>
+                      <span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"><%= theme %></span>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+              
+              <% if @analysis[:strategy][:posting_schedule].present? %>
+                <div>
+                  <h4 class="text-sm font-semibold text-primary mb-3">Optimal Posting Times</h4>
+                  <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <% @analysis[:strategy][:posting_schedule].each do |platform, schedule| %>
+                      <div class="p-3 bg-surface-elevated rounded-xl">
+                        <p class="text-xs font-semibold text-primary mb-1"><%= platform.titleize %></p>
+                        <p class="text-xs text-muted"><%= schedule[:best_days]&.first(2)&.join(', ') || 'N/A' %></p>
+                        <p class="text-xs text-muted"><%= schedule[:best_times]&.first || 'N/A' %></p>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-8">
+              <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <%= lucide_icon "sparkles", class: "w-8 h-8 text-primary" %>
+              </div>
+              <h3 class="text-sm font-medium text-primary mb-1">Ready to Analyze</h3>
+              <p class="text-xs text-muted">Click "Analyze" to get AI-powered marketing recommendations</p>
+            </div>
+          <% end %>
+        </div>
+        
+        <!-- Ask AI About Strategy -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "message-square", class: "w-5 h-5 text-primary" %>
+            Ask AI About Your Strategy
+          </h3>
+          <!-- Question textarea wrapper -->
+          <div data-ai-marketing-strategy-target="question">
+            <%= form_with url: ask_ai_ai_marketing_strategy_index_path, method: :post, data: { turbo_stream: true } do |f| %>
+              <div class="space-y-4">
+                <%= f.text_area :question, 
+                    id: "strategy-question",
+                    class: "w-full px-4 py-3 bg-white border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none",
+                    rows: 2,
+                    placeholder: "Ask anything about your marketing strategy..." %>
+                <div class="flex justify-end">
+                  <div data-ai-marketing-strategy-target="submitBtn">
+                    <%= f.submit "Ask AI", 
+                        id: "ask-strategy-btn",
+                        class: "btn-primary cursor-pointer" do %>
+                      <%= lucide_icon "send", class: "w-4 h-4 mr-2" %>
+                      Ask AI
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          <div id="strategy-qa-result" class="mt-4" data-ai-marketing-strategy-target="result">
+          </div>
+        </div>
+        
+        <!-- KPI Targets -->
+        <div id="report-results" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "target", class: "w-5 h-5 text-primary" %>
+            KPI Targets
+          </h3>
+          <% if @analysis && @analysis[:strategy][:kpis_to_track].present? %>
+            <div class="grid grid-cols-2 gap-4">
+              <% @analysis[:strategy][:kpis_to_track].each do |kpi| %>
+                <div class="p-4 bg-surface-elevated rounded-xl">
+                  <p class="text-xs text-muted mb-1"><%= kpi[:name] %></p>
+                  <p class="text-lg font-bold text-primary"><%= kpi[:target] %></p>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-8">
+              <p class="text-sm text-muted">Run analysis to see KPI targets</p>
+            </div>
+          <% end %>
+        </div>
+        
+        <!-- Strategy Trend -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
+          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+            <%= lucide_icon "line-chart", class: "w-5 h-5 text-primary" %>
+            Strategy Performance Trend
+          </h3>
+          <div id="strategy-trend">
+            <% if @trend[:trend] == 'no_data' %>
+              <div class="text-center py-8">
+                <p class="text-sm text-muted">Generate strategies to see trends</p>
+                <a href="/ai_marketing_strategy" class="text-sm text-primary hover:underline mt-2 inline-block">Generate First Strategy</a>
+              </div>
+            <% else %>
+              <% trend_color = case @trend[:trend]
+                               when 'improving' then 'text-success'
+                               when 'declining' then 'text-error'
+                               else 'text-muted'
+                               end %>
+              <% trend_label = case @trend[:trend]
+                               when 'improving' then 'Improving'
+                               when 'declining' then 'Declining'
+                               else 'Stable'
+                               end %>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl font-bold <%= trend_color %>"><%= @trend[:change_percent] %>%</span>
+                  <span class="text-sm text-muted">change</span>
+                </div>
+                <span class="px-3 py-1 rounded-full text-sm font-medium <%= trend_color %> bg-opacity-10">
+                  <%= trend_label %>
+                </span>
+              </div>
+              <% if @trend[:scores] && @trend[:scores].any? %>
+                <div class="flex items-end justify-between h-24 gap-2">
+                  <% @trend[:scores].each_with_index do |score, i| %>
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                      <div class="w-full bg-primary/20 rounded-t" style="height: <%= score %>%"></div>
+                      <span class="text-xs text-muted"><%= i + 1 %></span>
+                    </div>
+                  <% end %>
+                </div>
+                <p class="text-xs text-muted text-center mt-2">Last <%= @trend[:scores].length %> strategies</p>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

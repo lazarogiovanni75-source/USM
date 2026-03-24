@@ -1,0 +1,38 @@
+<!-- Edit Waitlist Entry -->
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6">
+      <%= link_to 'Back to Waitlist', waitlists_path, class: "text-primary hover:text-primary/80" %>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-900">Edit Waitlist Entry</h1>
+      </div>
+      <div class="px-6 py-4">
+        <%= form_with(model: @waitlist, class: "space-y-6") do |f| %>
+          <% if @waitlist.errors.any? %>
+            <div class="bg-red-50 border border-red-200 rounded-md p-4">
+              <h3 class="text-sm font-medium text-red-800"><%= pluralize(@waitlist.errors.count, "error") %> prohibited this waitlist entry from being saved:</h3>
+              <ul class="mt-2 list-disc list-inside text-sm text-red-600">
+                <% @waitlist.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div>
+            <%= f.label :email, class: "block text-sm font-medium text-gray-700" %>
+            <%= f.email_field :email, required: true, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm" %>
+          </div>
+
+          <div class="flex gap-4">
+            <%= f.submit "Update", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90" %>
+            <%= link_to 'Cancel', waitlist_path(@waitlist), class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

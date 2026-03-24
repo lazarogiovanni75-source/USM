@@ -1,0 +1,33 @@
+<div class="flex items-center space-x-3" data-controller="calendar">
+  <div class="flex items-center space-x-1">
+    <button 
+      class="calendar-view-btn px-3 py-2 text-sm font-medium rounded-lg transition-colors <%= @current_view == 'month' ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' %>"
+      data-view="month"
+      data-action="calendar#changeView"
+    >
+      Month
+    </button>
+    <button 
+      class="calendar-view-btn px-3 py-2 text-sm font-medium rounded-lg transition-colors <%= @current_view == 'week' ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' %>"
+      data-view="week"
+      data-action="calendar#changeView"
+    >
+      Week
+    </button>
+    <button 
+      class="calendar-view-btn px-3 py-2 text-sm font-medium rounded-lg transition-colors <%= @current_view == 'day' ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' %>"
+      data-view="day"
+      data-action="calendar#changeView"
+    >
+      Day
+    </button>
+  </div>
+  
+  <button 
+    class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
+    data-action="calendar#newPost"
+  >
+    <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>
+    New Post
+  </button>
+</div>

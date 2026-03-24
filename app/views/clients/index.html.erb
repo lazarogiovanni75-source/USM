@@ -1,0 +1,95 @@
+<% content_for :title, "Clients" %>
+
+<div class="container-xl">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-50">Clients</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">Manage your agency's clients</p>
+    </div>
+    <% if current_user.agency_staff? || current_user.admin? %>
+      <%= link_to new_client_path, class: "btn btn-primary" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Add Client
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="card border border-gray-200 dark:border-gray-700">
+    <div class="card-body p-0">
+      <% if @clients.any? %>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th class="text-left">Name</th>
+                <th class="text-left">Contact</th>
+                <th class="text-left">Status</th>
+                <th class="text-left">Plan</th>
+                <th class="text-left">Campaigns</th>
+                <th class="text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <% @clients.each do |client| %>
+                <tr>
+                  <td class="p-4">
+                    <div class="font-medium text-gray-900 dark:text-gray-50"><%= client.name %></div>
+                    <div class="text-sm text-gray-500">Created <%= time_ago_in_words(client.created_at) %> ago</div>
+                  </td>
+                  <td class="p-4">
+                    <% if client.contact_name %>
+                      <div class="text-sm text-gray-900 dark:text-gray-50"><%= client.contact_name %></div>
+                    <% end %>
+                    <% if client.email %>
+                      <div class="text-sm text-gray-500"><%= client.email %></div>
+                    <% end %>
+                  </td>
+                  <td class="p-4">
+                    <span class="badge <%= client.active? ? 'badge-success' : 'badge-secondary' %>">
+                      <%= client.status %>
+                    </span>
+                  </td>
+                  <td class="p-4">
+                    <span class="badge badge-info"><%= client.plan %></span>
+                  </td>
+                  <td class="p-4">
+                    <div class="text-sm">
+                      <span class="font-medium"><%= client.total_campaigns %></span> total
+                      <span class="text-gray-500">•</span>
+                      <span class="font-medium text-green-600"><%= client.active_campaigns %></span> active
+                    </div>
+                  </td>
+                  <td class="p-4">
+                    <div class="flex items-center gap-2">
+                      <%= link_to client_path(client), class: "btn btn-sm btn-outline-primary" do %>
+                        View
+                      <% end %>
+                      <% if current_user.agency_staff? || current_user.admin? %>
+                        <%= link_to edit_client_path(client), class: "btn btn-sm btn-outline-secondary" do %>
+                          Edit
+                        <% end %>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="p-12 text-center text-gray-500 dark:text-gray-400">
+          <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <p class="text-lg font-medium">No clients yet</p>
+          <p class="mt-2">Get started by adding your first client</p>
+          <%= link_to new_client_path, class: "btn btn-primary mt-4" do %>
+            Add Client
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

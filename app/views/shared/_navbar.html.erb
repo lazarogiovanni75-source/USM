@@ -1,0 +1,218 @@
+<!-- Navbar -->
+<div data-controller="dropdown">
+<nav class="sticky top-0 z-50 backdrop-blur-md bg-white border-b border-gray-200 dark:border-gray-700 shadow-sm">
+    <div class="container-xl mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo with image -->
+        <div class="flex items-center">
+          <a href="/" class="flex items-center space-x-2">
+            <%= image_tag "logo.jpg", alt: "Ultimate Social Media", class: "h-10 w-auto" %>
+            <span class="text-xl font-bold text-primary">Ultimate Social Media</span>
+          </a>
+        </div>
+
+        <!-- Desktop Nav - Simple links -->
+        <div class="hidden md:flex items-center space-x-6">
+          <%= link_to "Features", pages_features_path, class: "text-gray-700 dark:text-gray-300 hover:text-purple-600" %>
+          <%= link_to "Pricing", pages_pricing_path, class: "text-gray-700 dark:text-gray-300 hover:text-purple-600" %>
+          <%= link_to "About", pages_about_path, class: "text-gray-700 dark:text-gray-300 hover:text-purple-600" %>
+          <%= link_to "Dashboard", dashboards_path, class: "text-gray-700 dark:text-gray-300 hover:text-purple-600" %>
+          
+          <!-- Tools Dropdown -->
+          <div class="relative" data-controller="dropdown">
+            <button class="flex items-center text-gray-700 dark:text-gray-300 hover:text-purple-600 font-medium focus:outline-none" data-action="click->dropdown#toggle">
+              Tools
+              <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div data-dropdown-target="menu" class="hidden absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+              <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Tools</div>
+              <%= link_to content_creation_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "pen-tool", class: "w-4 h-4 text-purple-500" %>
+                <span>Content Creation</span>
+              <% end %>
+              <%= link_to contents_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "file-text", class: "w-4 h-4 text-blue-500" %>
+                <span>Drafts/Approvals</span>
+              <% end %>
+              <%= link_to engagement_analytics_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "bar-chart-2", class: "w-4 h-4 text-blue-500" %>
+                <span>Analytics</span>
+              <% end %>
+              <%= link_to social_media_dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-green-500" %>
+                <span>Social Media Dashboard</span>
+              <% end %>
+              <%= link_to scheduled_posts_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "calendar", class: "w-4 h-4 text-orange-500" %>
+                <span>Posting Schedule</span>
+              <% end %>
+              <%= link_to workflows_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "git-branch", class: "w-4 h-4 text-purple-500" %>
+                <span>Workflows</span>
+              <% end %>
+              <%= link_to ai_chat_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "bot", class: "w-4 h-4 text-purple-500" %>
+                <span>Pilot-Chat</span>
+              <% end %>
+              <%= link_to ai_marketing_strategy_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "trending-up", class: "w-4 h-4 text-green-500" %>
+                <span>AI Marketing Strategy</span>
+              <% end %>
+              <div class="border-t my-2"></div>
+              <%= link_to dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-indigo-500" %>
+                <span>Dashboard</span>
+              <% end %>
+              <%= link_to pages_features_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "sparkles", class: "w-4 h-4 text-amber-500" %>
+                <span>Features</span>
+              <% end %>
+              <%= link_to pages_pricing_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "credit-card", class: "w-4 h-4 text-green-500" %>
+                <span>Pricing</span>
+              <% end %>
+              <%= link_to pages_faq_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "help-circle", class: "w-4 h-4 text-blue-500" %>
+                <span>FAQ</span>
+              <% end %>
+              <%= link_to pages_about_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "info", class: "w-4 h-4 text-blue-500" %>
+                <span>About</span>
+              <% end %>
+            </div>
+          </div>
+          
+        </div>
+
+        <!-- Desktop Auth + Buttons -->
+        <div class="hidden md:flex items-center space-x-4">
+          <!-- Theme Toggle -->
+          <div data-controller="theme" data-theme-storage-key-value="app-isdark">
+            <button type="button"
+                    class="p-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    data-action="click->theme#toggle">
+              <span data-theme-target="lightIcon"><%= lucide_icon "sun", class: "w-5 h-5" %></span>
+              <span data-theme-target="darkIcon" class="hidden"><%= lucide_icon "moon", class: "w-5 h-5" %></span>
+            </button>
+          </div>
+          
+          <%= link_to new_campaign_path, class: "flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all" do %>
+            <%= lucide_icon "plus", class: "w-5 h-5" %>
+            <span class="font-medium">Create Campaign</span>
+          <% end %>
+          
+          <% if current_user %>
+            <%= render 'shared/user_dropdown' %>
+          <% else %>
+            <%= link_to "Sign In", sign_in_path, class: "btn-ghost btn-sm" %>
+            <%= link_to "Get Started", sign_up_path, class: "btn-primary btn-sm" %>
+          <% end %>
+        </div>
+
+        <!-- Mobile hamburger -->
+        <button type="button"
+                data-action="click->dropdown#toggle"
+                class="md:hidden p-2 text-gray-900 hover:bg-gray-200">
+          <%= lucide_icon "menu", class: "w-6 h-6" %>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile drawer -->
+  <div data-dropdown-target="menu" class="hidden fixed inset-0 z-[100] md:hidden">
+    <div class="fixed inset-0 bg-black/50" data-action="click->dropdown#close"></div>
+    <div class="fixed right-0 top-0 h-full w-64 bg-white shadow-xl overflow-y-auto">
+      <div class="p-4">
+        <button type="button" data-action="click->dropdown#close" class="mb-4 p-2 text-black">
+          <%= lucide_icon "x", class: "w-6 h-6" %>
+        </button>
+
+        <!-- Mobile Theme Toggle -->
+        <div class="mb-4 px-2" data-controller="theme" data-theme-storage-key-value="app-isdark">
+          <button type="button"
+                  class="flex items-center gap-3 w-full p-3 text-black hover:bg-gray-100 rounded-lg transition-colors"
+                  data-action="click->theme#toggle">
+            <span data-theme-target="lightIcon"><%= lucide_icon "sun", class: "w-5 h-5" %></span>
+            <span data-theme-target="darkIcon" class="hidden"><%= lucide_icon "moon", class: "w-5 h-5" %></span>
+            <span class="font-medium">Toggle Theme</span>
+          </button>
+        </div>
+
+        <div class="mb-6 flex flex-col space-y-1">
+          <!-- Tools Dropdown Mobile -->
+          <div class="py-2 px-3">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tools</span>
+            <div class="mt-2 space-y-1">
+              <%= link_to content_creation_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "pen-tool", class: "w-4 h-4 text-purple-500" %>
+                <span class="text-black">Content Creation</span>
+              <% end %>
+              <%= link_to contents_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "file-text", class: "w-4 h-4 text-blue-500" %>
+                <span class="text-black">Drafts/Approvals</span>
+              <% end %>
+              <%= link_to engagement_analytics_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "bar-chart-2", class: "w-4 h-4 text-blue-500" %>
+                <span class="text-black">Analytics</span>
+              <% end %>
+              <%= link_to social_media_dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-green-500" %>
+                <span class="text-black">Social Media Dashboard</span>
+              <% end %>
+              <%= link_to scheduled_posts_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "calendar", class: "w-4 h-4 text-orange-500" %>
+                <span class="text-black">Posting Schedule</span>
+              <% end %>
+              <%= link_to workflows_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "git-branch", class: "w-4 h-4 text-purple-500" %>
+                <span class="text-black">Workflows</span>
+              <% end %>
+              <%= link_to ai_chat_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "bot", class: "w-4 h-4 text-purple-500" %>
+                <span class="text-black">Pilot-Chat</span>
+              <% end %>
+              <%= link_to ai_marketing_strategy_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "trending-up", class: "w-4 h-4 text-green-500" %>
+                <span class="text-black">AI Marketing Strategy</span>
+              <% end %>
+              <div class="border-t border-gray-200 my-2"></div>
+              <%= link_to dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-indigo-500" %>
+                <span class="text-black">Dashboard</span>
+              <% end %>
+              <%= link_to pages_features_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "sparkles", class: "w-4 h-4 text-amber-500" %>
+                <span class="text-black">Features</span>
+              <% end %>
+              <%= link_to pages_pricing_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "credit-card", class: "w-4 h-4 text-green-500" %>
+                <span class="text-black">Pricing</span>
+              <% end %>
+              <%= link_to pages_faq_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "help-circle", class: "w-4 h-4 text-blue-500" %>
+                <span class="text-black">FAQ</span>
+              <% end %>
+              <%= link_to pages_about_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "info", class: "w-4 h-4 text-blue-500" %>
+                <span class="text-black">About</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        <div class="border-t pt-4">
+          <% if current_user %>
+            <%= render 'shared/user_dropdown' %>
+          <% else %>
+            <div class="flex flex-col space-y-2">
+              <%= link_to "Sign In", sign_in_path, class: "btn-ghost btn-md w-full" %>
+              <%= link_to "Get Started", sign_up_path, class: "btn-primary btn-md w-full" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

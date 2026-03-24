@@ -1,0 +1,42 @@
+#!/bin/bash -e
+
+echo "Running docker entrypoint"
+
+# Enable jemalloc for reduced memory usage and latency.
+if [ -z "${LD_PRELOAD+x}" ] && [ -f /usr/lib/*/libjemalloc.so.2 ]; then
+  export LD_PRELOAD="$(echo /usr/lib/*/libjemalloc.so.2)"
+fi
+
+echo "Check if application.yml and database.yml are present"
+
+if [ ! -f "config/application.yml" ]; then
+  cp config/application.yml.example config/application.yml
+fi
+if [ ! -f "config/database.yml" ]; then
+  cp config/database.yml.example config/database.yml
+fi
+
+# Clean up any process using the PORT (Railway deployment fix)
+if [ -n "${PORT}" ]; then
+  echo "Checking for processes on port ${PORT}..."
+  # Find and kill any process using the PORT
+  if lsof -ti:${PORT} > /dev/null 2>&1; then
+    echo "Found process on port ${PORT}, killing it..."
+    lsof -ti:${PORT} | xargs kill -9 2>/dev/null || true
+    sleep 2
+    echo "Port ${PORT} cleaned up"
+  else
+    echo "Port ${PORT} is free"
+  fi
+fi
+
+echo "If running the rails server then create or migrate existing database"
+
+if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
+  echo "Running database setup..."
+  ./bin/rails db:create db:migrate || echo "Database already exists, running migrations..."
+  ./bin/rails db:migrate
+  echo "Database setup complete"
+fi
+
+exec "${@}"

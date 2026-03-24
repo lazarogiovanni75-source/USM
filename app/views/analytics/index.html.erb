@@ -1,0 +1,130 @@
+<% content_for :title, "Analytics" %>
+
+<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+  <!-- Header -->
+  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+    <div class="container-xl mx-auto px-4 py-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <%= lucide_icon "bar-chart-2", class: "w-7 h-7 text-white" %>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-primary">Analytics</h1>
+            <p class="text-sm text-muted">Track your performance metrics</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <select class="form-select bg-white border border-border/50 rounded-xl px-4 py-2 text-sm focus:ring-primary focus:border-primary">
+            <option>Last 7 days</option>
+            <option>Last 30 days</option>
+            <option>Last 90 days</option>
+            <option>This year</option>
+          </select>
+          <button class="btn-secondary">
+            <%= lucide_icon "download", class: "w-4 h-4 mr-2" %>Export
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container-xl mx-auto px-4 py-6">
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <%= lucide_icon "eye", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Total Reach</p>
+            <p class="text-2xl font-bold text-primary"><%= @total_reach || '125.4K' %></p>
+            <p class="text-xs text-green-600">+12.5%</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center">
+            <%= lucide_icon "heart", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Engagement</p>
+            <p class="text-2xl font-bold text-primary"><%= @total_engagement || '18.2K' %></p>
+            <p class="text-xs text-green-600">+8.3%</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+            <%= lucide_icon "percent", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Rate</p>
+            <p class="text-2xl font-bold text-primary"><%= @engagement_rate || '4.8%' %></p>
+            <p class="text-xs text-red-600">-2.1%</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-border/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+            <%= lucide_icon "send", class: "w-6 h-6 text-white" %>
+          </div>
+          <div>
+            <p class="text-xs text-muted">Published</p>
+            <p class="text-2xl font-bold text-primary"><%= @posts_published || '342' %></p>
+            <p class="text-xs text-green-600">+15.7%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+        <h2 class="text-lg font-bold text-primary mb-4">Reach Over Time</h2>
+        <div class="h-64 bg-surface-elevated rounded-xl flex items-center justify-center">
+          <p class="text-muted">Chart visualization</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+        <h2 class="text-lg font-bold text-primary mb-4">Engagement Trends</h2>
+        <div class="h-64 bg-surface-elevated rounded-xl flex items-center justify-center">
+          <p class="text-muted">Chart visualization</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform Breakdown -->
+    <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
+      <h2 class="text-lg font-bold text-primary mb-4">Platform Performance</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <% ['Twitter', 'Instagram', 'Facebook'].each do |platform| %>
+          <div class="bg-surface-elevated rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-medium text-primary"><%= platform %></span>
+              <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Active</span>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-muted">Reach</span>
+                <span class="text-primary font-medium">45.2K</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-muted">Engagement</span>
+                <span class="text-primary font-medium">5.8%</span>
+              </div>
+              <div class="h-2 bg-white rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-primary to-secondary rounded-full" style="width: 75%"></div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

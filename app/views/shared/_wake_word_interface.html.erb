@@ -1,0 +1,74 @@
+<%# Wake Word Interface - Toggle wake word detection for Pilot %>
+<!-- stimulus-validator: allow-script -->
+<script>
+  function syncWakeWordToggleLocal(checked) {
+    localStorage.setItem('wake_word_enabled', checked.toString());
+    document.getElementById('wake-word-toggle-form-local').requestSubmit();
+  }
+</script>
+<div class="bg-white rounded-xl shadow-lg p-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z">
+          </path>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900">Wake Word Detection</h3>
+        <p class="text-sm text-gray-500">Say "Hey Pilot" to activate voice commands</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-3">
+      <span class="text-sm text-gray-600">
+        <%= current_user.voice_settings.first&.enabled? ? 'Enabled' : 'Disabled' %>
+      </span>
+      <%= form_with url: toggle_voice_ai_chat_index_path, method: :post, id: 'wake-word-toggle-form-local' do |f| %>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox"
+                 class="sr-only peer"
+                 <%= 'checked' if current_user.voice_settings.first&.enabled? %>
+                 onchange="syncWakeWordToggleLocal(this.checked)">
+          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+        </label>
+      <% end %>
+    </div>
+  </div>
+  
+  <% if current_user.voice_settings.first&.enabled? %>
+    <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+      <div class="flex items-center space-x-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+          </path>
+        </svg>
+        <span class="text-sm font-medium text-green-800">
+          Pilot is listening for "Hey Pilot"
+        </span>
+      </div>
+      <p class="mt-1 text-xs text-green-600">
+        Click the microphone button and speak your command after the wake phrase.
+      </p>
+    </div>
+  <% else %>
+    <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <div class="flex items-center space-x-2">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+          </path>
+        </svg>
+        <span class="text-sm font-medium text-gray-700">
+          Wake word detection is disabled
+        </span>
+      </div>
+      <p class="mt-1 text-xs text-gray-500">
+        Enable it to use voice commands with "Hey Pilot" wake phrase.
+      </p>
+    </div>
+  <% end %>
+</div>

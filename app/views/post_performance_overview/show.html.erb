@@ -1,0 +1,238 @@
+<div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center space-x-4">
+      <%= link_to post_performance_overview_index_path, class: "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" do %>
+        <%= lucide_icon "arrow-left", class: "w-6 h-6" %>
+      <% end %>
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          <%= @post_performance[:post][:content][:title] %>
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Posted on <%= @post_performance[:post][:scheduled_at].strftime("%B %d, %Y") %> • 
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400">
+            <%= @post_performance[:post][:platform].capitalize %>
+          </span>
+        </p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-4">
+      <div class="text-right">
+        <div class="text-2xl font-bold text-gray-900 dark:text-white">
+          <%= @post_performance[:performance_score] %>
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Performance Score</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance Metrics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div class="flex items-center">
+        <div class="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+          <%= lucide_icon "heart", class: "w-6 h-6 text-red-600 dark:text-red-400" %>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Likes</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @post_performance[:metrics][:likes] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div class="flex items-center">
+        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+          <%= lucide_icon "message-circle", class: "w-6 h-6 text-blue-600 dark:text-blue-400" %>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Comments</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @post_performance[:metrics][:comments] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div class="flex items-center">
+        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+          <%= lucide_icon "share-2", class: "w-6 h-6 text-green-600 dark:text-green-400" %>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Shares</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @post_performance[:metrics][:shares] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div class="flex items-center">
+        <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+          <%= lucide_icon "eye", class: "w-6 h-6 text-purple-600 dark:text-purple-400" %>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Views</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @post_performance[:metrics][:views] %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Engagement Rate & Performance Details -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Engagement Rate Progress -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Engagement Rate</h2>
+      <div class="text-center mb-4">
+        <div class="text-4xl font-bold text-gray-900 dark:text-white">
+          <%= @post_performance[:metrics][:engagement_rate] %>%
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">of total views</div>
+      </div>
+      
+      <!-- Progress bar -->
+      <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-4 mb-4">
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full" style="width: <%= [@post_performance[:metrics][:engagement_rate], 100].min %>%"></div>
+      </div>
+      
+      <!-- Benchmarks -->
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Platform Average</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            <%= @post_performance[:benchmarks][:avg_engagement_rate] %>%
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Your Performance</span>
+          <span class="text-sm font-medium text-<%= @post_performance[:metrics][:engagement_rate] > @post_performance[:benchmarks][:avg_engagement_rate] ? 'green' : 'red' %>-600 dark:text-<%= @post_performance[:metrics][:engagement_rate] > @post_performance[:benchmarks][:avg_engagement_rate] ? 'green' : 'red' %>-400">
+            <%= @post_performance[:metrics][:engagement_rate] > @post_performance[:benchmarks][:avg_engagement_rate] ? 'Above' : 'Below' %> Average
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Comparisons -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Comparisons</h2>
+      
+      <div class="space-y-4">
+        <% if @post_performance[:comparisons][:user_average] %>
+          <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">vs Your Average</h3>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Engagement</span>
+              <span class="text-sm font-medium text-<%= @post_performance[:comparisons][:user_average][:engagement_vs_user] == 'above' ? 'green' : 'red' %>-600 dark:text-<%= @post_performance[:comparisons][:user_average][:engagement_vs_user] == 'above' ? 'green' : 'red' %>-400">
+                <%= @post_performance[:comparisons][:user_average][:engagement_percentage].positive? ? '+' : '' %><%= @post_performance[:comparisons][:user_average][:engagement_percentage] %>%
+              </span>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if @post_performance[:comparisons][:platform_average] %>
+          <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">vs Platform Average</h3>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Engagement</span>
+              <span class="text-sm font-medium text-<%= @post_performance[:comparisons][:platform_average][:engagement_vs_platform] == 'above' ? 'green' : 'red' %>-600 dark:text-<%= @post_performance[:comparisons][:platform_average][:engagement_vs_platform] == 'above' ? 'green' : 'red' %>-400">
+                <%= @post_performance[:comparisons][:platform_average][:engagement_percentage].positive? ? '+' : '' %><%= @post_performance[:comparisons][:platform_average][:engagement_percentage] %>%
+              </span>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if @post_performance[:comparisons][:similar_posts] %>
+          <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">vs Similar Posts</h3>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Engagement</span>
+              <span class="text-sm font-medium text-<%= @post_performance[:comparisons][:similar_posts][:engagement_vs_similar] == 'above' ? 'green' : 'red' %>-600 dark:text-<%= @post_performance[:comparisons][:similar_posts][:engagement_vs_similar] == 'above' ? 'green' : 'red' %>-400">
+                <%= @post_performance[:comparisons][:similar_posts][:engagement_percentage].positive? ? '+' : '' %><%= @post_performance[:comparisons][:similar_posts][:engagement_percentage] %>%
+              </span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance Timeline -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Timeline</h2>
+    <div class="space-y-4">
+      <% if @post_performance[:timeline_data] && @post_performance[:timeline_data].any? %>
+        <% @post_performance[:timeline_data].each do |data_point| %>
+          <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="flex items-center space-x-4">
+              <div class="text-sm font-medium text-gray-900 dark:text-white">
+                <%= data_point[:date].strftime("%b %d") %>
+              </div>
+              <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-1">
+                  <%= lucide_icon "heart", class: "w-4 h-4 text-red-500" %>
+                  <span class="text-sm text-gray-600 dark:text-gray-400"><%= data_point[:likes] %></span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <%= lucide_icon "message-circle", class: "w-4 h-4 text-blue-500" %>
+                  <span class="text-sm text-gray-600 dark:text-gray-400"><%= data_point[:comments] %></span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <%= lucide_icon "share-2", class: "w-4 h-4 text-green-500" %>
+                  <span class="text-sm text-gray-600 dark:text-gray-400"><%= data_point[:shares] %></span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <%= lucide_icon "eye", class: "w-4 h-4 text-purple-500" %>
+                  <span class="text-sm text-gray-600 dark:text-gray-400"><%= data_point[:views] %></span>
+                </div>
+              </div>
+            </div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">
+              <%= data_point[:likes] + data_point[:comments] + data_point[:shares] %> total
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <%= lucide_icon "bar-chart-3", class: "w-8 h-8 mx-auto mb-2" %>
+          <p class="text-sm">Timeline data not available for this post.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- AI Recommendations -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+      <%= lucide_icon "lightbulb", class: "w-6 h-6 text-yellow-500 mr-2" %>
+      AI Recommendations
+    </h2>
+    
+    <% if @post_performance[:recommendations] && @post_performance[:recommendations].any? %>
+      <div class="space-y-4">
+        <% @post_performance[:recommendations].each do |recommendation| %>
+          <div class="p-4 border-l-4 border-<%= recommendation[:priority] == 'high' ? 'red' : recommendation[:priority] == 'medium' ? 'yellow' : 'green' %>-500 bg-<%= recommendation[:priority] == 'high' ? 'red' : recommendation[:priority] == 'medium' ? 'yellow' : 'green' %>-50 dark:bg-<%= recommendation[:priority] == 'high' ? 'red' : recommendation[:priority] == 'medium' ? 'yellow' : 'green' %>-900/20 rounded-r-lg">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                  <%= recommendation[:title] %>
+                </h3>
+                <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                  <%= recommendation[:description] %>
+                </p>
+              </div>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-<%= recommendation[:priority] == 'high' ? 'red' : recommendation[:priority] == 'medium' ? 'yellow' : 'green' %>-100 dark:bg-<%= recommendation[:priority] == 'high' ? 'red' : recommendation[:priority] == 'medium' ? 'yellow' : 'green' %>-900/20 text-<%= recommendation[:priority] == 'high' ? 'red' : recommendation[:priority] == 'medium' ? 'yellow' : 'green' %>-800 dark:text-<%= recommendation[:priority] == 'high' ? 'red' : recommendation[:priority] == 'medium' ? 'yellow' : 'green' %>-400 capitalize">
+                <%= recommendation[:priority] %> Priority
+              </span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <%= lucide_icon "check-circle", class: "w-8 h-8 mx-auto mb-2 text-green-500" %>
+        <p class="text-sm">Great job! No specific recommendations for this post.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

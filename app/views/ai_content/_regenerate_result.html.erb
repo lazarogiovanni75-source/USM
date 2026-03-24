@@ -1,0 +1,4 @@
+<%# Regenerate Result Partial %>
+<div id="content_<%= content_type %>" class="prose prose-sm max-w-none">
+  <%= simple_format(content.send(content_type)) if content.respond_to?(content_type) %>
+</div>

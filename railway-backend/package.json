@@ -1,0 +1,33 @@
+{
+  "name": "ultimate-social-media-api",
+  "version": "1.0.0",
+  "description": "Production-Grade Backend API for Ultimate Social Media Platform - Third-party service integration for Anthropic, Atlas Cloud, and more",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"No tests configured yet\" && exit 0"
+  },
+  "keywords": [
+    "social-media",
+    "api",
+    "openai",
+    "content-generation",
+    "railway"
+  ],
+  "author": "Ultimate Social Media Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "pg": "^8.11.3"
+  }
+}
