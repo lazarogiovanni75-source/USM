@@ -70,7 +70,7 @@
                 <option value="youtube">YouTube</option>
               </select>
             </div>
-            <button type="submit" data-action="content-creation#handleSubmit" data-content-creation-target="submitBtn" class="btn-primary w-full">
+            <button type="submit" data-content-creation-target="submitBtn" class="btn-primary w-full">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
               </svg>
@@ -83,7 +83,7 @@
         <% if current_user&.can_access_ai_content_ideas? %>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Content Ideas</h3>
-          <p class="text-sm text-gray-600 mb-4">Generate creative content ideas using GPT-5o Mini</p>
+          <p class="text-sm text-gray-600 mb-4">Generate creative content ideas for your niche</p>
           <form action="/content_creation/generate_ideas" method="post" class="space-y-4">
             <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <div>
@@ -101,7 +101,7 @@
               </select>
             </div>
             <div>
-              <p class="text-sm text-gray-600 mb-4">Generate creative content ideas using GPT-5o Mini (3 ideas per request)</p>
+
             </div>
             <button type="submit" class="btn-secondary w-full">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -24,6 +24,43 @@ class ContentCreationController < ApplicationController
     @video_models = AtlasCloudService.available_video_models
   end
 
+  def generate_content
+    topic = params[:topic]
+    content_type = params[:content_type] || 'post'
+    platform = params[:platform] || 'general'
+
+    if topic.blank?
+      redirect_to content_creation_index_path, alert: 'Please enter a topic'
+      return
+    end
+
+    begin
+      # Generate content using LLM service
+      prompt = build_content_prompt(topic, content_type, platform)
+      
+      content = LlmService.call(
+        prompt: prompt,
+        system: "You are an expert social media content creator. Generate engaging, platform-appropriate content.",
+        temperature: 0.7,
+        max_tokens: 2000
+      )
+
+      # Save as a draft
+      draft = current_user.draft_contents.create!(
+        title: "#{content_type.titleize} - #{topic[0..30]}",
+        content: content,
+        content_type: content_type,
+        platform: platform,
+        status: 'draft'
+      )
+
+      redirect_to draft_path(draft), notice: 'Content generated successfully!'
+    rescue => e
+      Rails.logger.error "Content Generation Error: #{e.message}"
+      redirect_to content_creation_index_path, alert: "Failed to generate content: #{e.message}"
+    end
+  end
+
   def generate_ideas
     topic = params[:topic]
     platform = params[:platform] || 'general'
@@ -63,6 +100,25 @@ class ContentCreationController < ApplicationController
     rescue => e
       Rails.logger.error "Content Ideas Error: #{e.message}"
       redirect_to content_creation_index_path, alert: 'Failed to generate ideas. Please try again.'
+    end
+  end
+
+  private
+
+  def build_content_prompt(topic, content_type, platform)
+    case content_type
+    when 'post'
+      "Create an engaging #{platform} post about '#{topic}'. Include a catchy headline, body text (150-300 words), and relevant hashtags."
+    when 'caption'
+      "Write a catchy #{platform} caption for '#{topic}'. Keep it concise, engaging, and include 3-5 relevant hashtags."
+    when 'blog'
+      "Write a blog post introduction and outline about '#{topic}'. Include a compelling hook, key points, and a call-to-action."
+    when 'story'
+      "Create a social media story about '#{topic}'. Include the setup, conflict, and resolution in a engaging narrative format."
+    when 'video_script'
+      "Write a video script outline for '#{topic}'. Include hook, main points, and call-to-action. Target 60-90 seconds."
+    else
+      "Create engaging #{platform} content about '#{topic}'."
     end
   end
 
