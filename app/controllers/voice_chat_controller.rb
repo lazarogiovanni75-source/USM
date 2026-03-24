@@ -101,27 +101,22 @@ class VoiceChatController < ApplicationController
   private
 
   def basic_chat_response(message)
-    uri = URI("https://api.openai.com/v1/chat/completions")
-
-    response = Net::HTTP.post(
-      uri,
-      {
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "You are Pilot, a helpful marketing assistant." },
-          { role: "user", content: message }
-        ]
-      }.to_json,
-      {
-        "Content-Type" => "application/json",
-        "Authorization" => "Bearer #{ENV['OPENAI_API_KEY']}"
-      }
-    )
-
-    # Parse and return in format expected by frontend
-    openai_response = JSON.parse(response.body)
-    ai_message = openai_response.dig("choices", 0, "message", "content") || ""
-    
-    render json: { response: ai_message }
+    # Use Agent::Orchestrator for intelligent agentic AI chat
+    begin
+      orchestrator = Agent::Orchestrator.new(
+        user: current_user,
+        max_iterations: 5
+      )
+      
+      ai_message = orchestrator.run(message)
+      
+      render json: { response: ai_message }
+    rescue => e
+      Rails.logger.error "Agent::Orchestrator voice chat error: #{e.message}"
+      render json: { 
+        response: "I'm having trouble processing your request. Please try again.",
+        error: e.message 
+      }, status: 500
+    end
   end
 end

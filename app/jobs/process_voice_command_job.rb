@@ -324,41 +324,29 @@ class ProcessVoiceCommandJob < ApplicationJob
   end
 
   def generate_ai_content(prompt, topic)
-    system_prompt = "You are a social media marketing expert. Generate engaging, creative content for social media posts. Keep it concise and fun."
-
     topic_hint = topic ? "Create content about: #{topic}" : "Create engaging social media content"
+    full_prompt = "#{topic_hint}. #{prompt}"
 
     begin
-      content = ''
-      LlmService.call(
-        prompt: "#{topic_hint}. #{prompt}",
-        system: system_prompt,
-        model: 'gpt-4o'
-      ) do |chunk|
-        chunk_content = chunk.is_a?(Hash) ? chunk[:content] : chunk
-        content += chunk_content if chunk_content
-      end
+      # Use Agent::Orchestrator for intelligent content generation
+      orchestrator = Agent::Orchestrator.new(user: nil, max_iterations: 3)
+      content = orchestrator.run(full_prompt)
       content
     rescue => e
+      Rails.logger.error "Agent::Orchestrator content generation error: #{e.message}"
       "Check out our latest update! #{topic || 'Exciting content coming soon.'}"
     end
   end
 
   def generate_ai_response(prompt, user)
-    system_prompt = "You are Pilot, a friendly marketing assistant."
-
     begin
-      response = ''
-      LlmService.call(
-        prompt: prompt,
-        system: system_prompt,
-        model: 'gpt-4o'
-      ) do |chunk|
-        chunk_content = chunk.is_a?(Hash) ? chunk[:content] : chunk
-        response += chunk_content if chunk_content
-      end
+      # Use Agent::Orchestrator for intelligent conversational responses
+      # Pass user context for personalized responses and tool access
+      orchestrator = Agent::Orchestrator.new(user: user, max_iterations: 5)
+      response = orchestrator.run(prompt)
       response
     rescue => e
+      Rails.logger.error "Agent::Orchestrator response generation error: #{e.message}"
       "Hi! I'm Pilot, your social media assistant. I can help you create campaigns, generate content, schedule posts, or analyze performance. What would you like to do?"
     end
   end

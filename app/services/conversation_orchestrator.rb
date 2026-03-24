@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# ConversationOrchestrator - ChatGPT-style conversation service
+# ConversationOrchestrator - Claude-based conversation service
 #
 # Responsibilities:
 # - Maintain conversation memory (last 20-30 messages)
@@ -200,7 +200,7 @@ class ConversationOrchestrator < ApplicationService
       .order(created_at: :asc)
       .last(MAX_HISTORY_MESSAGES)
     
-    # Build messages array for OpenAI
+    # Build messages array for Claude
     # Use admin-defined system prompt from SiteSettings with user context
     base_prompt = SiteSetting.ai_system_prompt
     
@@ -259,7 +259,7 @@ CONTEXT
   def stream_chat_response(history, tools = nil)
     Rails.logger.info "[ConversationOrchestrator] Streaming chat response"
     
-    # Log the exact message array being sent to OpenAI
+    # Log the exact message array being sent to Claude
     Rails.logger.info "[ConversationOrchestrator] Chat message array: #{history.to_json}"
     Rails.logger.info "[ConversationOrchestrator] Calling Claude model: #{CLAUDE_MODEL}, temperature: #{CHAT_TEMPERATURE}, max_tokens: #{CHAT_MAX_TOKENS}"
     
@@ -347,9 +347,9 @@ CONTEXT
   def blocking_chat_response(history, tools = nil)
     Rails.logger.info "[ConversationOrchestrator] Blocking chat response"
     
-    # Log the exact message array being sent to OpenAI
+    # Log the exact message array being sent to Claude
     Rails.logger.info "[ConversationOrchestrator] Chat message array: #{history.to_json}"
-    Rails.logger.info "[ConversationOrchestrator] Calling OpenAI model: #{CHAT_MODEL}, temperature: #{CHAT_TEMPERATURE}, max_tokens: #{CHAT_MAX_TOKENS}"
+    Rails.logger.info "[ConversationOrchestrator] Calling Claude model: #{CLAUDE_MODEL}, temperature: #{CHAT_TEMPERATURE}, max_tokens: #{CHAT_MAX_TOKENS}"
     
     api_key = ENV.fetch('ANTHROPIC_API_KEY')
     unless api_key

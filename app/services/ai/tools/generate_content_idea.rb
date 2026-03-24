@@ -27,7 +27,7 @@ module Ai
         # Call LLM to generate ideas
         response = LlmService.call_blocking(
           prompt: prompt,
-          model: "gpt-4o",
+          model: "claude-sonnet-4-6",
           temperature: 0.8
         )
         

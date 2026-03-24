@@ -5,23 +5,36 @@ class ChatController < ApplicationController
   require "json"
 
   def create
-    uri = URI("https://api.openai.com/v1/chat/completions")
-
-    response = Net::HTTP.post(
-      uri,
-      {
-        model: "gpt-4o",
-        messages: [
-          { role: "user", content: params[:message] }
+    # Use Agent::Orchestrator for intelligent agentic AI chat
+    begin
+      orchestrator = Agent::Orchestrator.new(
+        user: current_user,
+        max_iterations: 5
+      )
+      
+      response_text = orchestrator.run(params[:message])
+      
+      # Return in OpenAI-compatible format for frontend compatibility
+      render json: {
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: response_text
+            },
+            finish_reason: 'stop'
+          }
         ]
-      }.to_json,
-      {
-        "Content-Type" => "application/json",
-        "Authorization" => "Bearer #{ENV['OPENAI_API_KEY']}"
       }
-    )
-
-    render json: JSON.parse(response.body)
+    rescue => e
+      Rails.logger.error "Agent::Orchestrator chat error: #{e.message}"
+      render json: {
+        error: {
+          message: e.message,
+          type: 'agent_error'
+        }
+      }, status: 500
+    end
   end
 
   def transcribe
