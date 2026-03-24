@@ -46,7 +46,7 @@ ATLASCLOUD_API_KEY=your-atlas-key
 
 | Feature | Status |
 |---------|--------|
-| Database (65 tables) | ✅ |
+| Dqatabase (65 tables) | ✅ |
 | User Auth | ✅ |
 | Sessions | ✅ |
 | Postforme API | ✅ |
