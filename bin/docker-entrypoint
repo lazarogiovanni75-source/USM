@@ -53,7 +53,12 @@ if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
     end
   ' || echo "Migration check failed, continuing..."
   
-  ./bin/rails db:migrate:all || echo "Migration failed, continuing..."
+  # Run migrations for primary database
+  ./bin/rails db:migrate || echo "Primary migration failed, continuing..."
+  
+  # Run migrations for cable database
+  ./bin/rails db:migrate:cable || echo "Cable migration failed, continuing..."
+  
   echo "Database setup complete"
 fi
 
