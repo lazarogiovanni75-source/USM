@@ -33,9 +33,8 @@ fi
 echo "If running the rails server then create or migrate existing database"
 
 if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
-  echo "Running database setup..."
-  ./bin/rails db:create db:migrate || echo "Database already exists, running migrations..."
-  ./bin/rails db:migrate
+  echo "Running database migrations..."
+  ./bin/rails db:migrate || echo "Migration failed, continuing..."
   echo "Database setup complete"
 fi
 
