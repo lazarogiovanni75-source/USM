@@ -104,6 +104,9 @@ Rails.application.routes.draw do
   # Root path
   root "home#index"
 
+  # ActionCable WebSocket mount
+  mount ActionCable.server => '/cable'
+
   # Dashboard route (singular)
   get 'dashboard', to: 'dashboards#index'
 

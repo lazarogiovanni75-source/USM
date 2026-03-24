@@ -1,48 +1,43 @@
-# LLM Service - Unified LLM API wrapper with Tool Call & MCP support
-# Default streaming API with blocking fallback
-# call(&block) - streaming by default, blocking if no block given
+# LLM Service - Anthropic Claude API wrapper
+# Uses Claude as the default LLM for all AI features
+#
+# Usage:
+#   LlmService.call(prompt: "Hello", system: "You are helpful")
+#   LlmService.call_blocking(prompt: "Hello")
+#   LlmService.call_stream(prompt: "Hello") { |chunk| ... }
 #
 # Tool Call Support:
 #   - Pass tools: [...] to enable function calling
-#   - Pass tool_choice: 'auto'|'required'|{type: 'function', function: {name: 'foo'}}
 #   - Pass tool_handler: ->(tool_name, args) { ... } to handle tool execution
-#
-# MCP Support:
-#   - Pass mcp_server_url: 'http://...' to load tools from MCP server
-#   - MCP tools are automatically converted to OpenAI function format
 class LlmService < ApplicationService
   class LlmError < StandardError; end
   class TimeoutError < LlmError; end
   class ApiError < LlmError; end
   class ToolExecutionError < LlmError; end
 
+  # Anthropic API Configuration
+  BASE_URL = ENV.fetch('ANTHROPIC_BASE_URL', 'https://api.anthropic.com')
+  API_VERSION = '2023-06-01'
+  DEFAULT_MODEL = 'claude-sonnet-4-6'
+
   def initialize(prompt:, system: nil, messages: nil, **options)
     @prompt = prompt
     @system = system
-    @provided_messages = messages || []  # Pre-provided conversation history
+    @provided_messages = messages || []
     @options = options
-    @model = options[:model] || ENV.fetch('CLACKY_OPENAI_MODEL') { ENV.fetch('LLM_MODEL', 'gpt-4o') }
+    
+    # Use Claude model by default
+    @model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', DEFAULT_MODEL)
     @temperature = options[:temperature]&.to_f || 0.7
-    @max_tokens = options[:max_tokens] || 4000
-    @timeout = options[:timeout] || 30
-    @images = normalize_images(options[:images])
-
+    @max_tokens = options[:max_tokens] || 4096
+    @timeout = options[:timeout] || 60
+    
     # Tool call support
     @tools = options[:tools] || []
-    @tool_choice = options[:tool_choice] # 'auto', 'required', 'none', or {type: 'function', function: {name: 'foo'}}
-    @tool_handler = options[:tool_handler] # Proc to execute tools: ->(tool_name, args) { ... }
+    @tool_handler = options[:tool_handler]
     @max_tool_iterations = options[:max_tool_iterations] || 5
-
-    # MCP support
-    @mcp_server_url = options[:mcp_server_url]
-    load_mcp_tools if @mcp_server_url.present?
-
-    # If MCP is used but no handler provided, use default MCP handler
-    if @mcp_server_url.present? && @tool_handler.nil?
-      @tool_handler = build_mcp_tool_handler
-    end
-
-    # Conversation history for multi-turn tool calls
+    
+    # Conversation history
     @messages = []
   end
 
@@ -55,15 +50,12 @@ class LlmService < ApplicationService
     end
   end
 
-  # Explicit blocking call (returns full response)
-  # Automatically handles tool calls if tools are provided
+  # Explicit blocking call
   def call_blocking
     raise LlmError, "Prompt cannot be blank" if @prompt.blank?
 
-    # Build initial messages
     build_initial_messages
 
-    # If tools are available, use multi-turn loop to handle tool calls
     if @tools.present?
       call_blocking_with_tools
     else
@@ -74,17 +66,16 @@ class LlmService < ApplicationService
     raise
   end
 
-  # Simple blocking call without tool support (backward compatible)
+  # Simple blocking call without tool support
   def call_blocking_simple
-    response = make_http_request(stream: false)
-    content = response.dig("choices", 0, "message", "content")
-
+    response = http_request('/v1/messages', build_request_body)
+    content = extract_content(response)
+    
     raise LlmError, "No content in response" if content.blank?
-
     content
   end
 
-  # Blocking call with automatic tool execution
+  # Blocking call with tool execution
   def call_blocking_with_tools
     iteration = 0
     final_content = nil
@@ -93,32 +84,27 @@ class LlmService < ApplicationService
       iteration += 1
       raise LlmError, "Max tool iterations (#{@max_tool_iterations}) exceeded" if iteration > @max_tool_iterations
 
-      response = make_http_request(stream: false)
-      message = response.dig("choices", 0, "message")
-
+      response = http_request('/v1/messages', build_request_body)
+      message = extract_message(response)
+      
       # Add assistant message to history
       @messages << message
 
-      # Check if tool calls are requested
-      tool_calls = message["tool_calls"]
-
+      # Check for tool calls
+      tool_calls = message['tool_calls']
       if tool_calls.present?
-        # Execute tools and add results to messages
         handle_tool_calls(tool_calls)
       else
-        # No more tool calls, return final content
-        final_content = message["content"]
+        final_content = extract_text_content(message)
         break
       end
     end
 
     raise LlmError, "No content in final response" if final_content.blank?
-
     final_content
   end
 
-  # Explicit streaming call (yields chunks as they arrive)
-  # Supports tool calls in streaming mode
+  # Streaming call
   def call_stream(&block)
     raise LlmError, "Prompt cannot be blank" if @prompt.blank?
     raise LlmError, "Block required for streaming" unless block_given?
@@ -135,23 +121,26 @@ class LlmService < ApplicationService
     raise
   end
 
-  # Simple streaming without tools (backward compatible)
+  # Simple streaming without tools
   def call_stream_simple(&block)
     full_content = ""
 
-    make_http_request(stream: true) do |chunk_data|
-      # Extract content from chunk_data (backward compatible)
-      content = chunk_data.is_a?(Hash) ? chunk_data[:content] : chunk_data
-      if content.present?
-        full_content += content
-        block.call(content)
+    http_stream_request('/v1/messages', build_request_body.merge(stream: true)) do |event|
+      if event['type'] == 'content_block_delta'
+        if event['delta']['type'] == 'text_delta'
+          content = event['delta']['text']
+          full_content += content
+          block.call(content)
+        end
+      elsif event['type'] == 'message_stop'
+        # Stream complete
       end
     end
 
     full_content
   end
 
-  # Streaming with tool call support
+  # Streaming with tool support
   def call_stream_with_tools(&block)
     iteration = 0
     final_content = ""
@@ -164,48 +153,52 @@ class LlmService < ApplicationService
       content_buffer = ""
       has_tool_calls = false
 
-      # Stream response and accumulate tool calls
-      make_http_request(stream: true) do |chunk_data|
-        # chunk_data includes both content and tool_call deltas
-        if chunk_data[:content]
-          content_buffer += chunk_data[:content]
-          block.call(chunk_data[:content])
-        end
-
-        if chunk_data[:tool_calls]
-          has_tool_calls = true
-          # Accumulate tool call deltas
-          chunk_data[:tool_calls].each do |tc|
-            idx = tc["index"]
+      http_stream_request('/v1/messages', build_request_body.merge(stream: true)) do |event|
+        case event['type']
+        when 'content_block_delta'
+          if event['delta']['type'] == 'text_delta'
+            content = event['delta']['text']
+            content_buffer += content
+            block.call(content)
+          elsif event['delta']['type'] == 'input_json_delta'
+            has_tool_calls = true
+            idx = event['content_block_index']
             tool_calls_buffer[idx] ||= {
-              "id" => "",
-              "type" => "function",
-              "function" => {"name" => "", "arguments" => ""}
+              'type' => 'tool_use',
+              'id' => '',
+              'name' => '',
+              'input' => ''
             }
-
-            tool_calls_buffer[idx]["id"] = tc["id"] if tc["id"]
-            if tc["function"]
-              tool_calls_buffer[idx]["function"]["name"] += tc["function"]["name"].to_s
-              tool_calls_buffer[idx]["function"]["arguments"] += tc["function"]["arguments"].to_s
+            if event['delta']['partial_json']
+              tool_calls_buffer[idx]['input'] += event['delta']['partial_json']
             end
           end
+        when 'content_block_start'
+          if event['content_block']['type'] == 'tool_use'
+            idx = event['index']
+            tool_calls_buffer[idx] ||= {}
+            tool_calls_buffer[idx]['type'] = 'tool_use'
+            tool_calls_buffer[idx]['id'] = event['content_block']['id']
+            tool_calls_buffer[idx]['name'] = event['content_block']['name']
+            tool_calls_buffer[idx]['input'] = ''
+          end
+        when 'message_stop'
+          # Stream complete
         end
       end
 
       # Build complete message
-      message = {"role" => "assistant"}
-      message["content"] = content_buffer if content_buffer.present?
+      message = { 'role' => 'assistant' }
+      message['content'] = content_buffer if content_buffer.present?
       if has_tool_calls
-        message["tool_calls"] = tool_calls_buffer.values
+        message['tool_calls'] = tool_calls_buffer.values
       end
 
       @messages << message
 
       if has_tool_calls
-        # Execute tools and continue loop
-        handle_tool_calls(message["tool_calls"])
+        handle_tool_calls(message['tool_calls'])
       else
-        # No tool calls, we're done
         final_content = content_buffer
         break
       end
@@ -216,17 +209,14 @@ class LlmService < ApplicationService
 
   # Class method shortcuts
   class << self
-    # Default: streaming if block, blocking otherwise
     def call(prompt:, system: nil, **options, &block)
       new(prompt: prompt, system: system, **options).call(&block)
     end
 
-    # Explicit blocking call
     def call_blocking(prompt:, system: nil, **options)
       new(prompt: prompt, system: system, **options).call_blocking
     end
 
-    # Explicit streaming call
     def call_stream(prompt:, system: nil, **options, &block)
       new(prompt: prompt, system: system, **options).call_stream(&block)
     end
@@ -234,339 +224,228 @@ class LlmService < ApplicationService
 
   private
 
-  def make_http_request(stream: false, &block)
-    # Auto-mock in test environment to avoid slow API calls
-    return mock_http_response(stream: stream, &block) if Rails.env.test?
-
-    require 'net/http'
-    require 'uri'
-    require 'json'
-
-    http, request = prepare_http_request(stream)
-
-    if stream
-      handle_stream_response(http, request, &block)
-    else
-      handle_blocking_response(http, request)
-    end
-  rescue Net::ReadTimeout
-    raise TimeoutError, "Request timed out after #{@timeout}s"
-  end
-
-  def prepare_http_request(stream)
-    base_url = ENV.fetch('CLACKY_OPENAI_BASE_URL') { ENV.fetch('LLM_BASE_URL', 'https://api.openai.com/v1') }
-    uri = URI.parse("#{base_url}/chat/completions")
-
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = (uri.scheme == 'https')
-    http.read_timeout = @timeout
-    http.open_timeout = 10
-
-    request = Net::HTTP::Post.new(uri.path)
-    request["Content-Type"] = "application/json"
-    request["Authorization"] = "Bearer #{api_key}"
-
-    body = build_request_body
-    if stream
-      request["Accept"] = "text/event-stream"
-      body[:stream] = true
-    end
-    request.body = body.to_json
-
-    [http, request]
-  end
-
-  def handle_blocking_response(http, request)
-    response = http.request(request)
-
-    case response.code.to_i
-    when 200
-      JSON.parse(response.body)
-    when 429
-      raise ApiError, "Rate limit exceeded"
-    when 500..599
-      raise ApiError, "Server error: #{response.code}"
-    else
-      raise ApiError, "API error: #{response.code} - #{response.body}"
-    end
-  rescue JSON::ParserError => e
-    raise ApiError, "Invalid JSON response: #{e.message}"
-  end
-
-  def handle_stream_response(http, request, &block)
-    http.request(request) do |response|
-      unless response.code.to_i == 200
-        raise ApiError, "API error: #{response.code} - #{response.body}"
-      end
-
-      buffer = ""
-      response.read_body do |chunk|
-        buffer += chunk
-
-        while (line_end = buffer.index("\n"))
-          line = buffer[0...line_end].strip
-          buffer = buffer[(line_end + 1)..-1]
-
-          next if line.empty?
-          next unless line.start_with?("data: ")
-
-          data = line[6..-1]
-          next if data == "[DONE]"
-
-          begin
-            json = JSON.parse(data)
-            delta = json.dig("choices", 0, "delta")
-
-            next unless delta
-
-            # Build chunk data with content and tool_calls
-            chunk_data = {}
-
-            if content = delta["content"]
-              chunk_data[:content] = content
-            end
-
-            if tool_calls = delta["tool_calls"]
-              chunk_data[:tool_calls] = tool_calls
-            end
-
-            block.call(chunk_data) if chunk_data.present?
-          rescue JSON::ParserError => e
-            Rails.logger.warn("Failed to parse SSE chunk: #{e.message}")
-          end
-        end
-      end
+  def api_key
+    ENV.fetch('ANTHROPIC_API_KEY') do
+      raise LlmError, "ANTHROPIC_API_KEY is not configured"
     end
   end
 
   def build_request_body
     body = {
       model: @model,
+      max_tokens: @max_tokens,
       messages: @messages,
-      temperature: @temperature,
-      max_tokens: @max_tokens
+      temperature: @temperature
     }
 
-    # Add tools if available
-    if @tools.present?
-      body[:tools] = @tools
-      body[:tool_choice] = @tool_choice if @tool_choice.present?
-    end
-
-    # Some providers require modalities when sending images
-    body[:modalities] = ["text", "image"] if @images.present?
-
+    body[:system] = @system if @system.present?
+    body[:tools] = @tools if @tools.present?
+    
     body
   end
 
-  # Build initial messages from prompt, system, and images
-  def build_initial_messages
-    return if @messages.present? # Already built
+  def http_request(endpoint, body)
+    return mock_response if Rails.env.test?
 
-    # Add pre-provided conversation history
-    @messages.concat(@provided_messages) if @provided_messages.present?
+    require 'net/http'
+    require 'uri'
+    require 'json'
 
-    @messages << { role: "system", content: @system } if @system.present?
+    url = URI.parse("#{BASE_URL}#{endpoint}")
+    http = Net::HTTP.new(url.host, url.port)
+    http.use_ssl = url.scheme == 'https'
+    http.read_timeout = @timeout
+    http.open_timeout = 10
 
-    if @images.present?
-      user_content = []
-      user_content << { type: "text", text: @prompt.to_s }
-      @images.each do |img|
-        user_content << { type: "image_url", image_url: { url: img } }
-      end
-      @messages << { role: "user", content: user_content }
-    else
-      @messages << { role: "user", content: @prompt }
-    end
+    request = Net::HTTP::Post.new(url.request_uri)
+    request['Content-Type'] = 'application/json'
+    request['x-api-key'] = api_key
+    request['anthropic-version'] = API_VERSION
+    request.body = body.to_json
+
+    response = http.request(request)
+    handle_response(response)
   end
 
-  # Handle tool calls by executing them and adding results to messages
-  def handle_tool_calls(tool_calls)
-    raise ToolExecutionError, "No tool_handler provided" unless @tool_handler
+  def http_stream_request(endpoint, body, &block)
+    require 'net/http'
+    require 'uri'
+    require 'json'
 
-    tool_calls.each do |tool_call|
-      tool_id = tool_call["id"]
-      function_name = tool_call.dig("function", "name")
-      arguments_json = tool_call.dig("function", "arguments")
+    url = URI.parse("#{BASE_URL}#{endpoint}")
+    http = Net::HTTP.new(url.host, url.port)
+    http.use_ssl = url.scheme == 'https'
+    http.read_timeout = @timeout
+    http.open_timeout = 10
 
-      begin
-        # Parse arguments
-        arguments = JSON.parse(arguments_json)
+    request = Net::HTTP::Post.new(url.request_uri)
+    request['Content-Type'] = 'application/json'
+    request['x-api-key'] = api_key
+    request['anthropic-version'] = API_VERSION
+    request['Accept'] = 'text/event-stream'
+    request.body = body.to_json
 
-        # Execute tool via handler
-        result = @tool_handler.call(function_name, arguments)
-
-        # Add tool result to messages
-        @messages << {
-          role: "tool",
-          tool_call_id: tool_id,
-          name: function_name,
-          content: result.to_json
-        }
-      rescue => e
-        # Add error as tool result
-        @messages << {
-          role: "tool",
-          tool_call_id: tool_id,
-          name: function_name,
-          content: { error: e.message }.to_json
-        }
-        Rails.logger.error("Tool execution error: #{e.class} - #{e.message}")
-      end
-    end
-  end
-
-  # Load tools from MCP server
-  def load_mcp_tools
-    return unless @mcp_server_url.present?
-
-    begin
-      require 'net/http'
-      require 'uri'
-
-      uri = URI.parse("#{@mcp_server_url}/tools")
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = (uri.scheme == 'https')
-      http.read_timeout = 10
-
-      request = Net::HTTP::Get.new(uri.path)
-      request["Content-Type"] = "application/json"
-
-      response = http.request(request)
-
-      if response.code.to_i == 200
-        mcp_tools = JSON.parse(response.body)
-        # Convert MCP tools to OpenAI function format
-        @tools = convert_mcp_tools_to_openai_format(mcp_tools)
-        Rails.logger.info("Loaded #{@tools.length} tools from MCP server")
-      else
-        Rails.logger.warn("Failed to load MCP tools: #{response.code}")
-      end
-    rescue => e
-      Rails.logger.warn("MCP tools loading error: #{e.message}")
-    end
-  end
-
-  # Convert MCP tool format to OpenAI function calling format
-  def convert_mcp_tools_to_openai_format(mcp_tools)
-    return [] unless mcp_tools.is_a?(Array)
-
-    mcp_tools.map do |tool|
-      {
-        type: "function",
-        function: {
-          name: tool["name"],
-          description: tool["description"],
-          parameters: tool["inputSchema"] || tool["parameters"] || {
-            type: "object",
-            properties: {},
-            required: []
-          }
-        }
-      }
-    end
-  end
-
-  # Build default tool handler for MCP server
-  def build_mcp_tool_handler
-    ->(tool_name, arguments) do
-      require 'net/http'
-      require 'uri'
-
-      uri = URI.parse("#{@mcp_server_url}/tools/execute")
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = (uri.scheme == 'https')
-      http.read_timeout = 30
-
-      request = Net::HTTP::Post.new(uri.path)
-      request["Content-Type"] = "application/json"
-      request.body = {
-        name: tool_name,
-        arguments: arguments
-      }.to_json
-
-      response = http.request(request)
-
-      if response.code.to_i == 200
-        result = JSON.parse(response.body)
-        result["result"] || result
-      else
-        raise ToolExecutionError, "MCP tool execution failed: #{response.code} - #{response.body}"
-      end
-    end
-  end
-
-  def api_key
-    ENV.fetch('CLACKY_OPENAI_API_KEY') do
-      ENV.fetch('OPENAI_API_KEY') do
-        ENV.fetch('LLM_API_KEY') do
-          ENV.fetch('CLACKY_LLM_API_KEY') do
-            raise LlmError, "LLM_API_KEY not configured (tried CLACKY_OPENAI_API_KEY, OPENAI_API_KEY, LLM_API_KEY, CLACKY_LLM_API_KEY)"
+    buffer = ""
+    http.request(request) do |response|
+      response.read_body do |chunk|
+        buffer += chunk
+        
+        while (line_end = buffer.index("\n"))
+          line = buffer[0...line_end].strip
+          buffer = buffer[(line_end + 1)..-1]
+          
+          next if line.empty?
+          next unless line.start_with?('data: ')
+          
+          data = line[6..-1]
+          next if data == '[DONE]'
+          
+          begin
+            json = JSON.parse(data)
+            block.call(json) if block_given?
+          rescue JSON::ParserError
+            # Skip invalid JSON
           end
         end
       end
     end
   end
 
+  def handle_response(response)
+    case response.code.to_i
+    when 200..299
+      JSON.parse(response.body)
+    when 401, 403
+      raise ApiError, 'Invalid API key - check ANTHROPIC_API_KEY'
+    when 429
+      raise ApiError, 'Rate limit exceeded - please try again later'
+    when 400..499
+      error_body = JSON.parse(response.body) rescue {}
+      raise ApiError, "Bad request: #{error_body.dig('error', 'message') || response.body}"
+    when 500..599
+      raise ApiError, "Claude API server error: #{response.code}"
+    else
+      raise ApiError, "Unexpected response: #{response.code}"
+    end
+  rescue JSON::ParserError => e
+    raise ApiError, "Invalid JSON response: #{e.message}"
+  end
+
+  def extract_content(response)
+    content_blocks = response['content'] || []
+    
+    text_content = content_blocks
+      .select { |block| block['type'] == 'text' }
+      .map { |block| block['text'] }
+      .join("\n")
+    
+    text_content.presence
+  end
+
+  def extract_text_content(message)
+    content = message['content']
+    return content if content.is_a?(String)
+    
+    if content.is_a?(Array)
+      content.select { |c| c['type'] == 'text' }.map { |c| c['text'] }.join("\n")
+    end
+  end
+
+  def extract_message(response)
+    {
+      'role' => 'assistant',
+      'content' => extract_content(response),
+      'tool_calls' => extract_tool_calls(response)
+    }.compact
+  end
+
+  def extract_tool_calls(response)
+    content_blocks = response['content'] || []
+    
+    tool_calls = content_blocks
+      .select { |block| block['type'] == 'tool_use' }
+      .map do |block|
+        {
+          'id' => block['id'],
+          'type' => 'function',
+          'function' => {
+            'name' => block['name'],
+            'arguments' => block['input'].to_json
+          }
+        }
+      end
+    
+    tool_calls.presence
+  end
+
+  def handle_tool_calls(tool_calls)
+    raise ToolExecutionError, "No tool_handler provided" unless @tool_handler
+
+    tool_calls.each do |tool_call|
+      tool_id = tool_call['id']
+      function_name = tool_call.dig('function', 'name')
+      arguments_json = tool_call.dig('function', 'arguments')
+
+      begin
+        arguments = JSON.parse(arguments_json) if arguments_json.is_a?(String)
+        arguments ||= {}
+        
+        result = @tool_handler.call(function_name, arguments)
+
+        @messages << {
+          'role' => 'user',
+          'content' => [
+            {
+              'type' => 'tool_result',
+              'tool_use_id' => tool_id,
+              'content' => result.to_json
+            }
+          ]
+        }
+      rescue => e
+        @messages << {
+          'role' => 'user',
+          'content' => [
+            {
+              'type' => 'tool_result',
+              'tool_use_id' => tool_id,
+              'content' => { error: e.message }.to_json
+            }
+          ]
+        }
+        Rails.logger.error("Tool execution error: #{e.class} - #{e.message}")
+      end
+    end
+  end
+
+  def build_initial_messages
+    return if @messages.present?
+
+    @messages.concat(@provided_messages) if @provided_messages.present?
+    
+    if @images.present?
+      user_content = []
+      user_content << { type: 'text', text: @prompt.to_s }
+      @images.each do |img|
+        user_content << { type: 'image', source: { type: 'base64', data: img } }
+      end
+      @messages << { role: 'user', content: user_content }
+    else
+      @messages << { role: 'user', content: @prompt }
+    end
+  end
+
   def normalize_images(images)
     return [] if images.blank?
-    list = images.is_a?(Array) ? images.compact : [images].compact
-    list.map(&:to_s).reject(&:blank?)
+    Array(images)
   end
 
-  # Mock HTTP response for test environment
-  def mock_http_response(stream: false, &block)
-    if stream
-      mock_stream_response(&block)
-    else
-      mock_blocking_response
-    end
-  end
-
-  def mock_blocking_response
-    # Return OpenAI-compatible response format
-    mock_content = generate_mock_content
-
+  def mock_response
     {
-      "id" => "mock-#{SecureRandom.hex(8)}",
-      "object" => "chat.completion",
-      "created" => Time.now.to_i,
-      "model" => @model,
-      "choices" => [
-        {
-          "index" => 0,
-          "message" => {
-            "role" => "assistant",
-            "content" => mock_content
-          },
-          "finish_reason" => "stop"
-        }
+      'content' => [
+        { 'type' => 'text', 'text' => 'Mock response from Claude' }
       ],
-      "usage" => {
-        "prompt_tokens" => 10,
-        "completion_tokens" => 20,
-        "total_tokens" => 30
-      }
+      'usage' => { 'input_tokens' => 10, 'output_tokens' => 20 }
     }
-  end
-
-  def mock_stream_response(&block)
-    # Simulate streaming chunks
-    chunks = generate_mock_content.chars.each_slice(5).map(&:join)
-
-    chunks.each do |chunk|
-      block.call({ content: chunk })
-    end
-
-    nil
-  end
-
-  def generate_mock_content
-    # Generate contextual mock content based on prompt
-    return "Fortune reading: Great success awaits you!" if @prompt.to_s.downcase.include?("fortune")
-    return "Weather forecast: Sunny with a chance of clouds" if @prompt.to_s.downcase.include?("weather")
-
-    # Default mock response
-    "This is a mocked LLM response for testing purposes. Prompt: #{@prompt&.truncate(50)}"
   end
 end

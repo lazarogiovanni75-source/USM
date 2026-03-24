@@ -256,7 +256,6 @@ class User < ApplicationRecord
   has_many :contents, dependent: :destroy
   has_many :social_accounts, dependent: :destroy
   has_many :scheduled_posts, dependent: :destroy
-  has_many :performance_metrics, dependent: :destroy
   has_many :voice_commands, dependent: :destroy
   
   # AI & Voice features
