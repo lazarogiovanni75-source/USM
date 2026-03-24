@@ -34,6 +34,25 @@ echo "If running the rails server then create or migrate existing database"
 
 if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
   echo "Running database migrations for all databases..."
+  
+  # Handle legacy solid_cable migration that may already be applied
+  echo "Checking for legacy solid_cable migration..."
+  ./bin/rails runner '
+    begin
+      version = "20251102144858"
+      if ActiveRecord::Base.connection.table_exists?("schema_migrations")
+        unless ActiveRecord::SchemaMigration.where(version: version).exists?
+          ActiveRecord::SchemaMigration.create!(version: version)
+          puts "Marked solid_cable migration #{version} as applied"
+        else
+          puts "Migration #{version} already recorded"
+        end
+      end
+    rescue => e
+      puts "Could not check migration status: #{e.message}"
+    end
+  ' || echo "Migration check failed, continuing..."
+  
   ./bin/rails db:migrate:all || echo "Migration failed, continuing..."
   echo "Database setup complete"
 fi
