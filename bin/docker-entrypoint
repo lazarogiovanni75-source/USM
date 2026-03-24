@@ -51,12 +51,14 @@ if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
     rescue => e
       puts "Could not check migration status: #{e.message}"
     end
-  ' || echo "Migration check failed, continuing..."
+  ' > /dev/null 2>&1 || echo "Migration check failed, continuing..."
   
   # Run migrations for primary database
+  echo "Running primary database migrations..."
   ./bin/rails db:migrate || echo "Primary migration failed, continuing..."
   
   # Run migrations for cable database
+  echo "Running cable database migrations..."
   ./bin/rails db:migrate:cable || echo "Cable migration failed, continuing..."
   
   echo "Database setup complete"
