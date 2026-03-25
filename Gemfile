@@ -7,7 +7,7 @@ gem "bootsnap", require: false
 gem "rack-cors"
 
 gem "pg", ">= 1.1"
-gem "figaro"
+# gem "figaro" # REMOVED - was overriding Railway environment variables
 gem "cssbundling-rails"
 gem "jsbundling-rails"
 gem "propshaft", "~> 1.1.0"
