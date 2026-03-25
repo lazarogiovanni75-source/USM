@@ -21,7 +21,8 @@
 class ConversationOrchestrator < ApplicationService
   # Constants
   MAX_HISTORY_MESSAGES = 15
-  CLAUDE_MODEL = "claude-sonnet-4-20250514"
+  # Claude Model Configuration
+  CLAUDE_MODEL = "claude-3-5-sonnet-20241022"
   CHAT_TEMPERATURE = 0.8
   CHAT_MAX_TOKENS = 4000
   
