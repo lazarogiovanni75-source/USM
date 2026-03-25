@@ -1,5 +1,5 @@
-# LLM Service - Anthropic Claude API wrapper
-# Uses Claude as the default LLM for all AI features
+# LLM Service - OpenAI API wrapper
+# Uses GPT as the default LLM for all AI features
 #
 # Usage:
 #   LlmService.call(prompt: "Hello", system: "You are helpful")
@@ -15,10 +15,9 @@ class LlmService < ApplicationService
   class ApiError < LlmError; end
   class ToolExecutionError < LlmError; end
 
-  # Anthropic API Configuration
-  BASE_URL = ENV.fetch('ANTHROPIC_BASE_URL', 'https://api.anthropic.com')
-  API_VERSION = '2023-06-01'
-  DEFAULT_MODEL = 'claude-sonnet-4-6'
+  # OpenAI API Configuration
+  BASE_URL = ENV.fetch('LLM_BASE_URL', 'https://api.openai.com/v1')
+  DEFAULT_MODEL = ENV.fetch('LLM_MODEL', 'gpt-4o')
 
   def initialize(prompt:, system: nil, messages: nil, **options)
     @prompt = prompt
@@ -26,8 +25,8 @@ class LlmService < ApplicationService
     @provided_messages = messages || []
     @options = options
     
-    # Use Claude model by default
-    @model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', DEFAULT_MODEL)
+    # Use configured model or default
+    @model = options[:model] || DEFAULT_MODEL
     @temperature = options[:temperature]&.to_f || 0.7
     @max_tokens = options[:max_tokens] || 4096
     @timeout = options[:timeout] || 60
@@ -68,7 +67,7 @@ class LlmService < ApplicationService
 
   # Simple blocking call without tool support
   def call_blocking_simple
-    response = http_request('/v1/messages', build_request_body)
+    response = http_request('/chat/completions', build_request_body)
     content = extract_content(response)
     
     raise LlmError, "No content in response" if content.blank?
@@ -84,7 +83,7 @@ class LlmService < ApplicationService
       iteration += 1
       raise LlmError, "Max tool iterations (#{@max_tool_iterations}) exceeded" if iteration > @max_tool_iterations
 
-      response = http_request('/v1/messages', build_request_body)
+      response = http_request('/chat/completions', build_request_body)
       message = extract_message(response)
       
       # Add assistant message to history
@@ -125,15 +124,11 @@ class LlmService < ApplicationService
   def call_stream_simple(&block)
     full_content = ""
 
-    http_stream_request('/v1/messages', build_request_body.merge(stream: true)) do |event|
-      if event['type'] == 'content_block_delta'
-        if event['delta']['type'] == 'text_delta'
-          content = event['delta']['text']
-          full_content += content
-          block.call(content)
-        end
-      elsif event['type'] == 'message_stop'
-        # Stream complete
+    http_stream_request('/chat/completions', build_request_body.merge(stream: true)) do |event|
+      if event['choices']&.first&.dig('delta', 'content')
+        content = event['choices'].first['delta']['content']
+        full_content += content
+        block.call(content)
       end
     end
 
@@ -149,50 +144,41 @@ class LlmService < ApplicationService
       iteration += 1
       raise LlmError, "Max tool iterations (#{@max_tool_iterations}) exceeded" if iteration > @max_tool_iterations
 
-      tool_calls_buffer = {}
+      tool_calls_buffer = []
       content_buffer = ""
       has_tool_calls = false
 
-      http_stream_request('/v1/messages', build_request_body.merge(stream: true)) do |event|
-        case event['type']
-        when 'content_block_delta'
-          if event['delta']['type'] == 'text_delta'
-            content = event['delta']['text']
-            content_buffer += content
-            block.call(content)
-          elsif event['delta']['type'] == 'input_json_delta'
+      http_stream_request('/chat/completions', build_request_body.merge(stream: true)) do |event|
+        delta = event.dig('choices', 0, 'delta')
+        
+        if delta
+          # Accumulate content
+          if delta['content']
+            content_buffer += delta['content']
+            block.call(delta['content']) if block_given?
+          end
+          
+          # Accumulate tool calls
+          if delta['tool_calls']
             has_tool_calls = true
-            idx = event['content_block_index']
-            tool_calls_buffer[idx] ||= {
-              'type' => 'tool_use',
-              'id' => '',
-              'name' => '',
-              'input' => ''
-            }
-            if event['delta']['partial_json']
-              tool_calls_buffer[idx]['input'] += event['delta']['partial_json']
+            delta['tool_calls'].each_with_index do |tool_call, idx|
+              tool_calls_buffer[idx] ||= {
+                'id' => '',
+                'type' => 'function',
+                'function' => { 'name' => '', 'arguments' => '' }
+              }
+              tool_calls_buffer[idx]['id'] = tool_call['id'] if tool_call['id']
+              tool_calls_buffer[idx]['function']['name'] = tool_call.dig('function', 'name') if tool_call.dig('function', 'name')
+              tool_calls_buffer[idx]['function']['arguments'] += tool_call.dig('function', 'arguments').to_s
             end
           end
-        when 'content_block_start'
-          if event['content_block']['type'] == 'tool_use'
-            idx = event['index']
-            tool_calls_buffer[idx] ||= {}
-            tool_calls_buffer[idx]['type'] = 'tool_use'
-            tool_calls_buffer[idx]['id'] = event['content_block']['id']
-            tool_calls_buffer[idx]['name'] = event['content_block']['name']
-            tool_calls_buffer[idx]['input'] = ''
-          end
-        when 'message_stop'
-          # Stream complete
         end
       end
 
       # Build complete message
       message = { 'role' => 'assistant' }
       message['content'] = content_buffer if content_buffer.present?
-      if has_tool_calls
-        message['tool_calls'] = tool_calls_buffer.values
-      end
+      message['tool_calls'] = tool_calls_buffer if tool_calls_buffer.present?
 
       @messages << message
 
@@ -225,23 +211,33 @@ class LlmService < ApplicationService
   private
 
   def api_key
-    ENV.fetch('ANTHROPIC_API_KEY') do
-      raise LlmError, "ANTHROPIC_API_KEY is not configured"
-    end
+    ENV['CLACKY_OPENAI_API_KEY'] || ENV['OPENAI_API_KEY'] || ENV['ULTIMATE_OPENAI_API_KEY'] || Figaro.env.openai_api_key || raise(LlmError, "CLACKY_OPENAI_API_KEY is not configured")
   end
 
   def build_request_body
     body = {
       model: @model,
-      max_tokens: @max_tokens,
       messages: @messages,
-      temperature: @temperature
+      temperature: @temperature,
+      max_tokens: @max_tokens
     }
 
-    body[:system] = @system if @system.present?
-    body[:tools] = @tools if @tools.present?
+    body[:tools] = format_tools(@tools) if @tools.present?
     
     body
+  end
+
+  def format_tools(tools)
+    tools.map do |tool|
+      {
+        type: 'function',
+        function: {
+          name: tool[:name],
+          description: tool[:description] || '',
+          parameters: tool[:parameters] || { type: 'object', properties: {}, required: [] }
+        }
+      }
+    end
   end
 
   def http_request(endpoint, body)
@@ -259,8 +255,7 @@ class LlmService < ApplicationService
 
     request = Net::HTTP::Post.new(url.request_uri)
     request['Content-Type'] = 'application/json'
-    request['x-api-key'] = api_key
-    request['anthropic-version'] = API_VERSION
+    request['Authorization'] = "Bearer #{api_key}"
     request.body = body.to_json
 
     response = http.request(request)
@@ -280,8 +275,7 @@ class LlmService < ApplicationService
 
     request = Net::HTTP::Post.new(url.request_uri)
     request['Content-Type'] = 'application/json'
-    request['x-api-key'] = api_key
-    request['anthropic-version'] = API_VERSION
+    request['Authorization'] = "Bearer #{api_key}"
     request['Accept'] = 'text/event-stream'
     request.body = body.to_json
 
@@ -316,14 +310,14 @@ class LlmService < ApplicationService
     when 200..299
       JSON.parse(response.body)
     when 401, 403
-      raise ApiError, 'Invalid API key - check ANTHROPIC_API_KEY'
+      raise ApiError, 'Invalid API key - check CLACKY_OPENAI_API_KEY'
     when 429
       raise ApiError, 'Rate limit exceeded - please try again later'
     when 400..499
       error_body = JSON.parse(response.body) rescue {}
       raise ApiError, "Bad request: #{error_body.dig('error', 'message') || response.body}"
     when 500..599
-      raise ApiError, "Claude API server error: #{response.code}"
+      raise ApiError, "OpenAI API server error: #{response.code}"
     else
       raise ApiError, "Unexpected response: #{response.code}"
     end
@@ -332,50 +326,39 @@ class LlmService < ApplicationService
   end
 
   def extract_content(response)
-    content_blocks = response['content'] || []
-    
-    text_content = content_blocks
-      .select { |block| block['type'] == 'text' }
-      .map { |block| block['text'] }
-      .join("\n")
-    
-    text_content.presence
+    # OpenAI format: response['choices']&.first&.dig('message', 'content')
+    response.dig('choices', 0, 'message', 'content')
   end
 
   def extract_text_content(message)
-    content = message['content']
-    return content if content.is_a?(String)
-    
-    if content.is_a?(Array)
-      content.select { |c| c['type'] == 'text' }.map { |c| c['text'] }.join("\n")
-    end
+    message['content']
   end
 
   def extract_message(response)
-    {
-      'role' => 'assistant',
-      'content' => extract_content(response),
-      'tool_calls' => extract_tool_calls(response)
-    }.compact
-  end
-
-  def extract_tool_calls(response)
-    content_blocks = response['content'] || []
+    choice = response.dig('choices', 0)
+    return nil unless choice
     
-    tool_calls = content_blocks
-      .select { |block| block['type'] == 'tool_use' }
-      .map do |block|
+    message = choice['message'] || {}
+    result = {
+      'role' => message['role'] || 'assistant',
+      'content' => message['content']
+    }.compact
+    
+    # Extract tool calls from message
+    if message['tool_calls']
+      result['tool_calls'] = message['tool_calls'].map do |tc|
         {
-          'id' => block['id'],
+          'id' => tc['id'],
           'type' => 'function',
           'function' => {
-            'name' => block['name'],
-            'arguments' => block['input'].to_json
+            'name' => tc.dig('function', 'name'),
+            'arguments' => tc.dig('function', 'arguments')
           }
         }
       end
+    end
     
-    tool_calls.presence
+    result
   end
 
   def handle_tool_calls(tool_calls)
@@ -393,25 +376,15 @@ class LlmService < ApplicationService
         result = @tool_handler.call(function_name, arguments)
 
         @messages << {
-          'role' => 'user',
-          'content' => [
-            {
-              'type' => 'tool_result',
-              'tool_use_id' => tool_id,
-              'content' => result.to_json
-            }
-          ]
+          'role' => 'tool',
+          'tool_call_id' => tool_id,
+          'content' => result.to_json
         }
       rescue => e
         @messages << {
-          'role' => 'user',
-          'content' => [
-            {
-              'type' => 'tool_result',
-              'tool_use_id' => tool_id,
-              'content' => { error: e.message }.to_json
-            }
-          ]
+          'role' => 'tool',
+          'tool_call_id' => tool_id,
+          'content' => { error: e.message }.to_json
         }
         Rails.logger.error("Tool execution error: #{e.class} - #{e.message}")
       end
@@ -423,29 +396,19 @@ class LlmService < ApplicationService
 
     @messages.concat(@provided_messages) if @provided_messages.present?
     
-    if @images.present?
-      user_content = []
-      user_content << { type: 'text', text: @prompt.to_s }
-      @images.each do |img|
-        user_content << { type: 'image', source: { type: 'base64', data: img } }
-      end
-      @messages << { role: 'user', content: user_content }
-    else
-      @messages << { role: 'user', content: @prompt }
-    end
-  end
-
-  def normalize_images(images)
-    return [] if images.blank?
-    Array(images)
+    # Add system message first
+    @messages.unshift({ 'role' => 'system', 'content' => @system }) if @system.present?
+    
+    # Add user message with prompt
+    @messages << { 'role' => 'user', 'content' => @prompt }
   end
 
   def mock_response
     {
-      'content' => [
-        { 'type' => 'text', 'text' => 'Mock response from Claude' }
+      'choices' => [
+        { 'message' => { 'role' => 'assistant', 'content' => 'Mock response from OpenAI' } }
       ],
-      'usage' => { 'input_tokens' => 10, 'output_tokens' => 20 }
+      'usage' => { 'prompt_tokens' => 10, 'completion_tokens' => 20 }
     }
   end
 end
