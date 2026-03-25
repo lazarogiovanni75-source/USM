@@ -25,7 +25,7 @@ export default class extends Controller {
       alert(`Request failed: ${event.detail.error}`)
     })
     
-    document.addEventListener('turbo:frame-missing', (event) => {
+    document.addEventListener('turbo:frame-missing', () => {
       this.log(`ERROR: Turbo frame missing`, 'error')
     })
     

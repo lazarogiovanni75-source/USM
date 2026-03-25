@@ -17,6 +17,7 @@ class ApplicationController < ActionController::Base
   include FriendlyErrorHandlingConcern
   include DevelopmentCsrfBypassConcern
   include TurboCompatibleRenderConcern
+  include RuntimeEnvChecker # Log ENV vars at request time in production
 
 
   # Authentication private methods begin

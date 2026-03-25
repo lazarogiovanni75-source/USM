@@ -18,18 +18,21 @@ class LlmService
   }.freeze
 
   # Anthropic API Configuration
+  # NOTE: These constants are evaluated at CLASS LOAD TIME (first request or boot)
+  # For Railway, we read directly from system ENV to avoid Figaro timing issues
   BASE_URL = ENV.fetch('ANTHROPIC_BASE_URL', 'https://api.anthropic.com')
   API_VERSION = '2023-06-01'
-  # Use claude-sonnet-4-6 as default (current model)
-  # Railway env var ANTHROPIC_MODEL will be overridden if invalid
+  
+  # Class-level model cache - set once at load time
+  # For claude-sonnet-4-6 as default, read directly from Railway env
+  MODEL_FROM_ENV = ENV['ANTHROPIC_MODEL'].presence
   DEFAULT_MODEL = begin
-    model = ENV['ANTHROPIC_MODEL'].presence
     # Fix invalid model names automatically
-    if INVALID_MODEL_MAPPINGS.key?(model)
-      Rails.logger.warn "[LLM] Invalid model '#{model}' detected, using '#{INVALID_MODEL_MAPPINGS[model]}' instead"
-      INVALID_MODEL_MAPPINGS[model]
+    if INVALID_MODEL_MAPPINGS.key?(MODEL_FROM_ENV)
+      Rails.logger.warn "[LLM] Invalid model '#{MODEL_FROM_ENV}' detected, using 'claude-sonnet-4-6' instead"
+      'claude-sonnet-4-6'
     else
-      model || 'claude-sonnet-4-6'
+      MODEL_FROM_ENV || 'claude-sonnet-4-6'
     end
   end
 
@@ -98,24 +101,26 @@ class LlmService
   private
 
   def api_key
-    # RUNTIME ENV CHECK in LlmService#api_key
-    Rails.logger.info "[LLM] === api_key() method called ==="
-    Rails.logger.info "[LLM] ENV['ANTHROPIC_API_KEY'] = '#{ENV['ANTHROPIC_API_KEY']}'"
-    Rails.logger.info "[LLM] ENV['ANTHROPIC_API_KEY'].present? = #{ENV['ANTHROPIC_API_KEY'].present?}"
-    Rails.logger.info "[LLM] ENV['CLACKY_ANTHROPIC_API_KEY'] = '#{ENV['CLACKY_ANTHROPIC_API_KEY']}'"
-    Rails.logger.info "[LLM] ENV['CLACKY_ANTHROPIC_API_KEY'].present? = #{ENV['CLACKY_ANTHROPIC_API_KEY'].present?}"
-    Rails.logger.info "[LLM] All ENV keys: #{ENV.keys.count} total"
-    Rails.logger.info "[LLM] ENV keys with 'ANTHROPIC': #{ENV.keys.select { |k| k.include?('ANTHROPIC') }.inspect}"
-    Rails.logger.info "[LLM] ENV keys with 'API': #{ENV.keys.select { |k| k.include?('API') }.count} keys"
+    # RUNTIME ENV CHECK - Read directly from Railway's environment at request time
+    # This bypasses Figaro's boot-time evaluation issues
+    Rails.logger.info "[LLM] === api_key() RUNTIME CHECK ==="
     
-    key = ENV['ANTHROPIC_API_KEY'].presence || ENV['CLACKY_ANTHROPIC_API_KEY'].presence
+    # Check multiple possible env var names that Railway might use
+    api_key_value = ENV['ANTHROPIC_API_KEY'].presence || 
+                    ENV['CLACKY_ANTHROPIC_API_KEY'].presence ||
+                    ENV['RAILWAY_ANTHROPIC_API_KEY'].presence
     
-    # Debug logging to verify API key is being read
-    Rails.logger.info "[LLM] Final key present?: #{key.present?}"
-    Rails.logger.info "[LLM] Final key first 8 chars: #{key&.slice(0, 8)&.ljust(8, '*') || 'nil'}"
-    Rails.logger.info "[LLM] === api_key() method end ==="
-    
-    key || raise(LlmError, "ANTHROPIC_API_KEY is not configured")
+    if api_key_value.present?
+      Rails.logger.info "[LLM] ✅ ANTHROPIC_API_KEY found: #{api_key_value.slice(0, 8)}..."
+      api_key_value
+    else
+      # Log ALL env vars containing 'KEY' for debugging
+      key_vars = ENV.keys.select { |k| k.include?('KEY') || k.include?('SECRET') }
+      Rails.logger.error "[LLM] ❌ ANTHROPIC_API_KEY NOT FOUND in ENV"
+      Rails.logger.error "[LLM] Available KEY/SECRET vars: #{key_vars.inspect}"
+      Rails.logger.error "[LLM] Full ENV sample (first 50): #{ENV.keys.first(50).inspect}"
+      raise LlmError, "ANTHROPIC_API_KEY is not configured"
+    end
   end
 
   def build_request_body
