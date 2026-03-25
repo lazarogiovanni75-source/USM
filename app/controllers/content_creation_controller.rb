@@ -38,6 +38,9 @@ class ContentCreationController < ApplicationController
       # Generate content using Anthropic Claude
       prompt = build_content_prompt(topic, content_type, platform)
       
+      Rails.logger.info "[ContentCreation] Starting content generation for #{content_type}/#{platform}"
+      Rails.logger.info "[ContentCreation] Topic: #{topic}"
+      
       content = LlmService.call_blocking(
         prompt: prompt,
         system: "You are an expert social media content creator. Generate engaging, platform-appropriate content.",
@@ -54,8 +57,13 @@ class ContentCreationController < ApplicationController
       )
 
       redirect_to draft_path(draft), notice: 'Content generated successfully!'
+    rescue LlmService::LlmError => e
+      Rails.logger.error "[ContentCreation] LLM Service Error: #{e.class} - #{e.message}"
+      Rails.logger.error "[ContentCreation] Backtrace: #{e.backtrace.first(10).join("\n")}"
+      redirect_to content_creation_index_path, alert: "AI service error: #{e.message}"
     rescue => e
-      Rails.logger.error "Content Generation Error: #{e.message}"
+      Rails.logger.error "[ContentCreation] Content Generation Error: #{e.class} - #{e.message}"
+      Rails.logger.error "[ContentCreation] Backtrace: #{e.backtrace.first(10).join("\n")}"
       redirect_to content_creation_index_path, alert: "Failed to generate content: #{e.message}"
     end
   end

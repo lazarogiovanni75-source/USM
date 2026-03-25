@@ -326,18 +326,26 @@ class LlmService < ApplicationService
     when 200..299
       JSON.parse(response.body)
     when 401, 403
+      Rails.logger.error "[LLM] Auth error - API key: #{api_key&.slice(0, 8)}..."
+      Rails.logger.error "[LLM] Response body: #{response.body}"
       raise ApiError, 'Invalid API key - check ANTHROPIC_API_KEY'
     when 429
+      Rails.logger.error "[LLM] Rate limit - Response: #{response.body}"
       raise ApiError, 'Rate limit exceeded - please try again later'
     when 400..499
       error_body = JSON.parse(response.body) rescue {}
-      raise ApiError, "Bad request: #{error_body.dig('error', 'message') || response.body}"
+      Rails.logger.error "[LLM] Client error #{response.code} - Full response: #{response.body}"
+      error_msg = error_body.dig('error', 'message') || response.body
+      raise ApiError, "Bad request: #{error_msg}"
     when 500..599
+      Rails.logger.error "[LLM] Server error #{response.code} - Response: #{response.body}"
       raise ApiError, "Claude API server error: #{response.code}"
     else
+      Rails.logger.error "[LLM] Unexpected response #{response.code} - Body: #{response.body}"
       raise ApiError, "Unexpected response: #{response.code}"
     end
   rescue JSON::ParserError => e
+    Rails.logger.error "[LLM] JSON parse error - Raw response: #{response.body}"
     raise ApiError, "Invalid JSON response: #{e.message}"
   end
 
