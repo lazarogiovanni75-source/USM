@@ -7,7 +7,7 @@ class TestAnthropicController < ApplicationController
     require 'json'
     
     api_key = ENV['ANTHROPIC_API_KEY']
-    model = ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-20250514')
+    model = ENV.fetch('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')
     
     if api_key.blank?
       render json: { error: 'ANTHROPIC_API_KEY not set', env_keys: ENV.keys.select { |k| k.include?('ANTHROPIC') } }, status: 500
