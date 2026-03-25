@@ -10,17 +10,18 @@ class LlmService
 
   # Model auto-correction - fixes invalid Railway environment variables
   # Invalid model names will be replaced with valid alternatives
+  # Prefer claude-sonnet-4-6 as it's the latest/current model
   INVALID_MODEL_MAPPINGS = {
-    'claude-sonnet-4-20250514' => 'claude-3-5-sonnet-20241022',
-    'claude-3-5-sonnet-20240620' => 'claude-3-5-sonnet-20241022'
+    'claude-sonnet-4-20250514' => 'claude-sonnet-4-6',
+    'claude-3-5-sonnet-20240620' => 'claude-sonnet-4-6',
+    'claude-3-5-sonnet-20241022' => 'claude-sonnet-4-6'
   }.freeze
 
   # Anthropic API Configuration
   BASE_URL = ENV.fetch('ANTHROPIC_BASE_URL', 'https://api.anthropic.com')
   API_VERSION = '2023-06-01'
-  # Using claude-3-5-sonnet-20241022 as default (stable, widely supported)
-  # Alternative: claude-3-5-sonnet-latest (always newest 3.5)
-  # Force correct model - ignore invalid Railway env var
+  # Use claude-sonnet-4-6 as default (current model)
+  # Railway env var ANTHROPIC_MODEL will be overridden if invalid
   DEFAULT_MODEL = begin
     model = ENV['ANTHROPIC_MODEL'].presence
     # Fix invalid model names automatically
@@ -28,7 +29,7 @@ class LlmService
       Rails.logger.warn "[LLM] Invalid model '#{model}' detected, using '#{INVALID_MODEL_MAPPINGS[model]}' instead"
       INVALID_MODEL_MAPPINGS[model]
     else
-      model || 'claude-3-5-sonnet-20241022'
+      model || 'claude-sonnet-4-6'
     end
   end
 

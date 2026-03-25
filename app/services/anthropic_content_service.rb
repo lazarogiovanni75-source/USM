@@ -384,7 +384,7 @@ class AnthropicContentService
     })
 
     request.body = {
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }]
     }.to_json
