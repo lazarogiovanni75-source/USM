@@ -35,10 +35,10 @@ class ContentCreationController < ApplicationController
     end
 
     begin
-      # Generate content using OpenAI
+      # Generate content using Anthropic Claude
       prompt = build_content_prompt(topic, content_type, platform)
       
-      content = call_openai(
+      content = LlmService.call_blocking(
         prompt: prompt,
         system: "You are an expert social media content creator. Generate engaging, platform-appropriate content.",
         max_tokens: 2000
@@ -70,7 +70,7 @@ class ContentCreationController < ApplicationController
              "Keep descriptions under 100 characters each."
 
     begin
-      content = call_openai(
+      content = LlmService.call_blocking(
         prompt: prompt,
         system: "You are a social media content strategist. Generate creative, engaging ideas.",
         max_tokens: 1500
@@ -120,42 +120,8 @@ class ContentCreationController < ApplicationController
     end
   end
 
-  def call_openai(prompt:, system:, max_tokens: 2000)
-    require 'net/http'
-    require 'uri'
-    require 'json'
-
-    api_key = ENV['OPENAI_API_KEY']
-    raise "OPENAI_API_KEY not configured" if api_key.blank?
-
-    uri = URI('https://api.openai.com/v1/chat/completions')
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-
-    request = Net::HTTP::Post.new(uri.request_uri)
-    request['Content-Type'] = 'application/json'
-    request['Authorization'] = "Bearer #{api_key}"
-
-    request.body = {
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: prompt }
-      ],
-      max_tokens: max_tokens,
-      temperature: 0.7
-    }.to_json
-
-    response = http.request(request)
-
-    if response.is_a?(Net::HTTPSuccess)
-      result = JSON.parse(response.body)
-      result.dig('choices', 0, 'message', 'content') || ''
-    else
-      error_body = JSON.parse(response.body) rescue {}
-      raise "OpenAI API error: #{error_body.dig('error', 'message') || response.code}"
-    end
-  end
+  # Content generation now uses Anthropic Claude via LlmService
+  # LlmService handles all API communication with proper error handling
 
   def generate_image
     prompt = params[:prompt]
