@@ -225,7 +225,13 @@ class LlmService < ApplicationService
   private
 
   def api_key
-    ENV['ANTHROPIC_API_KEY'] || ENV['CLACKY_ANTHROPIC_API_KEY'] || raise(LlmError, "ANTHROPIC_API_KEY is not configured")
+    key = ENV['ANTHROPIC_API_KEY'] || ENV['CLACKY_ANTHROPIC_API_KEY']
+    
+    # Debug logging to verify API key is being read
+    Rails.logger.info "[LLM] ANTHROPIC_API_KEY present?: #{key.present?}"
+    Rails.logger.info "[LLM] ANTHROPIC_API_KEY first 8 chars: #{key&.slice(0, 8)&.ljust(8, '*') || 'nil'}"
+    
+    key || raise(LlmError, "ANTHROPIC_API_KEY is not configured")
   end
 
   def build_request_body
