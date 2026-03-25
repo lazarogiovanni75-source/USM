@@ -1,8 +1,120 @@
-<button id="record" style="padding: 20px 40px; font-size: 18px; cursor: pointer;">
-  🎤 Hold to Record (5s)
-</button>
+<%# Conversational Voice Chat with Claude - Uses Whisper (STT), Claude (AI), Google Cloud TTS (TTS) %>
 
-<div id="status" style="margin-top: 20px; font-family: monospace;"></div>
+<div class="min-h-screen surface flex flex-col" data-controller="voice-chat">
+  <%# Header %>
+  <div class="bg-surface-elevated border-b border-border px-6 py-4">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <%= lucide_icon "bot", class: "w-5 h-5 text-primary" %>
+        </div>
+        <div>
+          <h1 class="text-lg font-semibold text-primary">Claude Voice</h1>
+          <p class="text-xs text-muted">Conversational AI Assistant</p>
+        </div>
+      </div>
+      
+      <%# Status indicator %>
+      <div class="flex items-center gap-2">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+        </span>
+        <span class="text-xs text-muted" id="connection-status">Ready</span>
+      </div>
+    </div>
+  </div>
 
-<!-- stimulus-validator: allow-script -->
-<script src="/javascripts/voice_chat.js"></script>
+  <%# Conversation History %>
+  <div class="flex-1 overflow-y-auto" id="conversation-container">
+    <div class="max-w-2xl mx-auto p-6 space-y-6" id="messages-list">
+      <%# Welcome message %>
+      <div class="flex gap-3" data-voice-chat-target="welcome">
+        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <%= lucide_icon "bot", class: "w-4 h-4 text-primary" %>
+        </div>
+        <div class="bg-surface-elevated rounded-2xl rounded-tl-sm px-4 py-3 max-w-md">
+          <p class="text-sm text-primary leading-relaxed">
+            Hello! I'm Claude, your voice assistant. You can speak to me by holding the microphone button, or type your message below. How can I help you today?
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Loading States %>
+  <div id="loading-states" class="hidden max-w-2xl mx-auto px-6 py-4">
+    <%# Whisper transcribing %>
+    <div id="transcribing-state" class="hidden flex items-center gap-2 text-muted">
+      <%= lucide_icon "loader-2", class: "w-4 h-4 animate-spin" %>
+      <span class="text-sm">Listening...</span>
+    </div>
+    
+    <%# Claude thinking %>
+    <div id="thinking-state" class="hidden flex items-center gap-2 text-muted">
+      <%= lucide_icon "sparkles", class: "w-4 h-4 animate-pulse" %>
+      <span class="text-sm">Claude is thinking...</span>
+    </div>
+    
+    <%# Google TTS synthesizing %>
+    <div id="synthesizing-state" class="hidden flex items-center gap-2 text-muted">
+      <%= lucide_icon "volume-2", class: "w-4 h-4 animate-pulse" %>
+      <span class="text-sm">Speaking...</span>
+    </div>
+  </div>
+
+  <%# Input Area %>
+  <div class="bg-surface-elevated border-t border-border px-6 py-4">
+    <div class="max-w-2xl mx-auto">
+      <%# Text Input %>
+      <div class="flex gap-3 mb-4">
+        <input 
+          type="text" 
+          id="text-input"
+          data-voice-chat-target="textInput"
+          placeholder="Type your message here..."
+          class="flex-1 form-input pr-4"
+          autocomplete="off"
+        >
+        <button 
+          data-action="voice-chat#sendText"
+          class="btn-primary px-4"
+          id="send-button"
+        >
+          <%= lucide_icon "send", class: "w-4 h-4" %>
+        </button>
+      </div>
+
+      <%# Voice Input Button %>
+      <div class="flex justify-center">
+        <button 
+          id="voice-button"
+          data-action="voice-chat#startRecording voice-chat#stopRecording"
+          class="relative w-16 h-16 rounded-full bg-primary hover:bg-primary-dark transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center group"
+          data-voice-chat-target="voiceButton"
+        >
+          <%# Idle state - microphone %>
+          <div id="mic-icon" class="transition-opacity">
+            <%= lucide_icon "mic", class: "w-6 h-6 text-white" %>
+          </div>
+          
+          <%# Recording state - stop icon (hidden by default) %>
+          <div id="stop-icon" class="absolute inset-0 flex items-center justify-center hidden">
+            <%= lucide_icon "square", class: "w-6 h-6 text-white" %>
+          </div>
+          
+          <%# Recording indicator ring %>
+          <div id="recording-ring" class="absolute inset-0 rounded-full border-4 border-white/30 scale-100 opacity-0 transition-all duration-200"></div>
+        </button>
+      </div>
+
+      <%# Instructions %>
+      <p class="text-center text-xs text-muted mt-3">
+        Hold the button to record your message
+      </p>
+    </div>
+  </div>
+</div>
+
+<%# Audio element for TTS playback (hidden) %>
+<audio id="tts-audio" class="hidden" controls></audio>
