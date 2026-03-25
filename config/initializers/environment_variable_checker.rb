@@ -11,10 +11,10 @@ Rails.application.config.after_initialize do
   required_vars = {
     'ANTHROPIC_API_KEY' => 'Anthropic Claude API',
     'ATLASCLOUD_API_KEY' => 'Atlas Cloud API',
-    'CLACKY_OPENAI_API_KEY' => 'OpenAI API (Whisper/TTS)',
   }
 
   optional_vars = {
+    'CLACKY_OPENAI_API_KEY' => 'OpenAI API (Whisper/TTS)',
     'ANTHROPIC_MODEL' => 'Anthropic Model',
     'ATLASCLOUD_BASE_URL' => 'Atlas Cloud Base URL',
   }
