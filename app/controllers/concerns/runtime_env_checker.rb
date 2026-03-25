@@ -1,18 +1,22 @@
-# Runtime Environment Checker - Runs on every request
+# Runtime Environment Checker - Runs on first request only
 # This concern can be included in controllers to check ENV at request time
 
 module RuntimeEnvChecker
   extend ActiveSupport::Concern
 
   included do
-    before_action :log_runtime_env_status, if: -> { Rails.env.production? }
+    before_action :log_runtime_env_status_once, if: -> { Rails.env.production? && !@env_checked }
   end
 
   private
 
-  def log_runtime_env_status
+  def log_runtime_env_status_once
+    # Only log once per Rails instance (not on every request)
+    return if defined?(@@env_checked_at_runtime)
+    @@env_checked_at_runtime = true
+    
     Rails.logger.info "=" * 60
-    Rails.logger.info "RUNTIME ENV CHECK (Request Time)"
+    Rails.logger.info "FIRST REQUEST - RUNTIME ENV CHECK"
     Rails.logger.info "Time: #{Time.current.iso8601}"
     Rails.logger.info "=" * 60
     
