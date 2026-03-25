@@ -368,7 +368,7 @@ class AnthropicContentService
   end
 
   def call_claude(prompt)
-    api_key = ENV.fetch('ANTHROPIC_API_KEY', ENV.fetch('CLACKY_ANTHROPIC_API_KEY', nil))
+    api_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['CLACKY_ANTHROPIC_API_KEY'].presence
 
     raise ContentGenerationError, 'Anthropic API key not configured' unless api_key
 

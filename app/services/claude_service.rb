@@ -18,7 +18,7 @@ class ClaudeService
   attr_reader :total_cost, :total_tokens
 
   def initialize(api_key: nil, model: nil, max_tokens: nil, max_budget_usd: nil)
-    @api_key = api_key || ENV.fetch('ANTHROPIC_API_KEY', nil)
+    @api_key = api_key || ENV['ANTHROPIC_API_KEY'].presence || ENV['CLACKY_ANTHROPIC_API_KEY'].presence
     raise ClaudeError, 'ANTHROPIC_API_KEY is not configured' unless @api_key
     @model = model || DEFAULT_MODEL
     @max_tokens = max_tokens || 4096
