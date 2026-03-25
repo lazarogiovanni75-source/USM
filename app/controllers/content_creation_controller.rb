@@ -148,7 +148,7 @@ class ContentCreationController < ApplicationController
 
     response = http.request(request)
 
-    if response.success?
+    if response.is_a?(Net::HTTPSuccess)
       result = JSON.parse(response.body)
       result.dig('choices', 0, 'message', 'content') || ''
     else
