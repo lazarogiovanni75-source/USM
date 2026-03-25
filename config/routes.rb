@@ -7,20 +7,6 @@ Rails.application.routes.draw do
   resources :waitlists, only: [:index, :new, :create, :show, :edit, :update, :destroy]
   # End routes for waitlists
 
-  # Dev route to login as user 1
-  get 'dev_login', to: proc { |env|
-    user = User.first
-    session = user.sessions.create
-    cookie_hash = Rails.application.config.session_options[:cookie_options]
-    # Set session cookie
-    "".tap do |response|
-      Rack::Response.new([], 302, {'Location' => '/', 'Set-Cookie' => "_ultimate_social_media_session=; path=/"}).finish
-    end
-  }
-
-  get 'login_as/:user_id', to: 'sessions#login_as'
-  post 'login_as/:user_id', to: 'sessions#login_as'
-
   # Postforme OAuth callback
   get 'auth/postforme/callback', to: 'social_account_connections#oauth_callback'
   post 'auth/postforme/callback', to: 'social_account_connections#oauth_callback'

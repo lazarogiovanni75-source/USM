@@ -26,15 +26,6 @@ class SessionsController < ApplicationController
     end
   end
 
-  # Dev helper to login as a specific user
-  def login_as
-    user = User.find(params[:user_id])
-    @session = user.sessions.create!
-    cookies.signed.permanent[:session_token] = { value: @session.id, httponly: true }
-    redirect_to root_path, notice: "Logged in as #{user.name}"
-  end
-
-
   def destroy
     @session = Current.session
     @session.destroy!
