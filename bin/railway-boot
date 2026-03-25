@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Railway Boot Script - Ensures environment variables are not overridden
+# This script runs BEFORE Rails starts on Railway
+
+set -e
+
+echo "🚂 Railway Boot Script Starting..."
+
+# Check if we're on Railway (Railway sets RAILWAY_ENVIRONMENT)
+if [ -n "$RAILWAY_ENVIRONMENT" ]; then
+  echo "✅ Detected Railway environment: $RAILWAY_ENVIRONMENT"
+  
+  # Remove config/application.yml if it exists - it can override Railway ENV vars
+  if [ -f "config/application.yml" ]; then
+    echo "⚠️  Found config/application.yml - DELETING to prevent ENV override"
+    rm -f config/application.yml
+    echo "✅ config/application.yml deleted"
+  else
+    echo "✅ config/application.yml does not exist (good)"
+  fi
+  
+  # Verify critical environment variables are present
+  echo ""
+  echo "🔍 Checking Railway Environment Variables:"
+  
+  if [ -n "$ANTHROPIC_API_KEY" ]; then
+    echo "✅ ANTHROPIC_API_KEY is set (${ANTHROPIC_API_KEY:0:8}...)"
+  else
+    echo "❌ ANTHROPIC_API_KEY is NOT set!"
+  fi
+  
+  if [ -n "$ATLASCLOUD_API_KEY" ]; then
+    echo "✅ ATLASCLOUD_API_KEY is set (${ATLASCLOUD_API_KEY:0:8}...)"
+  else
+    echo "❌ ATLASCLOUD_API_KEY is NOT set!"
+  fi
+  
+  echo ""
+  echo "🚂 Railway Boot Script Complete - Starting Rails..."
+else
+  echo "ℹ️  Not on Railway - skipping ENV checks"
+fi
+
+# Continue with normal Rails startup
+exec "$@"
