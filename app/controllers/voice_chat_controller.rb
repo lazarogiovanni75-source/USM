@@ -160,7 +160,7 @@ class VoiceChatController < ApplicationController
     request["anthropic-version"] = "2023-06-01"
     request["anthropic-dangerous-direct-browser-access"] = "true"
     request.body = {
-      model: ENV.fetch("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+      model: ENV.fetch("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
       max_tokens: 1024,
       system: system_prompt,
       messages: anthropic_messages

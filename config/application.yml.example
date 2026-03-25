@@ -65,7 +65,7 @@ GITHUB_CLIENT_SECRET: '<%= ENV.fetch("CLACKY_AUTH_CLIENT_SECRET", "") %>'
 # Get your API key from: https://console.anthropic.com/
 ANTHROPIC_API_KEY: '<%= ENV.fetch("ANTHROPIC_API_KEY", '') %>'
 ANTHROPIC_BASE_URL: '<%= ENV.fetch("ANTHROPIC_BASE_URL", 'https://api.anthropic.com') %>'
-ANTHROPIC_MODEL: '<%= ENV.fetch("ANTHROPIC_MODEL", 'claude-sonnet-4-6') %>'
+ANTHROPIC_MODEL: '<%= ENV.fetch("ANTHROPIC_MODEL", 'claude-sonnet-4-20250514') %>'
 # LLM Service end
 
 # Image Generation Service Configuration (uses LLM_BASE_URL and LLM_API_KEY)

@@ -18,7 +18,7 @@ class LlmService < ApplicationService
   # Anthropic API Configuration
   BASE_URL = ENV.fetch('ANTHROPIC_BASE_URL', 'https://api.anthropic.com')
   API_VERSION = '2023-06-01'
-  DEFAULT_MODEL = ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+  DEFAULT_MODEL = ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-20250514')
 
   def initialize(prompt:, system: nil, messages: nil, **options)
     @prompt = prompt
