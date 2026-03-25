@@ -12,10 +12,10 @@ class AtlasCloudService
   BASE_URL = 'https://api.atlascloud.ai'
   TIMEOUT = 120
 
-  # Available video models
+  # Available text-to-video models (user selected)
   TEXT_TO_VIDEO_MODELS = {
-    'atlascloud/magi-1-24b' => 'Magi-1 24B (High Quality)',
-    'vidu/q3-pro/text-to-video' => 'Vidu Q3-Pro Text-to-Video'
+    'openai/sora-2/text-to-video' => 'OpenAI Sora 2 (High Quality)',
+    'bytedance/seedance-v1-pro-fast/text-to-video' => 'ByteDance Seedance V1 Pro (Fast)'
   }.freeze
 
   IMAGE_TO_VIDEO_MODELS = {
@@ -24,12 +24,10 @@ class AtlasCloudService
     'alibaba/wan-2.5/image-to-video' => 'Wan 2.5 Image-to-Video'
   }.freeze
 
-  # Image models
+  # Available image models (user selected)
   IMAGE_MODELS = {
-    'black-forest-labs/flux-1.1-pro' => 'Flux 1.1 Pro (Recommended)',
-    'black-forest-labs/flux-1-pro' => 'Flux 1 Pro',
-    'black-forest-labs/flux-schnell' => 'Flux Schnell (Fast)',
-    'z-image/turbo' => 'Z-Image Turbo'
+    'z-image/turbo' => 'Z-Image Turbo (Fast)',
+    'alibaba/qwen-image/text-to-image-plus' => 'Alibaba Qwen Image Plus (High Quality)'
   }.freeze
 
   class Error < StandardError; end

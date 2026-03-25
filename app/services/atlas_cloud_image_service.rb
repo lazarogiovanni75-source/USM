@@ -6,15 +6,13 @@
 # Authentication: Bearer token via ATLASCLOUD_API_KEY environment variable
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
-  DEFAULT_MODEL = 'black-forest-labs/flux-1.1-pro'
+  DEFAULT_MODEL = 'z-image/turbo'
   TIMEOUT = 120
 
-  # Available image models
+  # Available image models (user selected)
   AVAILABLE_MODELS = {
-    'black-forest-labs/flux-1.1-pro' => 'Flux 1.1 Pro (Recommended)',
-    'black-forest-labs/flux-1-pro' => 'Flux 1 Pro',
-    'black-forest-labs/flux-schnell' => 'Flux Schnell (Fast)',
-    'z-image/turbo' => 'Z-Image Turbo'
+    'z-image/turbo' => 'Z-Image Turbo (Fast)',
+    'alibaba/qwen-image/text-to-image-plus' => 'Alibaba Qwen Image Plus (High Quality)'
   }.freeze
 
   class Error < StandardError; end
