@@ -162,6 +162,8 @@ class ContentCreationController < ApplicationController
     size = params[:size] || '1:1'
     model = params[:model] || 'black-forest-labs/flux-1.1-pro'
 
+    Rails.logger.info "[ContentCreation] Starting image generation - prompt: #{prompt&.length} chars"
+
     begin
       # Use unified service
       result = ImageGenerationService.generate_image(
@@ -171,9 +173,13 @@ class ContentCreationController < ApplicationController
         model: model
       )
 
+      Rails.logger.info "[ContentCreation] ImageGenerationService result: #{result.inspect}"
+
       if result[:success]
         service = result[:service]
         task_id = result[:task_id]
+        
+        Rails.logger.info "[ContentCreation] Creating draft with task_id: #{task_id}"
         
         # Always use polling to ensure we get the final URL
         draft = current_user.draft_contents.create!(
@@ -192,14 +198,18 @@ class ContentCreationController < ApplicationController
         )
 
         ImagePollJob.perform_later(draft.id, task_id, service)
+        Rails.logger.info "[ContentCreation] Redirecting to draft: #{draft.id}"
         redirect_to draft_path(draft), notice: 'Image generation started! Check back in a few moments.'
       else
-        redirect_to content_creation_index_path, alert: "Image generation failed: #{result[:error]}"
+        error_msg = result[:error] || 'Unknown error'
+        Rails.logger.error "[ContentCreation] Image generation failed: #{error_msg}"
+        redirect_to content_creation_index_path, alert: "Image generation failed: #{error_msg}"
       end
     rescue ImageGenerationService::ServiceUnavailableError => e
-      redirect_to content_creation_index_path, alert: e.message
+      Rails.logger.error "[ContentCreation] Service unavailable: #{e.message}"
+      redirect_to content_creation_index_path, alert: "Image service unavailable: #{e.message}"
     rescue => e
-      Rails.logger.error "Image Generation Error: #{e.message}"
+      Rails.logger.error "[ContentCreation] Image Generation Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
       redirect_to content_creation_index_path, alert: "Image generation failed: #{e.message}"
     end
   end
