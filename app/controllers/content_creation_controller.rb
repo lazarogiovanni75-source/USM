@@ -35,25 +35,8 @@ class ContentCreationController < ApplicationController
     end
 
     begin
-      # RUNTIME ENV CHECK - Log at the moment of user action
-      Rails.logger.info "[ContentCreation] === RUNTIME ENV CHECK START ==="
-      Rails.logger.info "[ContentCreation] ANTHROPIC_API_KEY present?: #{ENV['ANTHROPIC_API_KEY'].present?}"
-      Rails.logger.info "[ContentCreation] ANTHROPIC_API_KEY value: #{ENV['ANTHROPIC_API_KEY']&.slice(0, 8) || 'nil'}..."
-      Rails.logger.info "[ContentCreation] CLACKY_ANTHROPIC_API_KEY present?: #{ENV['CLACKY_ANTHROPIC_API_KEY'].present?}"
-      Rails.logger.info "[ContentCreation] All ENV keys containing 'ANTHROPIC': #{ENV.keys.select { |k| k.include?('ANTHROPIC') }}"
-      Rails.logger.info "[ContentCreation] === RUNTIME ENV CHECK END ==="
-      
-      # Generate content using Anthropic Claude
       prompt = build_content_prompt(topic, content_type, platform)
-      
-      Rails.logger.info "[ContentCreation] Starting content generation for #{content_type}/#{platform}"
-      Rails.logger.info "[ContentCreation] Topic: #{topic}"
-      
-      content = LlmService.call_blocking(
-        prompt: prompt,
-        system: "You are an expert social media content creator. Generate engaging, platform-appropriate content.",
-        max_tokens: 2000
-      )
+      content = LlmService.generate(prompt)
 
       # Save as a draft
       draft = current_user.draft_contents.create!(
@@ -65,13 +48,8 @@ class ContentCreationController < ApplicationController
       )
 
       redirect_to draft_path(draft), notice: 'Content generated successfully!'
-    rescue LlmService::LlmError => e
-      Rails.logger.error "[ContentCreation] LLM Service Error: #{e.class} - #{e.message}"
-      Rails.logger.error "[ContentCreation] Backtrace: #{e.backtrace.first(10).join("\n")}"
-      redirect_to content_creation_index_path, alert: "AI service error: #{e.message}"
     rescue => e
-      Rails.logger.error "[ContentCreation] Content Generation Error: #{e.class} - #{e.message}"
-      Rails.logger.error "[ContentCreation] Backtrace: #{e.backtrace.first(10).join("\n")}"
+      Rails.logger.error "[ContentCreation] Error: #{e.message}"
       redirect_to content_creation_index_path, alert: "Failed to generate content: #{e.message}"
     end
   end
@@ -86,11 +64,7 @@ class ContentCreationController < ApplicationController
              "Keep descriptions under 100 characters each."
 
     begin
-      content = LlmService.call_blocking(
-        prompt: prompt,
-        system: "You are a social media content strategist. Generate creative, engaging ideas.",
-        max_tokens: 1500
-      )
+      content = LlmService.generate(prompt)
 
       # Parse the JSON response - handle markdown code blocks
       json_content = content.strip
