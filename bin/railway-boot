@@ -41,5 +41,10 @@ else
   echo "ℹ️  Not on Railway - skipping ENV checks"
 fi
 
-# Continue with normal Rails startup
-exec "$@"
+# Run migrations
+echo "📦 Running database migrations..."
+bundle exec rails db:migrate
+
+# Start Puma
+echo "🚀 Starting Puma web server..."
+exec bundle exec puma -C config/puma.rb
