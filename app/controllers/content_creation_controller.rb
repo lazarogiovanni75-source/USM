@@ -35,6 +35,14 @@ class ContentCreationController < ApplicationController
     end
 
     begin
+      # RUNTIME ENV CHECK - Log at the moment of user action
+      Rails.logger.info "[ContentCreation] === RUNTIME ENV CHECK START ==="
+      Rails.logger.info "[ContentCreation] ANTHROPIC_API_KEY present?: #{ENV['ANTHROPIC_API_KEY'].present?}"
+      Rails.logger.info "[ContentCreation] ANTHROPIC_API_KEY value: #{ENV['ANTHROPIC_API_KEY']&.slice(0, 8) || 'nil'}..."
+      Rails.logger.info "[ContentCreation] CLACKY_ANTHROPIC_API_KEY present?: #{ENV['CLACKY_ANTHROPIC_API_KEY'].present?}"
+      Rails.logger.info "[ContentCreation] All ENV keys containing 'ANTHROPIC': #{ENV.keys.select { |k| k.include?('ANTHROPIC') }}"
+      Rails.logger.info "[ContentCreation] === RUNTIME ENV CHECK END ==="
+      
       # Generate content using Anthropic Claude
       prompt = build_content_prompt(topic, content_type, platform)
       

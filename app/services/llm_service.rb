@@ -1,19 +1,19 @@
-# LLM Service - Anthropic Claude API wrapper
-# Uses Claude as the default LLM for all AI features
-#
-# Usage:
-#   LlmService.call(prompt: "Hello", system: "You are helpful")
-#   LlmService.call_blocking(prompt: "Hello")
-#   LlmService.call_stream(prompt: "Hello") { |chunk| ... }
-#
-# Tool Call Support:
-#   - Pass tools: [...] to enable function calling
-#   - Pass tool_handler: ->(tool_name, args) { ... } to handle tool execution
-class LlmService < ApplicationService
+# LlmService - Unified Anthropic Claude API service
+# Handles both blocking and streaming requests with proper error handling
+
+class LlmService
+  # Custom error classes
   class LlmError < StandardError; end
-  class TimeoutError < LlmError; end
   class ApiError < LlmError; end
+  class TimeoutError < LlmError; end
   class ToolExecutionError < LlmError; end
+
+  # Model auto-correction - fixes invalid Railway environment variables
+  # Invalid model names will be replaced with valid alternatives
+  INVALID_MODEL_MAPPINGS = {
+    'claude-sonnet-4-20250514' => 'claude-3-5-sonnet-20241022',
+    'claude-3-5-sonnet-20240620' => 'claude-3-5-sonnet-20241022'
+  }.freeze
 
   # Anthropic API Configuration
   BASE_URL = ENV.fetch('ANTHROPIC_BASE_URL', 'https://api.anthropic.com')
@@ -23,207 +23,68 @@ class LlmService < ApplicationService
   # Force correct model - ignore invalid Railway env var
   DEFAULT_MODEL = begin
     model = ENV['ANTHROPIC_MODEL'].presence
-    # Fix invalid model names
-    if model == 'claude-sonnet-4-20250514' || model == 'claude-3-5-sonnet-20240620'
-      'claude-3-5-sonnet-20241022'
+    # Fix invalid model names automatically
+    if INVALID_MODEL_MAPPINGS.key?(model)
+      Rails.logger.warn "[LLM] Invalid model '#{model}' detected, using '#{INVALID_MODEL_MAPPINGS[model]}' instead"
+      INVALID_MODEL_MAPPINGS[model]
     else
       model || 'claude-3-5-sonnet-20241022'
     end
   end
 
-  def initialize(prompt:, system: nil, messages: nil, **options)
+  def initialize(prompt:, system: nil, model: nil, max_tokens: 4096, temperature: 1.0, timeout: 60, images: nil, messages: nil, tools: nil, tool_handler: nil)
     @prompt = prompt
     @system = system
-    @provided_messages = messages || []
-    @options = options
-    
-    # Use Claude model by default
-    @model = options[:model] || DEFAULT_MODEL
-    @temperature = options[:temperature]&.to_f || 0.7
-    @max_tokens = options[:max_tokens] || 4096
-    @timeout = options[:timeout] || 60
-    
-    # Tool call support
-    @tools = options[:tools] || []
-    @tool_handler = options[:tool_handler]
-    @max_tool_iterations = options[:max_tool_iterations] || 5
-    
-    # Conversation history
+    @model = model || DEFAULT_MODEL
+    @max_tokens = max_tokens
+    @temperature = temperature
+    @timeout = timeout
+    @images = normalize_images(images)
+    @provided_messages = messages
+    @tools = tools
+    @tool_handler = tool_handler
     @messages = []
   end
 
-  # Default call - streaming if block given, blocking otherwise
-  def call(&block)
-    if block_given?
-      call_stream(&block)
-    else
-      call_blocking
-    end
-  end
-
-  # Explicit blocking call
+  # Blocking call - returns full response
   def call_blocking
-    raise LlmError, "Prompt cannot be blank" if @prompt.blank?
-
     build_initial_messages
-
-    if @tools.present?
-      call_blocking_with_tools
-    else
-      call_blocking_simple
-    end
-  rescue => e
-    Rails.logger.error("LLM Error: #{e.class} - #{e.message}")
-    raise
-  end
-
-  # Simple blocking call without tool support
-  def call_blocking_simple
-    response = http_request('/v1/messages', build_request_body)
-    content = extract_content(response)
     
-    raise LlmError, "No content in response" if content.blank?
-    content
-  end
-
-  # Blocking call with tool execution
-  def call_blocking_with_tools
-    iteration = 0
-    final_content = nil
-
     loop do
-      iteration += 1
-      raise LlmError, "Max tool iterations (#{@max_tool_iterations}) exceeded" if iteration > @max_tool_iterations
-
-      response = http_request('/v1/messages', build_request_body)
-      message = extract_message(response)
+      body = build_request_body
+      response = http_request('/v1/messages', body)
       
-      # Add assistant message to history
+      message = extract_message(response)
       @messages << message
-
-      # Check for tool calls
-      tool_calls = message['tool_calls']
-      if tool_calls.present?
-        handle_tool_calls(tool_calls)
-      else
-        final_content = extract_text_content(message)
-        break
-      end
-    end
-
-    raise LlmError, "No content in final response" if final_content.blank?
-    final_content
-  end
-
-  # Streaming call
-  def call_stream(&block)
-    raise LlmError, "Prompt cannot be blank" if @prompt.blank?
-    raise LlmError, "Block required for streaming" unless block_given?
-
-    build_initial_messages
-
-    if @tools.present?
-      call_stream_with_tools(&block)
-    else
-      call_stream_simple(&block)
-    end
-  rescue => e
-    Rails.logger.error("LLM Stream Error: #{e.class} - #{e.message}")
-    raise
-  end
-
-  # Simple streaming without tools
-  def call_stream_simple(&block)
-    full_content = ""
-
-    http_stream_request('/v1/messages', build_request_body.merge(stream: true)) do |event|
-      if event['type'] == 'content_block_delta'
-        if event['delta']['type'] == 'text_delta'
-          content = event['delta']['text']
-          full_content += content
-          block.call(content)
-        end
-      elsif event['type'] == 'message_stop'
-        # Stream complete
-      end
-    end
-
-    full_content
-  end
-
-  # Streaming with tool support
-  def call_stream_with_tools(&block)
-    iteration = 0
-    final_content = ""
-
-    loop do
-      iteration += 1
-      raise LlmError, "Max tool iterations (#{@max_tool_iterations}) exceeded" if iteration > @max_tool_iterations
-
-      tool_calls_buffer = {}
-      content_buffer = ""
-      has_tool_calls = false
-
-      http_stream_request('/v1/messages', build_request_body.merge(stream: true)) do |event|
-        case event['type']
-        when 'content_block_delta'
-          if event['delta']['type'] == 'text_delta'
-            content = event['delta']['text']
-            content_buffer += content
-            block.call(content)
-          elsif event['delta']['type'] == 'input_json_delta'
-            has_tool_calls = true
-            idx = event['content_block_index']
-            tool_calls_buffer[idx] ||= {
-              'type' => 'tool_use',
-              'id' => '',
-              'name' => '',
-              'input' => ''
-            }
-            if event['delta']['partial_json']
-              tool_calls_buffer[idx]['input'] += event['delta']['partial_json']
-            end
-          end
-        when 'content_block_start'
-          if event['content_block']['type'] == 'tool_use'
-            idx = event['index']
-            tool_calls_buffer[idx] ||= {}
-            tool_calls_buffer[idx]['type'] = 'tool_use'
-            tool_calls_buffer[idx]['id'] = event['content_block']['id']
-            tool_calls_buffer[idx]['name'] = event['content_block']['name']
-            tool_calls_buffer[idx]['input'] = ''
-          end
-        when 'message_stop'
-          # Stream complete
-        end
-      end
-
-      # Build complete message
-      message = { 'role' => 'assistant' }
-      message['content'] = content_buffer if content_buffer.present?
-      if has_tool_calls
-        message['tool_calls'] = tool_calls_buffer.values
-      end
-
-      @messages << message
-
-      if has_tool_calls
+      
+      if message['tool_calls'].present?
         handle_tool_calls(message['tool_calls'])
       else
-        final_content = content_buffer
-        break
+        return extract_content(response)
       end
     end
-
-    final_content
+  rescue Timeout::Error => e
+    raise TimeoutError, "Request timeout: #{e.message}"
+  rescue => e
+    Rails.logger.error "[LLM] Error in call_blocking: #{e.class} - #{e.message}"
+    Rails.logger.error e.backtrace.first(5).join("\n")
+    raise LlmError, "Claude API error: #{e.message}"
   end
 
-  # Class method shortcuts
-  class << self
-    def call(prompt:, system: nil, **options, &block)
-      new(prompt: prompt, system: system, **options).call(&block)
-    end
+  # Streaming call - yields chunks as they arrive
+  def call_stream(&block)
+    build_initial_messages
+    body = build_request_body.merge(stream: true)
+    
+    http_stream_request('/v1/messages', body, &block)
+  rescue Timeout::Error => e
+    raise TimeoutError, "Streaming request timeout: #{e.message}"
+  rescue => e
+    Rails.logger.error "[LLM] Error in call_stream: #{e.class} - #{e.message}"
+    raise LlmError, "Streaming error: #{e.message}"
+  end
 
+  class << self
     def call_blocking(prompt:, system: nil, **options)
       new(prompt: prompt, system: system, **options).call_blocking
     end
@@ -236,11 +97,22 @@ class LlmService < ApplicationService
   private
 
   def api_key
+    # RUNTIME ENV CHECK in LlmService#api_key
+    Rails.logger.info "[LLM] === api_key() method called ==="
+    Rails.logger.info "[LLM] ENV['ANTHROPIC_API_KEY'] = '#{ENV['ANTHROPIC_API_KEY']}'"
+    Rails.logger.info "[LLM] ENV['ANTHROPIC_API_KEY'].present? = #{ENV['ANTHROPIC_API_KEY'].present?}"
+    Rails.logger.info "[LLM] ENV['CLACKY_ANTHROPIC_API_KEY'] = '#{ENV['CLACKY_ANTHROPIC_API_KEY']}'"
+    Rails.logger.info "[LLM] ENV['CLACKY_ANTHROPIC_API_KEY'].present? = #{ENV['CLACKY_ANTHROPIC_API_KEY'].present?}"
+    Rails.logger.info "[LLM] All ENV keys: #{ENV.keys.count} total"
+    Rails.logger.info "[LLM] ENV keys with 'ANTHROPIC': #{ENV.keys.select { |k| k.include?('ANTHROPIC') }.inspect}"
+    Rails.logger.info "[LLM] ENV keys with 'API': #{ENV.keys.select { |k| k.include?('API') }.count} keys"
+    
     key = ENV['ANTHROPIC_API_KEY'].presence || ENV['CLACKY_ANTHROPIC_API_KEY'].presence
     
     # Debug logging to verify API key is being read
-    Rails.logger.info "[LLM] ANTHROPIC_API_KEY present?: #{key.present?}"
-    Rails.logger.info "[LLM] ANTHROPIC_API_KEY first 8 chars: #{key&.slice(0, 8)&.ljust(8, '*') || 'nil'}"
+    Rails.logger.info "[LLM] Final key present?: #{key.present?}"
+    Rails.logger.info "[LLM] Final key first 8 chars: #{key&.slice(0, 8)&.ljust(8, '*') || 'nil'}"
+    Rails.logger.info "[LLM] === api_key() method end ==="
     
     key || raise(LlmError, "ANTHROPIC_API_KEY is not configured")
   end

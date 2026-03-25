@@ -46,7 +46,9 @@ Rails.application.config.after_initialize do
   optional_vars.each do |var, description|
     value = ENV[var]
     if value.present?
-      Rails.logger.info "✅ #{var}: #{value} - #{description}"
+      # Mask long values, show short values
+      display_value = value.length > 50 ? "#{value.slice(0, 20)}..." : value
+      Rails.logger.info "✅ #{var}: #{display_value} - #{description}"
     else
       Rails.logger.info "⚪ #{var}: NOT SET (will use default) - #{description}"
     end
