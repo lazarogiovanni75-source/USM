@@ -225,7 +225,7 @@ class LlmService < ApplicationService
   private
 
   def api_key
-    key = ENV['ANTHROPIC_API_KEY'] || ENV['CLACKY_ANTHROPIC_API_KEY']
+    key = ENV['ANTHROPIC_API_KEY'].presence || ENV['CLACKY_ANTHROPIC_API_KEY'].presence
     
     # Debug logging to verify API key is being read
     Rails.logger.info "[LLM] ANTHROPIC_API_KEY present?: #{key.present?}"

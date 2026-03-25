@@ -143,8 +143,9 @@ class AtlasCloudImageService
   end
 
   def fetch_api_key
-    ENV['ATLASCLOUD_API_KEY'] ||
-      ENV['ATLAS_CLOUD_API_KEY']
+    ENV['ATLASCLOUD_API_KEY'].presence ||
+      ENV['ATLAS_CLOUD_API_KEY'].presence ||
+      ENV['CLACKY_ATLASCLOUD_API_KEY'].presence
   end
 
   def post_request(endpoint, body)
