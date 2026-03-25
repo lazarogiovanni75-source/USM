@@ -357,6 +357,9 @@ Rails.application.routes.draw do
     end
   end
   
+  # Test Anthropic API
+  get '/test_anthropic', to: 'test_anthropic#test'
+  
   resources :prompt_templates, only: [:index, :create, :update, :destroy]
   
   # Draft Management System
