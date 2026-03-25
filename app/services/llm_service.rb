@@ -20,7 +20,16 @@ class LlmService < ApplicationService
   API_VERSION = '2023-06-01'
   # Using claude-3-5-sonnet-20241022 as default (stable, widely supported)
   # Alternative: claude-3-5-sonnet-latest (always newest 3.5)
-  DEFAULT_MODEL = ENV.fetch('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')
+  # Force correct model - ignore invalid Railway env var
+  DEFAULT_MODEL = begin
+    model = ENV['ANTHROPIC_MODEL'].presence
+    # Fix invalid model names
+    if model == 'claude-sonnet-4-20250514' || model == 'claude-3-5-sonnet-20240620'
+      'claude-3-5-sonnet-20241022'
+    else
+      model || 'claude-3-5-sonnet-20241022'
+    end
+  end
 
   def initialize(prompt:, system: nil, messages: nil, **options)
     @prompt = prompt
