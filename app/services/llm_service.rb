@@ -261,7 +261,13 @@ class LlmService < ApplicationService
     request['anthropic-version'] = API_VERSION
     request.body = body.to_json
 
+    Rails.logger.info "[LLM] Sending request to #{endpoint} with model: #{@model}"
+    
     response = http.request(request)
+    
+    Rails.logger.info "[LLM] Response code: #{response.code}"
+    Rails.logger.debug "[LLM] Response body: #{response.body[0..500]}"
+    
     handle_response(response)
   end
 
