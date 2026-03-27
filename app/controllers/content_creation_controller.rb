@@ -12,9 +12,18 @@ class ContentCreationController < ApplicationController
     @drafts = current_user.draft_contents.order(updated_at: :desc)
     @suggestions = current_user.content_suggestions.order(created_at: :desc).limit(10)
     @templates = ContentTemplate.where(is_active: true).order(category: :asc)
+    @campaigns = current_user.campaigns.order(created_at: :desc).limit(10)
+    @social_accounts = current_user.social_accounts.order(platform: :asc).limit(10)
     # Get the most recent video draft with a video URL for inline preview
     @latest_video_draft = current_user.draft_contents
       .where(content_type: 'video')
+      .where.not(media_url: nil)
+      .order(updated_at: :desc)
+      .first
+    
+    # Get the most recent image draft with a media URL for inline preview
+    @latest_image_draft = current_user.draft_contents
+      .where(content_type: 'image')
       .where.not(media_url: nil)
       .order(updated_at: :desc)
       .first
@@ -29,99 +38,107 @@ class ContentCreationController < ApplicationController
     content_type = params[:content_type] || 'post'
     platform = params[:platform] || 'general'
 
-    if topic.blank?
-      redirect_to content_creation_index_path, alert: 'Please enter a topic'
-      return
-    end
-
     begin
       prompt = build_content_prompt(topic, content_type, platform)
-      content = LlmService.generate(prompt)
-
-      # Save as a draft
-      draft = current_user.draft_contents.create!(
-        title: "#{content_type.titleize} - #{topic[0..30]}",
-        content: content,
-        content_type: content_type,
-        platform: platform,
-        status: 'draft'
+      
+      result = LlmService.generate_content(
+        prompt: prompt,
+        user_id: current_user.id,
+        content_type: content_type
       )
 
-      redirect_to draft_path(draft), notice: 'Content generated successfully!'
+      if result[:success]
+        content = result[:content]
+        
+        draft = current_user.draft_contents.create!(
+          title: content['title'] || "Content - #{topic[0..30]}",
+          content: content['body'] || content.to_s,
+          content_type: content_type,
+          platform: platform,
+          status: 'draft'
+        )
+
+        redirect_to draft_path(draft), notice: 'Content generated successfully!'
+      else
+        error_msg = result[:error] || 'Failed to generate content'
+        redirect_to content_creation_index_path, alert: error_msg
+      end
+    rescue LlmService::ApiError => e
+      redirect_to content_creation_index_path, alert: "AI Service error: #{e.message}"
     rescue => e
-      Rails.logger.error "[ContentCreation] Error: #{e.message}"
+      Rails.logger.error "Content Generation Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
       redirect_to content_creation_index_path, alert: "Failed to generate content: #{e.message}"
     end
   end
 
   def generate_ideas
     topic = params[:topic]
+    count = (params[:count] || 5).to_i
     platform = params[:platform] || 'general'
-    count = 3 # Fixed at 3 ideas per request
-
-    prompt = "Generate #{count} creative content ideas for #{platform} about '#{topic}'. "\
-             "Return as a JSON array with objects containing 'title' and 'description' fields. "\
-             "Keep descriptions under 100 characters each."
 
     begin
-      content = LlmService.generate(prompt)
+      prompt = <<~PROMPT
+        Generate #{count} creative social media content ideas about: #{topic}
+        For platform: #{platform}
+        
+        Format each idea as:
+        - Title: [Catchy title]
+        - Description: [Brief explanation of the content idea]
+        - Content Type: [post/story/reel/video/caption]
+        
+        Return ONLY the ideas, no introduction or conclusion.
+      PROMPT
 
-      # Parse the JSON response - handle markdown code blocks
-      json_content = content.strip
-      # Remove markdown code block markers if present
-      json_content = json_content.sub(/^```json\s*/i, '').sub(/\s*```$/i, '')
-      json_content = json_content.sub(/^```\s*/i, '').sub(/\s*```$/i, '')
-      ideas = JSON.parse(json_content)
+      result = LlmService.generate_content(
+        prompt: prompt,
+        user_id: current_user.id,
+        content_type: 'ideas'
+      )
 
-      ideas.each do |idea|
-        current_user.content_suggestions.create!(
-          topic: topic,
-          suggestion: idea['description'],
-          content_type: 'idea',
-          platform: platform,
-          confidence: 0.8,
-          status: 'pending'
-        )
+      if result[:success]
+        ideas_text = result[:content].to_s
+        ideas = ideas_text.split(/-\s*Title:/).reject(&:blank?).map do |idea_block|
+          title_match = idea_block.match(/Title:\s*(.+?)(?=Description:|$)/i)
+          desc_match = idea_block.match(/Description:\s*(.+?)(?=Content Type:|$)/i)
+          type_match = idea_block.match(/Content Type:\s*(.+?)(?=\z|$)/i)
+          
+          {
+            title: title_match&.[](1)&.strip || 'Untitled',
+            description: desc_match&.[](1)&.strip || '',
+            content_type: type_match&.[](1)&.strip || 'post'
+          }
+        end
+
+        ideas.each do |idea|
+          current_user.content_suggestions.create!(
+            title: idea[:title],
+            content: idea[:description],
+            content_type: idea[:content_type],
+            topic: topic,
+            platform: platform
+          )
+        end
+
+        redirect_to content_creation_index_path, notice: "#{ideas.count} content ideas generated!"
+      else
+        error_msg = result[:error] || 'Failed to generate ideas'
+        redirect_to content_creation_index_path, alert: error_msg
       end
-
-      redirect_to content_creation_index_path, notice: "#{ideas.count} content ideas generated!"
     rescue => e
       Rails.logger.error "Content Ideas Error: #{e.message}"
       redirect_to content_creation_index_path, alert: 'Failed to generate ideas. Please try again.'
     end
   end
 
-  private
-
-  def build_content_prompt(topic, content_type, platform)
-    case content_type
-    when 'post'
-      "Create an engaging #{platform} post about '#{topic}'. Include a catchy headline, body text (150-300 words), and relevant hashtags."
-    when 'caption'
-      "Write a catchy #{platform} caption for '#{topic}'. Keep it concise, engaging, and include 3-5 relevant hashtags."
-    when 'blog'
-      "Write a blog post introduction and outline about '#{topic}'. Include a compelling hook, key points, and a call-to-action."
-    when 'story'
-      "Create a social media story about '#{topic}'. Include the setup, conflict, and resolution in a engaging narrative format."
-    when 'video_script'
-      "Write a video script outline for '#{topic}'. Include hook, main points, and call-to-action. Target 60-90 seconds."
-    else
-      "Create engaging #{platform} content about '#{topic}'."
-    end
-  end
-
-  # Content generation now uses Anthropic Claude via LlmService
-  # LlmService handles all API communication with proper error handling
-
+  # Image generation using Atlas Cloud API
   def generate_image
     prompt = params[:prompt]
     size = params[:size] || '1:1'
-    model = params[:model] || 'black-forest-labs/flux-1.1-pro'
+    model = params[:model] || 'atlascloud/qwen-image/text-to-image'
 
     Rails.logger.info "[ContentCreation] Starting image generation - prompt: #{prompt&.length} chars"
 
     begin
-      # Use unified service
       result = ImageGenerationService.generate_image(
         prompt: prompt,
         size: size,
@@ -137,7 +154,6 @@ class ContentCreationController < ApplicationController
         
         Rails.logger.info "[ContentCreation] Creating draft with task_id: #{task_id}"
         
-        # Always use polling to ensure we get the final URL
         draft = current_user.draft_contents.create!(
           title: "Image - #{prompt[0..50]}",
           content: prompt,
@@ -178,13 +194,11 @@ class ContentCreationController < ApplicationController
     source_image_url = params[:source_image_url]
 
     begin
-      # Validate prompt
       if prompt.blank? || prompt.length < 10
         raise ArgumentError, 'Please provide a more detailed prompt (at least 10 characters)'
       end
 
       if source_image_url.present?
-        # Image-to-video generation
         result = VideoGenerationService.generate_video_from_image(
           image_url: source_image_url,
           prompt: prompt,
@@ -193,7 +207,6 @@ class ContentCreationController < ApplicationController
           duration: duration
         )
       else
-        # Text-to-video generation
         result = VideoGenerationService.generate_video(
           prompt: prompt,
           duration: duration,
@@ -205,7 +218,6 @@ class ContentCreationController < ApplicationController
       if result[:success]
         service = result[:service]
         
-        # Save as a draft with task_id for polling
         draft = current_user.draft_contents.create!(
           title: "Video - #{prompt[0..50]}",
           content: prompt,
@@ -223,7 +235,6 @@ class ContentCreationController < ApplicationController
           }
         )
 
-        # Start polling job
         VideoPollJob.perform_later(draft.id, result[:task_id], service)
 
         redirect_to draft_path(draft), notice: 'Video generation started! Check back in a few moments.'
@@ -265,12 +276,10 @@ class ContentCreationController < ApplicationController
       return
     end
 
-    # Combine original prompt with edit instructions to generate a new image
     original_prompt = draft.content.presence || 'AI generated image'
     combined_prompt = "#{original_prompt}. Modification: #{edit_prompt}"
 
     begin
-      # Generate a new image based on the edit prompt
       result = ImageGenerationService.generate_image(
         prompt: combined_prompt,
         size: draft.metadata.dig('aspect_ratio') || '1:1',
@@ -279,10 +288,9 @@ class ContentCreationController < ApplicationController
 
       if result[:success]
         service = result[:service]
-        model = result.dig(:metadata, :model) || 'black-forest-labs/flux-1.1-pro'
+        model = result.dig(:metadata, :model) || 'atlascloud/qwen-image/text-to-image'
         
         if result[:output_url]
-          # Create a new draft with the edited image
           new_draft = current_user.draft_contents.create!(
             title: "Edited - #{draft.title}",
             content: combined_prompt,
@@ -300,7 +308,6 @@ class ContentCreationController < ApplicationController
           
           redirect_to draft_path(new_draft), notice: 'Image edited successfully!'
         else
-          # Create draft with task_id for polling
           new_draft = current_user.draft_contents.create!(
             title: "Edited - #{draft.title}",
             content: combined_prompt,
@@ -326,6 +333,25 @@ class ContentCreationController < ApplicationController
     rescue => e
       Rails.logger.error "Image Edit Error: #{e.message}"
       redirect_to content_creation_index_path, alert: "Image editing failed: #{e.message}"
+    end
+  end
+
+  private
+
+  def build_content_prompt(topic, content_type, platform)
+    case content_type
+    when 'post'
+      "Create an engaging #{platform} post about '#{topic}'. Include a catchy headline, body text (150-300 words), and relevant hashtags."
+    when 'caption'
+      "Write a catchy #{platform} caption for '#{topic}'. Keep it concise, engaging, and include 3-5 relevant hashtags."
+    when 'blog'
+      "Write a blog post introduction and outline about '#{topic}'. Include a compelling hook, key points, and a call-to-action."
+    when 'story'
+      "Create a social media story about '#{topic}'. Include the setup, conflict, and resolution in a engaging narrative format."
+    when 'video_script'
+      "Write a video script outline for '#{topic}'. Include hook, main points, and call-to-action. Target 60-90 seconds."
+    else
+      "Create engaging #{platform} content about '#{topic}'."
     end
   end
 end

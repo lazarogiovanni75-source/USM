@@ -6,13 +6,13 @@
 # Authentication: Bearer token via ATLASCLOUD_API_KEY environment variable
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
-  DEFAULT_MODEL = 'z-image/turbo'
+  DEFAULT_MODEL = 'atlascloud/qwen-image/text-to-image'
   TIMEOUT = 120
 
   # Available image models (user selected)
   AVAILABLE_MODELS = {
-    'z-image/turbo' => 'Z-Image Turbo (Fast)',
-    'alibaba/qwen-image/text-to-image-plus' => 'Alibaba Qwen Image Plus (High Quality)'
+    'atlascloud/qwen-image/text-to-image' => 'Qwen Text-to-Image (Recommended)',
+    'atlascloud/qwen-image/edit' => 'Qwen Image Edit'
   }.freeze
 
   class Error < StandardError; end
@@ -39,11 +39,9 @@ class AtlasCloudImageService
     body = {
       model: model,
       prompt: prompt,
-      aspect_ratio: aspect_ratio
+      aspect_ratio: aspect_ratio,
+      n: 1  # Always generate exactly 1 image
     }
-
-    # Add n if more than 1 image requested
-    body[:n] = n if n > 1
 
     Rails.logger.info "[AtlasCloudImageService] Generating image with model: #{model}, aspect_ratio: #{aspect_ratio}"
 
@@ -176,7 +174,7 @@ class AtlasCloudImageService
 
     case response.code
     when 200..299
-      if parsed.is_a?(Hash) && (parsed['error'] || parsed['message'] || parsed['status'] == 'error')
+      if parsed.is_a?(Hash) && (parsed['error'].present? || parsed['message'].to_s.present? || parsed['status'] == 'error')
         error_msg = parsed['error'] || parsed['message'] || parsed.dig('error', 'message')
         Rails.logger.error "[AtlasCloudImageService] API returned error: #{error_msg}"
         raise Error, "API error: #{error_msg}"

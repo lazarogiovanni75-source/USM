@@ -11,8 +11,8 @@
             </svg>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Content Creation</h1>
-            <p class="text-sm text-gray-600">AI-powered content generation and management</p>
+            <h1 class="text-2xl font-bold text-gray-900">Media Creation</h1>
+            <p class="text-sm text-gray-600">Create campaigns, content, images, and videos</p>
           </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -40,6 +40,102 @@
       <!-- Sidebar: Quick Actions & Templates -->
       <div class="lg:col-span-1 space-y-6">
         
+        <!-- Campaigns Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Campaigns</h3>
+            <span class="text-sm text-gray-500"><%= @campaigns.count %> total</span>
+          </div>
+          
+          <% if @campaigns.any? %>
+            <div class="space-y-2 mb-4">
+              <% @campaigns.first(3).each do |campaign| %>
+                <%= link_to campaign_path(campaign), class: "block p-3 rounded-lg border border-gray-100 hover:border-green-500 hover:bg-green-50/50 transition-all" do %>
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                      <p class="font-medium text-gray-900 truncate"><%= campaign.name %></p>
+                      <p class="text-xs text-gray-500"><%= campaign.status.titleize %></p>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+            <div class="flex gap-2">
+              <%= link_to "All", campaigns_path, class: "flex-1 text-center text-sm py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" %>
+              <%= link_to new_campaign_path, class: "flex-1 text-center text-sm py-2 px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors" do %>
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                New
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-4">
+              <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </div>
+              <p class="text-sm text-gray-500 mb-3">No campaigns yet</p>
+              <%= link_to "Create Campaign", new_campaign_path, class: "btn-primary w-full" %>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Connected Accounts Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Connected Accounts</h3>
+            <span class="text-sm text-gray-500"><%= @social_accounts.count %> connected</span>
+          </div>
+          
+          <% if @social_accounts.any? %>
+            <div class="space-y-2 mb-4">
+              <% @social_accounts.first(3).each do |account| %>
+                <div class="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-green-500 hover:bg-green-50/50 transition-all">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                      <span class="text-white text-sm font-medium"><%= account.platform&.first&.upcase || 'S' %></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-medium text-gray-900 truncate"><%= account.account_name || account.platform.titleize %></p>
+                      <p class="text-xs text-gray-500"><%= account.platform.titleize %></p>
+                    </div>
+                  </div>
+                  <% if account.configured_for_postforme? %>
+                    <span class="flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+            <div class="flex gap-2">
+              <%= link_to "Manage", social_account_connections_path, class: "flex-1 text-center text-sm py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" %>
+              <%= link_to social_account_connections_path, class: "flex-1 text-center text-sm py-2 px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors" do %>
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Add
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-4">
+              <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                </svg>
+              </div>
+              <p class="text-sm text-gray-500 mb-3">No accounts connected</p>
+              <%= link_to "Connect Accounts", social_account_connections_path, class: "btn-primary w-full" %>
+            </div>
+          <% end %>
+        </div>
+
         <!-- AI Content Generation -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Content Generator</h3>
@@ -142,10 +238,9 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
               <select name="model" class="form-select w-full">
-                <option value="black-forest-labs/flux-1.1-pro">Flux 1.1 Pro (Recommended)</option>
-                <option value="black-forest-labs/flux-1-pro">Flux 1 Pro</option>
-                <option value="black-forest-labs/flux-schnell">Flux Schnell (Fast)</option>
-                <option value="z-image/turbo">Z-Image Turbo</option>
+                <% @image_models.each do |model_id, model_name| %>
+                  <option value="<%= model_id %>" <%= 'selected' if model_id == 'atlascloud/qwen-image/text-to-image' %>><%= model_name %></option>
+                <% end %>
               </select>
             </div>
             <div>
@@ -167,34 +262,6 @@
           </form>
         </div>
 
-        <!-- Edit Existing Image -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit Image</h3>
-          <p class="text-sm text-gray-600 mb-4">Edit an existing generated image</p>
-          <form action="/content_creation/edit_image" method="post" class="space-y-4">
-            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Select Image</label>
-              <select name="draft_id" class="form-select w-full">
-                <option value="">Choose an image...</option>
-                <% @drafts.where(content_type: 'image').each do |draft| %>
-                  <option value="<%= draft.id %>"><%= draft.title %></option>
-                <% end %>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Edit Instructions</label>
-              <input type="text" name="edit_prompt" class="form-input w-full" placeholder="e.g., Make it brighter, add a border...">
-            </div>
-            <button type="submit" class="btn-secondary w-full">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-              </svg>
-              Edit Image
-            </button>
-          </form>
-        </div>
-
         <!-- AI Video Generation -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">AI Video Generation</h3>
@@ -208,10 +275,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
               <select name="model" class="form-select w-full">
-                <option value="atlascloud/magi-1-24b">Magi-1 24B (Recommended)</option>
                 <option value="vidu/q3-pro/text-to-video">Vidu Q3-Pro Text-to-Video</option>
-                <option value="vidu/q3-pro/start-end-to-video">Vidu Q3-Pro Start-End-to-Video</option>
-                <option value="alibaba/wan-2.5/image-to-video">Wan 2.5 Image-to-Video</option>
               </select>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -233,13 +297,46 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Source Image URL (optional)</label>
-              <input type="url" name="source_image_url" class="form-input w-full" placeholder="https://... (for image-to-video)">
+              <input type="url" name="source_image_url" class="form-input w-full" placeholder="https://... (for Wan 2.2 image-to-video)">
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+              <p class="text-xs text-amber-800">
+                <strong>Tip:</strong> To use Wan 2.2 Turbo Spicy image-to-video, enter a generated image URL above.
+              </p>
             </div>
             <button type="submit" class="btn-primary w-full">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
               </svg>
               Generate Video
+            </button>
+          </form>
+        </div>
+
+        <!-- Image Editing -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Image Editing</h3>
+          <p class="text-sm text-gray-600 mb-4">Edit an existing generated image</p>
+          <form action="/content_creation/edit_image" method="post" class="space-y-4">
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Select Image</label>
+              <select name="draft_id" class="form-select w-full">
+                <option value="">Choose an image...</option>
+                <% @drafts.where(content_type: 'image').each do |draft| %>
+                  <option value="<%= draft.id %>"><%= draft.title %></option>
+                <% end %>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Edit Instructions</label>
+              <input type="text" name="edit_prompt" class="form-input w-full" placeholder="e.g., Make it brighter, add a border...">
+            </div>
+            <button type="submit" class="btn-secondary w-full">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+              Edit Image
             </button>
           </form>
         </div>
@@ -301,6 +398,41 @@
       <!-- Main Content Area -->
       <div class="lg:col-span-3 space-y-6">
         
+        <%# Image Gallery Section - shows generated images %>
+        <% latest_image = @drafts.where(content_type: 'image').where.not(media_url: nil).order(updated_at: :desc).first %>
+        <% if latest_image && latest_image.media_display_url.present? %>
+          <div class="bg-gradient-to-r from-green-500 to-teal-500 rounded-xl shadow-lg overflow-hidden">
+            <div class="p-4 border-b border-white/20">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-white">Your Generated Image</h2>
+                <span class="text-white/80 text-sm"><%= latest_image.updated_at.strftime('%b %d, %H:%M') %></span>
+              </div>
+            </div>
+            <div class="p-6">
+              <div class="relative rounded-lg overflow-hidden bg-black shadow-xl">
+                <img src="<%= latest_image.media_display_url %>" alt="<%= latest_image.title %>" class="w-full max-h-96 object-contain">
+              </div>
+              <div class="mt-4 flex items-center justify-between">
+                <p class="text-white/90 text-sm truncate"><%= latest_image.title %></p>
+                <div class="flex space-x-3">
+                  <a href="<%= latest_image.media_display_url %>" download class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    Download
+                  </a>
+                  <button onclick="copyImageUrl('<%= latest_image.media_display_url %>')" class="bg-white text-teal-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/90 transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                    </svg>
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+        
         <%# Video Preview Section - shows the latest generated video %>
         <% video_draft = @latest_video_draft || (params[:video_draft_id] ? current_user.draft_contents.find_by(id: params[:video_draft_id]) : nil) %>
         <% if video_draft && video_draft.media_url.present? %>
@@ -352,6 +484,11 @@
               <div class="space-y-4" id="drafts-list">
                 <% @drafts.each do |draft| %>
                   <div class="draft-item p-4 border border-gray-200 rounded-lg hover:border-purple-300 cursor-pointer transition-colors" data-draft-id="<%= draft.id %>">
+                    <% if draft.content_type == 'image' && draft.media_display_url.present? %>
+                      <div class="mb-3">
+                        <img src="<%= draft.media_display_url %>" alt="<%= draft.title %>" class="w-full h-32 object-cover rounded-lg">
+                      </div>
+                    <% end %>
                     <div class="flex items-start justify-between">
                       <div class="flex-1">
                         <h3 class="font-medium text-gray-900"><%= draft.title %></h3>
@@ -490,6 +627,22 @@ function copyVideoUrl(url) {
     document.execCommand('copy');
     document.body.removeChild(textArea);
     alert('Video URL copied to clipboard!');
+  });
+}
+
+function copyImageUrl(url) {
+  navigator.clipboard.writeText(url).then(function() {
+    alert('Image URL copied to clipboard!');
+  }, function(err) {
+    console.error('Could not copy text: ', err);
+    // Fallback
+    var textArea = document.createElement('textarea');
+    textArea.value = url;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert('Image URL copied to clipboard!');
   });
 }
 </script>

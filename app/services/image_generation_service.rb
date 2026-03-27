@@ -62,7 +62,7 @@ class ImageGenerationService
     begin
       result = service.generate_image(
         prompt: prompt,
-        model: model || 'black-forest-labs/flux-1.1-pro',
+        model: model || 'atlascloud/qwen-image/text-to-image',
         aspect_ratio: aspect_ratio
       )
 

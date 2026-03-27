@@ -1,0 +1,33 @@
+<div class="space-y-4">
+  <% days.each_with_index do |day, index| %>
+    <div class="border border-border rounded-lg p-4 bg-bg-primary">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <span class="font-semibold text-text-primary">Day <%= day[:day] %></span>
+          <span class="text-text-secondary ml-2"><%= day[:title] %></span>
+        </div>
+        <span class="text-sm text-text-muted"><%= day[:scheduled_date] %></span>
+      </div>
+      
+      <div class="space-y-3">
+        <% day[:contents].each do |content| %>
+          <div class="bg-bg-secondary rounded-lg p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="badge-secondary text-xs"><%= content[:platform].titleize %></span>
+              <span class="text-xs text-text-muted"><%= content[:post_time] %></span>
+              <span class="badge-primary text-xs"><%= content[:theme] %></span>
+            </div>
+            <p class="text-sm text-text-primary whitespace-pre-wrap"><%= content[:caption] %></p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<div class="mt-4 p-4 bg-primary/10 rounded-lg">
+  <p class="text-sm text-text-secondary">
+    <span class="font-semibold text-primary">Pro tip:</span> 
+    After creating, you can edit any post before scheduling. AI will help you customize captions for your specific brand voice.
+  </p>
+</div>

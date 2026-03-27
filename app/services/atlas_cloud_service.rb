@@ -14,20 +14,16 @@ class AtlasCloudService
 
   # Available text-to-video models (user selected)
   TEXT_TO_VIDEO_MODELS = {
-    'openai/sora-2/text-to-video' => 'OpenAI Sora 2 (High Quality)',
-    'bytedance/seedance-v1-pro-fast/text-to-video' => 'ByteDance Seedance V1 Pro (Fast)'
+    'vidu/q3-pro/text-to-video' => 'Vidu Q3-Pro Text-to-Video'
   }.freeze
 
   IMAGE_TO_VIDEO_MODELS = {
-    'atlascloud/magi-1-24b' => 'Magi-1 24B (Image-to-Video)',
-    'vidu/q3-pro/start-end-to-video' => 'Vidu Q3-Pro (Start-End-to-Video)',
-    'alibaba/wan-2.5/image-to-video' => 'Wan 2.5 Image-to-Video'
+    'atlascloud/wan-2.2-turbo-spicy/image-to-video' => 'Wan 2.2 Turbo Spicy Image-to-Video'
   }.freeze
 
   # Available image models (user selected)
   IMAGE_MODELS = {
-    'z-image/turbo' => 'Z-Image Turbo (Fast)',
-    'alibaba/qwen-image/text-to-image-plus' => 'Alibaba Qwen Image Plus (High Quality)'
+    'z-image/turbo' => 'Z-Turbo'
   }.freeze
 
   class Error < StandardError; end
@@ -84,7 +80,6 @@ class AtlasCloudService
       model: model,
       prompt: prompt,
       aspect_ratio: aspect_ratio,
-      resolution: '480p',
       duration: duration
     }
 
@@ -122,7 +117,6 @@ class AtlasCloudService
       prompt: prompt,
       image_url: image_url,
       aspect_ratio: aspect_ratio,
-      resolution: '480p',
       duration: duration
     }
 

@@ -1,0 +1,72 @@
+<% content_for :title, "Campaign Builder" %>
+
+<div class="max-w-7xl mx-auto" data-controller="campaign-builder">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-heading font-bold text-text-primary">Campaign Builder</h1>
+    <p class="text-text-secondary mt-2">Start with a pre-built template and customize it for your brand</p>
+  </div>
+
+  <!-- Templates Grid -->
+  <div class="mb-8">
+    <h2 class="text-xl font-semibold text-text-primary mb-4">Choose a Template</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @templates.each do |template| %>
+        <div class="card hover:shadow-lg transition-shadow">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <span class="badge-<%= template.category == 'product' ? 'blue' : template.category == 'sales' ? 'green' : template.category == 'branding' ? 'purple' : 'orange' %>">
+                <%= template.category.titleize %>
+              </span>
+              <span class="text-sm text-text-secondary"><%= template.duration_days %> days</span>
+            </div>
+            <h3 class="text-lg font-semibold text-text-primary mb-2"><%= template.name %></h3>
+            <p class="text-sm text-text-secondary mb-4 line-clamp-2"><%= template.description %></p>
+            
+            <!-- Days Preview -->
+            <div class="mb-4">
+              <p class="text-xs text-text-secondary mb-2">Content Flow:</p>
+              <div class="flex flex-wrap gap-1">
+                <% template.days.first(5).each do |day| %>
+                  <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded" title="<%= day['title'] %>">
+                    Day <%= day['day'] %>
+                  </span>
+                <% end %>
+                <% if template.days.count > 5 %>
+                  <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                    +<%= template.days.count - 5 %> more
+                  </span>
+                <% end %>
+              </div>
+            </div>
+
+            <button 
+              type="button"
+              class="btn-primary w-full"
+              data-action="click->campaign-builder#openModal"
+              data-template-id="<%= template.id %>">
+              Use This Template
+            </button>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Customize Modal -->
+  <div id="customize-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <div class="fixed inset-0 transition-opacity bg-black/50" data-action="click->campaign-builder#closeModal"></div>
+
+      <div class="relative bg-bg-secondary rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full">
+        <div class="px-6 py-4 border-b border-border">
+          <h3 class="text-lg font-semibold text-text-primary" id="modal-title">Customize Your Campaign</h3>
+        </div>
+
+        <div id="modal-content" class="p-6">
+          <!-- Dynamic content loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -31,11 +31,17 @@ class TestAnthropicController < ApplicationController
     
     response = http.request(request)
     
+    parsed_body = begin
+      JSON.parse(response.body)
+    rescue
+      response.body[0..500]
+    end
+    
     result = {
       status: response.code,
       api_key_prefix: api_key[0..15] + '...',
       model: model,
-      response_body: JSON.parse(response.body) rescue response.body[0..500]
+      response_body: parsed_body
     }
     
     render json: result

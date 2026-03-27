@@ -1,0 +1,7 @@
+<%= turbo_stream.replace @element_id do %>
+  <% if @status == :success %>
+    <span class="whitespace-pre-wrap"><%= @customized_caption %></span>
+  <% else %>
+    <span class="text-red-500">Error: <%= @error_message %></span>
+  <% end %>
+<% end %>

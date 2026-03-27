@@ -231,6 +231,17 @@ Rails.application.routes.draw do
   end
   # End routes for AI content
 
+  # Autopilot routes
+  resources :autopilot, only: [:index, :show] do
+    collection do
+      post :start
+      post :stop
+      get :status
+      get :history
+    end
+  end
+  # End autopilot routes
+
   # Application routes
   resource :profile, only: [:show, :edit] do
     member do
@@ -243,6 +254,17 @@ Rails.application.routes.draw do
       post 'respond'
     end
   end
+  # Campaign Builder routes
+  resources :campaign_builder, only: [:index] do
+    collection do
+      get :select_template
+      get :customize_form
+      post :preview
+      post :create
+      post :ai_customize
+    end
+  end
+  
   resources :campaigns do
     member do
       post 'add_content'

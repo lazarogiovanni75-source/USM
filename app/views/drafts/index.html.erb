@@ -61,6 +61,12 @@
     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       <% @drafts.each do |draft| %>
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          <% if draft.content_type == 'image' && draft.media_display_url.present? %>
+            <div class="relative">
+              <img src="<%= draft.media_display_url %>" alt="<%= draft.title %>" class="w-full h-48 object-cover rounded-t-lg">
+              <span class="absolute top-2 right-2 badge badge-<%= draft.status %>"><%= draft.status.humanize %></span>
+            </div>
+          <% end %>
           <div class="p-6">
             <!-- Draft Header -->
             <div class="flex justify-between items-start mb-4">

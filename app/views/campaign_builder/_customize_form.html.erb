@@ -1,0 +1,169 @@
+<div data-controller="campaign-customizer">
+  <form id="campaign-customization-form" class="space-y-6" data-action="submit->campaign-customizer#handleSubmit">
+    <input type="hidden" name="template_id" value="<%= template.id %>">
+    
+    <!-- Basic Info -->
+    <div class="space-y-4">
+      <h4 class="text-lg font-semibold text-text-primary">Basic Information</h4>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Launch Date</label>
+          <input type="date" name="launch_date" value="<%= customizations[:launch_date] %>" 
+                 class="form-input" required>
+          <p class="text-xs text-text-secondary mt-1">When should this campaign start?</p>
+        </div>
+        
+        <div>
+          <label class="form-label">Brand Name</label>
+          <input type="text" name="brand_name" value="<%= customizations[:brand_name] %>" 
+                 class="form-input" placeholder="Your Brand Name">
+          <p class="text-xs text-text-secondary mt-1">Used for [BRAND_NAME] placeholders</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Launch Fields -->
+    <% if template.category == 'product' %>
+      <div class="space-y-4 pt-4 border-t border-border">
+        <h4 class="text-lg font-semibold text-text-primary">Product Details</h4>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Product Name</label>
+            <input type="text" name="product_name" value="<%= customizations[:product_name] %>" 
+                   class="form-input" placeholder="My Amazing Product">
+            <p class="text-xs text-text-secondary mt-1">Used for [PRODUCT_NAME] placeholders</p>
+          </div>
+          
+          <div>
+            <label class="form-label">Promo Code</label>
+            <input type="text" name="promo_code" value="<%= customizations[:promo_code] %>" 
+                   class="form-input" placeholder="LAUNCH50">
+            <p class="text-xs text-text-secondary mt-1">Used for [PROMO_CODE] placeholders</p>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Discount Percentage</label>
+          <input type="text" name="discount_percent" value="<%= customizations[:discount_percent] %>" 
+                 class="form-input w-32" placeholder="50">
+          <p class="text-xs text-text-secondary mt-1">Used for [DISCOUNT_PERCENT] placeholders</p>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Holiday Sale Fields -->
+    <% if template.name.include?('Holiday') || template.name.include?('Sale') %>
+      <div class="space-y-4 pt-4 border-t border-border">
+        <h4 class="text-lg font-semibold text-text-primary">Sale Details</h4>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Holiday Name</label>
+            <input type="text" name="holiday_name" value="<%= customizations[:holiday_name] %>" 
+                   class="form-input" placeholder="Black Friday">
+            <p class="text-xs text-text-secondary mt-1">e.g., Black Friday, Cyber Monday, Summer Sale</p>
+          </div>
+          
+          <div>
+            <label class="form-label">Sale End Date</label>
+            <input type="text" name="end_date" value="<%= customizations[:end_date] %>" 
+                   class="form-input" placeholder="November 29, 2024">
+            <p class="text-xs text-text-secondary mt-1">Used for [END_DATE] placeholders</p>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Promo Code</label>
+          <input type="text" name="promo_code" value="<%= customizations[:promo_code] %>" 
+                 class="form-input w-48" placeholder="HOLIDAY20">
+          <p class="text-xs text-text-secondary mt-1">Used for [PROMO_CODE] placeholders</p>
+        </div>
+        
+        <div>
+          <label class="form-label">Discount Percentage</label>
+          <input type="text" name="discount_percent" value="<%= customizations[:discount_percent] %>" 
+                 class="form-input w-32" placeholder="50">
+          <p class="text-xs text-text-secondary mt-1">Used for [DISCOUNT_PERCENT] placeholders</p>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Brand Awareness Fields -->
+    <% if template.category == 'branding' %>
+      <div class="space-y-4 pt-4 border-t border-border">
+        <h4 class="text-lg font-semibold text-text-primary">Brand Details</h4>
+        
+        <div>
+          <label class="form-label">Brand Name</label>
+          <input type="text" name="brand_name" value="<%= customizations[:brand_name] %>" 
+                 class="form-input" placeholder="Your Brand Name">
+          <p class="text-xs text-text-secondary mt-1">Used for [BRAND_NAME] placeholders</p>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Preview Section -->
+    <div class="space-y-4 pt-4 border-t border-border">
+      <h4 class="text-lg font-semibold text-text-primary">Content Preview</h4>
+      <p class="text-sm text-text-secondary">
+        Your campaign will span <strong><%= template.duration_days %> days</strong> with content for <strong><%= template.platforms.count %> platforms</strong>.
+      </p>
+      
+      <div class="flex flex-wrap gap-2 mb-4">
+        <% template.platforms.each do |platform| %>
+          <span class="badge-secondary"><%= platform.titleize %></span>
+        <% end %>
+      </div>
+
+      <!-- Days Preview -->
+      <div class="max-h-64 overflow-y-auto border border-border rounded-lg p-4 bg-bg-primary/50">
+        <% template.days.each do |day| %>
+          <div class="mb-4 pb-4 border-b border-border last:border-0 last:mb-0 last:pb-0">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="font-semibold text-text-primary">Day <%= day['day'] %>:</span>
+              <span class="text-text-secondary"><%= day['title'] %></span>
+              <span class="text-xs text-text-muted">(<%= day['post_time'] %>)</span>
+            </div>
+            <p class="text-sm text-text-secondary line-clamp-2"><%= day['caption_template'][0..100] %>...</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
+      <button type="button" 
+              class="btn-secondary"
+              data-action="click->campaign-builder#closeModal">
+        Cancel
+      </button>
+      <button type="submit" 
+              class="btn-primary"
+              data-action="click->campaign-customizer#preview">
+        Preview Campaign
+      </button>
+    </div>
+  </form>
+
+  <!-- Preview Modal Content (hidden by default) -->
+  <div id="campaign-preview-section" class="hidden mt-6 pt-6 border-t border-border">
+    <h4 class="text-lg font-semibold text-text-primary mb-4">Campaign Preview</h4>
+    <div id="preview-content" class="max-h-96 overflow-y-auto">
+      <!-- Loaded dynamically -->
+    </div>
+    <div class="flex items-center justify-end gap-3 mt-4">
+      <button type="button" 
+              class="btn-secondary"
+              data-action="click->campaign-customizer#backToForm">
+        Edit Details
+      </button>
+      <button type="button" 
+              class="btn-primary"
+              data-action="click->campaign-customizer#createCampaign">
+        Create Campaign
+      </button>
+    </div>
+  </div>
+</div>

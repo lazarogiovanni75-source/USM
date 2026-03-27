@@ -1,6 +1,9 @@
 require 'anthropic'
 
 class LlmService
+  class TimeoutError < StandardError; end
+  class ApiError < StandardError; end
+
   def self.generate(prompt)
     api_key = ENV['ANTHROPIC_API_KEY']
     

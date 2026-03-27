@@ -1,0 +1,255 @@
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Full Autopilot</h1>
+      <p class="mt-2 text-gray-600">Autonomous social media management powered by AI</p>
+    </div>
+  </div>
+
+  <!-- Campaign Selection Card -->
+  <div class="card mb-8">
+    <div class="card-header">
+      <h2 class="text-xl font-semibold flex items-center gap-2">
+        <%= lucide_icon "target", class: "w-5 h-5 text-primary" %>
+        Choose Your Campaign
+      </h2>
+    </div>
+    <div class="card-body">
+      <% if @campaigns.any? %>
+        <p class="text-sm text-gray-500 mb-4">Select a campaign to get context-aware content generation. The autopilot will use your campaign's goals, audience, and hashtags.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <% @campaigns.each do |campaign| %>
+            <div class="border border-gray-200 rounded-xl p-4 hover:border-primary hover:shadow-md transition-all cursor-pointer relative"
+                 onclick="document.getElementById('start-form-<%= campaign.id %>').submit();">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <span class="px-2 py-0.5 rounded-full text-xs font-medium <%= campaign.running? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' %>">
+                    <%= campaign.status.titleize %>
+                  </span>
+                  <% if campaign.goal %>
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary ml-1">
+                      <%= campaign.goal %>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+              
+              <h3 class="font-semibold text-gray-900 mb-1"><%= campaign.name %></h3>
+              
+              <% if campaign.description %>
+                <p class="text-sm text-gray-500 mb-3 line-clamp-2"><%= campaign.description %></p>
+              <% end %>
+              
+              <% if campaign.target_audience %>
+                <div class="text-xs text-gray-400 mb-2">
+                  <span class="font-medium">Audience:</span> <%= campaign.target_audience %>
+                </div>
+              <% end %>
+              
+              <% if campaign.hashtag_set&.any? %>
+                <div class="flex flex-wrap gap-1 mb-2">
+                  <% campaign.hashtag_set.first(3).each do |tag| %>
+                    <span class="px-1.5 py-0.5 bg-gray-100 rounded text-xs text-gray-600"><%= tag %></span>
+                  <% end %>
+                  <% if campaign.hashtag_set.size > 3 %>
+                    <span class="px-1.5 py-0.5 text-xs text-gray-400">+<%= campaign.hashtag_set.size - 3 %></span>
+                  <% end %>
+                </div>
+              <% end %>
+              
+              <% if campaign.platforms&.any? %>
+                <div class="flex gap-1">
+                  <% campaign.platforms.each do |platform| %>
+                    <span class="px-2 py-0.5 bg-surface-elevated rounded text-xs text-muted">
+                      <%= platform.titleize %>
+                    </span>
+                  <% end %>
+                </div>
+              <% end %>
+              
+              <!-- Hidden form for campaign selection -->
+              <%= form_with url: start_autopilot_index_path, method: :post, id: "start-form-#{campaign.id}", class: "hidden" do %>
+                <%= hidden_field_tag :campaign_id, campaign.id %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+        
+        <!-- Start Button with Selected Campaign -->
+        <div class="flex items-center justify-between pt-4 border-t">
+          <div class="text-sm text-gray-500">
+            <p>Or start autopilot without a campaign for general content generation.</p>
+          </div>
+          <%= button_to start_autopilot_index_path, method: :post, class: "btn-primary flex items-center gap-2" do %>
+            <%= lucide_icon "rocket", class: "w-5 h-5" %>
+            Start Autopilot (No Campaign)
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-8">
+          <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <%= lucide_icon "megaphone", class: "w-8 h-8 text-gray-400" %>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">No Campaigns Yet</h3>
+          <p class="text-sm text-gray-500 mb-4">Create a campaign first to enable context-aware content generation.</p>
+          <%= link_to new_campaign_path, class: "btn-primary" do %>
+            <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>
+            Create Campaign
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-primary/10 rounded-lg">
+            <%= lucide_icon "file-text", class: "w-6 h-6 text-primary" %>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900"><%= @stats[:total_posts] %></p>
+            <p class="text-sm text-gray-500">Total Posts</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-success/10 rounded-lg">
+            <%= lucide_icon "calendar", class: "w-6 h-6 text-success" %>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900"><%= @stats[:scheduled_this_week] %></p>
+            <p class="text-sm text-gray-500">Scheduled This Week</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-info/10 rounded-lg">
+            <%= lucide_icon "check-circle", class: "w-6 h-6 text-info" %>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900"><%= @stats[:published_this_week] %></p>
+            <p class="text-sm text-gray-500">Published This Week</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-body">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-warning/10 rounded-lg">
+            <%= lucide_icon "target", class: "w-6 h-6 text-warning" %>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-gray-900"><%= @stats[:active_campaigns] %></p>
+            <p class="text-sm text-gray-500">Active Campaigns</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="card mb-8">
+    <div class="card-header">
+      <h2 class="text-xl font-semibold">How Full Autopilot Works</h2>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <span class="text-primary font-bold">1</span>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-1">Research</h3>
+            <p class="text-sm text-gray-600">AI researches trending topics aligned with your campaign goals</p>
+          </div>
+        </div>
+        
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-10 h-10 bg-success/10 rounded-full flex items-center justify-center">
+            <span class="text-success font-bold">2</span>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-1">Create</h3>
+            <p class="text-sm text-gray-600">Generates engaging posts with relevant hashtags for your audience</p>
+          </div>
+        </div>
+        
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-10 h-10 bg-info/10 rounded-full flex items-center justify-center">
+            <span class="text-info font-bold">3</span>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-1">Schedule</h3>
+            <p class="text-sm text-gray-600">Automatically schedules posts at optimal times</p>
+          </div>
+        </div>
+        
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-10 h-10 bg-warning/10 rounded-full flex items-center justify-center">
+            <span class="text-warning font-bold">4</span>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-1">Post</h3>
+            <p class="text-sm text-gray-600">Publishes to all connected platforms and tracks performance</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card">
+    <div class="card-header flex items-center justify-between">
+      <h2 class="text-xl font-semibold">Recent Autopilot Activity</h2>
+      <% if @recent_runs.any? %>
+        <span class="text-sm text-gray-500"><%= @recent_runs.count %> recent posts</span>
+      <% end %>
+    </div>
+    <div class="card-body">
+      <% if @recent_runs.any? %>
+        <div class="space-y-4">
+          <% @recent_runs.each do |post| %>
+            <div class="flex items-center justify-between py-3 border-b last:border-0">
+              <div class="flex items-center gap-4">
+                <div class="p-2 bg-gray-100 rounded-lg">
+                  <%= lucide_icon "send", class: "w-5 h-5 text-gray-600" %>
+                </div>
+                <div>
+                  <p class="font-medium text-gray-900"><%= post.content&.title || "Scheduled Post ##{post.id}" %></p>
+                  <p class="text-sm text-gray-500">
+                    <%= post.social_account&.platform&.titleize || "Social" %> • 
+                    <%= post.scheduled_at&.strftime("%b %d, %Y at %I:%M %p") %>
+                  </p>
+                </div>
+              </div>
+              <span class="badge badge-<%= post.status == 'published' ? 'success' : post.status == 'pending' ? 'warning' : 'info' %>">
+                <%= post.status.titleize %>
+              </span>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-12">
+          <div class="p-4 bg-gray-100 rounded-full inline-block mb-4">
+            <%= lucide_icon "inbox", class: "w-12 h-12 text-gray-400" %>
+          </div>
+          <p class="text-gray-500">No autopilot activity yet</p>
+          <p class="text-sm text-gray-400">Start the autopilot to generate content automatically</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

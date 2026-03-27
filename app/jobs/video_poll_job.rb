@@ -84,17 +84,17 @@ class VideoPollJob < ApplicationJob
       # Schedule next poll
       VideoPollJob.perform_later(draft_id, task_id, service, attempt + 1)
     elsif raw_status == 'not_found' || raw_status.nil?
-      # Task not found - this can happen with APIs that use webhooks instead of polling
-      # Or the API key might be invalid/expired
+      # Task not found or temporary error - this can happen with APIs that use webhooks instead of polling
+      # Or the API key might be invalid/expired, or Atlas Cloud may have a temporary issue
       # Don't fail immediately - the video may still be processing on the server
-      # But limit retries significantly to avoid wasting resources
-      max_not_found_retries = 10 # Only try 10 times for not_found (50 seconds)
+      # Allow more retries for temporary server errors
+      max_not_found_retries = 60 # Try 60 times (about 5 minutes) for not_found/temporary errors
       
       if attempt >= max_not_found_retries
-        # After 10 "not found" responses, assume the task failed or API key is invalid
-        error_msg = status_response['error'] || 'Task not found - possible invalid API key or expired task'
+        # After multiple retries, assume the task failed or API key is invalid
+        error_msg = status_response['error'] || 'Task not found after multiple retries - possible invalid API key, expired task, or Atlas Cloud server issue'
         draft.update(status: 'failed', metadata: draft.metadata.merge({ 'error' => error_msg }))
-        Rails.logger.error "VideoPollJob: Max not_found retries reached for draft #{draft_id}. API key may be invalid."
+        Rails.logger.error "VideoPollJob: Max not_found retries reached for draft #{draft_id}. API key may be invalid or server may be experiencing issues."
         return
       end
       # Retry after delay - continue polling
@@ -117,25 +117,18 @@ class VideoPollJob < ApplicationJob
 
   def get_status(service, task_id)
     case service
-    when 'atlas_cloud'
+    when 'atlas_cloud', 'atlas_cloud_video'
       begin
         AtlasCloudService.new.task_status(task_id)
       rescue AtlasCloudService::Error => e
-        if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
-          Rails.logger.warn "VideoPollJob: Task #{task_id} not found yet, will retry..."
-          return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
-        end
-        raise
-      end
-    when 'atlas_cloud'
-      begin
-        AtlasCloudService.new.task_status(task_id)
-      rescue AtlasCloudService::Error => e
-        # Handle 404 "task not found" - the task may have expired or never existed
-        # Return 'not_found' so the job retries instead of failing immediately
-        if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('task not found')
-          Rails.logger.warn "VideoPollJob: Task #{task_id} not found yet, will retry..."
-          return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
+        # Handle various API errors that should trigger a retry
+        error_msg = e.message.downcase
+        if error_msg.include?('404') || error_msg.include?('not found') || 
+           error_msg.include?('server error: 500') || error_msg.include?('server error: 502') ||
+           error_msg.include?('server error: 503') || error_msg.include?('server error: 504') ||
+           error_msg.include?('connection error') || error_msg.include?('timeout')
+          Rails.logger.warn "VideoPollJob: Task #{task_id} got temporary error '#{e.message}', will retry..."
+          return { 'status' => 'not_found', 'error' => e.message }
         end
         raise
       end
@@ -143,8 +136,13 @@ class VideoPollJob < ApplicationJob
       begin
         AtlasCloudService.new.task_status(task_id)
       rescue AtlasCloudService::Error => e
-        if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
-          return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
+        error_msg = e.message.downcase
+        if error_msg.include?('404') || error_msg.include?('not found') || 
+           error_msg.include?('server error: 500') || error_msg.include?('server error: 502') ||
+           error_msg.include?('server error: 503') || error_msg.include?('server error: 504') ||
+           error_msg.include?('connection error') || error_msg.include?('timeout')
+          Rails.logger.warn "VideoPollJob: Task #{task_id} got temporary error '#{e.message}', will retry..."
+          return { 'status' => 'not_found', 'error' => e.message }
         end
         raise
       end

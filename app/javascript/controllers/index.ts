@@ -115,3 +115,10 @@ application.register("voice-interaction", VoiceInteractionController)
 
 import VoiceToggleController from "./voice_toggle_controller"
 application.register("voice-toggle", VoiceToggleController)
+
+// Campaign Builder Controller
+import CampaignBuilderController from "./campaign_builder_controller"
+application.register("campaign-builder", CampaignBuilderController)
+
+import CampaignCustomizerController from "./campaign_customizer_controller"
+application.register("campaign-customizer", CampaignCustomizerController)
