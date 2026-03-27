@@ -13,6 +13,10 @@ class Content < ApplicationRecord
   scope :draft, -> { where(status: 'draft') }
   scope :published, -> { where(status: 'published') }
 
+  def published?
+    status == 'published'
+  end
+
   private
 
   def sync_media_url_to_media_urls
