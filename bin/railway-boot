@@ -43,11 +43,28 @@ fi
 
 # Run migrations
 echo "📦 Running database migrations..."
-bundle exec rails db:migrate
+echo "RAILS_ENV: ${RAILS_ENV}"
+echo "DATABASE_URL set: $([ -n "$DATABASE_URL" ] && echo 'yes' || echo 'no')"
+
+if RAILS_ENV=production bundle exec rails db:migrate 2>&1; then
+  echo "✅ Migrations completed successfully"
+else
+  echo "❌ Migration failed, checking status..."
+  RAILS_ENV=production bundle exec rails db:migrate:status || true
+  echo "⚠️  Attempting to continue anyway..."
+fi
+
+# Check migration status
+echo "🔍 Checking migration status..."
+RAILS_ENV=production bundle exec rails db:migrate:status || true
 
 # Run seeds for production
 echo "🌱 Running database seeds..."
-bundle exec rails db:seed
+if RAILS_ENV=production bundle exec rails db:seed 2>&1; then
+  echo "✅ Seeds completed successfully"
+else
+  echo "⚠️  Seeding failed, continuing to start server..."
+fi
 
 # Start Puma
 echo "🚀 Starting Puma web server..."
