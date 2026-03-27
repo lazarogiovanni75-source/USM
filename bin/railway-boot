@@ -45,6 +45,10 @@ fi
 echo "📦 Running database migrations..."
 bundle exec rails db:migrate
 
+# Run seeds for production
+echo "🌱 Running database seeds..."
+bundle exec rails db:seed
+
 # Start Puma
 echo "🚀 Starting Puma web server..."
 exec bundle exec puma -C config/puma.rb
