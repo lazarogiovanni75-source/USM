@@ -8,7 +8,6 @@ class CreateCampaignTemplates < ActiveRecord::Migration[7.2]
       t.boolean :is_active
       t.string :category
 
-
       t.timestamps
     end
   end
