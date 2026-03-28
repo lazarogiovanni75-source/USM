@@ -38,4 +38,13 @@ module ApplicationHelper
     }
     icons[platform&.downcase] || '📱'
   end
+
+  def platform_svg(platform, size: 32)
+    svg_path = "platforms/#{platform.downcase}.svg"
+    if Rails.application.assets_manifest&.assets&.dig(svg_path) || File.exist?(Rails.root.join("app/assets/images/#{svg_path}"))
+      image_tag(svg_path, alt: platform.titleize, class: "object-contain", size: size)
+    else
+      platform_icon(platform)
+    end
+  end
 end
