@@ -1,12 +1,14 @@
 # Seeds file for production - minimal data only
 # This file creates essential configuration data
 
-require 'open-uri'
+# Wrap everything in a transaction for safety
+ActiveRecord::Base.transaction do
+  puts "Starting production seeds..."
 
-# Create AI System Prompt setting
-puts "Creating AI system prompt setting..."
+  # Create AI System Prompt setting
+  puts "Creating AI system prompt setting..."
 
-ai_prompt = <<~PROMPT
+  ai_prompt = <<~PROMPT
 You are Pilot, an AI marketing assistant designed to help users with social media management and marketing tasks.
 
 ## CORE IDENTITY
@@ -63,30 +65,31 @@ You MUST know the user's subscription plan and enforce these limits:
 - Recommend adjustments based on analytics
 PROMPT
 
-SiteSetting.find_or_create_by!(key: 'ai_system_prompt') do |setting|
-  setting.value = ai_prompt
-end
+setting = SiteSetting.find_or_initialize_by(key: 'ai_system_prompt')
+setting.value = ai_prompt
+setting.save!
 
 # Create default subscription plans
 puts "Creating subscription plans..."
 
-SubscriptionPlan.find_or_create_by!(name: 'Starter') do |plan|
-  plan.price_cents = 4000
-  plan.credits = 40
-  plan.features = "Multi-platform publishing (3 platforms)\nCampaign management (4 campaigns)\n40 posts/month\nEmail Content Approvals (AI generates → email you approve)\nOne-click Post Now or Schedule\nAI content generation\nAI image generation\nAI video generation\nBasic analytics\nMedia library & templates"
-end
+starter = SubscriptionPlan.find_or_initialize_by(name: 'Starter')
+starter.price_cents = 4000
+starter.credits = 40
+starter.features = "Multi-platform publishing (3 platforms)\nCampaign management (4 campaigns)\n40 posts/month\nEmail Content Approvals (AI generates → email you approve)\nOne-click Post Now or Schedule\nAI content generation\nAI image generation\nAI video generation\nBasic analytics\nMedia library & templates"
+starter.save!
 
-SubscriptionPlan.find_or_create_by!(name: 'Entrepreneur') do |plan|
-  plan.price_cents = 8000
-  plan.credits = 80
-  plan.features = "Multi-platform publishing (6 platforms)\nCampaign management (8 campaigns)\n80 posts/month\nEmail Content Approvals with full workflow\nAI content ideas (tell AI what to do)\nVoice Commands via Pilot\nWorkflow Automation\nAdvanced Analytics (trends, competitor)\nContent Approval Workflows\nRecurring scheduling\nCampaign Wizard + Templates\nAll Starter features included"
-end
+entrepreneur = SubscriptionPlan.find_or_initialize_by(name: 'Entrepreneur')
+entrepreneur.price_cents = 8000
+entrepreneur.credits = 80
+entrepreneur.features = "Multi-platform publishing (6 platforms)\nCampaign management (8 campaigns)\n80 posts/month\nEmail Content Approvals with full workflow\nAI content ideas (tell AI what to do)\nVoice Commands via Pilot\nWorkflow Automation\nAdvanced Analytics (trends, competitor)\nContent Approval Workflows\nRecurring scheduling\nCampaign Wizard + Templates\nAll Starter features included"
+entrepreneur.save!
 
-SubscriptionPlan.find_or_create_by!(name: 'Pro') do |plan|
-  plan.price_cents = 12000
-  plan.credits = 120
-  plan.features = "Multi-platform publishing (9 platforms)\nCampaign management (12 campaigns)\n120 posts/month\nFull AI Automation (autonomous autopilot)\nPremium Analytics (predictions, A/B testing, sentiment)\nDiscovery Tools (hashtags, influencers, products)\nAll Entrepreneur features included"
-end
+pro = SubscriptionPlan.find_or_initialize_by(name: 'Pro')
+pro.price_cents = 12000
+pro.credits = 120
+pro.features = "Multi-platform publishing (9 platforms)\nCampaign management (12 campaigns)\n120 posts/month\nFull AI Automation (autonomous autopilot)\nPremium Analytics (predictions, A/B testing, sentiment)\nDiscovery Tools (hashtags, influencers, products)\nAll Entrepreneur features included"
+pro.save!
 
-puts "Production seeds completed!"
-puts "Subscription Plans: #{SubscriptionPlan.count}"
+  puts "Production seeds completed!"
+  puts "Subscription Plans: #{SubscriptionPlan.count}"
+end
