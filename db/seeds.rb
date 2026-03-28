@@ -73,19 +73,19 @@ puts "Creating subscription plans..."
 SubscriptionPlan.find_or_create_by!(name: 'Starter') do |plan|
   plan.price_cents = 4000
   plan.credits = 40
-  plan.features = "Multi-platform publishing (3 platforms)\nCampaign management (4 campaigns)\n40 posts/month\nAI content generation\nAI image generation\nAI video generation\nBasic analytics\nMedia library & templates"
+  plan.features = "Multi-platform publishing (3 platforms)\n9 Social Platforms (Facebook, Instagram, TikTok, YouTube, Twitter, LinkedIn, Threads, Bluesky, Pinterest)\nCampaign management (4 campaigns)\n40 posts/month\nEmail Content Approvals (AI generates → email you approve)\nOne-click Post Now or Schedule\nAI content generation\nAI image generation\nAI video generation\nBasic analytics\nMedia library & templates"
 end
 
 SubscriptionPlan.find_or_create_by!(name: 'Entrepreneur') do |plan|
   plan.price_cents = 8000
   plan.credits = 80
-  plan.features = "Multi-platform publishing (6 platforms)\nCampaign management (8 campaigns)\n80 posts/month\nAI content ideas (tell AI what to do)\nVoice Commands via Pilot\nWorkflow Automation\nAdvanced Analytics (trends, competitor)\nContent Approval Workflows\nRecurring scheduling\nAll Starter features included"
+  plan.features = "Multi-platform publishing (6 platforms)\n9 Social Platforms via Postforme API\nCampaign management (8 campaigns)\n80 posts/month\nEmail Content Approvals with full workflow\nAI content ideas (tell AI what to do)\nVoice Commands via Pilot\nWorkflow Automation\nAdvanced Analytics (trends, competitor)\nContent Approval Workflows\nRecurring scheduling\nCampaign Wizard + Templates\nAll Starter features included"
 end
 
 SubscriptionPlan.find_or_create_by!(name: 'Pro') do |plan|
   plan.price_cents = 12000
   plan.credits = 120
-  plan.features = "Multi-platform publishing (9 platforms)\nCampaign management (12 campaigns)\n120 posts/month\nFull AI Automation (autonomous autopilot)\nPremium Analytics (predictions, A/B testing, sentiment)\nDiscovery Tools (hashtags, influencers, products)\nAll Entrepreneur features included"
+  plan.features = "Multi-platform publishing (9 platforms)\n9 Social Platforms via Postforme API\nCampaign management (12 campaigns)\n120 posts/month\nFull AI Automation (autonomous autopilot)\nPremium Analytics (predictions, A/B testing, sentiment)\nDiscovery Tools (hashtags, influencers, products)\nAll Entrepreneur features included"
 end
 
 puts "Production seeds completed!"
