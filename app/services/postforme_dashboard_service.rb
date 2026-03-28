@@ -95,7 +95,7 @@ class PostformeDashboardService
     }
   end
 
-  # Extract metrics from posts array
+  # Extract metrics from posts array (handles both metrics endpoint and feed endpoint)
   def extract_post_metrics(metrics_data)
     posts = metrics_data['data'] || metrics_data || []
     
@@ -106,11 +106,32 @@ class PostformeDashboardService
     posts_count = posts.length
     
     posts.each do |post|
-      post_metrics = post['metrics'] || {}
-      total_likes += post_metrics['likes'].to_i
-      total_views += post_metrics['views'].to_i
-      total_engagement += post_metrics['total_interactions'].to_i
-      total_shares += post_metrics['shares'].to_i
+      # Handle both metric formats from different endpoints
+      post_metrics = post['metrics'] || post || {}
+      
+      # Extract likes (various formats)
+      likes_data = post_metrics['likes'] || post_metrics['like_count'] || 0
+      total_likes += likes_data.is_a?(Hash) ? likes_data['count'].to_i : likes_data.to_i
+      
+      # Extract views/impressions (various formats)
+      views_data = post_metrics['views'] || post_metrics['impressions'] || post_metrics['plays'] || 0
+      total_views += views_data.is_a?(Hash) ? views_data['count'].to_i : views_data.to_i
+      
+      # Extract engagement
+      engagement_data = post_metrics['engagement'] || post_metrics['total_interactions'] || 0
+      total_engagement += engagement_data.is_a?(Hash) ? engagement_data['count'].to_i : engagement_data.to_i
+      
+      # Extract shares (various formats)
+      shares_data = post_metrics['shares'] || post_metrics['share_count'] || 0
+      total_shares += shares_data.is_a?(Hash) ? shares_data['count'].to_i : shares_data.to_i
+      
+      # Extract comments
+      comments_data = post_metrics['comments'] || post_metrics['comment_count'] || 0
+      total_engagement += comments_data.is_a?(Hash) ? comments_data['count'].to_i : comments_data.to_i
+      
+      # Extract saves
+      saves_data = post_metrics['saves'] || post_metrics['save_count'] || 0
+      total_engagement += saves_data.is_a?(Hash) ? saves_data['count'].to_i : saves_data.to_i
     end
     
     {

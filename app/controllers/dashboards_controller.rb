@@ -84,6 +84,11 @@ class DashboardsController < ApplicationController
     @dashboard_metrics = DashboardMetricsService.new(@user)
     @comprehensive_metrics = @dashboard_metrics.get_comprehensive_metrics(30)
     
+    # Subscription & Plan Info for Dashboard
+    @current_subscription = @user.user_subscriptions.active.first
+    @subscription_plan = @current_subscription&.subscription_plan
+    @plan_limit_service = PlanLimitService.new(@user)
+    
     # Selected conversation for message thread view
     if params[:conversation_id].present?
       @selected_conversation = @ai_conversations.find_by(id: params[:conversation_id])

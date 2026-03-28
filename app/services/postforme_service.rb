@@ -37,25 +37,25 @@ class PostformeService
 
   # Get account analytics/metrics summary
   # @param account_id [String]
-  # @return [Hash] Analytics data
+  # @return [Hash] Analytics data from account metrics or feed
   def account_metrics(account_id)
+    # Try the dedicated metrics endpoint first
     get_request("/social-accounts/#{account_id}/metrics")
   rescue PostformeService::PostformeError
-    # Fallback: try getting metrics from account feed
-    begin
-      account_feed(account_id, expand_metrics: true)
-    rescue PostformeService::PostformeError
-      # Return empty metrics if both endpoints fail
-      { 'data' => [] }
-    end
+    # Fallback: get metrics from account feed
+    account_feed(account_id, expand_metrics: true)
+  rescue StandardError
+    # Return empty metrics if both endpoints fail
+    { 'data' => [] }
   end
 
   # Generate an OAuth URL for connecting an account
   # @param platform [String] Social platform (instagram, twitter, etc.)
   # @param redirect_uri [String] Optional URL to redirect after OAuth flow
+  # @param permissions [Array] Permissions to request (default: ['posts', 'feeds'])
   # @return [Hash] Response with auth_url
-  def auth_url(platform, redirect_uri: nil)
-    payload = { platform: platform }
+  def auth_url(platform, redirect_uri: nil, permissions: ['posts', 'feeds'])
+    payload = { platform: platform, permissions: permissions }
     payload[:redirect_uri] = redirect_uri if redirect_uri.present?
     post_request('/social-accounts/auth-url', payload)
   end
@@ -167,10 +167,11 @@ class PostformeService
 
   # Get feed for a social account with optional metrics
   # @param account_id [String] Social account ID
-  # @param expand_metrics [Boolean] Whether to include metrics
-  def account_feed(account_id, expand_metrics: false)
-    endpoint = "/social-account-feeds/#{account_id}"
-    endpoint += "?expand=metrics" if expand_metrics
+  # @param expand_metrics [Boolean] Whether to include metrics (requires 'feeds' permission)
+  # @param limit [Integer] Number of posts to return (default: 50)
+  def account_feed(account_id, expand_metrics: false, limit: 50)
+    endpoint = "/social-account-feeds/#{account_id}?limit=#{limit}"
+    endpoint += "&expand=metrics" if expand_metrics
     get_request(endpoint)
   end
 

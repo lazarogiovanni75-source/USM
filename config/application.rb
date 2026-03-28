@@ -63,10 +63,10 @@ module Myapp
     config.good_job.execution_mode = :async
     config.good_job.max_threads = 5
 
-    # Disable cron temporarily for debugging
-    # config.good_job.enable_cron = true
-    # # Load cron configuration from recurring.yml
-    # cron_config = Rails.application.config_for(:recurring)
-    # config.good_job.cron = cron_config if cron_config.present?
+    # Enable cron for scheduled jobs (agentic loop every 5 minutes)
+    config.good_job.enable_cron = true
+    # Load cron configuration from recurring.yml
+    cron_config = Rails.application.config_for(:recurring)
+    config.good_job.cron = cron_config if cron_config.present?
   end
 end

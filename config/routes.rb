@@ -109,6 +109,16 @@ Rails.application.routes.draw do
       get 'voice/health', to: 'voice#health'
       get 'voice/stream/health', to: 'voice_stream#health'
       
+      # Voice Loop API - Full conversation loop (Whisper → Claude → TTS)
+      namespace :voice_loop do
+        post :conversation   # Full loop endpoint
+        post :transcribe     # Step 1: Whisper STT
+        post :claude         # Step 2: Claude LLM
+        post :speak          # Step 3: OpenAI TTS
+        post :reset          # Reset conversation
+        get :status         # Get conversation state
+      end
+      
       # AI Chat API endpoints
       post 'ai_chat/stream_message', to: 'ai_chat#stream_message'
       post 'ai_chat/send_message', to: 'ai_chat#send_message'
@@ -143,6 +153,7 @@ Rails.application.routes.draw do
 
   # Voice Chat standalone routes (no merging with existing)
   get 'voice_chat', to: 'voice_chat#index'
+  get 'voice_loop', to: 'voice_loop#index'
   post '/chat', to: 'voice_chat#chat'
   post '/transcribe', to: 'voice_chat#transcribe'
   post '/speak', to: 'voice_chat#speak'
@@ -525,6 +536,8 @@ Rails.application.routes.draw do
   get 'pages/pricing', to: 'pages#pricing'
   get 'pages/about', to: 'pages#about'
   get 'pages/faq', to: 'pages#faq'
+  get 'pages/terms_of_service', to: 'pages#terms_of_service'
+  get 'pages/privacy_policy', to: 'pages#privacy_policy'
   
   # Additional user routes
   get 'social-media-dashboard', to: 'social_media_dashboard#index'

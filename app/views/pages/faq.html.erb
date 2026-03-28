@@ -1,5 +1,33 @@
-<!-- FAQ Page -->
+<!-- FAQ Page with Accordion Dropdowns -->
 <div class="min-h-screen bg-white dark:bg-gray-900">
+<script>
+function toggleFaq(button) {
+  const item = button.closest('.faq-item');
+  const content = item.querySelector('.faq-content');
+  const icon = item.querySelector('.faq-icon');
+  const isOpen = item.classList.contains('open');
+  
+  // Close all items
+  document.querySelectorAll('.faq-item').forEach(i => {
+    i.classList.remove('open');
+    const c = i.querySelector('.faq-content');
+    const ic = i.querySelector('.faq-icon');
+    if (c) c.style.maxHeight = '0';
+    if (ic) ic.classList.remove('rotate-180');
+  });
+  
+  // Open clicked item if it wasn't already open
+  if (!isOpen) {
+    item.classList.add('open');
+    content.style.maxHeight = content.scrollHeight + 'px';
+    icon.classList.add('rotate-180');
+  }
+}
+</script>
+<style>
+.faq-item .faq-icon { transition: transform 0.3s ease; }
+.faq-item .faq-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+</style>
   <!-- Header -->
   <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,9 +47,12 @@
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
     <!-- What is a Campaign? -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">What is a campaign?</h2>
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">What is a campaign?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
         <p class="text-gray-600 dark:text-gray-300 mb-6">
           A Campaign in your app is a container for organizing and executing a social media marketing effort. Here's what's inside:
         </p>
@@ -62,13 +93,89 @@
         <p class="text-gray-600 dark:text-gray-300 font-medium">
           In short: A campaign = a time-bound marketing initiative with goals, content plan, platforms, and budget that generates and schedules social media posts automatically.
         </p>
-      </div>
+      </div></div>
+    </div>
+
+    <!-- What happens after I create a campaign? -->
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">What happens after I create a campaign?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
+        <p class="text-gray-600 dark:text-gray-300 mb-6">
+          Great question! Here's exactly what happens when you create a campaign:
+        </p>
+        
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Step 1: We Generate Your Content</h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">
+          Based on your campaign settings (niche, style, platforms), we create content for you automatically. This includes:
+        </p>
+        <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 mb-6 ml-4">
+          <li>AI-generated text posts and captions</li>
+          <li>AI-generated images (up to 3 per campaign, free!)</li>
+          <li>AI-generated videos (up to 2 per campaign, free!)</li>
+        </ul>
+        
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Step 2: You Decide What Happens Next</h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">
+          Here's the thing — <strong>we don't automatically post everything right away</strong>. You have full control. Here are your options:
+        </p>
+        
+        <div class="bg-white dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600 mb-4">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Option A: "Schedule All Content"</h4>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">
+            We take all your generated content and spread it across your 7-day campaign window. Posts go live automatically at scheduled times. You don't have to do anything.
+          </p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600 mb-4">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Option B: "Publish Now"</h4>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">
+            Immediately sends all your content to your connected social media accounts. Right now. Done.
+          </p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600 mb-4">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Option C: Manual Control</h4>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">
+            Go through each piece of content individually. Edit it, preview it, and publish/schedule it yourself whenever you want.
+          </p>
+        </div>
+        
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Step 3: Track Your Results</h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">
+          Throughout your campaign, you can check the dashboard to see:
+        </p>
+        <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 mb-6 ml-4">
+          <li>How many posts went live</li>
+          <li>Engagement metrics (likes, comments, shares)</li>
+          <li>Performance across platforms</li>
+        </ul>
+        
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Quick Example</h3>
+        <p class="text-gray-600 dark:text-gray-300">
+          <strong>Scenario:</strong> You create a "Weekly Engagement" campaign today.
+        </p>
+        <p class="text-gray-600 dark:text-gray-300 mt-2">
+          <strong>Result:</strong> We generate 5 posts, 2 images, and 1 video. You click "Schedule All Content." Tomorrow morning, a motivational post goes live on Instagram. Tuesday afternoon, a tip post hits LinkedIn. Wednesday, your video drops on TikTok. And so on — all automatic.
+        </p>
+        
+        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
+          <p class="text-blue-800 dark:text-blue-200 font-medium">
+            💡 Bottom line: Creating a campaign generates your content. You decide when and how it gets posted. No surprises, no spam, full control.
+          </p>
+        </div>
+      </div></div>
     </div>
 
     <!-- What can Pilot do? -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">What can Pilot do?</h2>
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">What can Pilot do?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
         <p class="text-gray-600 dark:text-gray-300 mb-4">
           Hello! I am Pilot. I can assist with a variety of marketing and content-related tasks, including:
         </p>
@@ -119,13 +226,16 @@
             </ul>
           </div>
         </div>
-      </div>
+      </div></div>
     </div>
 
     <!-- What can I do with Ultimate Social Media? -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">What can I do with Ultimate Social Media?</h2>
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">What can I do with Ultimate Social Media?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
         <p class="text-gray-600 dark:text-gray-300 mb-6">
           3 different ways to manage your social media marketing:
         </p>
@@ -178,23 +288,29 @@
             Let Pilot do it all for you. From concept to published post... and everything in between.
           </p>
         </div>
-      </div>
+      </div></div>
     </div>
 
     <!-- Do Campaign videos and images count towards monthly amount? -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Do Campaign videos and images count towards the monthly video/image amount?</h2>
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">Do Campaign videos and images count towards the monthly video/image amount?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
         <p class="text-gray-600 dark:text-gray-300">
           No. They are part of what makes a campaign. Every Campaign comes with 2 videos and 3 images. Free.
         </p>
-      </div>
+      </div></div>
     </div>
 
     <!-- Difference between Post Now and Publish -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">What's the difference between "Post Now" and "Publish"?</h2>
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">What's the difference between "Post Now" and "Publish"?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
         <p class="text-gray-600 dark:text-gray-300 mb-4">
           Both options send your content to your connected social media accounts, but they work differently:
         </p>
@@ -231,23 +347,29 @@
         <p class="text-gray-600 dark:text-gray-300 text-sm">
           <strong>Example:</strong> Want to post "Happy Monday!" right now? Use <strong>Post Now</strong>. Want to post "Flash Sale!" tomorrow at 9am? Use <strong>Publish</strong> and set the time.
         </p>
-      </div>
+      </div></div>
     </div>
 
     <!-- How many apps do you need? -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Besides Ultimate Social Media, How many apps do you need to dominate your social media marketing?</h2>
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">How many apps do you need to dominate your social media marketing?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
         <p class="text-gray-600 dark:text-gray-300 font-medium">
           None. Ultimate Social Media provides content creation, video/image generation, scheduling, posting, analytics, and so much more. No need for multiple apps, and multiple bills. One app, does everything.
         </p>
-      </div>
+      </div></div>
     </div>
 
     <!-- Who can benefit from Ultimate Social Media? -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Who can benefit from using Ultimate Social Media?</h2>
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">Who can benefit from using Ultimate Social Media?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
         <ul class="space-y-3 text-gray-600 dark:text-gray-300">
           <li>✓ Anyone looking to maximize their social media presence</li>
           <li>✓ Anyone marketing/promoting anything on social media</li>
@@ -256,13 +378,16 @@
           <li>✓ Enterprises who want to increase productivity with less employees</li>
           <li>✓ The novice who is overwhelmed by the amount of time it takes to achieve social media marketing control</li>
         </ul>
-      </div>
+      </div></div>
     </div>
 
     <!-- Why make a way for everyone to succeed? -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Why make a way for everyone to succeed in social media marketing?</h2>
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div class="faq-item bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-6 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white pr-4">Why make a way for everyone to succeed in social media marketing?</h2>
+        <svg class="faq-icon w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div class="faq-content"><div class="p-6 pt-0">
         <p class="text-gray-600 dark:text-gray-300 font-bold text-lg mb-4">Why not?</p>
         <p class="text-gray-600 dark:text-gray-300 mb-4">
           Sure we could have made half of a platform, or left out Enterprise level analytics, or used fancy double-meaning words to trick you into buying our platform. Never been our style. Instead we choose to over-deliver and under charge.
@@ -282,7 +407,7 @@
         <p class="text-gray-600 dark:text-gray-300 font-bold text-lg mt-6">
           Ultimate Social Media...when you're ready to get serious.
         </p>
-      </div>
+      </div></div>
     </div>
 
   </div>

@@ -82,8 +82,8 @@ config.active_storage.service = (ENV["ULTIMATE_STORAGE_BUCKET_NAME"].present? &&
   # config.active_job.queue_adapter = :resque
   # config.active_job.queue_name_prefix = "myapp_production"
 
-  # Disable GoodJob async mode for production stability
-  config.good_job.execution_mode = :inline
+  # Enable GoodJob async mode for background job processing
+  config.good_job.execution_mode = :async
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.

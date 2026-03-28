@@ -1,0 +1,123 @@
+<%# Voice Conversation Loop - Whisper → Claude → OpenAI TTS %>
+<%# Architecture: Full conversation loop with memory %>
+
+<div class="min-h-screen surface flex flex-col" data-controller="voice-loop">
+  <%# Header %>
+  <div class="bg-surface-elevated border-b border-border px-6 py-4">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+          <%= lucide_icon "bot", class: "w-5 h-5 text-white" %>
+        </div>
+        <div>
+          <h1 class="text-lg font-semibold text-primary">Voice Assistant</h1>
+          <p class="text-xs text-muted">Powered by Claude & Whisper</p>
+        </div>
+      </div>
+
+      <%# Status & Controls %>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <span id="status-dot" class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+          </span>
+          <span class="text-xs text-muted" id="status-text">Ready</span>
+        </div>
+
+        <%# Reset button %>
+        <button
+          id="reset-button"
+          data-action="voice-loop#resetConversation"
+          class="btn-ghost text-xs"
+          title="Start new conversation"
+        >
+          <%= lucide_icon "rotate-ccw", class: "w-4 h-4" %>
+          <span class="hidden sm:inline">Reset</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <%# Messages Container %>
+  <div class="flex-1 overflow-y-auto" id="conversation-container">
+    <div class="max-w-2xl mx-auto p-6 space-y-4" id="messages-container">
+      <%# Welcome message %>
+      <div class="flex gap-3">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex-shrink-0 flex items-center justify-center">
+          <%= lucide_icon "bot", class: "w-4 h-4 text-white" %>
+        </div>
+        <div class="bg-surface-elevated rounded-2xl rounded-tl-sm px-4 py-3 max-w-md">
+          <p class="text-sm text-primary leading-relaxed">
+            Hi! I'm your voice assistant powered by Claude. Hold the microphone button to talk, or type your message below. How can I help you today?
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Loading Indicator %>
+  <div id="loading-indicator" class="hidden max-w-2xl mx-auto px-6 py-3">
+    <div class="flex items-center justify-center gap-3">
+      <div class="flex gap-1">
+        <span class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+        <span class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+        <span class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+      </div>
+      <span class="text-sm text-muted" id="loading-text">Processing...</span>
+    </div>
+  </div>
+
+  <%# Input Area %>
+  <div class="bg-surface-elevated border-t border-border px-6 py-4">
+    <div class="max-w-2xl mx-auto">
+      <%# Text Input %>
+      <div class="flex gap-3 mb-4">
+        <input
+          type="text"
+          id="text-input"
+          data-voice-loop-target="textInput"
+          placeholder="Type your message here..."
+          class="flex-1 form-input pr-4"
+          autocomplete="off"
+        >
+        <button
+          data-action="voice-loop#sendTextMessage"
+          class="btn-primary px-4"
+          id="send-button"
+        >
+          <%= lucide_icon "send", class: "w-4 h-4" %>
+        </button>
+      </div>
+
+      <%# Voice Input Button - Push to Talk %>
+      <div class="flex justify-center">
+        <button
+          id="voice-button"
+          class="relative w-20 h-20 rounded-full bg-primary hover:bg-primary-dark transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center group"
+        >
+          <%# Mic icon (idle state) %>
+          <div id="mic-icon" class="transition-opacity">
+            <%= lucide_icon "mic", class: "w-8 h-8 text-white" %>
+          </div>
+
+          <%# Stop icon (recording state - hidden by default) %>
+          <div id="stop-icon" class="absolute inset-0 flex items-center justify-center hidden">
+            <%= lucide_icon "square", class: "w-8 h-8 text-white" %>
+          </div>
+
+          <%# Recording ring indicator %>
+          <div id="recording-ring" class="absolute inset-0 rounded-full border-4 border-white/30 opacity-0 transition-opacity duration-200"></div>
+        </button>
+      </div>
+
+      <%# Instructions %>
+      <p class="text-center text-xs text-muted mt-3">
+        Hold to talk, release to send
+      </p>
+    </div>
+  </div>
+</div>
+
+<%# Audio element for TTS (hidden) %>
+<audio id="tts-audio" class="hidden" preload="none"></audio>
