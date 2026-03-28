@@ -4,9 +4,9 @@ import { Controller } from "@hotwired/stimulus"
 export default class AccordionController extends Controller {
   static targets = ["item", "content", "icon"]
 
-  private itemTargets: HTMLElement[]
-  private contentTarget: HTMLElement
-  private iconTarget: HTMLElement
+  private itemTargets!: HTMLElement[]
+  private contentTarget!: HTMLElement
+  private iconTarget!: HTMLElement
 
   toggle(event: Event): void {
     const trigger = event.currentTarget as HTMLElement
@@ -27,7 +27,7 @@ export default class AccordionController extends Controller {
 
       // Open this item
       item.classList.add('open')
-      content.style.maxHeight = content.scrollHeight + 'px'
+      content.style.maxHeight = `${content.scrollHeight  }px`
       if (icon) icon.classList.add('rotate-180')
     }
   }
@@ -47,7 +47,7 @@ export default class AccordionController extends Controller {
       item.classList.add('open')
       const content = item.querySelector('[data-accordion-target="content"]') as HTMLElement
       const icon = item.querySelector('[data-accordion-target="icon"]') as HTMLElement
-      if (content) content.style.maxHeight = content.scrollHeight + 'px'
+      if (content) content.style.maxHeight = `${content.scrollHeight  }px`
       if (icon) icon.classList.add('rotate-180')
     })
   }

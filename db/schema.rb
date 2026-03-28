@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_27_050202) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_28_191006) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -418,6 +418,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_27_050202) do
     t.datetime "updated_at", null: false
     t.string "media_url"
     t.jsonb "metadata", default: {}
+    t.string "approval_token"
+    t.datetime "scheduled_for"
+    t.string "postforme_post_id"
+    t.datetime "posted_at"
+    t.text "error_message"
+    t.index ["approval_token"], name: "index_draft_contents_on_approval_token", unique: true
+    t.index ["postforme_post_id"], name: "index_draft_contents_on_postforme_post_id"
     t.index ["status"], name: "index_draft_contents_on_status"
     t.index ["user_id"], name: "index_draft_contents_on_user_id"
   end

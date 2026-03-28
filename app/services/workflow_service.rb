@@ -90,7 +90,7 @@ class WorkflowService
         message_parts << (post_now ? "posted immediately" : "scheduled for #{post_time.strftime('%b %d at %I:%M %p')}")
         
         if post_now
-          post.update!(status: :publishing)
+          post.update!(status: :scheduled)
         end
       else
         message_parts << "content created (no social account connected to post)"

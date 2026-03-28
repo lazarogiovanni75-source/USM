@@ -432,6 +432,10 @@ Rails.application.routes.draw do
   # Content Suggestions System
   resources :content_suggestions, only: [:index, :show, :create, :update, :destroy]
   
+  # Content Approval Routes (email-based approval system)
+  get 'content_approvals/:token', to: 'content_approvals#show', as: :content_approval
+  post 'content_approvals/:token', to: 'content_approvals#update'
+  
   # Automation Rules
   resources :automation_rules do
     member do

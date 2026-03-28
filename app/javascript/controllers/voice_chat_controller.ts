@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import consumer from "../channels/consumer"
 
 // VoiceChatController - Handles conversational voice chat with Claude
 // Uses: Whisper (STT), Claude (AI), Google Cloud TTS (TTS)
@@ -381,5 +382,16 @@ export default class VoiceChatController extends Controller<HTMLElement> {
     const div = document.createElement("div")
     div.textContent = text
     return div.innerHTML
+  }
+
+  // ActionCable handlers for voice_chat_channel broadcasts
+  protected handleConversationCreated(data: { conversation_id: number; message: string }): void {
+    console.log("[VoiceChat] Conversation created:", data)
+    this.setStatus("Processing voice...")
+  }
+
+  protected handleError(data: { error: string }): void {
+    console.error("[VoiceChat] Error received:", data.error)
+    this.showError(data.error)
   }
 }

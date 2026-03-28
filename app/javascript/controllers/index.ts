@@ -122,3 +122,19 @@ application.register("campaign-builder", CampaignBuilderController)
 
 import CampaignCustomizerController from "./campaign_customizer_controller"
 application.register("campaign-customizer", CampaignCustomizerController)
+
+// Accordion Controller
+import AccordionController from "./accordion_controller"
+application.register("accordion", AccordionController)
+
+// Mobile Debug Controller
+import MobileDebugController from "./mobile_debug_controller"
+application.register("mobile-debug", MobileDebugController)
+
+// Voice Loop Controller
+import VoiceLoopController from "./voice_loop_controller"
+application.register("voice-loop", VoiceLoopController)
+
+// Pilot Chat Toggle Controller
+import PilotChatToggleController from "./pilot_chat_toggle_controller"
+application.register("pilot-chat-toggle", PilotChatToggleController)

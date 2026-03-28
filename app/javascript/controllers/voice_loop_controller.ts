@@ -366,19 +366,25 @@ export default class VoiceLoopController extends Controller<HTMLElement> {
     const messageEl = document.createElement('div')
     messageEl.id = messageId
     messageEl.className = `flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`
+    const userIcon = '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+      + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" '
+      + 'd="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>'
+      + '</svg>'
+    const assistantIcon = '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+      + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" '
+      + 'd="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'
+      + '</svg>'
+    const icon = isUser ? userIcon : assistantIcon
+    const bubbleClass = isUser ? 'rounded-tr-sm bg-primary/10' : 'rounded-tl-sm'
+
     messageEl.innerHTML = `
       <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${
-        isUser ? 'bg-primary' : 'bg-secondary'
-      }">
-        ${isUser
-          ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>'
-          : '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>'
-        }
-      </div>
-      <div class="bg-surface-elevated rounded-2xl px-4 py-3 max-w-md ${
-        isUser ? 'rounded-tr-sm bg-primary/10' : 'rounded-tl-sm'
-      }">
-        <p class="text-sm text-primary leading-relaxed whitespace-pre-wrap">${this.escapeHtml(content)}</p>
+  isUser ? 'bg-primary' : 'bg-secondary'
+}">${icon}</div>
+      <div class="bg-surface-elevated rounded-2xl px-4 py-3 max-w-md ${bubbleClass}">
+        <p class="text-sm text-primary leading-relaxed whitespace-pre-wrap">
+          ${this.escapeHtml(content)}
+        </p>
       </div>
     `
 
@@ -399,14 +405,19 @@ export default class VoiceLoopController extends Controller<HTMLElement> {
 
     const welcomeEl = document.createElement('div')
     welcomeEl.className = 'flex gap-3'
+    const welcomeMsg = "Hi! I'm your voice assistant powered by Claude. "
+      + "Hold the mic button to talk, or type your message below."
+    const assistantIcon = '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+      + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" '
+      + 'd="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'
+      + '</svg>'
+
     welcomeEl.innerHTML = `
       <div class="w-8 h-8 rounded-full bg-secondary flex-shrink-0 flex items-center justify-center">
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        ${assistantIcon}
       </div>
       <div class="bg-surface-elevated rounded-2xl rounded-tl-sm px-4 py-3 max-w-md">
-        <p class="text-sm text-primary leading-relaxed">
-          Hi! I'm your voice assistant powered by Claude. Hold the microphone button to talk, or type your message below. How can I help you today?
-        </p>
+        <p class="text-sm text-primary leading-relaxed">${welcomeMsg}</p>
       </div>
     `
 

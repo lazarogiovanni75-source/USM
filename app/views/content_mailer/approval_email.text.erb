@@ -1,0 +1,26 @@
+Hi <%= @user.name || @user.email %>,
+
+Your AI-generated content is ready for review:
+
+---
+
+<% if @draft.platform.present? %>[<%= @draft.platform.upcase %>]<% end %>
+
+<%= @draft.content %>
+
+---
+
+WHAT WOULD YOU LIKE TO DO?
+
+Post Now:
+<%= @post_now_url %>
+
+Schedule It:
+<%= @schedule_url %>
+
+Discard:
+<%= @reject_url %>
+
+---
+
+This link is unique to you and expires after use.
