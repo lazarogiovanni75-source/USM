@@ -33,7 +33,6 @@
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload", media: "all" %>
     <!-- Load error handler early to catch all errors -->
     <!-- stimulus-validator: allow-script -->
-    <script src="<%= asset_path("error_handler.js") %>"></script>
     <!-- stimulus-validator: allow-script -->
     <%= javascript_include_tag "application", type: "module", "data-turbo-track": "reload" %>
     <!-- Generate new favicon at `images/app-favicon.svg` at the first time, remove this line after generated  -->
