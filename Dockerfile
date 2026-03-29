@@ -1,7 +1,7 @@
 FROM ghcr.io/clacky-ai/rails-base-template:latest
 
 # Cache-busting argument - change this to force rebuild
-ARG CACHEBUST=20260329-1241
+ARG CACHEBUST=20260329-1345
 
 WORKDIR /app
 
@@ -24,6 +24,9 @@ COPY --chown=ruby:ruby . .
 
 # Generate database.yml from example if it doesn't exist
 RUN cp -n config/database.yml.example config/database.yml || true
+
+# Build Tailwind CSS first
+RUN npm run build:css
 
 # Precompile assets
 RUN SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile

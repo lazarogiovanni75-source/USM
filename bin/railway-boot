@@ -74,8 +74,16 @@ else
   echo "⚠️  Sitemap generation failed, continuing to start server..."
 fi
 
+# Build Tailwind CSS first
+echo "🎨 Building Tailwind CSS..."
+if npm run build:css 2>&1; then
+  echo "✅ Tailwind CSS built successfully"
+else
+  echo "❌ Tailwind CSS build failed"
+fi
+
 # Precompile assets if not already present
-echo "🎨 Checking/Precompiling assets..."
+echo "📦 Checking/Precompiling assets..."
 if [ ! -d "public/assets" ] || [ ! -f "public/assets/application.css" ]; then
   echo "⚠️  Assets not found - precompiling..."
   if SECRET_KEY_BASE="${SECRET_KEY_BASE:-$RAILS_MASTER_KEY}" RAILS_ENV=production bundle exec rails assets:precompile 2>&1; then
