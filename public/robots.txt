@@ -1,1 +1,13 @@
-# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
+# robots.txt for UltimateSocialMedia
+# See https://www.robotstxt.org/robotstxt.html for documentation
+
+User-agent: *
+Allow: /
+
+# Disallow admin routes
+Disallow: /admin/
+Disallow: /rails/
+Disallow: /cable/
+
+# Sitemap location
+Sitemap: https://ultimatesocialmedia01.com/sitemap.xml

@@ -1,0 +1,42 @@
+<!-- Quality Selector Component -->
+<div class="quality-selector" data-quality-selector-target="container">
+  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quality</label>
+  <div class="grid grid-cols-2 gap-3">
+    <% QualityTiers::QUALITY_TIERS.each do |tier_key, tier_info| %>
+      <label class="quality-option relative cursor-pointer">
+        <input 
+          type="radio" 
+          name="<%= field_name || 'quality' %>" 
+          value="<%= tier_key %>" 
+          class="sr-only peer"
+          <%= tier_key == 'standard' ? 'checked' : '' %>
+          data-quality-selector-target="radio"
+          data-credit-cost="<%= tier_info[:credit_cost] %>"
+        >
+        <div class="peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/20 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3 transition-all hover:border-primary-300">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold text-gray-900 dark:text-white">
+              <%= tier_info[:icon] %> <%= tier_info[:label] %>
+            </span>
+            <% if tier_info[:badge] %>
+              <span class="px-1.5 py-0.5 text-xs font-medium bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded">
+                <%= tier_info[:badge] %>
+              </span>
+            <% end %>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <%= tier_info[:description] %>
+          </p>
+          <p class="text-xs text-gray-400 dark:text-gray-500">
+            <%= tier_info[:resolution] %>
+          </p>
+          <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <span class="text-xs font-medium text-primary-600 dark:text-primary-400">
+              <%= tier_info[:credit_cost] %> credit<%= tier_info[:credit_cost] > 1 ? 's' : '' %>
+            </span>
+          </div>
+        </div>
+      </label>
+    <% end %>
+  </div>
+</div>

@@ -1,4 +1,5 @@
-class AiAutopilotService < ApplicationService
+class AiAutopilotService
+  include LlmPrompts
   # Voice command processing for AI Autopilot feature
   
   def initialize(command: nil, action: nil, campaign: nil, content_type: nil, platform: nil, video_params: nil)
@@ -249,7 +250,7 @@ class AiAutopilotService < ApplicationService
     topic = @content_type || "social media content"
     platform = @platform || "general"
 
-    system_prompt = "You are a professional social media content creator. Generate engaging, platform-specific content that captures attention and drives engagement."
+    system_prompt = LlmPrompts::CONTENT_CREATOR
 
     user_prompt = if @campaign
       "Generate a #{@content_type || 'post'} for #{platform} platform for campaign: #{@campaign.name}. "\
@@ -479,12 +480,7 @@ class AiAutopilotService < ApplicationService
   end
 
   def generate_content_with_extras(topic, platform = 'general')
-    system_prompt = "You are a professional social media content creator. Generate engaging content with these requirements:\n"\
-      "1. Write 2-3 sentence engaging post\n"\
-      "2. Add relevant hashtags (3-5)\n"\
-      "3. Include a clear call-to-action\n"\
-      "4. Include link in bio mention if appropriate\n"\
-      "5. Make it platform-specific for #{platform}"
+    system_prompt = [LlmPrompts::CONTENT_CREATOR_WITH_REQUIREMENTS, "Make it platform-specific for #{platform}. Include 2-3 relevant hashtags if they fit naturally."].join("\n\n")
     
     user_prompt = "Create a social media post about: #{topic}"
     

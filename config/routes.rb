@@ -555,7 +555,11 @@ Rails.application.routes.draw do
   get 'pages/faq', to: 'pages#faq'
   get 'pages/terms_of_service', to: 'pages#terms_of_service'
   get 'pages/privacy_policy', to: 'pages#privacy_policy'
-  
+
+  # Sitemap
+  get 'sitemap.xml', to: 'sitemaps#index', defaults: { format: :xml }, as: :sitemap
+  get 'sitemaps/:sitemap', to: 'sitemaps#show', constraints: { format: :xml }
+
   # Additional user routes
   get 'social-media-dashboard', to: 'social_media_dashboard#index'
   get 'connect-accounts', to: 'social_account_connections#index'

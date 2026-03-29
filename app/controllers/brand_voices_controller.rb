@@ -37,13 +37,13 @@ class BrandVoicesController < ApplicationController
     response = LlmStreamJob.perform_later(
       channel_name: "brand_voice_#{current_user.id}",
       prompt: prompt,
-      system: "You are a brand voice analyst. Your job is to analyze writing samples and extract a precise, actionable brand voice profile. Respond with ONLY the brand voice profile text, no preamble or explanation.",
+      system: LlmPrompts::BRAND_VOICE_ANALYST,
       user_id: current_user.id
     )
 
     # For synchronous response, use the LLM service directly
     client = OllamaClient.new
-    response_text = client.generate(prompt: prompt, system: "You are a brand voice analyst. Your job is to analyze writing samples and extract a precise, actionable brand voice profile. Respond with ONLY the brand voice profile text in 200-300 words, no preamble or explanation.")
+    response_text = client.generate(prompt: prompt, system: LlmPrompts::BRAND_VOICE_ANALYST)
 
     # Save everything to the user
     current_user.update!(

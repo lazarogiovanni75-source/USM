@@ -4,6 +4,9 @@ class LlmService
   class TimeoutError < StandardError; end
   class ApiError < StandardError; end
 
+  # Include human-sounding prompt constants
+  include LlmPrompts
+
   # Prepends brand voice instructions to system prompt if user has one
   # This method should be called for every LLM generation to ensure brand voice is applied
   def self.system_prompt_with_brand_voice(base_system_prompt, user)
@@ -78,8 +81,8 @@ class LlmService
     
     client = Anthropic::Client.new(api_key: api_key)
     
-    # Inject brand voice into system prompt if user is provided
-    system_prompt = "You are a helpful AI assistant."
+    # Use human-sounding assistant prompt
+    system_prompt = GENERAL_ASSISTANT
     system_with_brand_voice = system_prompt_with_brand_voice(system_prompt, user)
     
     create_params = {
@@ -103,15 +106,15 @@ class LlmService
     
     system_prompt = case content_type
     when 'caption'
-      "You are a social media content creator. Generate engaging captions for social media posts. Return a JSON object with 'title' and 'body' keys."
+      [CONTENT_CREATOR, "Return a JSON object with 'title' and 'body' keys."].join("\n\n")
     when 'ideas'
-      "You are a creative content strategist. Generate content ideas and return them as structured text."
+      [CONTENT_CREATOR, "Generate content ideas in a natural, conversational format."].join("\n\n")
     when 'blog_post'
-      "You are a content writer. Generate blog posts with introduction, main points, and conclusion."
+      "You're a content writer who keeps readers engaged from start to finish. Write blog posts that feel like a conversation, not a lecture."
     when 'ad_copy'
-      "You are an advertising copywriter. Create compelling ad copy that drives conversions."
+      "You're a copywriter who knows how to sell without being pushy. Your ads feel helpful, not spammy."
     else
-      "You are a helpful AI assistant that generates content."
+      GENERAL_ASSISTANT
     end
     
     content = call_blocking(prompt: prompt, system: system_prompt, user: user, **options)

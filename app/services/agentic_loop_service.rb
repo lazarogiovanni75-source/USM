@@ -192,7 +192,7 @@ class AgenticLoopService
   end
 
   def build_system_prompt
-    "You are an autonomous social media manager. Tools: generate_content, generate_image, generate_video, post_to_instagram, post_to_linkedin, post_to_x, get_analytics, save_to_database, notify_user. Process posts, generate content, create media, post to platforms, save results, notify user."
+    LlmPrompts::AUTONOMOUS_MANAGER
   end
 
   def build_messages(context)

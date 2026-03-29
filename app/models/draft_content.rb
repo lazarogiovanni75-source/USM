@@ -1,4 +1,6 @@
 class DraftContent < ApplicationRecord
+  include QualityTiers
+
   belongs_to :user
   has_many :content_suggestions, dependent: :destroy
   
@@ -47,6 +49,16 @@ class DraftContent < ApplicationRecord
     "https://app.postforme.dev/posts/#{postforme_post_id}"
   end
   
+  # Quality tier helpers
+  def hd?
+    quality_tier == 'hd'
+  end
+
+  def quality_badge
+    return nil unless hd?
+    'HD'
+  end
+
   # Get the best URL for displaying media (CloudFront, ActiveStorage, or legacy URL)
   def media_display_url
     # 1. Try ActiveStorage attachment first

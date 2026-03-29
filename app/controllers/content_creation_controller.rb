@@ -135,14 +135,19 @@ class ContentCreationController < ApplicationController
     prompt = params[:prompt]
     size = params[:size] || '1:1'
     model = params[:model] || 'atlascloud/qwen-image/text-to-image'
+    quality = params[:quality] || 'standard'
+    
+    # Validate quality tier
+    quality = 'standard' unless QualityTiers.valid_quality?(quality)
+    credit_cost = QualityTiers.credit_cost_for(:image, quality)
 
-    Rails.logger.info "[ContentCreation] Starting image generation - prompt: #{prompt&.length} chars"
+    Rails.logger.info "[ContentCreation] Starting image generation - prompt: #{prompt&.length} chars, quality: #{quality}"
 
     begin
       result = ImageGenerationService.generate_image(
         prompt: prompt,
         size: size,
-        quality: 'high',
+        quality: quality,
         model: model
       )
 
@@ -161,11 +166,14 @@ class ContentCreationController < ApplicationController
           platform: 'general',
           status: 'pending',
           media_url: nil,
+          quality_tier: quality,
+          credit_cost: credit_cost,
           metadata: { 
             'task_id' => task_id, 
             'service' => service, 
             'model' => model,
-            'aspect_ratio' => size
+            'aspect_ratio' => size,
+            'quality_tier' => quality
           }
         )
 
@@ -192,6 +200,11 @@ class ContentCreationController < ApplicationController
     aspect_ratio = params[:aspect_ratio] || '16:9'
     duration = params[:duration] || '5'
     source_image_url = params[:source_image_url]
+    quality = params[:quality] || 'standard'
+    
+    # Validate quality tier
+    quality = 'standard' unless QualityTiers.valid_quality?(quality)
+    credit_cost = QualityTiers.credit_cost_for(:video, quality)
 
     begin
       if prompt.blank? || prompt.length < 10
@@ -204,14 +217,16 @@ class ContentCreationController < ApplicationController
           prompt: prompt,
           model: model,
           aspect_ratio: aspect_ratio,
-          duration: duration
+          duration: duration,
+          quality: quality
         )
       else
         result = VideoGenerationService.generate_video(
           prompt: prompt,
           duration: duration,
           aspect_ratio: aspect_ratio,
-          model: model
+          model: model,
+          quality: quality
         )
       end
 
@@ -225,13 +240,16 @@ class ContentCreationController < ApplicationController
           platform: 'general',
           status: 'pending',
           media_url: nil,
+          quality_tier: quality,
+          credit_cost: credit_cost,
           metadata: { 
             'task_id' => result[:task_id], 
             'service' => service, 
             'model' => model,
             'duration' => duration,
             'aspect_ratio' => aspect_ratio,
-            'source_image_url' => source_image_url
+            'source_image_url' => source_image_url,
+            'quality_tier' => quality
           }
         )
 
@@ -280,10 +298,11 @@ class ContentCreationController < ApplicationController
     combined_prompt = "#{original_prompt}. Modification: #{edit_prompt}"
 
     begin
+      quality = draft.quality_tier || 'standard'
       result = ImageGenerationService.generate_image(
         prompt: combined_prompt,
         size: draft.metadata.dig('aspect_ratio') || '1:1',
-        quality: 'high'
+        quality: quality
       )
 
       if result[:success]

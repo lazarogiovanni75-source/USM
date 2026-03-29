@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_29_023435) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_29_072322) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -432,6 +432,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_29_023435) do
     t.string "postforme_post_id"
     t.datetime "posted_at"
     t.text "error_message"
+    t.string "quality_tier", default: "standard"
+    t.integer "credit_cost", default: 1
     t.index ["approval_token"], name: "index_draft_contents_on_approval_token", unique: true
     t.index ["postforme_post_id"], name: "index_draft_contents_on_postforme_post_id"
     t.index ["status"], name: "index_draft_contents_on_status"

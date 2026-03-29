@@ -70,20 +70,23 @@ class AtlasCloudService
   # @param model [String] Model ID (default: atlascloud/magi-1-24b)
   # @param aspect_ratio [String] Aspect ratio (default: 16:9)
   # @param duration [Integer] Video duration in seconds (default: 5)
+  # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] { task_id:, output:, status: }
   #
   def generate_video_from_text(prompt:,
                                 model: 'atlascloud/magi-1-24b',
                                 aspect_ratio: '16:9',
-                                duration: 5)
+                                duration: 5,
+                                quality: 'standard')
     body = {
       model: model,
       prompt: prompt,
       aspect_ratio: aspect_ratio,
-      duration: duration
+      duration: duration,
+      quality: quality
     }
 
-    Rails.logger.info "[AtlasCloudService] Submitting text-to-video with model: #{model}"
+    Rails.logger.info "[AtlasCloudService] Submitting text-to-video with model: #{model}, quality: #{quality}"
 
     result = post_request('/api/v1/model/generateVideo', body)
 
@@ -105,22 +108,25 @@ class AtlasCloudService
   # @param model [String] Model ID (default: atlascloud/magi-1-24b)
   # @param aspect_ratio [String] Aspect ratio (default: 16:9)
   # @param duration [Integer] Video duration in seconds (default: 5)
+  # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] { task_id:, output:, status: }
   #
   def generate_video_from_image(image_url:,
                                  prompt: '',
                                  model: 'atlascloud/magi-1-24b',
                                  aspect_ratio: '16:9',
-                                 duration: 5)
+                                 duration: 5,
+                                 quality: 'standard')
     body = {
       model: model,
       prompt: prompt,
       image_url: image_url,
       aspect_ratio: aspect_ratio,
-      duration: duration
+      duration: duration,
+      quality: quality
     }
 
-    Rails.logger.info "[AtlasCloudService] Submitting image-to-video with model: #{model}"
+    Rails.logger.info "[AtlasCloudService] Submitting image-to-video with model: #{model}, quality: #{quality}"
 
     result = post_request('/api/v1/model/generateVideo', body)
 

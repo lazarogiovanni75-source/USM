@@ -3,6 +3,7 @@
 # Service for fetching and analyzing post performance data
 # Uses Postforme API for data and Claude for AI-generated insights
 class PostformeAnalyticsService
+  include LlmPrompts
   PLATFORM_COLORS = {
     'instagram' => 'from-purple-500 to-pink-500',
     'facebook' => 'from-blue-600 to-blue-700',
@@ -234,7 +235,7 @@ class PostformeAnalyticsService
 
     response = client.messages(
       messages: [{ role: "user", content: prompt }],
-      system: "You are a social media analytics expert. Analyze the provided data and provide actionable insights in a clear, concise format.",
+      system: LlmPrompts::ANALYTICS_EXPERT,
       temperature: 0.7
     )
 

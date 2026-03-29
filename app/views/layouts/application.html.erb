@@ -30,12 +30,12 @@
     <%= csrf_meta_tags %>
     <%= action_cable_meta_tag %>
     <%= content_for?(:head) ? yield(:head) : '' %>
-    <link rel="stylesheet" href="/dev-assets/application.css" media="all" />
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload", media: "all" %>
     <!-- Load error handler early to catch all errors -->
     <!-- stimulus-validator: allow-script -->
-    <script src="/dev-assets/error_handler.js"></script>
+    <script src="<%= asset_path("error_handler.js") %>"></script>
     <!-- stimulus-validator: allow-script -->
-    <script src="/dev-assets/application.js" type="module"></script>
+    <%= javascript_include_tag "application", type: "module", "data-turbo-track": "reload" %>
     <!-- Generate new favicon at `images/app-favicon.svg` at the first time, remove this line after generated  -->
     <%= favicon_link_tag asset_path("app-favicon.svg") unless Rails.env.test? %>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">

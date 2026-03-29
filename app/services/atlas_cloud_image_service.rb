@@ -30,20 +30,23 @@ class AtlasCloudImageService
   # @param model [String] Model ID (default: black-forest-labs/flux-1.1-pro)
   # @param aspect_ratio [String] Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
   # @param n [Integer] Number of images to generate
+  # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] { task_id:, output:, status: }
   #
   def generate_image(prompt:,
                      model: DEFAULT_MODEL,
                      aspect_ratio: '1:1',
-                     n: 1)
+                     n: 1,
+                     quality: 'standard')
     body = {
       model: model,
       prompt: prompt,
       aspect_ratio: aspect_ratio,
-      n: 1  # Always generate exactly 1 image
+      n: 1,  # Always generate exactly 1 image
+      quality: quality  # Pass quality tier to API
     }
 
-    Rails.logger.info "[AtlasCloudImageService] Generating image with model: #{model}, aspect_ratio: #{aspect_ratio}"
+    Rails.logger.info "[AtlasCloudImageService] Generating image with model: #{model}, aspect_ratio: #{aspect_ratio}, quality: #{quality}"
 
     result = post_request('/api/v1/model/generateImage', body)
 

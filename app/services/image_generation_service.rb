@@ -12,16 +12,16 @@ class ImageGenerationService
   #
   # @param prompt [String] Text prompt for image
   # @param size [String] Image size
-  # @param quality [String] Image quality
+  # @param quality [String] Image quality tier (standard, hd)
   # @param model [String] Model to use (default: black-forest-labs/flux-1.1-pro)
   # @return [Hash] Result with task_id and metadata
   #
-  def self.generate_image(prompt:, size: '1:1', quality: 'high', model: nil)
+  def self.generate_image(prompt:, size: '1:1', quality: 'standard', model: nil)
     # Map size to aspect_ratio format
     aspect_ratio = map_size_to_aspect_ratio(size)
     
     # Use Atlas Cloud unified API
-    result = try_primary_image(prompt: prompt, aspect_ratio: aspect_ratio, model: model)
+    result = try_primary_image(prompt: prompt, aspect_ratio: aspect_ratio, model: model, quality: quality)
     
     # If primary succeeded with a task_id, return it (polling will handle completion)
     return result if result[:success] && result[:task_id].present?
@@ -49,7 +49,7 @@ class ImageGenerationService
     { success: false, error: "Image editing not supported. Please generate a new image instead." }
   end
 
-  def self.try_primary_image(prompt:, aspect_ratio:, model: nil)
+  def self.try_primary_image(prompt:, aspect_ratio:, model: nil, quality: 'standard')
     Rails.logger.info "[ImageGeneration] Trying Atlas Cloud unified API"
     
     service = AtlasCloudImageService.new
@@ -63,7 +63,8 @@ class ImageGenerationService
       result = service.generate_image(
         prompt: prompt,
         model: model || 'atlascloud/qwen-image/text-to-image',
-        aspect_ratio: aspect_ratio
+        aspect_ratio: aspect_ratio,
+        quality: quality
       )
 
       if result['task_id'].present?
@@ -73,7 +74,7 @@ class ImageGenerationService
           task_id: result['task_id'],
           service: 'atlas_cloud',
           output_url: nil,
-          metadata: { model: model || 'black-forest-labs/flux-1.1-pro', aspect_ratio: aspect_ratio }
+          metadata: { model: model || 'black-forest-labs/flux-1.1-pro', aspect_ratio: aspect_ratio, quality_tier: quality }
         }
       else
         Rails.logger.error "[ImageGeneration] Primary service returned no task_id: #{result.inspect}"
@@ -91,12 +92,12 @@ class ImageGenerationService
     end
   end
 
-  def self.try_secondary_image(prompt:, size:, quality:)
+  def self.try_secondary_image(prompt:, size:, quality: 'standard')
     Rails.logger.info "[ImageGeneration] Trying secondary service (same API)"
     
     # Same API, just different model
     aspect_ratio = map_size_to_aspect_ratio(size)
-    try_primary_image(prompt: prompt, aspect_ratio: aspect_ratio, model: 'z-image/turbo')
+    try_primary_image(prompt: prompt, aspect_ratio: aspect_ratio, model: 'z-image/turbo', quality: quality)
   end
 
   def self.service_to_object(service_name)

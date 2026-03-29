@@ -4,7 +4,7 @@
   "scripts": {
     "build": "run-p lint build:js",
     "build:js": "esbuild app/javascript/application.js --bundle --sourcemap=inline --format=esm --outdir=public/dev-assets --public-path=/dev-assets --loader:.ts=ts --loader:.tsx=tsx --target=es2017",
-    "build:js:prod": "esbuild app/javascript/application.js --bundle --format=esm --outdir=public/dev-assets --public-path=/dev-assets --loader:.ts=ts --loader:.tsx=tsx --minify --legal-comments=none --target=es2017",
+    "build:js:prod": "esbuild app/javascript/application.js --bundle --format=esm --outdir=app/assets/builds --public-path=/assets --loader:.ts=ts --loader:.tsx=tsx --minify --legal-comments=none --target=es2017",
     "watch:js": "esbuild app/javascript/application.js --bundle --sourcemap=inline --format=esm --outdir=public/dev-assets --public-path=/dev-assets --watch --loader:.ts=ts --loader:.tsx=tsx --target=es2017",
     "build:css": "run-p build:css:*",
     "build:css:app": "tailwindcss -i ./app/assets/stylesheets/application.css -o ./public/dev-assets/application.css --minify",

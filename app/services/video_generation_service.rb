@@ -16,9 +16,10 @@ class VideoGenerationService
   # @param duration [String] Video duration
   # @param aspect_ratio [String] Aspect ratio
   # @param model [String] Model to use (default: Vidu Q3-Pro)
+  # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] Result with task_id and metadata
   #
-  def self.generate_video(prompt:, duration: '5', aspect_ratio: '16:9', model: nil)
+  def self.generate_video(prompt:, duration: '5', aspect_ratio: '16:9', model: nil, quality: 'standard')
     model ||= 'vidu/q3-pro/text-to-video'
     
     service = AtlasCloudService.new
@@ -33,7 +34,8 @@ class VideoGenerationService
         prompt: prompt,
         model: model,
         duration: duration.to_i,
-        aspect_ratio: aspect_ratio
+        aspect_ratio: aspect_ratio,
+        quality: quality
       )
 
       if result['task_id'].present?
@@ -42,7 +44,7 @@ class VideoGenerationService
           success: true,
           task_id: result['task_id'],
           service: 'atlas_cloud',
-          metadata: { model: model, duration: duration, aspect_ratio: aspect_ratio }
+          metadata: { model: model, duration: duration, aspect_ratio: aspect_ratio, quality_tier: quality }
         }
       else
         Rails.logger.error "[VideoGeneration] Video generation failed: #{result.inspect}"
@@ -61,9 +63,10 @@ class VideoGenerationService
   # @param duration [String] Video duration
   # @param aspect_ratio [String] Aspect ratio
   # @param model [String] Model to use (default: Wan 2.2 Turbo Spicy)
+  # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] Result with task_id and metadata
   #
-  def self.generate_video_from_image(image_url:, prompt: '', duration: '5', aspect_ratio: '16:9', model: nil)
+  def self.generate_video_from_image(image_url:, prompt: '', duration: '5', aspect_ratio: '16:9', model: nil, quality: 'standard')
     model ||= 'atlascloud/wan-2.2-turbo-spicy/image-to-video'
     
     service = AtlasCloudService.new
@@ -79,7 +82,8 @@ class VideoGenerationService
         prompt: prompt,
         model: model,
         aspect_ratio: aspect_ratio,
-        duration: duration.to_i
+        duration: duration.to_i,
+        quality: quality
       )
 
       if result['task_id'].present?
@@ -92,7 +96,8 @@ class VideoGenerationService
             model: model, 
             duration: duration, 
             aspect_ratio: aspect_ratio,
-            source_image: image_url
+            source_image: image_url,
+            quality_tier: quality
           }
         }
       else

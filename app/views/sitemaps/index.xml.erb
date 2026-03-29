@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <% sitemaps = Dir[Rails.root.join('public/sitemaps/*.xml')] %>
+  <% sitemaps.each do |sitemap| %>
+    <sitemap>
+      <loc><%= "#{SitemapGenerator::Sitemap.default_host}/sitemaps/#{File.basename(sitemap)}" %></loc>
+      <lastmod><%= File.mtime(sitemap).strftime("%Y-%m-%d") %></lastmod>
+    </sitemap>
+  <% end %>
+</sitemapindex>

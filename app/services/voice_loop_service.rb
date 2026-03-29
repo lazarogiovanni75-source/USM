@@ -5,12 +5,7 @@
 class VoiceLoopService
   include ActionView::Helpers::TextHelper
 
-  SYSTEM_PROMPT = <<~PROMPT
-    You are a helpful, friendly AI voice assistant.
-    Keep responses concise and conversational since they will be spoken aloud.
-    Avoid using bullet points, markdown, or lists in your responses.
-    Respond in a natural, friendly tone like talking to a friend.
-  PROMPT
+  SYSTEM_PROMPT = LlmPrompts::VOICE_ASSISTANT
 
   attr_reader :user, :conversation_id, :conversation_history
 

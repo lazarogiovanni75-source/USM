@@ -29,7 +29,14 @@
     <% display_url = @draft.media_display_url %>
     <% if display_url.present? %>
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Generated Media</h2>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+          Generated Media
+          <% if @draft.quality_tier == 'hd' %>
+            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-amber-400 to-orange-500 text-white">
+              ✨ HD
+            </span>
+          <% end %>
+        </h2>
         <div class="flex justify-center">
           <% if @draft.content_type == 'image' %>
             <img src="<%= display_url %>" alt="Generated Image" class="max-w-full rounded-lg shadow-md">
@@ -183,6 +190,21 @@
               <span class="text-gray-600">Type:</span>
               <span class="font-medium"><%= @draft.content_type.titleize %></span>
             </div>
+            <% if @draft.quality_tier.present? %>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Quality:</span>
+                <span class="font-medium">
+                  <% if @draft.quality_tier == 'hd' %>
+                    <span class="inline-flex items-center">
+                      ✨ HD
+                      <span class="ml-1 text-xs text-gray-500">( <%= @draft.credit_cost %> credits )</span>
+                    </span>
+                  <% else %>
+                    ⚡ Standard
+                  <% end %>
+                </span>
+              </div>
+            <% end %>
             <div class="flex justify-between">
               <span class="text-gray-600">Status:</span>
               <span class="font-medium"><%= @draft.status.humanize %></span>
