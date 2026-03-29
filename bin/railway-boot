@@ -68,7 +68,7 @@ fi
 
 # Generate sitemap for SEO
 echo "🗺️  Generating sitemap..."
-if RAILS_ENV=production bundle exec rake sitemap:generate 2>&1; then
+if RAILS_ENV=production bundle exec rake sitemap:refresh:no_ping 2>&1; then
   echo "✅ Sitemap generated successfully"
 else
   echo "⚠️  Sitemap generation failed, continuing to start server..."
