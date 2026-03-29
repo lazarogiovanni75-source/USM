@@ -1,8 +1,6 @@
-class AddPostformeFieldsToDraftContents < ActiveRecord::Migration[7.2]
+class AddPostformeFieldsToDraftContents < ActiveRecord::Migration[7.1]
   def change
-    add_column :draft_contents, :postforme_post_id, :string
-    add_column :draft_contents, :posted_at, :datetime
-    add_column :draft_contents, :error_message, :text
-    add_index :draft_contents, :postforme_post_id unless index_exists?(:draft_contents, :postforme_post_id)
+    add_column :draft_contents, :platform,           :string unless column_exists?(:draft_contents, :platform)
+    add_column :draft_contents, :postforme_post_id,  :string unless column_exists?(:draft_contents, :postforme_post_id)
   end
 end
