@@ -78,7 +78,7 @@ class FullAutopilotService
     # Build research prompt with campaign context
     research_prompt = build_research_prompt
     
-    response = LlmService.generate(research_prompt)
+    response = LlmService.generate(research_prompt, user: @user)
     if response.present?
       @results[:research_count] += 1
       @results[:research_data] = response
@@ -121,7 +121,7 @@ class FullAutopilotService
     # Build content creation prompt with full context
     content_prompt = build_content_prompt
     
-    content = LlmService.generate(content_prompt)
+    content = LlmService.generate(content_prompt, user: @user)
     if content.present?
       # Determine primary platform
       primary_platform = @context[:platforms]&.first || 'general'

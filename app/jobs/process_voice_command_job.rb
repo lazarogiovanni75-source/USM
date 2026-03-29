@@ -128,7 +128,7 @@ class ProcessVoiceCommandJob < ApplicationJob
     user = voice_command.user
 
     topic = extract_topic(prompt)
-    content_body = generate_ai_content(prompt, topic)
+    content_body = generate_ai_content(prompt, topic, user)
     content_type = extract_content_type(prompt)
     platform = extract_platform(prompt)
 
@@ -323,7 +323,7 @@ class ProcessVoiceCommandJob < ApplicationJob
     Time.current + 1.hour
   end
 
-  def generate_ai_content(prompt, topic)
+  def generate_ai_content(prompt, topic, user)
     system_prompt = "You are a social media marketing expert. Generate engaging, creative content for social media posts. Keep it concise and fun."
 
     topic_hint = topic ? "Create content about: #{topic}" : "Create engaging social media content"
@@ -333,6 +333,7 @@ class ProcessVoiceCommandJob < ApplicationJob
       LlmService.call(
         prompt: "#{topic_hint}. #{prompt}",
         system: system_prompt,
+        user: user,
         model: 'gpt-4o'
       ) do |chunk|
         chunk_content = chunk.is_a?(Hash) ? chunk[:content] : chunk
@@ -352,6 +353,7 @@ class ProcessVoiceCommandJob < ApplicationJob
       LlmService.call(
         prompt: prompt,
         system: system_prompt,
+        user: user,
         model: 'gpt-4o'
       ) do |chunk|
         chunk_content = chunk.is_a?(Hash) ? chunk[:content] : chunk

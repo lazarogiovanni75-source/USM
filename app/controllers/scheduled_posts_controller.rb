@@ -52,6 +52,9 @@ class ScheduledPostsController < ApplicationController
       # Trigger automation for scheduled post
       trigger_automation('post_scheduled', @scheduled_post)
       
+      # Track onboarding progress for first scheduled post
+      current_user.complete_onboarding_step!(:schedule_post) if current_user.scheduled_posts.count == 1
+      
       redirect_to scheduled_post_path(@scheduled_post), notice: 'Post was successfully scheduled.'
     else
       render :new, status: :unprocessable_entity

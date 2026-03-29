@@ -250,6 +250,8 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
         next if relative_path.include?('voice_chat_controller.rb')
         # Skip test controllers that are for development testing
         next if relative_path.include?('test_anthropic_controller.rb')
+        # Skip AI assistant controller (real-time chat requires JSON/fetch)
+        next if relative_path.include?('assistants_controller.rb')
 
         # Skip webhook controllers (external webhooks require JSON responses)
         next if relative_path.include?('_webhooks_controller.rb')
@@ -374,7 +376,9 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
             next if line.match?(/fetch\s*\(\s*['"]\/chat['"]/)
             next if line.match?(/fetch\s*\(\s*['"]\/transcribe['"]/)
             # Exempt fetch calls to /campaign_builder (custom modal forms)
-            next if line.match?(/fetch\s*\(\s*[`'\"]\/campaign_builder\//)
+            next if line.match?(/fetch\s*\(\s*[`'"]\/campaign_builder\//)
+            # Exempt fetch calls to /assistant (real-time chat)
+            next if line.match?(/fetch\s*\(\s*['"]\/assistant\//)
 
             violations << {
               file: relative_path,

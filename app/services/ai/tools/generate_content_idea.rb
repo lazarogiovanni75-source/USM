@@ -24,11 +24,12 @@ module Ai
         # Build prompt based on platform
         prompt = build_prompt(topic: topic, platform: platform, count: count)
         
-        # Call LLM to generate ideas
+        # Call LLM to generate ideas with brand voice injection
         response = LlmService.call_blocking(
           prompt: prompt,
           model: "gpt-4o",
-          temperature: 0.8
+          temperature: 0.8,
+          user: user
         )
         
         # Parse response into structured ideas

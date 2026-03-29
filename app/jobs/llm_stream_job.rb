@@ -59,11 +59,14 @@ class LlmStreamJob < ApplicationJob
   #
   #     ActionCable.server.broadcast(stream_name, { type: 'complete', content: full_content })
   #   end
-  def perform(stream_name:, prompt:, system: nil, **options)
+  def perform(stream_name:, prompt:, system: nil, user_id: nil, **options)
     full_content = ""
 
     begin
-      LlmService.call(prompt: prompt, system: system, **options) do |chunk|
+      # Get user for brand voice injection
+      user = user_id ? User.find_by(id: user_id) : nil
+
+      LlmService.call(prompt: prompt, system: system, user: user, **options) do |chunk|
         full_content += chunk
         ActionCable.server.broadcast(stream_name, {
           type: 'chunk',

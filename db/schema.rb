@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_28_191006) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_29_023435) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -137,6 +137,15 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_28_191006) do
     t.index ["created_at"], name: "index_ai_task_results_on_created_at"
     t.index ["task_type"], name: "index_ai_task_results_on_task_type"
     t.index ["user_id"], name: "index_ai_task_results_on_user_id"
+  end
+
+  create_table "assistant_conversations", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.text "messages", default: "[]"
+    t.string "current_page"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_assistant_conversations_on_user_id"
   end
 
   create_table "audit_executions", force: :cascade do |t|
@@ -934,6 +943,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_28_191006) do
     t.string "phone"
     t.string "business_name"
     t.text "ai_instructions"
+    t.text "brand_voice_summary"
+    t.text "brand_voice_examples"
+    t.text "brand_voice_answers"
+    t.text "brand_voice_document"
+    t.datetime "brand_voice_generated_at"
+    t.datetime "onboarding_completed_at"
+    t.text "onboarding_steps", default: "{}"
+    t.boolean "assistant_enabled", default: true
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
@@ -1053,6 +1070,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_28_191006) do
   add_foreign_key "admin_oplogs", "administrators"
   add_foreign_key "ai_generated_contents", "users"
   add_foreign_key "ai_task_results", "users"
+  add_foreign_key "assistant_conversations", "users"
   add_foreign_key "auto_response_triggers", "users"
   add_foreign_key "auto_responses", "auto_response_triggers"
   add_foreign_key "auto_responses", "contents"

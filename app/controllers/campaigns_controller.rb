@@ -66,6 +66,9 @@ class CampaignsController < ApplicationController
         generate_content_from_template(params[:template_id])
       end
       
+      # Track onboarding progress for first campaign
+      current_user.complete_onboarding_step!(:create_campaign) if current_user.campaigns.count == 1
+      
       redirect_to campaign_path(@campaign), notice: 'Campaign was successfully created.'
     else
       @social_accounts = current_user.social_accounts

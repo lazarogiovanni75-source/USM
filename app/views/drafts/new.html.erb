@@ -97,13 +97,6 @@
                 <label for="generate_suggestions" class="text-sm text-gray-700">
                   Generate AI suggestions automatically
                 </label>
-              </div>
-              
-              <button type="button" 
-                      id="analyze-content"
-                      class="btn-secondary w-full">
-                Analyze Content
-              </button>
             </div>
           </div>
 
@@ -116,18 +109,6 @@
       </div>
     <% end %>
 
-    <!-- Content Analysis -->
-    <div class="mt-6">
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Content Analysis</h2>
-        
-        <div id="content-analysis" class="space-y-3">
-          <div class="text-center text-gray-500 py-8">
-            Click "Analyze Content" to get AI-powered insights
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -136,114 +117,10 @@
 document.addEventListener('DOMContentLoaded', function() {
   const contentField = document.getElementById('draft_content');
   const charCount = document.getElementById('char-count');
-  const analyzeBtn = document.getElementById('analyze-content');
-  const analysisDiv = document.getElementById('content-analysis');
-  const autoSaveStatus = document.getElementById('auto-save-status');
   
   // Character counter
   contentField.addEventListener('input', function() {
     charCount.textContent = this.value.length;
   });
-  
-  // Content analysis
-  analyzeBtn.addEventListener('click', function() {
-    const content = contentField.value;
-    const platform = document.getElementById('draft_platform').value;
-    
-    if (!content.trim()) {
-      alert('Please enter some content to analyze.');
-      return;
-    }
-    
-    // Show loading state
-    analysisDiv.innerHTML = `
-      <div class="text-center text-gray-500 py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        Analyzing content...
-      </div>
-    `;
-    
-    // Simulate AI analysis (replace with actual API call)
-    setTimeout(() => {
-      const suggestions = generateMockAnalysis(content, platform);
-      displayAnalysis(suggestions);
-    }, 1500);
-  });
-  
-  function generateMockAnalysis(content, platform) {
-    const suggestions = [];
-    const wordCount = content.split(/\s+/).length;
-    
-    // Platform-specific suggestions
-    if (platform === 'twitter' && content.length > 280) {
-      suggestions.push({
-        type: 'warning',
-        title: 'Character Limit',
-        message: 'Your content exceeds Twitter\'s 280 character limit.',
-        confidence: 95
-      });
-    }
-    
-    if (platform === 'instagram' && !content.includes('#')) {
-      suggestions.push({
-        type: 'suggestion',
-        title: 'Hashtags',
-        message: 'Consider adding relevant hashtags for better reach.',
-        confidence: 80
-      });
-    }
-    
-    if (wordCount < 10) {
-      suggestions.push({
-        type: 'warning',
-        title: 'Content Length',
-        message: 'Your content might be too short to be effective.',
-        confidence: 75
-      });
-    }
-    
-    if (suggestions.length === 0) {
-      suggestions.push({
-        type: 'success',
-        title: 'Great Content!',
-        message: 'Your content looks good and follows best practices.',
-        confidence: 85
-      });
-    }
-    
-    return suggestions;
-  }
-  
-  function displayAnalysis(suggestions) {
-    analysisDiv.innerHTML = suggestions.map(suggestion => `
-      <div class="border rounded-lg p-4 ${
-        suggestion.type === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-        suggestion.type === 'suggestion' ? 'border-blue-200 bg-blue-50' :
-        'border-green-200 bg-green-50'
-      }">
-        <div class="flex justify-between items-start">
-          <div>
-            <h4 class="font-medium ${
-              suggestion.type === 'warning' ? 'text-yellow-900' :
-              suggestion.type === 'suggestion' ? 'text-blue-900' :
-              'text-green-900'
-            }">${suggestion.title}</h4>
-            <p class="text-sm mt-1 ${
-              suggestion.type === 'warning' ? 'text-yellow-800' :
-              suggestion.type === 'suggestion' ? 'text-blue-800' :
-              'text-green-800'
-            }">${suggestion.message}</p>
-          </div>
-          <span class="text-xs px-2 py-1 rounded ${
-            suggestion.type === 'warning' ? 'bg-yellow-200 text-yellow-800' :
-            suggestion.type === 'suggestion' ? 'bg-blue-200 text-blue-800' :
-            'bg-green-200 text-green-800'
-          }">
-            ${suggestion.confidence}% confident
-          </span>
-        </div>
-      </div>
-    `).join('');
-  }
 });
 </script>

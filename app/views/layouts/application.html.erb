@@ -65,5 +65,9 @@
   }
 </script>
 
+    <% if user_signed_in? && current_user.assistant_enabled? %>
+      <%= render 'shared/assistant_bubble' %>
+    <% end %>
+
   </body>
 </html>

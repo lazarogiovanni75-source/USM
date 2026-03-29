@@ -261,12 +261,13 @@ class AiAutopilotService < ApplicationService
       "Include relevant hashtags and a clear call-to-action."
     end
 
-    content_text = LlmService.new(
+    content_text = LlmService.call_blocking(
       prompt: user_prompt,
       system: system_prompt,
+      user: @campaign.user,
       temperature: 0.8,
       max_tokens: 500
-    ).call_blocking
+    )
 
     content = Content.create!(
       user: @campaign.user,
@@ -487,12 +488,13 @@ class AiAutopilotService < ApplicationService
     
     user_prompt = "Create a social media post about: #{topic}"
     
-    content_text = LlmService.new(
+    content_text = LlmService.call_blocking(
       prompt: user_prompt,
       system: system_prompt,
+      user: @command.user,
       temperature: 0.8,
       max_tokens: 300
-    ).call_blocking
+    )
     
     # Extract hashtags and CTA from generated content
     hashtags = content_text.scan(/#[\w]+/).join(' ')

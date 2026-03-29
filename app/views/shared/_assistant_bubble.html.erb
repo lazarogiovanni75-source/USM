@@ -1,0 +1,240 @@
+<!-- Wrapper with Controller Scope -->
+<div id="assistant-wrapper" data-controller="assistant-chat">
+  <!-- Floating Bubble -->
+  <div id="assistant-bubble" data-action="click->assistant-chat#toggle">
+    <span id="bubble-icon">💬</span>
+    <% unless current_user.onboarding_complete? %>
+      <span id="onboarding-badge" class="<%= 'hidden' if current_user.onboarding_progress[:completed] == 0 %>">
+        <%= current_user.onboarding_progress[:completed] %>/<%= current_user.onboarding_progress[:total] %>
+      </span>
+    <% end %>
+  </div>
+
+  <!-- Chat Panel -->
+  <div id="assistant-panel" style="display:none;" data-assistant-chat-target="panel">
+    <!-- Header -->
+    <div id="assistant-header">
+      <div>
+        <strong>AI Assistant</strong>
+        <span id="assistant-status">● Online</span>
+      </div>
+      <button data-action="click->assistant-chat#toggle" class="text-white hover:text-gray-200">✕</button>
+    </div>
+
+    <!-- Onboarding Progress Bar (shown for new users) -->
+    <% unless current_user.onboarding_complete? %>
+      <div id="onboarding-bar" data-assistant-chat-target="onboardingBar">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span>Getting started</span>
+          <span><%= current_user.onboarding_progress[:completed] %>/<%= current_user.onboarding_progress[:total] %> steps</span>
+        </div>
+        <div id="progress-track">
+          <div id="progress-fill" style="width:<%= current_user.onboarding_progress[:percentage] %>%"></div>
+        </div>
+        <% next_key = current_user.next_onboarding_step %>
+        <% if next_key %>
+          <% next_step = OnboardingTrackable::ONBOARDING_STEPS[next_key] %>
+          <a href="<%= next_step[:path] %>" id="next-step-link" data-action="click->assistant-chat#closeOnNavigate">
+            → Next: <%= next_step[:label] %>
+          </a>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- Messages -->
+    <div id="assistant-messages" data-assistant-chat-target="messages">
+      <div class="assistant-msg">
+        👋 Hi <%= current_user.name || "there" %>!
+        <% if current_user.onboarding_complete? %>
+          I'm your AI Assistant. Ask me anything about the app!
+        <% else %>
+          I'm here to help you get set up. You're <%= current_user.onboarding_progress[:percentage] %>% of the way there!
+          <% next_key = current_user.next_onboarding_step %>
+          <% if next_key %>
+            <% next_step = OnboardingTrackable::ONBOARDING_STEPS[next_key] %>
+            Your next step is: <strong><%= next_step[:label] %></strong>. Want me to walk you through it?
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div id="assistant-input-area">
+      <input type="text"
+             id="assistant-input"
+             data-assistant-chat-target="input"
+             data-action="keydown->assistant-chat#handleKeydown"
+             placeholder="Ask me anything..."
+             class="flex-1" />
+      <button data-action="click->assistant-chat#sendMessage" class="bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 transition-colors">
+        →
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  #assistant-wrapper {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    z-index: 9998;
+    pointer-events: none;
+  }
+
+  #assistant-bubble {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(37,99,235,0.4);
+    font-size: 24px;
+    transition: transform 0.2s;
+    pointer-events: auto;
+  }
+  #assistant-bubble:hover { transform: scale(1.1); }
+
+  #onboarding-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: white;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 5px;
+  }
+
+  #assistant-panel {
+    position: fixed;
+    bottom: 90px;
+    right: 24px;
+    width: 360px;
+    height: 520px;
+    background: #0f0f13;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #1e1e2e;
+    pointer-events: auto;
+  }
+
+  @media (max-width: 480px) {
+    #assistant-panel {
+      width: calc(100vw - 32px);
+      right: 16px;
+      bottom: 80px;
+    }
+  }
+
+  #assistant-header {
+    background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    font-size: 14px;
+  }
+
+  #assistant-status { font-size: 11px; color: #86efac; margin-left: 8px; }
+
+  #onboarding-bar {
+    padding: 12px 16px;
+    background: #1e1e2e;
+    border-bottom: 1px solid #2d2d3e;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  #progress-track {
+    background: #2d2d3e;
+    border-radius: 4px;
+    height: 6px;
+    margin-bottom: 8px;
+  }
+
+  #progress-fill {
+    background: linear-gradient(90deg, #2563eb, #7c3aed);
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s;
+  }
+
+  #next-step-link {
+    color: #60a5fa;
+    text-decoration: none;
+    font-size: 11px;
+  }
+
+  #assistant-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .assistant-msg {
+    background: #1e1e2e;
+    color: #e2e8f0;
+    padding: 10px 14px;
+    border-radius: 12px 12px 12px 4px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 85%;
+  }
+
+  .user-msg {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 12px 12px 4px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 85%;
+    align-self: flex-end;
+  }
+
+  .typing-indicator {
+    background: #1e1e2e;
+    padding: 10px 14px;
+    border-radius: 12px 12px 12px 4px;
+    font-size: 20px;
+    letter-spacing: 2px;
+    max-width: 60px;
+  }
+
+  #assistant-input-area {
+    padding: 12px 16px;
+    border-top: 1px solid #1e1e2e;
+    display: flex;
+    gap: 8px;
+  }
+
+  #assistant-input {
+    flex: 1;
+    background: #1e1e2e;
+    border: 1px solid #2d2d3e;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #f1f5f9;
+    font-size: 13px;
+    outline: none;
+  }
+
+  #assistant-input:focus {
+    border-color: #2563eb;
+  }
+</style>

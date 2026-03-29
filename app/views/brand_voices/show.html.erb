@@ -1,0 +1,192 @@
+<!-- Brand Voice Profile Page -->
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex items-center space-x-4">
+        <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Your Brand Voice</h1>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Train the AI to write exactly like you</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-controller="brand-voice">
+    
+    <% if current_user.brand_voice_summary.present? %>
+      <!-- Current Brand Voice Summary -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+            <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Your Brand Voice Profile
+          </h2>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            Generated <%= time_ago_in_words(current_user.brand_voice_generated_at) %> ago
+          </span>
+        </div>
+        <div class="prose dark:prose-invert max-w-none mb-6">
+          <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><%= current_user.brand_voice_summary %></p>
+        </div>
+        <div class="flex gap-3">
+          <button type="button" data-action="click->brand-voice#showForm" class="btn-secondary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Regenerate
+          </button>
+          <%= button_to reset_brand_voice_path, method: :delete, class: "btn-danger", data: { confirm: "Are you sure? This will clear your brand voice profile." } do %>
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            Reset
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Brand Voice Builder Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 <%= current_user.brand_voice_summary.present? ? '' : '' %>" id="brand-voice-form" data-brand-voice-target="form">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Build Your Brand Voice</h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">The more you share, the better the AI understands your unique style.</p>
+
+      <!-- Section 1: Example Posts -->
+      <div class="mb-8">
+        <div class="flex items-center mb-3">
+          <span class="w-8 h-8 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-full flex items-center justify-center text-sm font-semibold mr-3">1</span>
+          <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">Paste Your Best Content</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Add posts, captions, or copy that sounds most like you</p>
+          </div>
+        </div>
+        <div id="examples-container" class="space-y-3 pl-11" data-brand-voice-target="examples">
+          <% if @examples.any? %>
+            <% @examples.each do |example| %>
+              <textarea class="example-input form-input w-full" rows="3" placeholder="Paste an example post here..."><%= example %></textarea>
+            <% end %>
+          <% else %>
+            <textarea class="example-input form-input w-full" rows="3" placeholder="Paste an example post here..." data-brand-voice-target="exampleInput"></textarea>
+          <% end %>
+        </div>
+        <button type="button" data-action="click->brand-voice#addExample" class="ml-11 mt-3 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium">
+          + Add Another Example
+        </button>
+      </div>
+
+      <!-- Section 2: Personality Questions -->
+      <div class="mb-8">
+        <div class="flex items-center mb-3">
+          <span class="w-8 h-8 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-full flex items-center justify-center text-sm font-semibold mr-3">2</span>
+          <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">Define Your Personality</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Help us understand your communication style</p>
+          </div>
+        </div>
+        <div class="space-y-6 pl-11" data-brand-voice-target="questions">
+          <% BrandVoiceHelper::BRAND_VOICE_QUESTIONS.each do |q| %>
+            <div class="question-group">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"><%= q[:question] %></label>
+              <div class="flex flex-wrap gap-2" data-question-key="<%= q[:key] %>">
+                <% q[:options].each do |option| %>
+                  <button type="button"
+                          class="option-btn px-3 py-1.5 text-sm rounded-full border border-gray-300 dark:border-gray-600 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 text-gray-700 dark:text-gray-300 transition-colors"
+                          data-key="<%= q[:key] %>"
+                          data-value="<%= option %>"
+                          data-action="click->brand-voice#selectOption">
+                    <%= option %>
+                  </button>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Section 3: Upload Document -->
+      <div class="mb-8">
+        <div class="flex items-center mb-3">
+          <span class="w-8 h-8 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-full flex items-center justify-center text-sm font-semibold mr-3">3</span>
+          <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">Upload Brand Document <span class="text-sm font-normal text-gray-500 dark:text-gray-400">(optional)</span></h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Your bio, website about page, or brand guidelines</p>
+          </div>
+        </div>
+        <div class="pl-11">
+          <textarea 
+            id="brand-document" 
+            class="form-input w-full" 
+            rows="6" 
+            placeholder="Paste your bio, website copy, or brand guidelines here..."
+            data-brand-voice-target="document"><%= current_user.brand_voice_document %></textarea>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div class="pl-11">
+        <form action="<%= analyze_brand_voice_path %>" method="POST" id="brand-voice-generate-form">
+          <input type="hidden" name="examples_json" id="examples-json">
+          <input type="hidden" name="answers_json" id="answers-json">
+          <input type="hidden" name="document" id="document-input">
+          <%= csrf_meta_tags %>
+          <button 
+            type="submit" 
+            data-action="click->brand-voice#prepareSubmit"
+            data-brand-voice-target="submitBtn"
+            class="btn-primary w-full sm:w-auto flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Generate My Brand Voice Profile
+          </button>
+        </form>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading" class="hidden pl-11 mt-6">
+        <div class="flex items-center text-purple-600 dark:text-purple-400">
+          <svg class="animate-spin w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="font-medium">Claude is analyzing your brand voice...</span>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div id="error-message" class="hidden pl-11 mt-6">
+        <div class="flex items-center text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span id="error-text">Something went wrong. Please try again.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="success-message" class="hidden bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl p-6 mt-6">
+      <div class="flex items-center text-green-700 dark:text-green-400 mb-4">
+        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="font-semibold text-lg">Brand Voice Profile Generated!</span>
+      </div>
+      <p class="text-green-600 dark:text-green-300 mb-4">Your brand voice has been saved. All AI-generated content will now sound like you.</p>
+      <a href="/content_creation" class="btn-primary inline-flex items-center">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        Try Generating Content
+      </a>
+    </div>
+  </div>
+</div>

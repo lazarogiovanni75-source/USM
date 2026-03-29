@@ -335,4 +335,10 @@ class User < ApplicationRecord
 
   # write your own code here
 
+  # Onboarding tracking
+  include OnboardingTrackable
+
+  # Assistant conversations
+  has_many :assistant_conversations, dependent: :destroy
+
 end

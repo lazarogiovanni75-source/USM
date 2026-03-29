@@ -4,9 +4,32 @@ class LlmService
   class TimeoutError < StandardError; end
   class ApiError < StandardError; end
 
+  # Prepends brand voice instructions to system prompt if user has one
+  # This method should be called for every LLM generation to ensure brand voice is applied
+  def self.system_prompt_with_brand_voice(base_system_prompt, user)
+    return base_system_prompt unless user&.brand_voice_summary.present?
+
+    <<~PROMPT
+      ## Brand Voice Instructions
+      #{user.brand_voice_summary}
+
+      Always follow the brand voice instructions above when generating content.
+
+      ---
+
+      #{base_system_prompt}
+    PROMPT
+  end
+
+  # Convenience method to inject brand voice into existing user object
+  def self.inject_brand_voice(user)
+    return nil unless user.present?
+    user.brand_voice_summary
+  end
+
   # Streaming call method for LlmStreamJob
   # Usage: LlmService.call(prompt: '...') { |chunk| ... }
-  def self.call(prompt:, system: nil, **options, &block)
+  def self.call(prompt:, system: nil, user: nil, **options, &block)
     api_key = ENV['ANTHROPIC_API_KEY']
 
     if api_key.blank?
@@ -15,6 +38,9 @@ class LlmService
 
     client = Anthropic::Client.new(api_key: api_key)
     model = ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+
+    # Inject brand voice into system prompt if user is provided
+    system_with_brand_voice = system_prompt_with_brand_voice(system, user)
 
     # Build messages array - Anthropic API uses system parameter separately
     messages = [{ role: 'user', content: prompt }]
@@ -25,7 +51,7 @@ class LlmService
       max_tokens: 4096,
       messages: messages
     }
-    stream_params[:system] = system if system
+    stream_params[:system] = system_with_brand_voice if system_with_brand_voice
 
     response = client.messages.stream(**stream_params) do |chunk|
       if chunk.type == 'content_block_delta' && chunk.delta.type == 'text_delta'
@@ -40,7 +66,7 @@ class LlmService
     raise TimeoutError, "Request to Anthropic API timed out: #{e.message}"
   end
 
-  def self.generate(prompt)
+  def self.generate(prompt, user: nil)
     api_key = ENV['ANTHROPIC_API_KEY']
     
     if api_key.blank?
@@ -51,14 +77,133 @@ class LlmService
     Rails.logger.info "[LlmService] API key present, length: #{api_key.length}, first 4 chars: #{api_key[0..3]}"
     
     client = Anthropic::Client.new(api_key: api_key)
-    response = client.messages.create(
+    
+    # Inject brand voice into system prompt if user is provided
+    system_prompt = "You are a helpful AI assistant."
+    system_with_brand_voice = system_prompt_with_brand_voice(system_prompt, user)
+    
+    create_params = {
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }]
-    )
+    }
+    create_params[:system] = system_with_brand_voice if system_with_brand_voice
+    
+    response = client.messages.create(**create_params)
     response.content.first.text
   rescue Anthropic::AuthenticationError => e
     Rails.logger.error "[LlmService] Authentication error: #{e.message}"
     raise "Anthropic API authentication failed. Please check your API key."
+  end
+  
+  # Generate content with structured response format (for controllers)
+  # Usage: LlmService.generate_content(prompt: '...', user_id: current_user.id, content_type: 'caption')
+  def self.generate_content(prompt:, user_id: nil, content_type: 'caption', **options)
+    user = user_id ? User.find_by(id: user_id) : nil
+    
+    system_prompt = case content_type
+    when 'caption'
+      "You are a social media content creator. Generate engaging captions for social media posts. Return a JSON object with 'title' and 'body' keys."
+    when 'ideas'
+      "You are a creative content strategist. Generate content ideas and return them as structured text."
+    when 'blog_post'
+      "You are a content writer. Generate blog posts with introduction, main points, and conclusion."
+    when 'ad_copy'
+      "You are an advertising copywriter. Create compelling ad copy that drives conversions."
+    else
+      "You are a helpful AI assistant that generates content."
+    end
+    
+    content = call_blocking(prompt: prompt, system: system_prompt, user: user, **options)
+    
+    # Parse content based on content_type
+    parsed_content = case content_type
+    when 'caption'
+      parse_caption_content(content)
+    else
+      { 'body' => content, 'title' => nil }
+    end
+    
+    { success: true, content: parsed_content }
+  rescue => e
+    Rails.logger.error "[LlmService.generate_content] Error: #{e.message}"
+    { success: false, error: e.message }
+  end
+  
+  def self.parse_caption_content(content)
+    # Try to extract JSON from the response
+    json_match = content.match(/\{[^{}]*\}/m)
+    if json_match
+      begin
+        JSON.parse(json_match[0])
+      rescue JSON::ParserError
+        { 'title' => nil, 'body' => content }
+      end
+    else
+      { 'title' => nil, 'body' => content }
+    end
+  end
+  
+  # Blocking call method for LLM generation with brand voice support
+  # Usage: LlmService.call_blocking(prompt: '...', system: '...', user: current_user)
+  def self.call_blocking(prompt:, system: nil, user: nil, **options)
+    api_key = ENV['ANTHROPIC_API_KEY']
+    
+    if api_key.blank?
+      raise ApiError, "ANTHROPIC_API_KEY environment variable is not configured"
+    end
+    
+    client = Anthropic::Client.new(api_key: api_key)
+    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+    temperature = options[:temperature]&.to_f || 0.7
+    max_tokens = options[:max_tokens] || 4096
+    
+    # Inject brand voice into system prompt if user is provided
+    system_with_brand_voice = system_prompt_with_brand_voice(system, user)
+    
+    messages = [{ role: 'user', content: prompt }]
+    
+    create_params = {
+      model: model,
+      max_tokens: max_tokens,
+      messages: messages,
+      temperature: temperature
+    }
+    create_params[:system] = system_with_brand_voice if system_with_brand_voice
+    
+    response = client.messages.create(**create_params)
+    response.content.first.text
+  rescue Anthropic::AuthenticationError => e
+    raise ApiError, "Anthropic API authentication failed: #{e.message}"
+  rescue Net::ReadTimeout, Net::OpenTimeout => e
+    raise TimeoutError, "Request to Anthropic API timed out: #{e.message}"
+  end
+
+  # Chat method with conversation history support
+  # Usage: LlmService.chat(system: '...', messages: [{role: 'user', content: '...'}, ...])
+  def self.chat(system:, messages:, **options)
+    api_key = ENV['ANTHROPIC_API_KEY']
+    
+    if api_key.blank?
+      raise ApiError, "ANTHROPIC_API_KEY environment variable is not configured"
+    end
+    
+    client = Anthropic::Client.new(api_key: api_key)
+    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+    max_tokens = options[:max_tokens] || 1024
+    
+    create_params = {
+      model: model,
+      max_tokens: max_tokens,
+      system: system,
+      messages: messages
+    }
+    
+    response = client.messages.create(**create_params)
+    response.content.first.text
+  rescue Anthropic::AuthenticationError => e
+    raise ApiError, "Anthropic API authentication failed: #{e.message}"
+  rescue Net::ReadTimeout, Net::OpenTimeout => e
+    raise TimeoutError, "Request to Anthropic API timed out: #{e.message}"
   end
 end

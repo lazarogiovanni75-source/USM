@@ -64,6 +64,10 @@
                 <%= lucide_icon "rocket", class: "w-4 h-4 text-purple-500" %>
                 <span>Full Autopilot</span>
               <% end %>
+              <%= link_to brand_voice_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+                <%= lucide_icon "megaphone", class: "w-4 h-4 text-pink-500" %>
+                <span>Brand Voice</span>
+              <% end %>
               <div class="border-t my-2"></div>
               <%= link_to dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
                 <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-indigo-500" %>
@@ -183,6 +187,10 @@
               <%= link_to autopilot_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
                 <%= lucide_icon "rocket", class: "w-4 h-4 text-purple-500" %>
                 <span class="text-black">Full Autopilot</span>
+              <% end %>
+              <%= link_to brand_voice_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+                <%= lucide_icon "megaphone", class: "w-4 h-4 text-pink-500" %>
+                <span class="text-black">Brand Voice</span>
               <% end %>
               <div class="border-t border-gray-200 my-2"></div>
               <%= link_to dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>

@@ -10,13 +10,13 @@ class AnthropicContentService
     @additional_context = additional_context
   end
 
-  def self.generate_all_content(topic:, brand_voice: 'professional', platform: 'general', additional_context: nil)
+  def self.generate_all_content(topic:, brand_voice: 'professional', platform: 'general', additional_context: nil, user: nil)
     new(
       topic: topic,
       brand_voice: brand_voice,
       platform: platform,
       additional_context: additional_context
-    ).generate_all
+    ).generate_all(user: user)
   end
 
   def self.platforms
@@ -35,19 +35,19 @@ class AnthropicContentService
     ['text', 'formatted', 'json']
   end
 
-  def generate
+  def generate(user: nil)
     prompt = build_prompt
-    LlmService.generate(prompt)
+    LlmService.generate(prompt, user: user)
   end
 
-  def generate_all
+  def generate_all(user: nil)
     {
-      caption: generate_captions,
-      blog_post: generate_blog_post,
-      ad_copy: generate_ad_copy,
-      hashtags: generate_hashtags,
-      thread_story: generate_thread,
-      email_marketing: generate_email
+      caption: generate_captions(user: user),
+      blog_post: generate_blog_post(user: user),
+      ad_copy: generate_ad_copy(user: user),
+      hashtags: generate_hashtags(user: user),
+      thread_story: generate_thread(user: user),
+      email_marketing: generate_email(user: user)
     }
   end
 
@@ -60,27 +60,27 @@ class AnthropicContentService
     base
   end
 
-  def generate_captions
-    LlmService.generate("Create engaging #{@platform} captions about #{@topic}. Brand voice: #{@brand_voice}")
+  def generate_captions(user: nil)
+    LlmService.generate("Create engaging #{@platform} captions about #{@topic}. Brand voice: #{@brand_voice}", user: user)
   end
 
-  def generate_blog_post
-    LlmService.generate("Write a blog post about #{@topic}. Include introduction, main points, and conclusion.")
+  def generate_blog_post(user: nil)
+    LlmService.generate("Write a blog post about #{@topic}. Include introduction, main points, and conclusion.", user: user)
   end
 
-  def generate_ad_copy
-    LlmService.generate("Create compelling ad copy for #{@topic}. Target audience: #{@brand_voice}")
+  def generate_ad_copy(user: nil)
+    LlmService.generate("Create compelling ad copy for #{@topic}. Target audience: #{@brand_voice}", user: user)
   end
 
-  def generate_hashtags
-    LlmService.generate("Suggest relevant hashtags for #{@topic} on #{@platform}")
+  def generate_hashtags(user: nil)
+    LlmService.generate("Suggest relevant hashtags for #{@topic} on #{@platform}", user: user)
   end
 
-  def generate_thread
-    LlmService.generate("Create a thread about #{@topic} for #{@platform}")
+  def generate_thread(user: nil)
+    LlmService.generate("Create a thread about #{@topic} for #{@platform}", user: user)
   end
 
-  def generate_email
-    LlmService.generate("Write email marketing content about #{@topic}")
+  def generate_email(user: nil)
+    LlmService.generate("Write email marketing content about #{@topic}", user: user)
   end
 end

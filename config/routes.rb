@@ -230,6 +230,19 @@ Rails.application.routes.draw do
     end
   end
 
+  # Brand Voice Profile
+  resource :brand_voice, only: [:show] do
+    post :analyze
+    delete :reset
+  end
+
+  # AI Assistant routes
+  resource :assistant, only: [] do
+    post :chat
+    post :complete_step
+    delete :clear
+  end
+
   # AI Content Generation routes
   resources :ai_content, only: [:index, :show, :new, :create] do
     collection do

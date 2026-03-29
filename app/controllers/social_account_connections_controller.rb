@@ -119,6 +119,8 @@ class SocialAccountConnectionsController < ApplicationController
           postforme_profile_id: profile_id
         )
         message = 'Account connected successfully!'
+        # Track onboarding progress
+        current_user.complete_onboarding_step!(:connect_social_accounts)
       end
 
       redirect_to social_account_connections_path, notice: message

@@ -35,6 +35,8 @@ class ContentsController < ApplicationController
 
     if @content.save
       trigger_automation('content_created', @content)
+      # Track onboarding progress for first content
+      current_user.complete_onboarding_step!(:generate_content) if current_user.contents.count == 1
       redirect_to content_path(@content), notice: 'Content was successfully created.'
     else
       render :new, status: :unprocessable_entity
