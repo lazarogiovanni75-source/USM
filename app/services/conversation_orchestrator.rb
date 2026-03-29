@@ -291,30 +291,33 @@ CONTEXT
     
     begin
       client.messages.stream(
-        parameters: api_params.merge(
-          stream: proc { |chunk, _bytesize|
-            Rails.logger.debug "[ConversationOrchestrator] Stream chunk received"
-            
-            # Handle content delta (Anthropic format: chunk.delta.text)
-            delta = chunk.delta&.text
-            
-            if delta.present?
-              @assistant_response += delta
-              broadcast_content(delta)
-            end
-            
-            # Handle tool use deltas (Anthropic format: chunk.delta.partial_tool_use)
-            if tools.present? && chunk.delta&.partial_tool_use
-              tc = chunk.delta.partial_tool_use
-              idx = tc.id&.hash || tool_calls_buffer.size
-              tool_calls_buffer[idx] ||= { "id" => tc.id || "", "function" => { "name" => "", "arguments" => "" } }
-              tool_calls_buffer[idx]["id"] = tc.id if tc.id
-              tool_calls_buffer[idx]["function"]["name"] += tc.name.to_s if tc.name
-              tool_calls_buffer[idx]["function"]["arguments"] += tc.input.to_s if tc.input
-              has_tool_calls = true
-            end
-          }
-        )
+        max_tokens: CHAT_MAX_TOKENS,
+        model: CLAUDE_MODEL,
+        messages: history,
+        temperature: CHAT_TEMPERATURE,
+        tools: tools.presence,
+        stream: proc { |chunk, _bytesize|
+          Rails.logger.debug "[ConversationOrchestrator] Stream chunk received"
+          
+          # Handle content delta (Anthropic format: chunk.delta.text)
+          delta = chunk.delta&.text
+          
+          if delta.present?
+            @assistant_response += delta
+            broadcast_content(delta)
+          end
+          
+          # Handle tool use deltas (Anthropic format: chunk.delta.partial_tool_use)
+          if tools.present? && chunk.delta&.partial_tool_use
+            tc = chunk.delta.partial_tool_use
+            idx = tc.id&.hash || tool_calls_buffer.size
+            tool_calls_buffer[idx] ||= { "id" => tc.id || "", "function" => { "name" => "", "arguments" => "" } }
+            tool_calls_buffer[idx]["id"] = tc.id if tc.id
+            tool_calls_buffer[idx]["function"]["name"] += tc.name.to_s if tc.name
+            tool_calls_buffer[idx]["function"]["arguments"] += tc.input.to_s if tc.input
+            has_tool_calls = true
+          end
+        }
       )
       
       Rails.logger.info "[ConversationOrchestrator] Streaming complete - total length: #{@assistant_response.length}"
@@ -361,17 +364,14 @@ CONTEXT
     
     client = Anthropic::Client.new(api_key: api_key)
     
-    # Build API parameters
-    api_params = {
-      model: CLAUDE_MODEL,
-      messages: history,
-      temperature: CHAT_TEMPERATURE,
-      max_tokens: CHAT_MAX_TOKENS
-    }
-    api_params[:tools] = tools if tools.present?
-    
     begin
-      response = client.messages.create(parameters: api_params)
+      response = client.messages.create(
+        max_tokens: CHAT_MAX_TOKENS,
+        model: CLAUDE_MODEL,
+        messages: history,
+        temperature: CHAT_TEMPERATURE,
+        tools: tools.presence
+      )
       
       # Check for tool uses in response (Anthropic format)
       message = response
@@ -649,20 +649,18 @@ CONTEXT
     @assistant_response = ""
     
     client.messages.stream(
-      parameters: {
-        model: CLAUDE_MODEL,
-        messages: valid_messages,
-        temperature: CHAT_TEMPERATURE,
-        max_tokens: CHAT_MAX_TOKENS,
-        stream: proc { |chunk, _bytesize|
-          # Handle content delta (Anthropic format)
-          delta = chunk.delta&.text
-          
-          if delta.present?
-            @assistant_response += delta
-            broadcast_content(delta)
-          end
-        }
+      model: CLAUDE_MODEL,
+      messages: valid_messages,
+      temperature: CHAT_TEMPERATURE,
+      max_tokens: CHAT_MAX_TOKENS,
+      stream: proc { |chunk, _bytesize|
+        # Handle content delta (Anthropic format)
+        delta = chunk.delta&.text
+        
+        if delta.present?
+          @assistant_response += delta
+          broadcast_content(delta)
+        end
       }
     )
     
@@ -689,12 +687,10 @@ CONTEXT
     client = Anthropic::Client.new(api_key: api_key)
     
     response = client.messages.create(
-      parameters: {
-        model: CLAUDE_MODEL,
-        messages: history,
-        temperature: CHAT_TEMPERATURE,
-        max_tokens: CHAT_MAX_TOKENS
-      }
+      model: CLAUDE_MODEL,
+      messages: history,
+      temperature: CHAT_TEMPERATURE,
+      max_tokens: CHAT_MAX_TOKENS
     )
     
     # Get text content (Anthropic format)
