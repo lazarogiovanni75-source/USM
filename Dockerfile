@@ -1,7 +1,7 @@
 FROM ghcr.io/clacky-ai/rails-base-template:latest
 
 # Cache-busting argument - change this to force rebuild
-ARG CACHEBUST=20260216-2200
+ARG CACHEBUST=20260329-1241
 
 WORKDIR /app
 
