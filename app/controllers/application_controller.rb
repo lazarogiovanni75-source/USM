@@ -3,7 +3,7 @@ class ApplicationController < ActionController::Base
   before_action :set_current_request_details
   before_action :set_user_context
 
-  helper_method :current_user, :user_signed_in?, :onboarding_complete?
+  helper_method :current_user, :user_signed_in?
   # Authentication public methods generated end
 
   # Allow browsers with broader compatibility
@@ -138,13 +138,14 @@ class ApplicationController < ActionController::Base
   def set_user_context
     return unless user_signed_in?
     
-    @onboarding_complete = onboarding_complete?
+    # Guard against missing columns during migration
+    @onboarding_complete = app_onboarding_complete?
   rescue ActiveRecord::StatementInvalid, ActiveModel::MissingAttributeError => e
     Rails.logger.error "User context error (missing column): #{e.message}"
     @onboarding_complete = false
   end
   
-  def onboarding_complete?
+  def app_onboarding_complete?
     return false unless user_signed_in?
     return false unless current_user.respond_to?(:onboarding_completed_at)
     current_user.onboarding_completed_at.present?
