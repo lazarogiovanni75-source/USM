@@ -47,6 +47,21 @@ class DraftContent < ApplicationRecord
     "https://app.postforme.dev/posts/#{postforme_post_id}"
   end
   
+  # Get the best URL for displaying media (CloudFront, ActiveStorage, or legacy URL)
+  def media_display_url
+    # 1. Try ActiveStorage attachment first
+    if media.attached?
+      cloudfront_domain = ENV["CLACKY_CLOUDFRONT_DOMAIN"].presence
+      if cloudfront_domain.present?
+        return "#{cloudfront_domain}#{Rails.application.routes.url_helpers.rails_blob_path(media, only_path: true)}"
+      end
+      return Rails.application.routes.url_helpers.rails_blob_url(media, only_path: false)
+    end
+    
+    # 2. Fall back to legacy media_url field
+    media_url
+  end
+  
   private
   
   def generate_approval_token
