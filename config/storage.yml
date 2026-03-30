@@ -13,10 +13,10 @@ local:
 # S3 storage for production videos/images
 amazon:
   service: S3
-  access_key_id: <%= ENV.fetch("ULTIMATE_STORAGE_BUCKET_ACCESS_KEY_ID", "") %>
-  secret_access_key: <%= ENV.fetch("ULTIMATE_STORAGE_BUCKET_SECRET_ACCESS_KEY", "") %>
-  region: <%= ENV.fetch("ULTIMATE_STORAGE_BUCKET_REGION", "us-east-1") %>
-  bucket: <%= ENV.fetch("ULTIMATE_STORAGE_BUCKET_NAME", "ultimate-social-media-production") %>
+  access_key_id: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID", "") %>
+  secret_access_key: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_SECRET_ACCESS_KEY", "") %>
+  region: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_REGION", "us-east-1") %>
+  bucket: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_NAME", "ultimate-social-media-production") %>
   http_open_timeout: 5
   http_read_timeout: 5
   retry_limit: 3

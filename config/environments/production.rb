@@ -34,9 +34,9 @@ Rails.application.configure do
   # config.action_dispatch.x_sendfile_header = "X-Sendfile" # for Apache
   # config.action_dispatch.x_sendfile_header = "X-Accel-Redirect" # for NGINX
 
-  # Store uploaded files in S3 (configure via ULTIMATE_STORAGE_BUCKET_* variables)
-# Falls back to local storage if S3 not configured
-config.active_storage.service = (ENV["ULTIMATE_STORAGE_BUCKET_NAME"].present? && ENV["ULTIMATE_STORAGE_BUCKET_ACCESS_KEY_ID"].present?) ? :amazon : :local
+  # Store uploaded files in S3 (configure via CLACKY_STORAGE_BUCKET_* variables)
+  # Falls back to local storage if S3 not configured
+  config.active_storage.service = (ENV["CLACKY_STORAGE_BUCKET_NAME"].present? && ENV["CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID"].present?) ? :amazon : :local
 
   # Mount Action Cable outside main process or domain.
   config.action_cable.disable_request_forgery_protection = true
@@ -49,16 +49,16 @@ config.active_storage.service = (ENV["ULTIMATE_STORAGE_BUCKET_NAME"].present? &&
   Rails.application.routes.default_url_options = host_and_port_and_protocol
   config.action_mailer.default_url_options = host_and_port_and_protocol
 
-  if ENV["EMAIL_SMTP_PASSWORD"].present?
+  if ENV["CLACKY_EMAIL_SMTP_PASSWORD"].present?
     config.action_mailer.smtp_settings = {
-      address: ENV.fetch("EMAIL_SMTP_ADDRESS"),
-      port: ENV.fetch("EMAIL_SMTP_PORT"),
-      user_name: ENV.fetch("EMAIL_SMTP_USERNAME"),
-      password: ENV.fetch("EMAIL_SMTP_PASSWORD")
+      address: ENV.fetch("CLACKY_EMAIL_SMTP_ADDRESS"),
+      port: ENV.fetch("CLACKY_EMAIL_SMTP_PORT"),
+      user_name: ENV.fetch("CLACKY_EMAIL_SMTP_USERNAME"),
+      password: ENV.fetch("CLACKY_EMAIL_SMTP_PASSWORD")
     }
     config.action_mailer.delivery_method = :smtp
   else
-    # Fallback to letter opener in development, log in production
+    # Fallback to test mode if SMTP not configured
     config.action_mailer.delivery_method = :test
   end
 
