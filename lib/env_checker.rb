@@ -55,7 +55,7 @@ module EnvChecker
       # Use centralized port detection
       local_port = get_app_port
 
-      # Try multiple env var naming patterns
+      # Try multiple env var naming patterns (Railway uses CLACKY_ prefix)
       public_host = ENV['PUBLIC_HOST'] || ENV['CLACKY_PUBLIC_HOST'] || ENV['HEROKU_APP_NAME']
 
       if public_host.present?
@@ -68,13 +68,23 @@ module EnvChecker
         return { host: "#{local_port}#{domain_base}", port: 443, protocol: 'https' }
       end
 
-      # Fallback for Railway
-      if ENV['RAILWAY_PUBLIC_DOMAIN'].present?
-        return { host: ENV['RAILWAY_PUBLIC_DOMAIN'], port: 443, protocol: 'https' }
+      # Railway-specific: check for Railway's public domain variables
+      # RAILWAY_PUBLIC_DOMAIN is set by Railway automatically
+      railway_domain = ENV['RAILWAY_PUBLIC_DOMAIN']
+      if railway_domain.present?
+        return { host: railway_domain, port: 443, protocol: 'https' }
+      end
+
+      # Try to extract domain from Railway's static URL if available
+      railway_static_url = ENV['RAILWAY_STATIC_URL']
+      if railway_static_url.present?
+        uri = URI.parse(railway_static_url)
+        return { host: uri.host, port: 443, protocol: 'https' }
       end
 
       # Rails.logger is not ready here, use puts instead.
-      puts "EnvChecker: public host fallback to localhost: #{local_port}..."
+      puts "EnvChecker: WARNING - no public host detected, falling back to localhost"
+      puts "Available env vars with HOST/URL: #{ENV.select { |k, _| k.include?('HOST') || k.include?('URL') || k.include?('DOMAIN') }.keys.join(', ')}"
       return { host: 'localhost', port: local_port, protocol: 'http' }
     end
 
