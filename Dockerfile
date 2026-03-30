@@ -26,8 +26,8 @@ COPY --chown=ruby:ruby . .
 # Generate database.yml from example if it doesn't exist
 RUN cp -n config/database.yml.example config/database.yml || true
 
-# Build Tailwind CSS first
-RUN npm run build:css
+# Build Tailwind CSS for production
+RUN npm run build:css:prod
 
 # Precompile assets
 RUN SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
