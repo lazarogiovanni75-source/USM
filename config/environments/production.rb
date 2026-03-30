@@ -20,6 +20,10 @@ Rails.application.configure do
   # Enable serving static files
   config.public_file_server.enabled = true
 
+  # Asset pipeline settings
+  config.assets.compile = false
+  config.assets.digest = true
+
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
 
