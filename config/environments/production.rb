@@ -1,5 +1,8 @@
 require "active_support/core_ext/integer/time"
 
+# Ensure SECRET_KEY_BASE is set (required for production)
+ENV["SECRET_KEY_BASE"] ||= Rails.application.credentials.secret_key_base
+
 Rails.application.configure do
   # CRITICAL: Set eager_load FIRST to avoid Rails 7.2 initialization errors
   config.eager_load = true
@@ -54,6 +57,9 @@ config.active_storage.service = (ENV["ULTIMATE_STORAGE_BUCKET_NAME"].present? &&
       password: ENV.fetch("EMAIL_SMTP_PASSWORD")
     }
     config.action_mailer.delivery_method = :smtp
+  else
+    # Fallback to letter opener in development, log in production
+    config.action_mailer.delivery_method = :test
   end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
