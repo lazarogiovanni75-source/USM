@@ -49,17 +49,25 @@ Rails.application.configure do
   Rails.application.routes.default_url_options = host_and_port_and_protocol
   config.action_mailer.default_url_options = host_and_port_and_protocol
 
-  if ENV["CLACKY_EMAIL_SMTP_PASSWORD"].present?
+  # SMTP configuration - try multiple env var naming patterns
+  smtp_password = ENV["CLACKY_EMAIL_SMTP_PASSWORD"] || ENV["EMAIL_SMTP_PASSWORD"] || ENV["CLACKY_EMAIL_API_KEY"]
+  smtp_address = ENV["CLACKY_EMAIL_SMTP_ADDRESS"] || ENV["EMAIL_SMTP_ADDRESS"]
+  smtp_port = ENV["CLACKY_EMAIL_SMTP_PORT"] || ENV["EMAIL_SMTP_PORT"]
+  smtp_username = ENV["CLACKY_EMAIL_SMTP_USERNAME"] || ENV["EMAIL_SMTP_USERNAME"]
+
+  if smtp_password.present? && smtp_address.present?
     config.action_mailer.smtp_settings = {
-      address: ENV.fetch("CLACKY_EMAIL_SMTP_ADDRESS"),
-      port: ENV.fetch("CLACKY_EMAIL_SMTP_PORT"),
-      user_name: ENV.fetch("CLACKY_EMAIL_SMTP_USERNAME"),
-      password: ENV.fetch("CLACKY_EMAIL_SMTP_PASSWORD")
+      address: smtp_address,
+      port: smtp_port.presence || 587,
+      user_name: smtp_username.presence || 'apikey',
+      password: smtp_password
     }
     config.action_mailer.delivery_method = :smtp
+    Rails.logger.info "Email: SMTP configured with #{smtp_address}"
   else
     # Fallback to test mode if SMTP not configured
     config.action_mailer.delivery_method = :test
+    Rails.logger.warn "Email: SMTP not configured - using test mode. CLACKY_EMAIL_SMTP_PASSWORD=#{ENV['CLACKY_EMAIL_SMTP_PASSWORD']&.first(8)}, EMAIL_SMTP_PASSWORD=#{ENV['EMAIL_SMTP_PASSWORD']&.first(8)}"
   end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
