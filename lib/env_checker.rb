@@ -55,19 +55,26 @@ module EnvChecker
       # Use centralized port detection
       local_port = get_app_port
 
-      if ENV['PUBLIC_HOST'].present?
-        return { host: ENV.fetch('PUBLIC_HOST'), port: 443, protocol: 'https' }
+      # Try multiple env var naming patterns
+      public_host = ENV['PUBLIC_HOST'] || ENV['CLACKY_PUBLIC_HOST'] || ENV['HEROKU_APP_NAME']
+
+      if public_host.present?
+        return { host: public_host, port: 443, protocol: 'https' }
       end
 
-      # If CLACKY_PUBLIC_HOST is blank and CLACKY_PREVIEW_DOMAIN_BASE is present,
-      # use APP_PORT (or PORT, default 3000) + CLACKY_PREVIEW_DOMAIN_BASE
+      # If CLACKY_PREVIEW_DOMAIN_BASE is present, use it
       if ENV['CLACKY_PREVIEW_DOMAIN_BASE'].present?
         domain_base = ENV.fetch('CLACKY_PREVIEW_DOMAIN_BASE')
         return { host: "#{local_port}#{domain_base}", port: 443, protocol: 'https' }
       end
 
+      # Fallback for Railway
+      if ENV['RAILWAY_PUBLIC_DOMAIN'].present?
+        return { host: ENV['RAILWAY_PUBLIC_DOMAIN'], port: 443, protocol: 'https' }
+      end
+
       # Rails.logger is not ready here, use puts instead.
-      # puts "EnvChecker: public host fallback to localhost: #{local_port}..."
+      puts "EnvChecker: public host fallback to localhost: #{local_port}..."
       return { host: 'localhost', port: local_port, protocol: 'http' }
     end
 
