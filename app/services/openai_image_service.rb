@@ -60,7 +60,7 @@ class OpenaiImageService
 
   def fetch_api_key
     ENV['OPENAI_API_KEY'] ||
-      ENV['CLACKY_OPENAI_API_KEY'] ||
+      ENV['API_KEY_OPENAI'] ||
       Rails.application.config.x.openai_api_key ||
       Rails.application.config_for(:application)['OPENAI_API_KEY']
   end

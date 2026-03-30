@@ -53,7 +53,7 @@ class VoiceChatController < ApplicationController
       return
     end
 
-    api_key = ENV["OPENAI_API_KEY"].presence || ENV["CLACKY_OPENAI_API_KEY"].presence
+    api_key = ENV["OPENAI_API_KEY"].presence || ENV["API_KEY_OPENAI"].presence
     
     if api_key.blank?
       render json: { error: "OpenAI API key not configured" }, status: :internal_server_error
@@ -221,7 +221,7 @@ class VoiceChatController < ApplicationController
 
   # Fallback: Call OpenAI TTS if Google Cloud is not configured
   def call_openai_tts(text)
-    api_key = ENV["OPENAI_API_KEY"].presence || ENV["CLACKY_OPENAI_API_KEY"].presence
+    api_key = ENV["OPENAI_API_KEY"].presence || ENV["API_KEY_OPENAI"].presence
     
     if api_key.blank?
       raise "No TTS API key configured"

@@ -264,7 +264,7 @@ CONTEXT
     Rails.logger.info "[ConversationOrchestrator] Chat message array: #{history.to_json}"
     Rails.logger.info "[ConversationOrchestrator] Calling Claude model: #{CLAUDE_MODEL}, temperature: #{CHAT_TEMPERATURE}, max_tokens: #{CHAT_MAX_TOKENS}"
     
-    api_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['CLACKY_ANTHROPIC_API_KEY'].presence
+    api_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['API_KEY_ANTHROPIC'].presence
     unless api_key
       error_msg = "Anthropic API key not configured"
       Rails.logger.error "[ConversationOrchestrator] #{error_msg}"
@@ -355,7 +355,7 @@ CONTEXT
     Rails.logger.info "[ConversationOrchestrator] Chat message array: #{history.to_json}"
     Rails.logger.info "[ConversationOrchestrator] Calling OpenAI model: #{CHAT_MODEL}, temperature: #{CHAT_TEMPERATURE}, max_tokens: #{CHAT_MAX_TOKENS}"
     
-    api_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['CLACKY_ANTHROPIC_API_KEY'].presence
+    api_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['API_KEY_ANTHROPIC'].presence
     unless api_key
       error_msg = "Anthropic API key not configured"
       Rails.logger.error "[ConversationOrchestrator] #{error_msg}"

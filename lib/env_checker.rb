@@ -55,16 +55,16 @@ module EnvChecker
       # Use centralized port detection
       local_port = get_app_port
 
-      # Try multiple env var naming patterns (Railway uses CLACKY_ prefix)
-      public_host = ENV['PUBLIC_HOST'] || ENV['CLACKY_PUBLIC_HOST'] || ENV['HEROKU_APP_NAME']
+      # Try multiple env var naming patterns
+      public_host = ENV['PUBLIC_HOST'] || ENV['HEROKU_APP_NAME']
 
       if public_host.present?
         return { host: public_host, port: 443, protocol: 'https' }
       end
 
-      # If CLACKY_PREVIEW_DOMAIN_BASE is present, use it
-      if ENV['CLACKY_PREVIEW_DOMAIN_BASE'].present?
-        domain_base = ENV.fetch('CLACKY_PREVIEW_DOMAIN_BASE')
+      # If PREVIEW_DOMAIN_BASE is present, use it
+      if ENV['PREVIEW_DOMAIN_BASE'].present?
+        domain_base = ENV.fetch('PREVIEW_DOMAIN_BASE')
         return { host: "#{local_port}#{domain_base}", port: 443, protocol: 'https' }
       end
 
@@ -105,8 +105,8 @@ module EnvChecker
           var_value = parts[1].strip
 
           # Check if value uses ERB template with ENV.fetch or Env.fetch
-          # Pattern: <%= ENV.fetch('CLACKY_xxx') %> or <%= Env.fetch('CLACKY_xxx') %>
-          optional = var_value.match?(/<%=\s*(?:ENV|Env)\.fetch\(['"]CLACKY_/)
+          # Pattern: <%= ENV.fetch('VAR_NAME') %> or <%= Env.fetch('VAR_NAME') %>
+          optional = var_value.match?(/<%=\s*(?:ENV|Env)\.fetch\(['"]/)
 
           { name: var_name, optional: optional }
         end
@@ -118,7 +118,7 @@ module EnvChecker
     # Check if all required environment variables exist and have values
     # Variables are considered optional if:
     # 1. They end with '_OPTIONAL' suffix
-    # 2. Their value in application.yml.example uses <%= ENV.fetch('CLACKY_xxx') %>
+    # 2. Their value in application.yml.example uses <%= ENV.fetch('VAR_NAME') %>
     def check_required_env_vars(example_env_configs = nil)
       if get_env_var('SECRET_KEY_BASE_DUMMY').present?
         puts 'SECRET_KEY_BASE_DUMMY is setted, skip check_required_env_vars...'

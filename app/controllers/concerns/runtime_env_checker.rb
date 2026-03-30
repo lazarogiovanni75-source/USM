@@ -21,7 +21,7 @@ module RuntimeEnvChecker
     Rails.logger.info "=" * 60
     
     # Check Anthropic API Key
-    anthropic_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['CLACKY_ANTHROPIC_API_KEY'].presence
+    anthropic_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['API_KEY_ANTHROPIC'].presence
     if anthropic_key.present?
       Rails.logger.info "✅ ANTHROPIC_API_KEY: #{anthropic_key.slice(0, 8)}... (#{anthropic_key.length} chars)"
     else
@@ -30,7 +30,7 @@ module RuntimeEnvChecker
     end
     
     # Check Atlas Cloud API Key
-    atlas_key = ENV['ATLASCLOUD_API_KEY'].presence || ENV['CLACKY_ATLASCLOUD_API_KEY'].presence
+    atlas_key = ENV['ATLASCLOUD_API_KEY'].presence || ENV['API_KEY_ATLASCLOUD'].presence
     if atlas_key.present?
       Rails.logger.info "✅ ATLASCLOUD_API_KEY: #{atlas_key.slice(0, 8)}... (#{atlas_key.length} chars)"
     else

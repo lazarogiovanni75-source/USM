@@ -227,7 +227,7 @@ class VoiceLoopService
 
   def get_openai_api_key
     ENV['OPENAI_API_KEY'].presence ||
-      ENV['CLACKY_OPENAI_API_KEY'].presence ||
+      ENV['API_KEY_OPENAI'].presence ||
       Figaro.env.openai_api_key ||
       Rails.application.config_for(:application)['OPENAI_API_KEY']
   end

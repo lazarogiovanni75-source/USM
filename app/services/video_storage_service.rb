@@ -93,7 +93,7 @@ class VideoStorageService
   def self.media_url(draft)
     return nil unless draft.media.attached?
     
-    cloudfront_domain = ENV["CLACKY_CLOUDFRONT_DOMAIN"].presence
+    cloudfront_domain = ENV["CLOUDFRONT_DOMAIN"].presence || ENV["CLOUDFRONT_URL"].presence
     
     if cloudfront_domain.present?
       # Use CloudFront URL
@@ -106,7 +106,7 @@ class VideoStorageService
 
   # Check if S3 is properly configured
   def self.s3_configured?
-    ENV["CLACKY_STORAGE_BUCKET_NAME"].present? && 
-    ENV["CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID"].present?
+    ENV["STORAGE_BUCKET_NAME"].present? && 
+    ENV["STORAGE_BUCKET_ACCESS_KEY_ID"].present?
   end
 end

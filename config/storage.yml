@@ -1,6 +1,6 @@
-# This project uses S3 storage via ULTIMATE_ environment variables
-# Configure in Railway/Ultimate Social Media dashboard with:
-# ULTIMATE_STORAGE_BUCKET_NAME, ULTIMATE_STORAGE_BUCKET_REGION, etc.
+# This project uses S3 storage
+# Configure in Railway dashboard with:
+# STORAGE_BUCKET_NAME, STORAGE_BUCKET_REGION, STORAGE_BUCKET_ACCESS_KEY_ID, etc.
 
 test:
   service: Disk
@@ -13,10 +13,10 @@ local:
 # S3 storage for production videos/images
 amazon:
   service: S3
-  access_key_id: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID", "") %>
-  secret_access_key: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_SECRET_ACCESS_KEY", "") %>
-  region: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_REGION", "us-east-1") %>
-  bucket: <%= ENV.fetch("CLACKY_STORAGE_BUCKET_NAME", "ultimate-social-media-production") %>
+  access_key_id: <%= ENV.fetch("STORAGE_BUCKET_ACCESS_KEY_ID", ENV.fetch("AWS_ACCESS_KEY_ID", "")) %>
+  secret_access_key: <%= ENV.fetch("STORAGE_BUCKET_SECRET_ACCESS_KEY", ENV.fetch("AWS_SECRET_ACCESS_KEY", "")) %>
+  region: <%= ENV.fetch("STORAGE_BUCKET_REGION", ENV.fetch("AWS_REGION", "us-east-1")) %>
+  bucket: <%= ENV.fetch("STORAGE_BUCKET_NAME", "ultimate-social-media-production") %>
   http_open_timeout: 5
   http_read_timeout: 5
   retry_limit: 3

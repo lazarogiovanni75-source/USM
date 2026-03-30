@@ -63,7 +63,7 @@ class DraftContent < ApplicationRecord
   def media_display_url
     # 1. Try ActiveStorage attachment first
     if media.attached?
-      cloudfront_domain = ENV["CLACKY_CLOUDFRONT_DOMAIN"].presence
+      cloudfront_domain = ENV["CLOUDFRONT_DOMAIN"].presence
       if cloudfront_domain.present?
         return "#{cloudfront_domain}#{Rails.application.routes.url_helpers.rails_blob_path(media, only_path: true)}"
       end

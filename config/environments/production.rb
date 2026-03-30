@@ -34,9 +34,11 @@ Rails.application.configure do
   # config.action_dispatch.x_sendfile_header = "X-Sendfile" # for Apache
   # config.action_dispatch.x_sendfile_header = "X-Accel-Redirect" # for NGINX
 
-  # Store uploaded files in S3 - try multiple env var naming patterns
-  storage_name = ENV["CLACKY_STORAGE_BUCKET_NAME"] || ENV["STORAGE_BUCKET_NAME"] || ENV["ULTIMATE_STORAGE_BUCKET_NAME"]
-  storage_key = ENV["CLACKY_STORAGE_BUCKET_ACCESS_KEY_ID"] || ENV["STORAGE_BUCKET_ACCESS_KEY_ID"] || ENV["ULTIMATE_STORAGE_BUCKET_ACCESS_KEY_ID"]
+  # Store uploaded files in S3
+  storage_name = ENV["STORAGE_BUCKET_NAME"] || ENV["S3_BUCKET_NAME"] || ENV["ULTIMATE_STORAGE_BUCKET_NAME"]
+  storage_key = ENV["STORAGE_BUCKET_ACCESS_KEY_ID"] || ENV["AWS_ACCESS_KEY_ID"] || ENV["ULTIMATE_STORAGE_BUCKET_ACCESS_KEY_ID"]
+  storage_secret = ENV["STORAGE_BUCKET_SECRET_ACCESS_KEY"] || ENV["AWS_SECRET_ACCESS_KEY"] || ENV["ULTIMATE_STORAGE_BUCKET_SECRET_ACCESS_KEY"]
+  storage_region = ENV["STORAGE_BUCKET_REGION"] || ENV["AWS_REGION"] || ENV["ULTIMATE_STORAGE_BUCKET_REGION"]
 
   config.active_storage.service = (storage_name.present? && storage_key.present?) ? :amazon : :local
   Rails.logger.info "Storage: Using #{config.active_storage.service} (bucket: #{storage_name&.first(20)})"
@@ -52,11 +54,11 @@ Rails.application.configure do
   Rails.application.routes.default_url_options = host_and_port_and_protocol
   config.action_mailer.default_url_options = host_and_port_and_protocol
 
-  # SMTP configuration - try multiple env var naming patterns
-  smtp_password = ENV["CLACKY_EMAIL_SMTP_PASSWORD"] || ENV["EMAIL_SMTP_PASSWORD"] || ENV["CLACKY_EMAIL_API_KEY"]
-  smtp_address = ENV["CLACKY_EMAIL_SMTP_ADDRESS"] || ENV["EMAIL_SMTP_ADDRESS"]
-  smtp_port = ENV["CLACKY_EMAIL_SMTP_PORT"] || ENV["EMAIL_SMTP_PORT"]
-  smtp_username = ENV["CLACKY_EMAIL_SMTP_USERNAME"] || ENV["EMAIL_SMTP_USERNAME"]
+  # SMTP configuration
+  smtp_password = ENV["EMAIL_SMTP_PASSWORD"] || ENV["SENDGRID_API_KEY"] || ENV["SMTP_PASSWORD"]
+  smtp_address = ENV["EMAIL_SMTP_ADDRESS"] || ENV["SMTP_ADDRESS"] || ENV["SENDGRID_HOST"]
+  smtp_port = ENV["EMAIL_SMTP_PORT"] || ENV["SMTP_PORT"]
+  smtp_username = ENV["EMAIL_SMTP_USERNAME"] || ENV["SMTP_USERNAME"] || ENV["SENDGRID_USERNAME"]
 
   if smtp_password.present? && smtp_address.present?
     config.action_mailer.smtp_settings = {
@@ -70,7 +72,7 @@ Rails.application.configure do
   else
     # Fallback to test mode if SMTP not configured
     config.action_mailer.delivery_method = :test
-    Rails.logger.warn "Email: SMTP not configured - using test mode. CLACKY_EMAIL_SMTP_PASSWORD=#{ENV['CLACKY_EMAIL_SMTP_PASSWORD']&.first(8)}, EMAIL_SMTP_PASSWORD=#{ENV['EMAIL_SMTP_PASSWORD']&.first(8)}"
+    Rails.logger.warn "Email: SMTP not configured - using test mode. EMAIL_SMTP_PASSWORD=#{ENV['EMAIL_SMTP_PASSWORD']&.first(8)}"
   end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.

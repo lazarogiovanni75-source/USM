@@ -14,7 +14,7 @@ Rails.application.config.after_initialize do
   }
 
   optional_vars = {
-    'CLACKY_OPENAI_API_KEY' => 'OpenAI API (Whisper/TTS)',
+    'OPENAI_API_KEY' => 'OpenAI API (Whisper/TTS)',
     'ANTHROPIC_MODEL' => 'Anthropic Model',
     'ATLASCLOUD_BASE_URL' => 'Atlas Cloud Base URL',
   }
@@ -28,8 +28,8 @@ Rails.application.config.after_initialize do
     else
       # Also check alternate environment variable names
       alternate = case var
-                  when 'ANTHROPIC_API_KEY' then ENV['CLACKY_ANTHROPIC_API_KEY']
-                  when 'ATLASCLOUD_API_KEY' then ENV['ATLAS_CLOUD_API_KEY']
+                  when 'ANTHROPIC_API_KEY' then ENV['API_KEY_ANTHROPIC']
+                  when 'ATLASCLOUD_API_KEY' then ENV['API_KEY_ATLASCLOUD']
                   else nil
                   end
       
