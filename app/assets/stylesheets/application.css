@@ -18,9 +18,9 @@
 /* Import design system components - DO NOT MODIFY components.css */
 @import "components";
 
-/* Import third-party CSS libraries */
-@import "tom-select/dist/css/tom-select.css";
-@import "flatpickr/dist/flatpickr.css";
+/* Import third-party CSS libraries - use full paths from node_modules */
+@import "tom-select/dist/css/tom-select";
+@import "flatpickr/dist/flatpickr";
 @import "vendors"; /* Custom themes for third-party libraries */
 
 @tailwind base;
