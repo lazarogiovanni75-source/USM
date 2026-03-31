@@ -238,9 +238,21 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Model</label>
               <select name="model" class="form-select w-full">
-                <% @image_models.each do |model_id, model_name| %>
-                  <option value="<%= model_id %>" <%= 'selected' if model_id == 'atlascloud/qwen-image/text-to-image' %>><%= model_name %></option>
-                <% end %>
+                <optgroup label="Standard Tier">
+                  <% @image_models.select { |_, name| name.include?('Standard') || name.include?('Z-Turbo') }.each do |model_id, model_name| %>
+                    <option value="<%= model_id %>" <%= 'selected' if model_id == 'qwen/qwen-image-2.0/text-to-image' %>><%= model_name %></option>
+                  <% end %>
+                </optgroup>
+                <optgroup label="Premium Tier">
+                  <% @image_models.select { |_, name| name.include?('Premium') }.each do |model_id, model_name| %>
+                    <option value="<%= model_id %>"><%= model_name %></option>
+                  <% end %>
+                </optgroup>
+                <optgroup label="HD Tier">
+                  <% @image_models.select { |_, name| name.include?('HD') }.each do |model_id, model_name| %>
+                    <option value="<%= model_id %>"><%= model_name %></option>
+                  <% end %>
+                </optgroup>
               </select>
             </div>
             <div>
@@ -301,7 +313,21 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Model</label>
               <select name="model" class="form-select w-full">
-                <option value="vidu/q3-pro/text-to-video">Vidu Q3-Pro Text-to-Video</option>
+                <optgroup label="Image-to-Video (HD - 1080p, 8s)">
+                  <% @video_models.select { |k, _| k.include?('image-to-video') }.each do |model_id, model_name| %>
+                    <option value="<%= model_id %>"><%= model_name %></option>
+                  <% end %>
+                </optgroup>
+                <optgroup label="Text-to-Video (HD - 720p, 12s)">
+                  <% @video_models.select { |k, _| k.include?('text-to-video') && k.include?('seedance') }.each do |model_id, model_name| %>
+                    <option value="<%= model_id %>"><%= model_name %></option>
+                  <% end %>
+                </optgroup>
+                <optgroup label="Text-to-Video (Standard)">
+                  <% @video_models.select { |k, _| k.include?('text-to-video') && !k.include?('seedance') }.each do |model_id, model_name| %>
+                    <option value="<%= model_id %>" <%= 'selected' if model_id == 'vidu/q3-pro/text-to-video' %>><%= model_name %></option>
+                  <% end %>
+                </optgroup>
               </select>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -377,6 +403,14 @@
                 <option value="">Choose an image...</option>
                 <% @drafts.where(content_type: 'image').each do |draft| %>
                   <option value="<%= draft.id %>"><%= draft.title %></option>
+                <% end %>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Edit Model</label>
+              <select name="edit_model" class="form-select w-full">
+                <% AtlasCloudImageService.available_image_edit_models.each do |model_id, model_name| %>
+                  <option value="<%= model_id %>"><%= model_name %></option>
                 <% end %>
               </select>
             </div>

@@ -1,0 +1,1 @@
+<%= turbo_stream.update "waitlist-form-container", partial: "waitlist_form_result", locals: { success: @entry.persisted?, message: @entry.persisted? ? "You're on the list!" : (@entry.errors[:email].include?("has already been taken") ? "You're already on the list!" : "Please enter a valid email address.") } %>

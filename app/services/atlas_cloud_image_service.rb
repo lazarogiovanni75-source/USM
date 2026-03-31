@@ -6,13 +6,24 @@
 # Authentication: Bearer token via ATLASCLOUD_API_KEY environment variable
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
-  DEFAULT_MODEL = 'atlascloud/qwen-image/text-to-image'
+  DEFAULT_MODEL = 'qwen/qwen-image-2.0/text-to-image'
   TIMEOUT = 120
 
-  # Available image models (user selected)
+  # Available image models (user selected) - organized by tier
   AVAILABLE_MODELS = {
-    'atlascloud/qwen-image/text-to-image' => 'Qwen Text-to-Image (Recommended)',
-    'atlascloud/qwen-image/edit' => 'Qwen Image Edit'
+    # Standard tier
+    'qwen/qwen-image-2.0/text-to-image' => 'Qwen 2.0 Text-to-Image (Standard)',
+    'z-image/turbo' => 'Z-Turbo (Standard)',
+    # Premium tier
+    'google/nano-banana-2/text-to-image' => 'Google Nano Banana 2 (Premium)',
+    # HD tier
+    'google/imagen4-ultra' => 'Google Imagen 4 Ultra (HD)'
+  }.freeze
+
+  # Image edit models
+  IMAGE_EDIT_MODELS = {
+    'qwen/qwen-image-2.0/edit' => 'Qwen 2.0 Image Edit',
+    'alibaba/qwen-image/edit' => 'Alibaba Qwen Image Edit'
   }.freeze
 
   class Error < StandardError; end
@@ -63,6 +74,40 @@ class AtlasCloudImageService
 
   # Alias for backwards compatibility
   alias_method :generate_gpt_image, :generate_image
+
+  # Edit an existing image using Atlas Cloud unified API
+  #
+  # @param image_url [String] URL of the source image to edit
+  # @param prompt [String] Text prompt describing the edit
+  # @param model [String] Model ID for image editing
+  # @param aspect_ratio [String] Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
+  # @return [Hash] { task_id:, output:, status: }
+  #
+  def edit_image(image_url:,
+                 prompt:,
+                 model: 'qwen/qwen-image-2.0/edit',
+                 aspect_ratio: '1:1')
+    body = {
+      model: model,
+      prompt: prompt,
+      image_url: image_url,
+      aspect_ratio: aspect_ratio
+    }
+
+    Rails.logger.info "[AtlasCloudImageService] Editing image with model: #{model}"
+
+    result = post_request('/api/v1/model/generateImage', body)
+
+    task_id = extract_task_id(result)
+
+    if task_id.present?
+      Rails.logger.info "[AtlasCloudImageService] Image edit started, task_id: #{task_id}"
+      { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
+    else
+      Rails.logger.error "[AtlasCloudImageService] No task_id in response: #{result.inspect}"
+      { 'task_id' => nil, 'output' => nil, 'error' => result['message'] || 'Failed to start image editing' }
+    end
+  end
 
   # Get image task status
   #
@@ -117,6 +162,16 @@ class AtlasCloudImageService
   # Get available models for UI display
   def self.available_models
     AVAILABLE_MODELS
+  end
+
+  # Get available image edit models for UI display
+  def self.available_image_edit_models
+    IMAGE_EDIT_MODELS
+  end
+
+  # Get all image models combined for dropdowns
+  def self.all_image_models
+    AVAILABLE_MODELS.merge(IMAGE_EDIT_MODELS)
   end
 
   private

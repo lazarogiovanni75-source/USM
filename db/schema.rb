@@ -1020,6 +1020,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_29_072322) do
     t.index ["voice_id"], name: "index_voice_settings_on_voice_id"
   end
 
+  create_table "waitlist_emails", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "status", default: "pending"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_waitlist_emails_on_email", unique: true
+  end
+
   create_table "waitlists", force: :cascade do |t|
     t.string "email"
     t.boolean "status", default: true

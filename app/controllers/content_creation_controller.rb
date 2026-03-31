@@ -30,6 +30,7 @@ class ContentCreationController < ApplicationController
 
     # Available models for UI
     @image_models = AtlasCloudImageService.available_models
+    @image_edit_models = AtlasCloudImageService.available_image_edit_models
     @video_models = AtlasCloudService.available_video_models
   end
 
@@ -281,6 +282,7 @@ class ContentCreationController < ApplicationController
   def edit_image
     draft_id = params[:draft_id]
     edit_prompt = params[:edit_prompt]
+    edit_model = params[:edit_model] || 'qwen/qwen-image-2.0/edit'
 
     draft = current_user.draft_contents.find(draft_id)
 
@@ -298,57 +300,39 @@ class ContentCreationController < ApplicationController
     combined_prompt = "#{original_prompt}. Modification: #{edit_prompt}"
 
     begin
-      quality = draft.quality_tier || 'standard'
-      result = ImageGenerationService.generate_image(
+      service = AtlasCloudImageService.new
+      
+      result = service.edit_image(
+        image_url: draft.media_url,
         prompt: combined_prompt,
-        size: draft.metadata.dig('aspect_ratio') || '1:1',
-        quality: quality
+        model: edit_model,
+        aspect_ratio: draft.metadata.dig('aspect_ratio') || '1:1'
       )
 
-      if result[:success]
-        service = result[:service]
-        model = result.dig(:metadata, :model) || 'atlascloud/qwen-image/text-to-image'
-        
-        if result[:output_url]
-          new_draft = current_user.draft_contents.create!(
-            title: "Edited - #{draft.title}",
-            content: combined_prompt,
-            content_type: 'image',
-            platform: draft.platform,
-            status: 'published',
-            media_url: result[:output_url],
-            metadata: { 
-              'service' => service, 
-              'model' => model,
-              'edited_from' => draft.id,
-              'edit_prompt' => edit_prompt
-            }
-          )
-          
-          redirect_to draft_path(new_draft), notice: 'Image edited successfully!'
-        else
-          new_draft = current_user.draft_contents.create!(
-            title: "Edited - #{draft.title}",
-            content: combined_prompt,
-            content_type: 'image',
-            platform: draft.platform,
-            status: 'pending',
-            media_url: nil,
-            metadata: { 
-              'task_id' => result[:task_id], 
-              'service' => service, 
-              'model' => model,
-              'edited_from' => draft.id,
-              'edit_prompt' => edit_prompt
-            }
-          )
+      if result['task_id'].present?
+        new_draft = current_user.draft_contents.create!(
+          title: "Edited - #{draft.title}",
+          content: combined_prompt,
+          content_type: 'image',
+          platform: draft.platform,
+          status: 'pending',
+          media_url: nil,
+          metadata: { 
+            'task_id' => result['task_id'], 
+            'service' => 'atlas_cloud', 
+            'model' => edit_model,
+            'edited_from' => draft.id,
+            'edit_prompt' => edit_prompt
+          }
+        )
 
-          ImagePollJob.perform_later(new_draft.id, result[:task_id], service)
-          redirect_to draft_path(new_draft), notice: 'Image editing started! Check back in a few moments.'
-        end
+        ImagePollJob.perform_later(new_draft.id, result['task_id'], 'atlas_cloud')
+        redirect_to draft_path(new_draft), notice: 'Image editing started! Check back in a few moments.'
       else
-        redirect_to content_creation_index_path, alert: "Image editing failed: #{result[:error]}"
+        redirect_to content_creation_index_path, alert: "Image editing failed: #{result['error']}"
       end
+    rescue AtlasCloudImageService::AuthenticationError => e
+      redirect_to content_creation_index_path, alert: "Image editing authentication failed: #{e.message}"
     rescue => e
       Rails.logger.error "Image Edit Error: #{e.message}"
       redirect_to content_creation_index_path, alert: "Image editing failed: #{e.message}"

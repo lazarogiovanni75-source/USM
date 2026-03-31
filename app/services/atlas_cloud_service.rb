@@ -13,7 +13,20 @@ class AtlasCloudService
   TIMEOUT = 120
 
   # Available text-to-video models (user selected)
+  # Tiers: standard (basic), hd (high quality), premium (best quality)
   TEXT_TO_VIDEO_MODELS = {
+    # HD Tier: 8 seconds max, 1080p
+    'atlascloud/wan-2.2-turbo-spicy/image-to-video' => 'Wan 2.2 Turbo Spicy HD (8s, 1080p)',
+    'atlascloud/wan-2.2-turbo-spicy/image-to-video-lora' => 'Wan 2.2 Turbo Spicy LoRA HD (8s, 1080p)',
+    
+    # Standard Tier: 12 seconds max, 720p
+    'bytedance/seedance-v1-pro-fast/text-to-video' => 'Seedance V1 Fast (12s, 720p)',
+    
+    # Premium HD Tier: 12 seconds max, 720p
+    'bytedance/seedance-v1.5-pro/image-to-video-fast' => 'Seedance V1.5 Pro HD (12s, 720p)',
+    'bytedance/seedance-v1.5-pro/text-to-video-fast' => 'Seedance V1.5 Pro Fast HD (12s, 720p)',
+    
+    # Legacy
     'vidu/q3-pro/text-to-video' => 'Vidu Q3-Pro Text-to-Video'
   }.freeze
 
@@ -22,8 +35,26 @@ class AtlasCloudService
   }.freeze
 
   # Available image models (user selected)
+  # Tiers: standard, premium
   IMAGE_MODELS = {
+    # Standard Tier
+    'qwen/qwen-image-2.0/text-to-image' => 'Qwen 2.0 Text-to-Image (Standard)',
+    
+    # Premium/HD Tier
+    'google/nano-banana-2/text-to-image' => 'Google Nano Banana 2 (Premium)',
+    'google/imagen4-ultra' => 'Google Imagen 4 Ultra (HD)',
+    
+    # Legacy
     'z-image/turbo' => 'Z-Turbo'
+  }.freeze
+
+  # Image editing models
+  IMAGE_EDIT_MODELS = {
+    # Standard Tier
+    'alibaba/qwen-image/edit' => 'Qwen Image Edit (Standard)',
+    
+    # Premium Tier
+    'qwen/qwen-image-2.0/edit' => 'Qwen 2.0 Image Edit (Premium)'
   }.freeze
 
   class Error < StandardError; end
@@ -217,6 +248,44 @@ class AtlasCloudService
 
   def self.available_image_models
     IMAGE_MODELS
+  end
+
+  def self.available_image_edit_models
+    IMAGE_EDIT_MODELS
+  end
+
+  # Edit an existing image using Atlas Cloud unified API
+  #
+  # @param image_url [String] URL of the source image to edit
+  # @param prompt [String] Text prompt describing the edit
+  # @param model [String] Model ID for image editing
+  # @param aspect_ratio [String] Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
+  # @return [Hash] { task_id:, output:, status: }
+  #
+  def edit_image(image_url:,
+                 prompt:,
+                 model: 'qwen/qwen-image-2.0/edit',
+                 aspect_ratio: '1:1')
+    body = {
+      model: model,
+      prompt: prompt,
+      image_url: image_url,
+      aspect_ratio: aspect_ratio
+    }
+
+    Rails.logger.info "[AtlasCloudService] Editing image with model: #{model}"
+
+    result = post_request('/api/v1/model/generateImage', body)
+
+    task_id = extract_task_id(result)
+
+    if task_id.present?
+      Rails.logger.info "[AtlasCloudService] Image edit started, task_id: #{task_id}"
+      { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
+    else
+      Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
+      { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || 'Failed to start image editing' }
+    end
   end
 
   private
