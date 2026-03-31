@@ -45,7 +45,7 @@ Rails.application.configure do
   storage_region = ENV["STORAGE_BUCKET_REGION"] || ENV["AWS_REGION"] || ENV["ULTIMATE_STORAGE_BUCKET_REGION"]
 
   config.active_storage.service = (storage_name.present? && storage_key.present?) ? :amazon : :local
-  Rails.logger.info "Storage: Using #{config.active_storage.service} (bucket: #{storage_name&.first(20)})"
+  Rails.logger&.info "Storage: Using #{config.active_storage.service} (bucket: #{storage_name&.first(20)})"
 
   # Mount Action Cable outside main process or domain.
   config.action_cable.disable_request_forgery_protection = true
@@ -72,11 +72,11 @@ Rails.application.configure do
       password: smtp_password
     }
     config.action_mailer.delivery_method = :smtp
-    Rails.logger.info "Email: SMTP configured with #{smtp_address}"
+    Rails.logger&.info "Email: SMTP configured with #{smtp_address}"
   else
     # Fallback to test mode if SMTP not configured
     config.action_mailer.delivery_method = :test
-    Rails.logger.warn "Email: SMTP not configured - using test mode. EMAIL_SMTP_PASSWORD=#{ENV['EMAIL_SMTP_PASSWORD']&.first(8)}"
+    Rails.logger&.warn "Email: SMTP not configured - using test mode. EMAIL_SMTP_PASSWORD=#{ENV['EMAIL_SMTP_PASSWORD']&.first(8)}"
   end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
