@@ -1,7 +1,9 @@
 # Environment Variable Checker - Logs all required API keys on startup
 # This initializer runs in ALL environments and logs the status of critical environment variables
 
-Rails.application.config.after_initialize do
+# Skip during asset precompilation (when SECRET_KEY_BASE_DUMMY is set)
+unless ENV['SECRET_KEY_BASE_DUMMY']
+  Rails.application.config.after_initialize do
   Rails.logger.info "=" * 60
   Rails.logger.info "ENVIRONMENT VARIABLE STATUS CHECK"
   Rails.logger.info "Environment: #{Rails.env}"
@@ -87,4 +89,5 @@ Rails.application.config.after_initialize do
   Rails.logger.info "=" * 60
   Rails.logger.info "END OF ENVIRONMENT VARIABLE CHECK"
   Rails.logger.info "=" * 60
+  end
 end
