@@ -1,2 +1,2 @@
-web: bundle exec rails runner "ActiveRecord::Base.connection.create_table(:waitlist_emails
+web: bundle exec rails db:migrate:reset && bundle exec rails server -C config/puma.rb
 worker: bundle exec good_job start
