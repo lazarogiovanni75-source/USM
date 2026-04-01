@@ -16,11 +16,11 @@ class WaitlistController < ApplicationController
 
     if entry.save
       WaitlistMailer.confirmation_email(entry).deliver_later rescue nil
-      render json: { success: true, message: "You're on the list!" }
-    else
-      render json: { error: entry.errors.full_messages.first }, status: :unprocessable_entity
     end
+
+    redirect_to root_path, notice: "You're on the list!"
+
   rescue => e
-    render json: { error: "Something went wrong" }, status: :internal_server_error
+    redirect_to root_path, alert: "Something went wrong, please try again."
   end
 end
