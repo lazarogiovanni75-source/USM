@@ -59,10 +59,10 @@ Rails.application.configure do
   config.action_mailer.default_url_options = host_and_port_and_protocol
 
   # SMTP configuration
-  smtp_password = ENV["EMAIL_SMTP_PASSWORD"] || ENV["SENDGRID_API_KEY"] || ENV["SMTP_PASSWORD"]
-  smtp_address = ENV["EMAIL_SMTP_ADDRESS"] || ENV["SMTP_ADDRESS"] || ENV["SENDGRID_HOST"]
-  smtp_port = ENV["EMAIL_SMTP_PORT"] || ENV["SMTP_PORT"]
-  smtp_username = ENV["EMAIL_SMTP_USERNAME"] || ENV["SMTP_USERNAME"] || ENV["SENDGRID_USERNAME"]
+smtp_password = ENV["SENDGRID_API_KEY"] || ENV["EMAIL_SMTP_PASSWORD"] || ENV["SMTP_PASSWORD"]
+smtp_address = ENV["EMAIL_SMTP_ADDRESS"] || ENV["SENDGRID_HOST"] || "smtp.sendgrid.net"
+smtp_port = ENV["EMAIL_SMTP_PORT"] || ENV["SMTP_PORT"] || "587"
+smtp_username = ENV["EMAIL_SMTP_USERNAME"] || ENV["SMTP_USERNAME"] || "apikey"
 
   if smtp_password.present? && smtp_address.present?
     config.action_mailer.smtp_settings = {
