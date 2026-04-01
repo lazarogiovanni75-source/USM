@@ -1,0 +1,11 @@
+<% if @entry.persisted? %>
+{
+  "success": true,
+  "message": "Thank you for joining our waitlist! Check your email for confirmation."
+}
+<% else %>
+{
+  "success": false,
+  "message": "<%= @entry.errors.full_messages.join(', ') %>"
+}
+<% end %>
