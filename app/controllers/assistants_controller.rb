@@ -106,7 +106,7 @@ class AssistantsController < ApplicationController
       5. Schedule a post (Scheduled Posts)
 
       ## Current User Context
-      - **Name**: #{user.first_name || user.email}
+      - **Name**: #{user.name || user.email}
       - **Plan**: #{user.subscription_plan || "Free/Trial"}
       - **Member since**: #{user.created_at.strftime("%B %d, %Y")}
       - **Current page**: #{current_page}
