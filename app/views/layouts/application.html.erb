@@ -54,9 +54,9 @@
     <% end %>
 
 
-    <% if user_signed_in? && current_user.assistant_enabled? %>
-      <%= render 'shared/assistant_bubble' %>
-    <% end %>
+<% if user_signed_in? && current_user.respond_to?(:assistant_enabled?) && current_user.assistant_enabled? %>
+  <%= render 'shared/assistant_bubble' %>
+<% end %>
 
   </body>
 </html>
