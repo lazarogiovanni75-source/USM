@@ -27,9 +27,9 @@ Rails.application.configure do
   config.assets.compile = false
   config.assets.digest = true
   
-  # Use /dev-assets prefix for static assets (CSS/JS pre-built by npm)
-  # This matches the output location of `npm run build:css` and `npm run build:js`
-  config.assets.prefix = "/dev-assets"
+  # Asset pipeline settings for Propshaft
+  # Assets are pre-built by npm to public/assets/ and served from /assets/
+  config.assets.prefix = "/assets"
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"

@@ -19,8 +19,8 @@ Rails.application.configure do
 
   config.file_watcher = ActiveSupport::EventedFileUpdateChecker
 
-  # clacky: no use public assets
-  config.assets.prefix = "/dev-assets"
+  # Asset pipeline settings for Propshaft
+  config.assets.prefix = "/assets"
   config.assets.quiet = true
 
   # config.action_controller.perform_caching = false
