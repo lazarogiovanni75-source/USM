@@ -46,14 +46,16 @@ Rails.application.configure do
   Rails.application.routes.default_url_options = host_and_port_and_protocol
   config.action_mailer.default_url_options = host_and_port_and_protocol
 
-  if ENV["EMAIL_SMTP_PASSWORD"].present?
+  if ENV["EMAIL_SMTP_PASSWORD"].present? && ENV["EMAIL_SMTP_ADDRESS"].present?
     config.action_mailer.smtp_settings = {
       address: ENV.fetch("EMAIL_SMTP_ADDRESS"),
-      port: ENV.fetch("EMAIL_SMTP_PORT"),
+      port: ENV.fetch("EMAIL_SMTP_PORT", 587),
       user_name: ENV.fetch("EMAIL_SMTP_USERNAME"),
       password: ENV.fetch("EMAIL_SMTP_PASSWORD")
     }
     config.action_mailer.delivery_method = :smtp
+  else
+    config.action_mailer.delivery_method = :test
   end
 
   # Print deprecation notices to the Rails logger.
