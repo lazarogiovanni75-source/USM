@@ -1,58 +1,25 @@
-class WaitlistsController < ApplicationController
-  # Anyone can sign up for the waitlist
-  skip_before_action :authenticate_user!, only: [:create]
-
-  # Admin: view all waitlist entries
-  before_action :check_admin, except: [:create]
-
-  def index
-    @waitlists = Waitlist.order(created_at: :desc)
-  end
-
-  def new
-    @waitlist = Waitlist.new
-  end
-
-  def show
-    @waitlist = Waitlist.find(params[:id])
-  end
-
-  def edit
-    @waitlist = Waitlist.find(params[:id])
-  end
-
+class WaitlistController < ApplicationController
   def create
-    @waitlist = Waitlist.new(waitlist_params)
+    ensure_table_exists
+    @entry = WaitlistEmail.new(email: params[:email].to_s.strip.downcase)
 
-    if @waitlist.save
-      redirect_to root_path, notice: "You're on the list! We'll notify you when we launch."
-    else
-      redirect_to root_path(anchor: 'waitlist'), alert: @waitlist.errors.full_messages.join(", ")
+    if @entry.save
+      WaitlistMailer.confirmation_email(@entry).deliver_later rescue nil
     end
-  end
 
-  def update
-    @waitlist = Waitlist.find(params[:id])
-    if @waitlist.update(waitlist_params)
-      redirect_to waitlist_path(@waitlist), notice: 'Waitlist entry was successfully updated.'
-    else
-      render :edit, status: :unprocessable_entity
-    end
-  end
-
-  def destroy
-    @waitlist = Waitlist.find(params[:id])
-    @waitlist.destroy
-    redirect_to waitlists_path, notice: "Waitlist entry removed."
+    render :create
   end
 
   private
 
-  def waitlist_params
-    params.require(:waitlist).permit(:email)
-  end
-
-  def check_admin
-    redirect_to root_path unless current_user&.admin?
+  def ensure_table_exists
+    unless ActiveRecord::Base.connection.table_exists?(:waitlist_emails)
+      ActiveRecord::Base.connection.create_table :waitlist_emails do |t|
+        t.string :email, null: false
+        t.string :status, default: 'pending'
+        t.timestamps
+      end
+      ActiveRecord::Base.connection.add_index :waitlist_emails, :email, unique: true rescue nil
+    end
   end
 end
