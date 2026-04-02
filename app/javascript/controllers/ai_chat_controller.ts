@@ -679,6 +679,9 @@ export default class extends Controller<HTMLElement> {
 
   // Text-to-Speech: Speak the AI response using backend TTS
   private async speakResponse(text: string): Promise<void> {
+  // TTS disabled - text only responses
+  return;
+  }
     // Check if auto-speak is enabled
     const autoSpeak = localStorage.getItem('otto_auto_speak')
     if (autoSpeak === 'false') {
