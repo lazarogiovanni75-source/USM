@@ -89,7 +89,18 @@ class ConversationOrchestrator < ApplicationService
   end
 
   private
-
+def convert_tools_to_anthropic_format(tools)
+  return nil if tools.nil?
+  tools.map do |tool|
+    func = tool[:function] || tool["function"]
+    params = func[:parameters] || func["parameters"] || {}
+    {
+      name: func[:name] || func["name"],
+      description: func[:description] || func["description"],
+      input_schema: params
+    }
+  end
+end
   def find_or_create_conversation(conversation_id)
     if conversation_id.present?
       user.ai_conversations.find_by(id: conversation_id) || create_new_conversation
@@ -145,7 +156,8 @@ class ConversationOrchestrator < ApplicationService
     log_message_array(history)
     
     # Get tools if enabled
-    tools = @tools_enabled ? AiToolDefinitions.for_user(user) : nil
+    raw_tools = @tools_enabled ? AiToolDefinitions.for_user(user) : nil
+tools = convert_tools_to_anthropic_format(raw_tools)
     
     if tools.present?
       Rails.logger.info "[ConversationOrchestrator] Tools enabled: #{tools.size} available"
