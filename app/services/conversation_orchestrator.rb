@@ -391,13 +391,11 @@ CONTEXT
         
         # Convert Anthropic tool_use format to OpenAI-like format for compatibility
         tool_calls = tool_uses.map do |tc|
-          {
-            "id" => tc.id,
-            "function" => {
-              "name" => tc.name,
-              "arguments" => tc.input.to_json
-            }
-          }
+  {
+    "id" => tc.id,
+    "name" => tc.name,
+    "input" => tc.input
+  }
         end
         
         # Execute tools and continue conversation
@@ -506,8 +504,8 @@ CONTEXT
     tool_results = []
     tool_calls.each do |tool_call|
       tool_id = tool_call["id"]
-      function_name = tool_call.dig("function", "name")
-      arguments_json = tool_call.dig("function", "arguments")
+      function_name = tool_call["name"] || tool_call.dig("function", "name")
+arguments_json = tool_call["input"]&.to_json || tool_call.dig("function", "arguments")
       
       Rails.logger.info "[ConversationOrchestrator] Executing tool: #{function_name} with args: #{arguments_json}"
       
