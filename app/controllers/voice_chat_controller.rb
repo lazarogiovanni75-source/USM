@@ -76,7 +76,7 @@ class VoiceChatController < ApplicationController
       http.request(request)
     end
 
-    if response.success?
+    if response.is_a?(Net::HTTPSuccess)
       render json: JSON.parse(response.body)
     else
       Rails.logger.error "Whisper API error: #{response.code} - #{response.body}"
@@ -168,7 +168,7 @@ class VoiceChatController < ApplicationController
 
     response = http.request(request)
 
-    if response.success?
+    if response.is_a?(Net::HTTPSuccess)
       result = JSON.parse(response.body)
       result.dig("content", 0, "text") || ""
     else
@@ -209,7 +209,7 @@ class VoiceChatController < ApplicationController
 
     response = http.request(request)
 
-    if response.success?
+    if response.is_a?(Net::HTTPSuccess)
       result = JSON.parse(response.body)
       # Decode base64 audio content
       Base64.decode64(result["audioContent"])
@@ -243,7 +243,7 @@ class VoiceChatController < ApplicationController
       }
     )
 
-    if response.success?
+    if response.is_a?(Net::HTTPSuccess)
       response.body
     else
       raise "OpenAI TTS error: #{response.code}"
