@@ -514,7 +514,7 @@ messages: history.reject { |m| m[:role] == "system" },
     tool_calls.each do |tool_call|
       tool_id = tool_call["id"]
       function_name = tool_call["name"] || tool_call.dig("function", "name")
-arguments_json = tool_call["input"]&.to_json || tool_call.dig("function", "arguments")
+      arguments_json = tool_call["input"]&.to_json || tool_call.dig("function", "arguments")
       
       Rails.logger.info "[ConversationOrchestrator] Executing tool: #{function_name} with args: #{arguments_json}"
       
