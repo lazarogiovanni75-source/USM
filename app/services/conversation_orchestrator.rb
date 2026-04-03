@@ -292,7 +292,8 @@ messages = []
     # Build API parameters
     api_params = {
       model: CLAUDE_MODEL,
-      messages: history,
+      system: history.find { |m| m[:role] == "system" }&.dig(:content) || "",
+messages: history.reject { |m| m[:role] == "system" },
       temperature: CHAT_TEMPERATURE,
       max_tokens: CHAT_MAX_TOKENS
     }
