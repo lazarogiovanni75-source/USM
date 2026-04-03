@@ -700,11 +700,6 @@ export default class extends Controller<HTMLElement> {
         }
       }
       
-      // Speak the AI response - check auto-speak setting
-      const autoSpeak = localStorage.getItem('otto_auto_speak')
-      if (autoSpeak !== 'false') {
-  }
-
   private handleError(error: string): void {
     this.isGenerating = false
     this.hideTypingIndicator()
