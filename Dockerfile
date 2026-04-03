@@ -27,6 +27,7 @@ COPY --chown=ruby:ruby . .
 RUN cp -n config/database.yml.example config/database.yml || true
 
 # Build Tailwind CSS for production
+RUN npm run build:js:prod
 RUN npm run build:css:prod
 
 # Precompile assets
