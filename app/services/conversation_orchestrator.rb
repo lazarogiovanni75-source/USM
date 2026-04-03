@@ -634,8 +634,6 @@ arguments_json = tool_call["input"]&.to_json || tool_call.dig("function", "argum
       continue_blocking(history_after_tool_call)
     end
   end
-end
-  
   # Continue with streaming after tool execution
   def continue_streaming(history)
     # Filter and validate messages before sending to OpenAI
