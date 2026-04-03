@@ -238,7 +238,8 @@ CONTEXT
       system_prompt = base_prompt
     end
     
-    messages = [{ role: "system", content: system_prompt }]
+    @system_prompt = system_prompt
+messages = []
     
     recent_messages.each do |msg|
       # Skip tool messages without valid metadata
