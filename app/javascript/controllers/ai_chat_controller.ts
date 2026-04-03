@@ -699,6 +699,8 @@ export default class extends Controller<HTMLElement> {
           contentEl.innerHTML = this.escapeHtml(data.content)
         }
       }
+      }
+  }
   private handleError(error: string): void {
     this.isGenerating = false
     this.hideTypingIndicator()
