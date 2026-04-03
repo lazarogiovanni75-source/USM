@@ -386,7 +386,7 @@ messages: history.reject { |m| m[:role] == "system" },
   messages: history.reject { |m| m[:role] == "system" },
   temperature: CHAT_TEMPERATURE,
   tools: tools.presence
-      
+      )
       # Check for tool uses in response (Anthropic format)
       message = response
       tool_uses = message.content.select { |c| c.type == "tool_use" }
