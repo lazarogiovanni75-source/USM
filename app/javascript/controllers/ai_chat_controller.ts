@@ -682,48 +682,6 @@ export default class extends Controller<HTMLElement> {
   // TTS disabled - text only responses
   return;
   }
-    // Check if auto-speak is enabled
-    const autoSpeak = localStorage.getItem('otto_auto_speak')
-    if (autoSpeak === 'false') {
-      console.log("[AIChat] Auto-speak disabled, skipping")
-      return
-    }
-
-    // Strip emojis and problematic characters
-    const cleanText = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/gu, '').trim()
-    
-    if (!cleanText || cleanText.length === 0) {
-      return
-    }
-
-    // Get CURRENT voice from dropdown (not cached localStorage)
-    const voiceSelectEl = document.getElementById('voice-select') as HTMLSelectElement
-    const voice = voiceSelectEl ? voiceSelectEl.value : (localStorage.getItem('otto_voice') || 'alloy')
-    
-    // Get speech rate
-    const speechRateEl = document.getElementById('speech-rate') as HTMLInputElement
-    const rate = speechRateEl ? speechRateEl.value : (localStorage.getItem('otto_speech_rate') || '1')
-    
-    console.log("[AIChat] Speaking with voice:", voice, "rate:", rate)
-
-    try {
-      const response = await fetch('/speak', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'audio/mpeg',
-          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        },
-        body: JSON.stringify({ text: cleanText, voice, rate })
-      })
-      
-      if (response.ok) {
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
-        const audio = new Audio(audioUrl)
-        audio.play()
-      }
-    } catch (e) {
       console.error('[AIChat] TTS error:', e)
     }
   }
