@@ -305,7 +305,6 @@ messages: history.reject { |m| m[:role] == "system" },
     
     client.messages.stream(
   **api_params,
-  stream: proc { |chunk, _bytesize|
         stream: proc { |chunk, _bytesize|
           Rails.logger.debug "[ConversationOrchestrator] Stream chunk received"
           
