@@ -682,9 +682,6 @@ export default class extends Controller<HTMLElement> {
   // TTS disabled - text only responses
   return;
   }
-      console.error('[AIChat] TTS error:', e)
-    }
-  }
 
   private handleComplete(data: any): void {
     this.isGenerating = false
@@ -706,12 +703,6 @@ export default class extends Controller<HTMLElement> {
       // Speak the AI response - check auto-speak setting
       const autoSpeak = localStorage.getItem('otto_auto_speak')
       if (autoSpeak !== 'false') {
-        this.speakResponse(data.content)
-      }
-    }
-    
-    this.currentAssistantMessage = null
-    this.abortController = null
   }
 
   private handleError(error: string): void {
