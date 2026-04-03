@@ -303,13 +303,9 @@ messages: history.reject { |m| m[:role] == "system" },
     tool_calls_buffer = {}
     has_tool_calls = false
     
-    response = client.messages.create(
-  max_tokens: CHAT_MAX_TOKENS,
-  model: CLAUDE_MODEL,
-  system: history.find { |m| m[:role] == "system" }&.dig(:content) || "",
-  messages: history.reject { |m| m[:role] == "system" },
-  temperature: CHAT_TEMPERATURE,
-  tools: tools.presence
+    client.messages.stream(
+  **api_params,
+  stream: proc { |chunk, _bytesize|
         stream: proc { |chunk, _bytesize|
           Rails.logger.debug "[ConversationOrchestrator] Stream chunk received"
           
