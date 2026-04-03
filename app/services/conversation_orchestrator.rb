@@ -380,12 +380,12 @@ messages: history.reject { |m| m[:role] == "system" },
     
     begin
       response = client.messages.create(
-        max_tokens: CHAT_MAX_TOKENS,
-        model: CLAUDE_MODEL,
-        messages: history,
-        temperature: CHAT_TEMPERATURE,
-        tools: tools.presence
-      )
+  max_tokens: CHAT_MAX_TOKENS,
+  model: CLAUDE_MODEL,
+  system: history.find { |m| m[:role] == "system" }&.dig(:content) || "",
+  messages: history.reject { |m| m[:role] == "system" },
+  temperature: CHAT_TEMPERATURE,
+  tools: tools.presence
       
       # Check for tool uses in response (Anthropic format)
       message = response
