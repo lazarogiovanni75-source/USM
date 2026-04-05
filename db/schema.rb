@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_01_999998) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_05_154607) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -124,6 +124,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_01_999998) do
     t.jsonb "metadata", default: {}
     t.index ["ai_conversation_id"], name: "index_ai_messages_on_ai_conversation_id"
     t.index ["created_at"], name: "index_ai_messages_on_created_at"
+    t.index ["id"], name: "index_ai_messages_on_id", unique: true
     t.index ["role"], name: "index_ai_messages_on_role"
   end
 
