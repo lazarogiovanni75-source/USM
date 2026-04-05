@@ -1,7 +1,7 @@
 {
   "deploy": {
     "startCommand": "./bin/railway-boot",
-    "preDeployCommand": "bundle exec rails db:migrate",
+    "deployCommand": "bundle exec rails db:migrate && rails runner \"ActiveRecord::Base.connection.execute('CREATE UNIQUE INDEX IF NOT EXISTS index_ai_messages_on_id ON ai_messages (id);')\"",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
