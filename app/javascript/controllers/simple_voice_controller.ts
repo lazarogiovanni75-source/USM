@@ -64,6 +64,9 @@ export default class SimpleVoiceController extends Controller {
   private isListening = false
   private isProcessing = false
   private continuousMode = false
+  private silenceTimer: ReturnType<typeof setTimeout> | null = null
+  private accumulatedTranscript: string = ''
+  private silenceTimeoutMs: number = 5000  // 5 seconds
   private micIconPath = "M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
   private onAiResponseHandler: () => void
   private enableContinuousHandler: () => void
@@ -122,7 +125,7 @@ export default class SimpleVoiceController extends Controller {
     }
 
     this.recognition = new SpeechRecognition()
-    this.recognition.continuous = false
+    this.recognition.continuous = true
     this.recognition.interimResults = true
     this.recognition.lang = 'en-US'
     this.recognition.maxAlternatives = 1
@@ -130,27 +133,30 @@ export default class SimpleVoiceController extends Controller {
     this.recognition.onstart = () => {
       console.log("[SimpleVoice] Started")
       this.isListening = true
+      this.accumulatedTranscript = ''  // Clear any previous transcript
       this.updateButtonListening()
       this.updateStatus("Listening...")
+      this.startSilenceTimer()  // Start silence detection
     }
 
     this.recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let transcript = ''
-      
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
-        transcript = result[0].transcript
+        const segment = result[0].transcript.trim()
         
         if (result.isFinal) {
-          console.log("[SimpleVoice] Final:", transcript)
-          this.processVoiceInput(transcript)
-          return
+          console.log("[SimpleVoice] Final segment:", segment)
+          this.accumulatedTranscript += (this.accumulatedTranscript ? ' ' : '') + segment
+          // Reset silence timer when we get final result
+          this.resetSilenceTimer()
+        } else {
+          // Interim result - update status but keep accumulating
+          if (segment) {
+            this.updateStatus(`Hearing: "${this.accumulatedTranscript + (this.accumulatedTranscript ? ' ' : '') + segment}"`)
+          }
+          // Reset silence timer on interim results too
+          this.resetSilenceTimer()
         }
-      }
-      
-      // Interim result
-      if (transcript) {
-        this.updateStatus(`Hearing: "${transcript}"`)
       }
     }
 
@@ -158,6 +164,13 @@ export default class SimpleVoiceController extends Controller {
       console.log("[SimpleVoice] Ended")
       this.isListening = false
       this.updateButtonReady()
+      
+      // If we have accumulated transcript when recognition ends, process it
+      if (this.accumulatedTranscript.trim()) {
+        console.log("[SimpleVoice] Processing accumulated transcript on end:", this.accumulatedTranscript)
+        this.processVoiceInput(this.accumulatedTranscript)
+        this.accumulatedTranscript = ''
+      }
     }
 
     this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -166,6 +179,8 @@ export default class SimpleVoiceController extends Controller {
       this.isListening = false
       this.updateStatus(`Error: ${event.error}`)
       this.updateButtonReady()
+      this.clearSilenceTimer()
+      this.accumulatedTranscript = ''
     }
 
     return true
@@ -191,6 +206,7 @@ export default class SimpleVoiceController extends Controller {
       }
     }
     this.isListening = false
+    this.clearSilenceTimer()
     this.updateButtonReady()
     this.updateStatus("Ready")
   }
@@ -496,6 +512,36 @@ export default class SimpleVoiceController extends Controller {
         </svg>
         <span class="text-white font-medium text-sm pr-1">Thinking...</span>
       `
+    }
+  }
+
+  // Start the silence detection timer
+  private startSilenceTimer(): void {
+    this.clearSilenceTimer()
+    this.silenceTimer = setTimeout(() => {
+      console.log("[SimpleVoice] 5 seconds of silence detected, processing transcript")
+      if (this.accumulatedTranscript.trim()) {
+        this.processVoiceInput(this.accumulatedTranscript)
+        this.accumulatedTranscript = ''
+      }
+      this.stopListening()
+    }, this.silenceTimeoutMs)
+  }
+
+  // Reset the silence timer (called when user speaks)
+  private resetSilenceTimer(): void {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer)
+      this.silenceTimer = null
+    }
+    this.startSilenceTimer()
+  }
+
+  // Clear the silence timer
+  private clearSilenceTimer(): void {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer)
+      this.silenceTimer = null
     }
   }
 }
