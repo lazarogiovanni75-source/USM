@@ -254,6 +254,7 @@ class ConversationOrchestrator < ApplicationService
       return error_msg
     end
     
+    Rails.logger.info "[ConversationOrchestrator] API key found: #{api_key[0..10]}...#{api_key[-4..]}"
     client = Anthropic::Client.new(api_key: api_key)
     @assistant_response = ""
     
@@ -266,16 +267,25 @@ class ConversationOrchestrator < ApplicationService
     }
     api_params[:tools] = tools if tools.present?
     
+    Rails.logger.info "[ConversationOrchestrator] Calling Anthropic API with model: #{CLAUDE_MODEL}"
+    Rails.logger.info "[ConversationOrchestrator] History messages count: #{history.size}"
+    
     begin
       stream = client.messages.stream(**api_params)
+      Rails.logger.info "[ConversationOrchestrator] Stream object created: #{stream.class}"
       
+      chunk_count = 0
       stream.text.each do |text_delta|
+        chunk_count += 1
         @assistant_response += text_delta
         broadcast_content(text_delta)
       end
       
+      Rails.logger.info "[ConversationOrchestrator] Stream completed. Chunks received: #{chunk_count}, Response length: #{@assistant_response.length}"
+      
       if @assistant_response.blank?
         error_msg = "I encountered an error while generating the response. Please try again."
+        Rails.logger.error "[ConversationOrchestrator] Empty response after streaming! Chunks: #{chunk_count}"
         broadcast_error(error_msg)
         save_assistant_message(error_msg)
         return error_msg
@@ -285,8 +295,9 @@ class ConversationOrchestrator < ApplicationService
       broadcast_completion
       @assistant_response
     rescue => e
-      Rails.logger.error "[ConversationOrchestrator] Streaming error: #{e.message}"
-      error_msg = "I encountered an error while generating the response. Please try again."
+      Rails.logger.error "[ConversationOrchestrator] Streaming error: #{e.class} - #{e.message}"
+      Rails.logger.error "[ConversationOrchestrator] Backtrace: #{e.backtrace.first(10).join("\n")}"
+      error_msg = "I encountered an error while generating my response. Please try again."
       broadcast_error(error_msg)
       save_assistant_message(error_msg)
       error_msg
