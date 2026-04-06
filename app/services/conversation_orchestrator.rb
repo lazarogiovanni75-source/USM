@@ -357,7 +357,7 @@ class ConversationOrchestrator < ApplicationService
           }
         end
         
-        final_response = handle_tool_calls_and_continue(history, tool_calls, :blocking)
+        final_response = handle_tool_calls_and_continue(history, tool_calls, :blocking, message.content)
         return final_response
       end
       
@@ -381,8 +381,7 @@ class ConversationOrchestrator < ApplicationService
     end
   end
 
-  def handle_tool_calls_and_continue(history, tool_calls, mode)
-    Rails.logger.info "[ConversationOrchestrator] Processing #{tool_calls.size} tool calls"
+  def handle_tool_calls_and_continue(history, tool_calls, mode, raw_assistant_content = nil)
     
     tool_handler = VoiceToolHandler.new(user: user)
     tool_results = []
@@ -413,19 +412,22 @@ class ConversationOrchestrator < ApplicationService
     
     assistant_msg = {
       role: "assistant",
-      content: history.last&.dig(:content) || ""
+      content: raw_assistant_content || history.last&.dig(:content) || ""
     }
     
     # Truncate long content to prevent AI from reading back huge URLs/IDs
     tool_result_content = tool_results.map do |tr|
       content = tr[:content]
-      # If content is very long (likely contains URLs/IDs), truncate it
       if content.length > 200
         content = content[0..200] + "..."
       end
-      "<tool_result id=\"#{tr[:tool_use_id]}\" tool=\"#{tr[:tool_name]}\">#{content}</tool_result>"
-    end.join("\n")
-    
+      {
+        type: "tool_result",
+        tool_use_id: tr[:tool_use_id],
+        content: content
+      }
+    end
+
     updated_history = history + [assistant_msg, { role: "user", content: tool_result_content }]
     
     Rails.logger.info "[ConversationOrchestrator] Making follow-up call with tool results"
