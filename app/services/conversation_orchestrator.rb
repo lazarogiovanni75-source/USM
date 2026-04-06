@@ -357,7 +357,16 @@ class ConversationOrchestrator < ApplicationService
           }
         end
         
-        final_response = handle_tool_calls_and_continue(history, tool_calls, :blocking, message.content)
+        serialized_content = message.content.map do |block|
+  if block.type == :tool_use
+    { type: "tool_use", id: block.id, name: block.name, input: block.input }
+  elsif block.type == :text
+    { type: "text", text: block.text }
+  else
+    { type: block.type.to_s }
+  end
+end
+final_response = handle_tool_calls_and_continue(history, tool_calls, :blocking, serialized_content)
         return final_response
       end
       
