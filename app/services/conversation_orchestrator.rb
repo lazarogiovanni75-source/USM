@@ -411,8 +411,8 @@ class ConversationOrchestrator < ApplicationService
     end
     
     assistant_msg = {
-      role: "assistant",
-      content: raw_assistant_content || history.last&.dig(:content) || ""
+  role: "assistant",
+  content: raw_assistant_content || []
     }
     
     # Truncate long content to prevent AI from reading back huge URLs/IDs
