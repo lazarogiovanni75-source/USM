@@ -460,7 +460,6 @@ final_response = handle_tool_calls_and_continue(history, tool_calls, :blocking, 
         broadcast_content(final_response)
       end
       
-      save_assistant_message(final_response)
       broadcast_completion if stream_channel
       
       @assistant_response = final_response
