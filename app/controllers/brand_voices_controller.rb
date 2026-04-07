@@ -42,8 +42,10 @@ class BrandVoicesController < ApplicationController
     )
 
     # For synchronous response, use the LLM service directly
-    client = OllamaClient.new
-    response_text = client.generate(prompt: prompt, system: LlmPrompts::BRAND_VOICE_ANALYST)
+    response_text = LlmService.generate(
+      prompt,
+      user: current_user
+    )
 
     # Save everything to the user
     current_user.update!(

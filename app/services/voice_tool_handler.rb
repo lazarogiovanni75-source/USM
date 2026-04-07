@@ -85,20 +85,37 @@ class VoiceToolHandler
     style = args["style"] || "photorealistic"
     size = args["size"] || "square"
 
-    image_service = OpenAiImageService.new
+    image_service = AtlasCloudImageService.new
+    unless image_service.configured?
+      return { status: "error", error: "Image generation service not configured. Please contact support." }
+    end
+
     result = image_service.generate_image(
       prompt: prompt,
-      style: style,
-      size: size
+      aspect_ratio: map_size_to_aspect_ratio(size),
+      quality: 'standard'
     )
 
-    {
-      status: "success",
-      image_url: result[:url],
-      prompt: prompt,
-      style: style,
-      message: "Image generated! You can view it at: #{result[:url]}"
-    }
+    # Handle async generation - returns task_id for polling
+    if result['task_id'].present?
+      {
+        status: "processing",
+        task_id: result['task_id'],
+        prompt: prompt,
+        style: style,
+        message: "Image generation started! I'll notify you when it's ready."
+      }
+    elsif result['output'].present?
+      {
+        status: "success",
+        image_url: result['output'],
+        prompt: prompt,
+        style: style,
+        message: "Image generated! You can view it at: #{result['output']}"
+      }
+    else
+      { status: "error", error: result['error'] || 'Image generation failed' }
+    end
   rescue => e
     Rails.logger.error "Image generation error: #{e.message}"
     { status: "error", error: e.message }
@@ -258,5 +275,22 @@ class VoiceToolHandler
       error: error_message,
       message: "Sorry, I encountered an error: #{error_message}"
     }
+  end
+
+  def map_size_to_aspect_ratio(size)
+    case size&.to_s.downcase
+    when '1024x1024', '1:1', 'square'
+      '1:1'
+    when '1792x1024', '16:9', 'landscape'
+      '16:9'
+    when '1024x1792', '9:16', 'portrait'
+      '9:16'
+    when '1024x1536', '3:4'
+      '3:4'
+    when '1536x1024', '4:3'
+      '4:3'
+    else
+      '1:1'
+    end
   end
 end

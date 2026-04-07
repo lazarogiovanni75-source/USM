@@ -31,7 +31,7 @@
             Your Brand Voice Profile
           </h2>
           <span class="text-sm text-gray-500 dark:text-gray-400">
-            Generated <%= time_ago_in_words(current_user.brand_voice_generated_at) %> ago
+            Generated <%= current_user.brand_voice_generated_at ? time_ago_in_words(current_user.brand_voice_generated_at) : 'recently' %> ago
           </span>
         </div>
         <div class="prose dark:prose-invert max-w-none mb-6">

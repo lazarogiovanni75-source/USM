@@ -345,7 +345,6 @@ class ConversationOrchestrator < ApplicationService
         content = text_content&.text
         if content.present?
           @assistant_response = content
-          save_assistant_message(content)
           broadcast_content(content) if stream_channel
         end
         
