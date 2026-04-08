@@ -6,7 +6,7 @@ class ConversationOrchestrator < ApplicationService
   CLAUDE_MODEL = "claude-sonnet-4-6"
   CHAT_TEMPERATURE = 0.8
   CHAT_MAX_TOKENS = 4000
-  DEFAULT_TOOLS_ENABLED = true
+  DEFAULT_TOOLS_ENABLED = false  # Disabled temporarily for debugging
   
   attr_reader :user, :conversation, :content, :modality, :stream_channel, :fallback_channel, :tools_enabled
 
@@ -51,7 +51,7 @@ class ConversationOrchestrator < ApplicationService
     Rails.logger.error "[ConversationOrchestrator] Error: #{e.message}"
     Rails.logger.error e.backtrace.first(10).join("\n")
     
-    error_message = "I apologize, but I encountered an error processing your message. Please try again."
+    error_message = "I apologize, but I encountered an error processing your message. Please try again. [#{e.class}]"
     save_assistant_message(error_message)
     broadcast_error(error_message) if stream_channel
     
@@ -284,7 +284,7 @@ class ConversationOrchestrator < ApplicationService
       Rails.logger.info "[ConversationOrchestrator] Stream completed. Chunks received: #{chunk_count}, Response length: #{@assistant_response.length}"
       
       if @assistant_response.blank?
-        error_msg = "I encountered an error while generating the response. Please try again."
+        error_msg = "I encountered an error while generating the response. Please try again. [#{chunk_count} chunks]"
         Rails.logger.error "[ConversationOrchestrator] Empty response after streaming! Chunks: #{chunk_count}"
         broadcast_error(error_msg)
         save_assistant_message(error_msg)
@@ -297,7 +297,7 @@ class ConversationOrchestrator < ApplicationService
     rescue => e
       Rails.logger.error "[ConversationOrchestrator] Streaming error: #{e.class} - #{e.message}"
       Rails.logger.error "[ConversationOrchestrator] Backtrace: #{e.backtrace.first(10).join("\n")}"
-      error_msg = "I encountered an error while generating my response. Please try again."
+      error_msg = "I encountered an error while generating my response. Please try again. [#{e.class}]"
       broadcast_error(error_msg)
       save_assistant_message(error_msg)
       error_msg
@@ -383,7 +383,7 @@ final_response = handle_tool_calls_and_continue(history, tool_calls, :blocking, 
       @assistant_response
     rescue => e
       Rails.logger.error "[ConversationOrchestrator] Blocking chat error: #{e.message}"
-      error_msg = "I encountered an error while generating the response. Please try again."
+      error_msg = "I encountered an error while generating the response. Please try again. [#{e.class}]"
       save_assistant_message(error_msg)
       error_msg
     end
