@@ -140,19 +140,23 @@ export default class SimpleVoiceController extends Controller {
     }
 
     this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+      // Get all results from resultIndex onwards
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
         const segment = result[0].transcript.trim()
         
         if (result.isFinal) {
           console.log("[SimpleVoice] Final segment:", segment)
-          this.accumulatedTranscript += (this.accumulatedTranscript ? ' ' : '') + segment
+          // Only add if not already in accumulated (prevents duplicates)
+          if (!this.accumulatedTranscript.includes(segment)) {
+            this.accumulatedTranscript = segment  // Replace with full final transcript, don't append
+          }
           // Reset silence timer when we get final result
           this.resetSilenceTimer()
         } else {
           // Interim result - update status but keep accumulating
           if (segment) {
-            this.updateStatus(`Hearing: "${this.accumulatedTranscript + (this.accumulatedTranscript ? ' ' : '') + segment}"`)
+            this.updateStatus(`Hearing: "${segment}"`)
           }
           // Reset silence timer on interim results too
           this.resetSilenceTimer()

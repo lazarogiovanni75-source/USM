@@ -8,7 +8,10 @@ module Api
       # POST /api/v1/ai_chat/stream_message
       # Streaming version - uses ConversationOrchestrator for unified AI processing
       def stream_message
-        conversation = AiConversation.find(params[:conversation_id]) if params[:conversation_id].present?
+        conversation_id = params[:conversation_id]
+        
+        # CRITICAL: Verify conversation belongs to current user
+        conversation = current_user.ai_conversations.find_by(id: conversation_id)
         
         unless conversation
           render json: { error: "Conversation not found" }, status: :not_found
