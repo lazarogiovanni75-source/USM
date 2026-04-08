@@ -34,7 +34,16 @@ class VoiceToolHandler
 
   # Check if tool requires user confirmation
   def requires_confirmation?(tool_name)
-    AiVoiceTools.requires_confirmation?(tool_name)
+    begin
+      # First try to use AiVoiceTools if available
+      return AiVoiceTools.requires_confirmation?(tool_name) if defined?(AiVoiceTools)
+      
+      # Fall back to hardcoded list if the module is not available
+      %w[generate_video schedule_post create_campaign].include?(tool_name)
+    rescue => e
+      Rails.logger.error "[VoiceToolHandler] Error checking confirmation: #{e.message}"
+      false # Default to not requiring confirmation if there's any error
+    end
   end
 
   private

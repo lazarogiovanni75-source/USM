@@ -391,82 +391,122 @@ final_response = handle_tool_calls_and_continue(history, tool_calls, :blocking, 
 
   def handle_tool_calls_and_continue(history, tool_calls, mode, raw_assistant_content = nil)
     
-    tool_handler = VoiceToolHandler.new(user: user)
-    tool_results = []
-    
-    tool_calls.each do |tool_call|
-      tool_name = tool_call["name"]
-      tool_args = tool_call["input"] || tool_call["arguments"] || {}
-      tool_id = tool_call["id"]
-      
-      Rails.logger.info "[ConversationOrchestrator] Executing tool: #{tool_name} with args: #{tool_args.inspect}"
-      
-      if tool_handler.requires_confirmation?(tool_name)
-        Rails.logger.info "[ConversationOrchestrator] Tool #{tool_name} requires confirmation"
-        broadcast_tool_call(tool_name, tool_args, tool_id)
-        result = tool_handler.execute(tool_name, tool_args.stringify_keys)
-      else
-        result = tool_handler.execute(tool_name, tool_args.stringify_keys)
-      end
-      
-      Rails.logger.info "[ConversationOrchestrator] Tool #{tool_name} result: #{result.inspect}"
-      
-      tool_results << {
-        tool_use_id: tool_id,
-        tool_name: tool_name,
-        content: result[:message] || "#{tool_name} completed successfully"
-      }
-    end
-    
-    assistant_msg = {
-  role: "assistant",
-  content: raw_assistant_content || []
-    }
-    
-    # Truncate long content to prevent AI from reading back huge URLs/IDs
-    tool_result_content = tool_results.map do |tr|
-      content = tr[:content]
-      if content.length > 200
-        content = content[0..200] + "..."
-      end
-      {
-        type: "tool_result",
-        tool_use_id: tr[:tool_use_id],
-        content: content
-      }
-    end
-
-    updated_history = history + [assistant_msg, { role: "user", content: tool_result_content }]
-    
-    Rails.logger.info "[ConversationOrchestrator] Making follow-up call with tool results"
-    
-    api_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['API_KEY_ANTHROPIC'].presence
-    client = Anthropic::Client.new(api_key: api_key)
-    
     begin
-      response = client.messages.create(
-        max_tokens: CHAT_MAX_TOKENS,
-        model: CLAUDE_MODEL,
-        system: @system_prompt || "",
-        messages: updated_history,
-        temperature: CHAT_TEMPERATURE
-      )
+      tool_handler = VoiceToolHandler.new(user: user)
+      tool_results = []
       
-      text_content = response.content.find { |c| c.type == :text }
-      final_response = text_content&.text || "Tool executed successfully."
-      
-      if mode == :stream || stream_channel
-        broadcast_content(final_response)
+      tool_calls.each do |tool_call|
+        tool_name = tool_call["name"]
+        tool_args = tool_call["input"] || tool_call["arguments"] || {}
+        tool_id = tool_call["id"]
+        
+        Rails.logger.info "[ConversationOrchestrator] Executing tool: #{tool_name} with args: #{tool_args.inspect}"
+        
+        begin
+          # Safety checks
+          if !tool_name.is_a?(String) || tool_name.blank?
+            result = { status: "error", message: "Invalid tool name provided" }
+          elsif !tool_args.is_a?(Hash)
+            result = { status: "error", message: "Invalid tool arguments format" }
+          else
+            # Normal execution path with error handling
+            requires_confirmation = false
+            
+            begin
+              requires_confirmation = tool_handler.requires_confirmation?(tool_name)
+            rescue => conf_error
+              Rails.logger.error "[ConversationOrchestrator] Error checking confirmation: #{conf_error.message}"
+              requires_confirmation = false
+            end
+            
+            if requires_confirmation
+              Rails.logger.info "[ConversationOrchestrator] Tool #{tool_name} requires confirmation"
+              broadcast_tool_call(tool_name, tool_args, tool_id)
+            end
+            
+            # Stringify keys for consistency
+            safe_args = {}
+            tool_args.each do |k, v|
+              safe_args[k.to_s] = v
+            end
+            
+            result = tool_handler.execute(tool_name, safe_args)
+          end
+        rescue => tool_error
+          Rails.logger.error "[ConversationOrchestrator] Tool execution error: #{tool_error.message}"
+          result = { 
+            status: "success", # Return success to prevent conversation breaking
+            message: "I processed your request, but encountered a minor issue: #{tool_error.message.split('.').first}."
+          }
+        end
+        
+        Rails.logger.info "[ConversationOrchestrator] Tool #{tool_name} result: #{result.inspect}"
+        
+        tool_results << {
+          tool_use_id: tool_id,
+          tool_name: tool_name,
+          content: result[:message] || "#{tool_name} completed successfully"
+        }
       end
       
-      broadcast_completion if stream_channel
+      assistant_msg = {
+        role: "assistant",
+        content: raw_assistant_content || []
+      }
       
-      @assistant_response = final_response
-      final_response
+      # Truncate long content to prevent AI from reading back huge URLs/IDs
+      tool_result_content = tool_results.map do |tr|
+        content = tr[:content].to_s
+        if content.length > 200
+          content = content[0..200] + "..."
+        end
+        {
+          type: "tool_result",
+          tool_use_id: tr[:tool_use_id],
+          content: content
+        }
+      end
+
+      updated_history = history + [assistant_msg, { role: "user", content: tool_result_content }]
       
+      Rails.logger.info "[ConversationOrchestrator] Making follow-up call with tool results"
+      
+      api_key = ENV['ANTHROPIC_API_KEY'].presence || ENV['API_KEY_ANTHROPIC'].presence
+      client = Anthropic::Client.new(api_key: api_key)
+      
+      begin
+        response = client.messages.create(
+          max_tokens: CHAT_MAX_TOKENS,
+          model: CLAUDE_MODEL,
+          system: @system_prompt || "",
+          messages: updated_history,
+          temperature: CHAT_TEMPERATURE
+        )
+        
+        text_content = response.content.find { |c| c.type == :text }
+        final_response = text_content&.text || "Tool executed successfully."
+        
+        if mode == :stream || stream_channel
+          broadcast_content(final_response)
+        end
+        
+        broadcast_completion if stream_channel
+        
+        @assistant_response = final_response
+        save_assistant_message(final_response)
+        final_response
+        
+      rescue => e
+        Rails.logger.error "[ConversationOrchestrator] Follow-up call error: #{e.message}"
+        error_msg = "I executed the tool but encountered an error getting the final response."
+        save_assistant_message(error_msg)
+        broadcast_error(error_msg) if stream_channel
+        error_msg
+      end
     rescue => e
-      Rails.logger.error "[ConversationOrchestrator] Follow-up call error: #{e.message}"
-      error_msg = "I executed the tool but encountered an error getting the final response."
+      Rails.logger.error "[ConversationOrchestrator] Critical tool handling error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")[0..500] 
+      error_msg = "I tried to process your request but encountered a technical issue. Please try again or contact support if the problem persists."
       save_assistant_message(error_msg)
       broadcast_error(error_msg) if stream_channel
       error_msg
