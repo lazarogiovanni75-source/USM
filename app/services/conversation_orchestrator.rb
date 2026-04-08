@@ -3,7 +3,7 @@
 # ConversationOrchestrator - ChatGPT-style conversation service
 class ConversationOrchestrator < ApplicationService
   MAX_HISTORY_MESSAGES = 15
-  CLAUDE_MODEL = "claude-sonnet-4-6"
+  CLAUDE_MODEL = "claude-sonnet-4-7"
   CHAT_TEMPERATURE = 0.8
   CHAT_MAX_TOKENS = 4000
   DEFAULT_TOOLS_ENABLED = false  # Disabled temporarily for debugging

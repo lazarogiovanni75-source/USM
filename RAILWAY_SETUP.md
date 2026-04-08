@@ -61,7 +61,7 @@ After setting environment variables:
 
 ## Model Configuration
 
-Default model: `claude-sonnet-4-6`
+Default model: `claude-sonnet-4-7`
 To change: Set `ANTHROPIC_MODEL` environment variable in Railway
 
 ## API Endpoint

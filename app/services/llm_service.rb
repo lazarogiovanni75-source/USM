@@ -40,7 +40,7 @@ class LlmService
     end
 
     client = Anthropic::Client.new(api_key: api_key)
-    model = ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+    model = ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-7')
 
     # Inject brand voice into system prompt if user is provided
     system_with_brand_voice = system_prompt_with_brand_voice(system, user)
@@ -86,7 +86,7 @@ class LlmService
     system_with_brand_voice = system_prompt_with_brand_voice(system_prompt, user)
     
     create_params = {
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-7',
       max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }]
     }
@@ -157,7 +157,7 @@ class LlmService
     end
     
     client = Anthropic::Client.new(api_key: api_key)
-    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-7')
     temperature = options[:temperature]&.to_f || 0.7
     max_tokens = options[:max_tokens] || 4096
     
@@ -192,7 +192,7 @@ class LlmService
     end
     
     client = Anthropic::Client.new(api_key: api_key)
-    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-7')
     max_tokens = options[:max_tokens] || 1024
     
     create_params = {
