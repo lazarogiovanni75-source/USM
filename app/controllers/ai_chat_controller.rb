@@ -27,6 +27,8 @@ class AiChatController < ApplicationController
   def create
     message_content = params[:message]
     
+    Rails.logger.info "[AiChat#create] message_present=#{message_content.present?}, length=#{message_content&.length || 0}"
+    
     # If message is provided, create conversation and process message
     if message_content.present?
       @conversation = current_user.ai_conversations.create!(
@@ -68,33 +70,50 @@ class AiChatController < ApplicationController
     conversation_id = params[:conversation_id]
     message_content = params[:message]
     
+    Rails.logger.info "[AiChat#send_message] conversation_id=#{conversation_id.inspect}, message_length=#{message_content&.length || 0}"
+    
     # Validate message content
     if message_content.blank?
-      render json: { error: 'Message cannot be blank' }, status: :unprocessable_entity
+      if request.xhr? || request.headers['Accept']&.include?('json')
+        render json: { error: 'Message cannot be blank' }, status: :unprocessable_entity
+      else
+        redirect_to ai_chat_index_path, alert: 'Message cannot be blank'
+      end
       return
     end
     
     begin
-      # Use ConversationOrchestrator for consistent message handling
-      # It will create a new conversation if conversation_id is nil
+      # If conversation_id provided, verify it exists and belongs to user
+      if conversation_id.present?
+        @conversation = current_user.ai_conversations.find_by(id: conversation_id)
+      end
+      
+      # If no valid conversation, create a new one
+      unless @conversation
+        @conversation = current_user.ai_conversations.create!(
+          title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
+          session_type: 'chat',
+          metadata: { created_via: 'web' }
+        )
+      end
+      
+      # Use ConversationOrchestrator for message processing
       result = ConversationOrchestrator.process_message(
         user: current_user,
-        conversation_id: conversation_id,
+        conversation_id: @conversation.id,
         content: message_content,
         modality: "text"
       )
       
-      # Get the conversation from result
-      @conversation = current_user.ai_conversations.find(result[:conversation_id])
       @messages = @conversation.ai_messages.order(created_at: :desc)
       
-      # Return Turbo Stream response for frontend updates
+      # Return the messages view
       render 'send_message'
     rescue => e
       Rails.logger.error "[AiChat] Error sending message: #{e.message}"
       Rails.logger.error e.backtrace.first(5).join("\n")
       
-      # Try to find an existing conversation or create a new one
+      # Fallback: find or create conversation and show existing messages
       @conversation = current_user.ai_conversations.first || current_user.ai_conversations.create!(
         title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
         session_type: 'chat',
