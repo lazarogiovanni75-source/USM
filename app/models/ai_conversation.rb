@@ -1,7 +1,4 @@
 class AiConversation < ApplicationRecord
-  # Explicitly set primary key - ensures Rails can find the id column
-  self.primary_key = :id unless !column_exists?(:ai_conversations, :id)
-  
   belongs_to :user
   
   has_many :ai_messages, dependent: :destroy
