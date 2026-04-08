@@ -1,4 +1,7 @@
 class AiMessage < ApplicationRecord
+  # Explicitly set primary key - ensures Rails can find the id column
+  self.primary_key = :id unless !column_exists?(:ai_messages, :id)
+  
   belongs_to :ai_conversation
   
   validates :role, presence: true, inclusion: { in: %w[user assistant system tool] }
