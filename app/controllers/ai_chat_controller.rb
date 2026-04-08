@@ -39,21 +39,42 @@ class AiChatController < ApplicationController
     conversation_id = params[:conversation_id]
     message_content = params[:message]
     
-    # Use ConversationOrchestrator for consistent message handling
-    # It will create a new conversation if conversation_id is nil
-    result = ConversationOrchestrator.process_message(
-      user: current_user,
-      conversation_id: conversation_id,
-      content: message_content,
-      modality: "text"
-    )
+    # Validate message content
+    if message_content.blank?
+      render json: { error: 'Message cannot be blank' }, status: :unprocessable_entity
+      return
+    end
     
-    # Get the conversation from result
-    @conversation = current_user.ai_conversations.find(result[:conversation_id])
-    @messages = @conversation.ai_messages.order(created_at: :desc)
-    
-    # Return Turbo Stream response for frontend updates
-    render 'send_message'
+    begin
+      # Use ConversationOrchestrator for consistent message handling
+      # It will create a new conversation if conversation_id is nil
+      result = ConversationOrchestrator.process_message(
+        user: current_user,
+        conversation_id: conversation_id,
+        content: message_content,
+        modality: "text"
+      )
+      
+      # Get the conversation from result
+      @conversation = current_user.ai_conversations.find(result[:conversation_id])
+      @messages = @conversation.ai_messages.order(created_at: :desc)
+      
+      # Return Turbo Stream response for frontend updates
+      render 'send_message'
+    rescue => e
+      Rails.logger.error "[AiChat] Error sending message: #{e.message}"
+      Rails.logger.error e.backtrace.first(5).join("\n")
+      
+      # Try to find an existing conversation or create a new one
+      @conversation = current_user.ai_conversations.first || current_user.ai_conversations.create!(
+        title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
+        session_type: 'chat',
+        metadata: { created_via: 'web' }
+      )
+      @messages = @conversation.ai_messages.order(created_at: :desc)
+      
+      render 'send_message'
+    end
   end
   
   def toggle_voice
