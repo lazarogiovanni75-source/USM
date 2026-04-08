@@ -357,7 +357,7 @@ Rails.application.routes.draw do
   end
   
   # AI Chat routes
-  resources :ai_chat, only: [:index, :show, :create] do
+  resources :ai_chat, only: [:index, :show, :create, :new] do
     collection do
       post 'send_message'
       post 'suggest_content'

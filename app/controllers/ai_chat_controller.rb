@@ -1,6 +1,20 @@
 class AiChatController < ApplicationController
   before_action :authenticate_user!
   
+  # Dedicated action for creating new conversations without message processing
+  def new
+    @conversation = current_user.ai_conversations.create!(
+      title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
+      session_type: 'chat',
+      metadata: { created_via: 'web' }
+    )
+    
+    redirect_to ai_chat_path(@conversation)
+  rescue => e
+    Rails.logger.error "[AiChat#new] Error creating conversation: #{e.message}"
+    redirect_to ai_chat_index_path, alert: 'Failed to create new chat'
+  end
+  
   def index
     @conversations = current_user.ai_conversations.order(updated_at: :desc).limit(10)
     @current_conversation = @conversations.first || current_user.ai_conversations.create!(
