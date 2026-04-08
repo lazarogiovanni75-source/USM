@@ -73,7 +73,7 @@ class VoiceLoopService
     api_key = ENV['ANTHROPIC_API_KEY']
     raise "ANTHROPIC_API_KEY not configured" if api_key.blank?
 
-    model = ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-7')
+    model = ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
 
     uri = URI('https://api.anthropic.com/v1/messages')
 
