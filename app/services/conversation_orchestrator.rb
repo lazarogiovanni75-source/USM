@@ -28,6 +28,20 @@ class ConversationOrchestrator < ApplicationService
   def call
     Rails.logger.info "[ConversationOrchestrator] === START ==="
     Rails.logger.info "[ConversationOrchestrator] user: #{user&.id} (#{user&.email})"
+    Rails.logger.info "[ConversationOrchestrator] conversation: #{conversation.id}, modality: #{modality}, stream: #{stream_channel.present?}"
+    
+    save_user_message
+    intent = detect_intent
+    Rails.logger.info "[ConversationOrchestrator] Detected intent: #{intent}"
+    
+    case intent
+    when :image
+      handle_image_generation
+    when :video
+      handle_video_generation
+    else
+      handle_chat
+    end
     
     conversation.touch
     
