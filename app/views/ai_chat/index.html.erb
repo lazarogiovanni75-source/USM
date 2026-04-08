@@ -126,6 +126,7 @@
         <!-- Chat form wrapper -->
         <div>
           <form id="chat-form" data-ai-chat-target="form" data-action="submit->ai-chat#sendMessage">
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
             <input type="hidden" name="conversation_id" value="<%= @current_conversation&.id %>">
             <div class="flex items-center gap-2">
               <!-- Talk to Text Button -->
