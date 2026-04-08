@@ -26,20 +26,8 @@ class ConversationOrchestrator < ApplicationService
   end
 
   def call
-    Rails.logger.info "[ConversationOrchestrator] Processing message - conversation: #{conversation.id}, modality: #{modality}, stream: #{stream_channel.present?}"
-    
-    save_user_message
-    intent = detect_intent
-    Rails.logger.info "[ConversationOrchestrator] Detected intent: #{intent}"
-    
-    case intent
-    when :image
-      handle_image_generation
-    when :video
-      handle_video_generation
-    else
-      handle_chat
-    end
+    Rails.logger.info "[ConversationOrchestrator] === START ==="
+    Rails.logger.info "[ConversationOrchestrator] user: #{user&.id} (#{user&.email})"
     
     conversation.touch
     
@@ -267,19 +255,21 @@ class ConversationOrchestrator < ApplicationService
     }
     api_params[:tools] = tools if tools.present?
     
-    Rails.logger.info "[ConversationOrchestrator] Calling Anthropic API with model: #{CLAUDE_MODEL}"
-    Rails.logger.info "[ConversationOrchestrator] History messages count: #{history.size}"
+    Rails.logger.info "[ConversationOrchestrator] API params - model: #{api_params[:model]}, max_tokens: #{api_params[:max_tokens]}, temp: #{api_params[:temperature]}, messages: #{history.size}, tools: #{tools.present?}"
     
     begin
+      Rails.logger.info "[ConversationOrchestrator] Calling client.messages.stream..."
       stream = client.messages.stream(**api_params)
       Rails.logger.info "[ConversationOrchestrator] Stream object created: #{stream.class}"
       
       chunk_count = 0
+      Rails.logger.info "[ConversationOrchestrator] Starting to iterate stream.text..."
       stream.text.each do |text_delta|
         chunk_count += 1
         @assistant_response += text_delta
         broadcast_content(text_delta)
       end
+      Rails.logger.info "[ConversationOrchestrator] Stream iteration complete. Chunks: #{chunk_count}"
       
       Rails.logger.info "[ConversationOrchestrator] Stream completed. Chunks received: #{chunk_count}, Response length: #{@assistant_response.length}"
       
@@ -294,6 +284,14 @@ class ConversationOrchestrator < ApplicationService
       save_assistant_message(@assistant_response)
       broadcast_completion
       @assistant_response
+    rescue ArgumentError => e
+      Rails.logger.error "[ConversationOrchestrator] ArgumentError: #{e.message}"
+      Rails.logger.error "[ConversationOrchestrator] Full backtrace:"
+      e.backtrace.each { |line| Rails.logger.error "  #{line}" }
+      error_msg = "I encountered an error while generating my response. Please try again. [ArgError: #{e.message}]"
+      broadcast_error(error_msg)
+      save_assistant_message(error_msg)
+      error_msg
     rescue => e
       Rails.logger.error "[ConversationOrchestrator] Streaming error: #{e.class} - #{e.message}"
       Rails.logger.error "[ConversationOrchestrator] Backtrace: #{e.backtrace.first(10).join("\n")}"

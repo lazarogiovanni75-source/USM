@@ -192,7 +192,7 @@ class LlmService
     end
     
     client = Anthropic::Client.new(api_key: api_key)
-    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-7')
+    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
     max_tokens = options[:max_tokens] || 1024
     
     create_params = {
