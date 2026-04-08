@@ -25,13 +25,42 @@ class AiChatController < ApplicationController
   end
   
   def create
-    @conversation = current_user.ai_conversations.create!(
-      title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
-      session_type: 'chat',
-      metadata: { created_via: 'web' }
-    )
+    message_content = params[:message]
     
-    redirect_to ai_chat_path(@conversation)
+    # If message is provided, create conversation and process message
+    if message_content.present?
+      @conversation = current_user.ai_conversations.create!(
+        title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
+        session_type: 'chat',
+        metadata: { created_via: 'web' }
+      )
+      
+      # Process the message using ConversationOrchestrator
+      begin
+        result = ConversationOrchestrator.process_message(
+          user: current_user,
+          conversation_id: @conversation.id,
+          content: message_content,
+          modality: "text"
+        )
+        
+        @messages = @conversation.ai_messages.order(created_at: :desc)
+        render 'send_message' and return
+      rescue => e
+        Rails.logger.error "[AiChat] Error processing message in create: #{e.message}"
+        @messages = @conversation.ai_messages.order(created_at: :desc)
+        render 'send_message' and return
+      end
+    else
+      # No message, just create conversation and redirect
+      @conversation = current_user.ai_conversations.create!(
+        title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
+        session_type: 'chat',
+        metadata: { created_via: 'web' }
+      )
+      
+      redirect_to ai_chat_path(@conversation)
+    end
   end
   
   # Legacy endpoint - now uses ConversationOrchestrator

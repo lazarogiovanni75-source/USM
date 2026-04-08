@@ -170,7 +170,7 @@ module Api
         end
 
         # Create user message
-        user_message = conversation.messages.create!(
+        user_message = conversation.ai_messages.create!(
           role: "user",
           content: message_content
         )
@@ -183,13 +183,13 @@ module Api
         )
 
         # Create AI message
-        ai_message = conversation.messages.create!(
+        ai_message = conversation.ai_messages.create!(
           role: "assistant",
           content: response_content
         )
 
         # Update conversation title if it's the first message
-        if conversation.messages.count == 2
+        if conversation.ai_messages.count == 2
           conversation.update!(title: message_content.truncate(50))
         end
 
