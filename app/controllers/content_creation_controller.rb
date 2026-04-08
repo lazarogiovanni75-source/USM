@@ -160,15 +160,13 @@ class ContentCreationController < ApplicationController
         
         Rails.logger.info "[ContentCreation] Creating draft with task_id: #{task_id}"
         
-        draft = current_user.draft_contents.create!(
+        draft_attrs = {
           title: "Image - #{prompt[0..50]}",
           content: prompt,
           content_type: 'image',
           platform: 'general',
           status: 'pending',
           media_url: nil,
-          quality_tier: quality,
-          credit_cost: credit_cost,
           metadata: { 
             'task_id' => task_id, 
             'service' => service, 
@@ -176,7 +174,11 @@ class ContentCreationController < ApplicationController
             'aspect_ratio' => size,
             'quality_tier' => quality
           }
-        )
+        }
+        draft_attrs[:quality_tier] = quality if column_exists?(:draft_contents, :quality_tier)
+        draft_attrs[:credit_cost] = credit_cost if column_exists?(:draft_contents, :credit_cost)
+        
+        draft = current_user.draft_contents.create!(draft_attrs)
 
         ImagePollJob.perform_later(draft.id, task_id, service)
         Rails.logger.info "[ContentCreation] Redirecting to draft: #{draft.id}"
@@ -234,15 +236,13 @@ class ContentCreationController < ApplicationController
       if result[:success]
         service = result[:service]
         
-        draft = current_user.draft_contents.create!(
+        draft_attrs = {
           title: "Video - #{prompt[0..50]}",
           content: prompt,
           content_type: 'video',
           platform: 'general',
           status: 'pending',
           media_url: nil,
-          quality_tier: quality,
-          credit_cost: credit_cost,
           metadata: { 
             'task_id' => result[:task_id], 
             'service' => service, 
@@ -252,7 +252,11 @@ class ContentCreationController < ApplicationController
             'source_image_url' => source_image_url,
             'quality_tier' => quality
           }
-        )
+        }
+        draft_attrs[:quality_tier] = quality if column_exists?(:draft_contents, :quality_tier)
+        draft_attrs[:credit_cost] = credit_cost if column_exists?(:draft_contents, :credit_cost)
+        
+        draft = current_user.draft_contents.create!(draft_attrs)
 
         VideoPollJob.perform_later(draft.id, result[:task_id], service)
 
