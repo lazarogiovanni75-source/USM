@@ -4,18 +4,28 @@
 # This addresses "No unique index found for id" errors
 class FixAiTablesPrimaryKeys < ActiveRecord::Migration[7.2]
   def up
-    # Ensure ai_conversations has primary key
-    unless index_exists?(:ai_conversations, :id, unique: true)
-      execute "ALTER TABLE ai_conversations ADD PRIMARY KEY (id)" rescue nil
+    # Check if id column exists and has proper serial/bigint type
+    if column_exists?(:ai_conversations, :id)
+      # Ensure it's the primary key
+      begin
+        execute "ALTER TABLE ai_conversations ALTER COLUMN id SET DATA TYPE bigint" rescue nil
+        execute "ALTER TABLE ai_conversations ADD CONSTRAINT ai_conversations_pkey PRIMARY KEY (id)" rescue nil
+      rescue => e
+        Rails.logger.info "ai_conversations primary key: #{e.message}"
+      end
     end
     
-    # Ensure ai_messages has primary key
-    unless index_exists?(:ai_messages, :id, unique: true)
-      execute "ALTER TABLE ai_messages ADD PRIMARY KEY (id)" rescue nil
+    if column_exists?(:ai_messages, :id)
+      begin
+        execute "ALTER TABLE ai_messages ALTER COLUMN id SET DATA TYPE bigint" rescue nil
+        execute "ALTER TABLE ai_messages ADD CONSTRAINT ai_messages_pkey PRIMARY KEY (id)" rescue nil
+      rescue => e
+        Rails.logger.info "ai_messages primary key: #{e.message}"
+      end
     end
   end
 
   def down
-    # No-op - don't remove primary keys
+    # No-op
   end
 end
