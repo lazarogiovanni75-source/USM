@@ -175,8 +175,8 @@ class ContentCreationController < ApplicationController
             'quality_tier' => quality
           }
         }
-        draft_attrs[:quality_tier] = quality if column_exists?(:draft_contents, :quality_tier)
-        draft_attrs[:credit_cost] = credit_cost if column_exists?(:draft_contents, :credit_cost)
+        draft_attrs[:quality_tier] = quality if DraftContent.column_names.include?('quality_tier')
+        draft_attrs[:credit_cost] = credit_cost if DraftContent.column_names.include?('credit_cost')
         
         draft = current_user.draft_contents.create!(draft_attrs)
 
@@ -253,8 +253,8 @@ class ContentCreationController < ApplicationController
             'quality_tier' => quality
           }
         }
-        draft_attrs[:quality_tier] = quality if column_exists?(:draft_contents, :quality_tier)
-        draft_attrs[:credit_cost] = credit_cost if column_exists?(:draft_contents, :credit_cost)
+        draft_attrs[:quality_tier] = quality if DraftContent.column_names.include?('quality_tier')
+        draft_attrs[:credit_cost] = credit_cost if DraftContent.column_names.include?('credit_cost')
         
         draft = current_user.draft_contents.create!(draft_attrs)
 
