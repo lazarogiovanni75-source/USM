@@ -1,6 +1,7 @@
 <div id="chat-messages" class="flex-1 p-6 overflow-y-auto" data-ai-chat-target="messagesContainer">
   <% if messages.any? %>
     <% messages.each do |message| %>
+      <% suggested_actions = message.metadata&.dig('suggested_actions') || [] %>
       <div class="message <%= message.role %> mb-4 flex <%= message.role == 'user' ? 'justify-end' : 'justify-start' %>">
         <div class="flex <%= message.role == 'user' ? 'flex-row-reverse' : 'flex-row' %> items-start gap-3 max-w-3xl">
           <div class="flex-shrink-0">
@@ -14,8 +15,38 @@
           </div>
           <div class="<%= message.role == 'user' ? 'text-right' : 'text-left' %>">
             <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-primary to-secondary text-white' : 'bg-surface border border-border/50 text-primary' %> shadow-sm">
-              <p class="text-sm"><%= message.content %></p>
+              <p class="text-sm whitespace-pre-wrap"><%= message.content %></p>
             </div>
+            <% if suggested_actions.any? && message.role == 'assistant' %>
+              <div class="mt-2 flex flex-wrap gap-2 justify-start">
+                <% suggested_actions.each do |action| %>
+                  <% action_type = action['type'] || action[:type] %>
+                  <% action_label = action['label'] || action[:label] || 'Action' %>
+                  <% action_data = action['data'] || action[:data] || {} %>
+                  <button
+                    type="button"
+                    data-action="click->ai-chat#handleSuggestedAction"
+                    data-action-type="<%= action_type %>"
+                    data-action-data="<%= action_data.to_json %>"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium rounded-full hover:shadow-lg hover:scale-105 transition-all duration-200"
+                  >
+                    <% case action_type %>
+                    <% when 'generate_image' %>
+                      <%= lucide_icon "image", class: "w-4 h-4" %>
+                    <% when 'generate_video' %>
+                      <%= lucide_icon "video", class: "w-4 h-4" %>
+                    <% when 'create_campaign' %>
+                      <%= lucide_icon "megaphone", class: "w-4 h-4" %>
+                    <% when 'generate_content' %>
+                      <%= lucide_icon "file-text", class: "w-4 h-4" %>
+                    <% else %>
+                      <%= lucide_icon "play", class: "w-4 h-4" %>
+                    <% end %>
+                    <%= action_label %>
+                  </button>
+                <% end %>
+              </div>
+            <% end %>
             <p class="text-xs text-muted mt-1"><%= message.created_at.strftime('%H:%M') %></p>
           </div>
         </div>
