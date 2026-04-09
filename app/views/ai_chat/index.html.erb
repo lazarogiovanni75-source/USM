@@ -55,7 +55,7 @@
   /* No hiding - show the button on Pilot-Chat */
 </style>
 
-<div class="container-xl mx-auto px-4 py-6 relative min-h-screen">
+<div class="container-xl mx-auto px-4 py-6 relative min-h-screen" data-controller="ai-chat" data-ai-chat-voice-message-value="<%= @voice_message %>" data-ai-chat-conversation-id-value="<%= @current_conversation&.id %>">
     <!-- Main Chat Area (TOP - Full Width) -->
     <div class="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-200 dark:border-purple-700 h-[600px] flex flex-col overflow-hidden mb-6">
       
@@ -69,6 +69,7 @@
         
         <% if @messages.any? %>
           <% @messages.each do |message| %>
+            <% suggested_actions = message.metadata&.dig('suggested_actions') || [] %>
             <div class="message <%= message.role %> mb-4 flex <%= message.role == 'user' ? 'justify-end' : 'justify-start' %>">
               <div class="flex <%= message.role == 'user' ? 'flex-row-reverse' : 'flex-row' %> items-start gap-3 max-w-3xl">
                 <div class="flex-shrink-0">
@@ -82,8 +83,37 @@
                 </div>
                 <div class="<%= message.role == 'user' ? 'text-right' : 'text-left' %>">
                   <div class="inline-block p-4 rounded-2xl <%= message.role == 'user' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white' : 'bg-white dark:bg-gray-700 border border-purple-200 dark:border-gray-600 text-gray-900 dark:text-white' %> shadow-sm">
-                    <p class="text-sm text-gray-900 dark:text-white"><%= message.content %></p>
+                    <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap"><%= message.content %></p>
                   </div>
+                  <% if suggested_actions.any? && message.role == 'assistant' %>
+                    <div class="mt-2 flex flex-wrap gap-2 justify-start suggested-actions">
+                      <% suggested_actions.each do |action| %>
+                        <% action_type = action['type'] || action[:type] %>
+                        <% action_label = action['label'] || action[:label] || 'Action' %>
+                        <% action_data = action['data'] || action[:data] || {} %>
+                        <button
+                          type="button"
+                          data-action-type="<%= action_type %>"
+                          data-action-data="<%= action_data.to_json %>"
+                          class="ai-action-btn inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium rounded-full hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        >
+                          <% case action_type %>
+                          <% when 'generate_image' %>
+                            <%= lucide_icon "image", class: "w-4 h-4" %>
+                          <% when 'generate_video' %>
+                            <%= lucide_icon "video", class: "w-4 h-4" %>
+                          <% when 'create_campaign' %>
+                            <%= lucide_icon "megaphone", class: "w-4 h-4" %>
+                          <% when 'generate_content' %>
+                            <%= lucide_icon "file-text", class: "w-4 h-4" %>
+                          <% else %>
+                            <%= lucide_icon "play", class: "w-4 h-4" %>
+                          <% end %>
+                          <%= action_label %>
+                        </button>
+                      <% end %>
+                    </div>
+                  <% end %>
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><%= message.created_at.strftime('%H:%M') %></p>
                 </div>
               </div>
@@ -117,7 +147,7 @@
       <!-- END Chat Messages -->
 
       <!-- Chat Input -->
-      <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800" data-controller="simple-voice">
+      <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
         <!-- Live Voice Transcript Display (handled by floating button) -->
         <div id="voice-transcript-display" class="hidden mb-3 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-300 rounded-xl flex items-center gap-2">
           <span class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
@@ -133,6 +163,7 @@
               <button type="button" 
                       id="voice-chat-btn"
                       class="flex-shrink-0 p-3 rounded-xl transition-all bg-purple-100 text-purple-600 hover:bg-purple-200"
+                      data-controller="simple-voice"
                       data-action="simple-voice#toggle"
                       title="Talk to Text">
                 <%= lucide_icon "mic", class: "w-5 h-5" %>

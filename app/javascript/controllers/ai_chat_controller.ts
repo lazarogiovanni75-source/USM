@@ -103,7 +103,102 @@ export default class extends Controller<HTMLElement> {
       this.setupQuickPromptButtons()
       this.handleVoiceMessage()
       this.initSettingsPanel()
+      this.setupActionButtonDelegation()
     }, 100)
+  }
+
+  private setupActionButtonDelegation(): void {
+    // Event delegation for action buttons within messages container
+    this.messagesContainerTarget?.addEventListener('click', (e: Event) => {
+      const target = e.target as HTMLElement
+      const button = target.closest('.ai-action-btn') as HTMLButtonElement | null
+      if (button) {
+        this.handleSuggestedActionFromButton(button)
+      }
+    })
+  }
+
+  private handleSuggestedActionFromButton(button: HTMLButtonElement): void {
+    const actionType = button.dataset.actionType
+    const actionDataRaw = button.dataset.actionData
+    let actionData: Record<string, any> = {}
+    
+    try {
+      actionData = actionDataRaw ? JSON.parse(actionDataRaw) : {}
+    } catch (e) {
+      console.error('[AIChat] Failed to parse action data:', e)
+    }
+    
+    console.log('[AIChat] Suggested action clicked:', actionType, actionData)
+    
+    // Disable button and show loading state
+    button.disabled = true
+    const originalContent = button.innerHTML
+    button.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>'
+    
+    switch (actionType) {
+      case 'generate_image':
+        this.executeGenerateImage(actionData, button, originalContent)
+        break
+      case 'generate_video':
+        this.executeGenerateVideo(actionData, button, originalContent)
+        break
+      case 'create_campaign':
+        this.executeCreateCampaign(actionData, button, originalContent)
+        break
+      case 'generate_content':
+        this.executeGenerateContent(actionData, button, originalContent)
+        break
+      default:
+        console.warn('[AIChat] Unknown action type:', actionType)
+        button.disabled = false
+        button.innerHTML = originalContent
+    }
+  }
+
+  private executeGenerateImage(actionData: Record<string, any>, button: HTMLButtonElement, originalContent: string): void {
+    try {
+      const prompt = encodeURIComponent(actionData.prompt || '')
+      window.location.href = `/image_generation/new?prompt=${prompt}`
+    } catch (e) {
+      console.error('[AIChat] Image generation error:', e)
+      button.disabled = false
+      button.innerHTML = originalContent
+    }
+  }
+
+  private executeGenerateVideo(actionData: Record<string, any>, button: HTMLButtonElement, originalContent: string): void {
+    try {
+      const prompt = encodeURIComponent(actionData.prompt || '')
+      window.location.href = `/videos/new?prompt=${prompt}`
+    } catch (e) {
+      console.error('[AIChat] Video generation error:', e)
+      button.disabled = false
+      button.innerHTML = originalContent
+    }
+  }
+
+  private executeCreateCampaign(actionData: Record<string, any>, button: HTMLButtonElement, originalContent: string): void {
+    try {
+      const name = encodeURIComponent(actionData.name || 'My Campaign')
+      window.location.href = `/campaign_builder?campaign_name=${name}`
+    } catch (e) {
+      console.error('[AIChat] Campaign creation error:', e)
+      button.disabled = false
+      button.innerHTML = originalContent
+    }
+  }
+
+  private executeGenerateContent(actionData: Record<string, any>, button: HTMLButtonElement, originalContent: string): void {
+    try {
+      const topic = encodeURIComponent(actionData.topic || '')
+      const platform = encodeURIComponent(actionData.platform || 'general')
+      window.location.href = `/content_creation?topic=${topic}&platform=${platform}`
+    } catch (e) {
+      console.error('[AIChat] Content generation error:', e)
+      button.disabled = false
+      button.innerHTML = originalContent
+    }
   }
 
   private initSettingsPanel(): void {
@@ -680,7 +775,7 @@ export default class extends Controller<HTMLElement> {
   // Text-to-Speech: Speak the AI response using backend TTS
   private async speakResponse(text: string): Promise<void> {
   // TTS disabled - text only responses
-  return;
+    return;
   }
 
   private handleComplete(data: any): void {
@@ -699,96 +794,8 @@ export default class extends Controller<HTMLElement> {
           contentEl.innerHTML = this.escapeHtml(data.content)
         }
       }
-      }
-  }
-  handleSuggestedAction(event: Event): void {
-    const button = event.currentTarget as HTMLButtonElement
-    const actionType = button.dataset.actionType
-    const actionDataRaw = button.dataset.actionData
-    let actionData: Record<string, any> = {}
-    
-    try {
-      actionData = actionDataRaw ? JSON.parse(actionDataRaw) : {}
-    } catch (e) {
-      console.error('[AIChat] Failed to parse action data:', e)
-    }
-    
-    console.log('[AIChat] Suggested action clicked:', actionType, actionData)
-    
-    // Disable button and show loading state
-    button.disabled = true
-    const originalContent = button.innerHTML
-    button.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Loading...'
-    
-    switch (actionType) {
-      case 'generate_image':
-        this.executeGenerateImage(actionData, button, originalContent)
-        break
-      case 'generate_video':
-        this.executeGenerateVideo(actionData, button, originalContent)
-        break
-      case 'create_campaign':
-        this.executeCreateCampaign(actionData, button, originalContent)
-        break
-      case 'generate_content':
-        this.executeGenerateContent(actionData, button, originalContent)
-        break
-      default:
-        console.warn('[AIChat] Unknown action type:', actionType)
-        button.disabled = false
-        button.innerHTML = originalContent
     }
   }
-
-  private async executeGenerateImage(actionData: Record<string, any>, button: HTMLButtonElement, originalContent: string): Promise<void> {
-    try {
-      // Navigate to image generation page with the AI-generated prompt
-      const prompt = encodeURIComponent(actionData.prompt || '')
-      window.location.href = `/image_generation/new?prompt=${prompt}`
-    } catch (e) {
-      console.error('[AIChat] Image generation error:', e)
-      button.disabled = false
-      button.innerHTML = originalContent
-    }
-  }
-
-  private async executeGenerateVideo(actionData: Record<string, any>, button: HTMLButtonElement, originalContent: string): Promise<void> {
-    try {
-      // Navigate to video generation page with the AI-generated prompt
-      const prompt = encodeURIComponent(actionData.prompt || '')
-      window.location.href = `/videos/new?prompt=${prompt}`
-    } catch (e) {
-      console.error('[AIChat] Video generation error:', e)
-      button.disabled = false
-      button.innerHTML = originalContent
-    }
-  }
-
-  private async executeCreateCampaign(actionData: Record<string, any>, button: HTMLButtonElement, originalContent: string): Promise<void> {
-    try {
-      // Navigate to campaign builder with the AI-suggested name
-      const name = encodeURIComponent(actionData.name || 'My Campaign')
-      window.location.href = `/campaign_builder?campaign_name=${name}`
-    } catch (e) {
-      console.error('[AIChat] Campaign creation error:', e)
-      button.disabled = false
-      button.innerHTML = originalContent
-    }
-  }
-
-  private async executeGenerateContent(actionData: Record<string, any>, button: HTMLButtonElement, originalContent: string): Promise<void> {
-    try {
-      // Navigate to content creation page
-      const topic = encodeURIComponent(actionData.topic || '')
-      const platform = encodeURIComponent(actionData.platform || 'general')
-      window.location.href = `/content_creation?topic=${topic}&platform=${platform}`
-    } catch (e) {
-      console.error('[AIChat] Content generation error:', e)
-      button.disabled = false
-      button.innerHTML = originalContent
-    }
-  }
-
   private handleError(error: string): void {
     this.isGenerating = false
     this.hideTypingIndicator()

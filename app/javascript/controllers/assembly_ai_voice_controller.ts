@@ -42,7 +42,7 @@ export default class AssemblyAiVoiceController extends Controller {
 
   private isListening = false
   private useAssemblyAI = true
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private recognition: any = null
   private websocket: WebSocket | null = null
   private stream: MediaStream | null = null
@@ -59,7 +59,7 @@ export default class AssemblyAiVoiceController extends Controller {
   }
 
   private async checkSupport(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (SpeechRecognitionCtor) {
       console.log("[Voice] Web Speech API available as fallback")
@@ -208,7 +208,7 @@ export default class AssemblyAiVoiceController extends Controller {
   }
 
   private async startWebSpeech(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     
     if (!SpeechRecognitionCtor) {
@@ -228,7 +228,7 @@ export default class AssemblyAiVoiceController extends Controller {
       this.updateStatus("Listening... (Browser)")
     }
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     this.recognition.onresult = (event: any) => {
       let finalTranscript = ''
       let interimTranscript = ''
@@ -252,7 +252,7 @@ export default class AssemblyAiVoiceController extends Controller {
       }
     }
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     this.recognition.onerror = (event: any) => {
       console.error("[Voice] Speech error:", event.error)
       this.updateStatus(`Error: ${event.error}`)
