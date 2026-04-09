@@ -102,31 +102,6 @@ Rails.application.routes.draw do
   # API routes
   namespace :api do
     namespace :v1 do
-      # Voice API endpoints
-      post 'voice/transcribe', to: 'voice#transcribe'
-      post 'voice/stream', to: 'voice_stream#transcribe_and_stream'
-      post 'voice/chat', to: 'voice#chat'
-      get 'voice/health', to: 'voice#health'
-      get 'voice/stream/health', to: 'voice_stream#health'
-      
-      # Voice Loop API - Full conversation loop (Whisper → Claude → TTS)
-      namespace :voice_loop do
-        post :conversation   # Full loop endpoint
-        post :transcribe     # Step 1: Whisper STT
-        post :claude         # Step 2: Claude LLM
-        post :speak          # Step 3: OpenAI TTS
-        post :reset          # Reset conversation
-        get :status         # Get conversation state
-      end
-      
-      # AI Chat API endpoints
-      post 'ai_chat/stream_message', to: 'ai_chat#stream_message'
-      post 'ai_chat/send_message', to: 'ai_chat#send_message'
-      post 'ai_chat/create_conversation', to: 'ai_chat#create_conversation'
-      post 'ai_chat/confirm_tool', to: 'ai_chat#confirm_tool'
-      get 'ai_chat/conversations', to: 'ai_chat#conversations'
-      get 'ai_chat/messages/:conversation_id', to: 'ai_chat#messages'
-      
       # Workflow API endpoints
       post 'workflows', to: 'workflows#create'
       get 'workflows', to: 'workflows#index'
@@ -151,12 +126,7 @@ Rails.application.routes.draw do
   post '/api/v1/transcribe', to: 'chat#transcribe'
   post '/api/v1/speak', to: 'chat#speak'
 
-  # Voice Chat standalone routes (no merging with existing)
-  get 'voice_chat', to: 'voice_chat#index'
-  get 'voice_loop', to: 'voice_loop#index'
-  post '/chat', to: 'voice_chat#chat'
-  post '/transcribe', to: 'voice_chat#transcribe'
-  post '/speak', to: 'voice_chat#speak'
+
 
   # Authentication routes
   get 'sign_in', to: 'sessions#new', as: :new_user_session
@@ -353,15 +323,6 @@ Rails.application.routes.draw do
       post 'cancel_post'
       post 'retry_post'
       post 'publish_now'
-    end
-  end
-  
-  # AI Chat routes
-  resources :ai_chat, only: [:index, :show, :create, :new] do
-    collection do
-      post 'send_message'
-      post 'suggest_content'
-      post 'toggle_voice'
     end
   end
   

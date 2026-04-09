@@ -14,7 +14,7 @@ RSpec.describe "Waitlists", type: :request do
   end
 
   describe "GET /waitlists/:id" do
-    let(:waitlist_record) { create(:waitlist) }
+    let(:waitlist_record) { create(:waitlist_email) }
 
     it "returns http success" do
       get waitlist_path(waitlist_record)
@@ -30,7 +30,7 @@ RSpec.describe "Waitlists", type: :request do
   end
 
   describe "GET /waitlists/:id/edit" do
-    let(:waitlist_record) { create(:waitlist) }
+    let(:waitlist_record) { create(:waitlist_email) }
 
     it "returns http success" do
       get edit_waitlist_path(waitlist_record)
@@ -40,17 +40,17 @@ RSpec.describe "Waitlists", type: :request do
 
   describe "POST /waitlists" do
     it "creates a new waitlist" do
-      post waitlists_path, params: { waitlist: attributes_for(:waitlist) }
+      post waitlists_path, params: { waitlist: attributes_for(:waitlist_email) }
       expect(response).to be_success_with_view_check
     end
   end
 
 
   describe "PATCH /waitlists/:id" do
-    let(:waitlist_record) { create(:waitlist) }
+    let(:waitlist_record) { create(:waitlist_email) }
 
     it "updates the waitlist" do
-      patch waitlist_path(waitlist_record), params: { waitlist: attributes_for(:waitlist) }
+      patch waitlist_path(waitlist_record), params: { waitlist: attributes_for(:waitlist_email) }
       expect(response).to be_success_with_view_check
     end
   end

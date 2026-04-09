@@ -3,6 +3,7 @@
 <script>
   function syncWakeWordToggleLocal(checked) {
     localStorage.setItem('wake_word_enabled', checked.toString());
+    document.getElementById('wake-word-enabled-value').value = checked;
     document.getElementById('wake-word-toggle-form-local').requestSubmit();
   }
 </script>
@@ -26,7 +27,8 @@
       <span class="text-sm text-gray-600">
         <%= current_user.voice_settings.first&.enabled? ? 'Enabled' : 'Disabled' %>
       </span>
-      <%= form_with url: toggle_voice_ai_chat_index_path, method: :post, id: 'wake-word-toggle-form-local' do |f| %>
+      <%= form_with url: voice_settings_path, method: :patch, id: 'wake-word-toggle-form-local', local: true do |f| %>
+        <%= hidden_field_tag :enabled, '', id: 'wake-word-enabled-value' %>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox"
                  class="sr-only peer"

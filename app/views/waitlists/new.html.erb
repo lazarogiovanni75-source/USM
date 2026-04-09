@@ -9,7 +9,7 @@
         Sign up to be notified when we launch
       </p>
     </div>
-    <%= form_with(model: @waitlist, class: "mt-8 space-y-6") do |f| %>
+    <%= form_with(url: waitlists_path, model: @waitlist, class: "mt-8 space-y-6") do |f| %>
       <div class="rounded-md shadow-sm -space-y-px">
         <div>
           <%= f.label :email, class: "sr-only" %>

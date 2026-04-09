@@ -116,8 +116,8 @@ class PromptTemplatesController < ApplicationController
         }
       )
       
-      redirect_to ai_chat_path(conversation), 
-                  notice: "Template '#{@template.name}' is ready to use in AI Chat!"
+      redirect_to dashboard_path, 
+                  notice: "Template '#{@template.name}' processed successfully!"
       
     rescue => e
       Rails.logger.error "Template processing error: #{e.message}"

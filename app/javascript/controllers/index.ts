@@ -30,20 +30,11 @@ application.register("brand-voice", BrandVoiceController)
 application.register("assistant-chat", AssistantChatController)
 
 // Additional Controllers
-import AiChatController from "./ai_chat_controller"
-application.register("ai-chat", AiChatController)
-application.register("brand-voice", BrandVoiceController)
-application.register("assistant-chat", AssistantChatController)
-
 import AiMarketingStrategyController from "./ai_marketing_strategy_controller"
 application.register("ai-marketing-strategy", AiMarketingStrategyController)
 application.register("brand-voice", BrandVoiceController)
 application.register("assistant-chat", AssistantChatController)
 
-import AiVoiceChatController from "./ai_voice_chat_controller"
-application.register("ai-voice-chat", AiVoiceChatController)
-application.register("brand-voice", BrandVoiceController)
-application.register("assistant-chat", AssistantChatController)
 
 import AssemblyAiVoiceController from "./assembly_ai_voice_controller"
 application.register("assembly-ai-voice", AssemblyAiVoiceController)
@@ -160,10 +151,6 @@ application.register("video-progress", VideoProgressController)
 application.register("brand-voice", BrandVoiceController)
 application.register("assistant-chat", AssistantChatController)
 
-import VoiceChatController from "./voice_chat_controller"
-application.register("voice-chat", VoiceChatController)
-application.register("brand-voice", BrandVoiceController)
-application.register("assistant-chat", AssistantChatController)
 
 import VoiceCommandController from "./voice_command_controller"
 application.register("voice-command", VoiceCommandController)
@@ -213,12 +200,4 @@ application.register("mobile-debug", MobileDebugController)
 application.register("brand-voice", BrandVoiceController)
 application.register("assistant-chat", AssistantChatController)
 
-// Voice Loop Controller
-import VoiceLoopController from "./voice_loop_controller"
-application.register("voice-loop", VoiceLoopController)
-application.register("brand-voice", BrandVoiceController)
-application.register("assistant-chat", AssistantChatController)
 
-// Pilot Chat Toggle Controller
-import PilotChatToggleController from "./pilot_chat_toggle_controller"
-application.register("pilot-chat-toggle", PilotChatToggleController)
