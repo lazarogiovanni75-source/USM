@@ -6,11 +6,10 @@ module Api
       before_action :authenticate_user!
       
       # POST /api/v1/ai_chat/stream_message
-      # Streaming version - uses ConversationOrchestrator for unified AI processing
       def stream_message
         conversation_id = params[:conversation_id]
         
-        # CRITICAL: Verify conversation belongs to current user
+        # Verify conversation belongs to current user
         conversation = current_user.ai_conversations.find_by(id: conversation_id)
         
         unless conversation
@@ -25,39 +24,24 @@ module Api
           return
         end
 
-        # Stream name for this conversation
         stream_name = "ai_chat_#{conversation.id}"
 
-        # Get system prompt
-        system_prompt = build_system_prompt(conversation)
-
-        # Use ConversationOrchestrator for ALL AI processing
-        # It handles: saving messages, LLM calls, tool execution, streaming, completion
-        # Block receives: { delta: "...", conversation_id: ... }
         begin
+          # Use ConversationOrchestrator for ALL AI processing
           ConversationOrchestrator.process_message(
             user: current_user,
             conversation_id: conversation.id,
             content: message_content,
             modality: "text",
             stream_channel: stream_name
-          ) do |chunk_data|
-            # chunk_data is now a Hash: { delta: "...", conversation_id: ... }
-            delta = chunk_data[:delta] || chunk_data[:content] || ""
-            
-            # Stream each chunk to client
-            ActionCable.server.broadcast(stream_name, {
-              type: 'chunk',
-              chunk: delta
-            })
-          end
+          )
 
           # Update conversation title if first message
           if conversation.ai_messages.count == 2
             conversation.update!(title: message_content.truncate(50))
           end
           
-          # Get the messages we just created (created by orchestrator)
+          # Get the messages we just created
           user_message = conversation.ai_messages.where(role: "user").last
           ai_message = conversation.ai_messages.where(role: "assistant").last
           
@@ -90,7 +74,6 @@ module Api
       end
 
       # POST /api/v1/ai_chat/confirm_tool
-      # Confirm a pending high-risk tool execution
       def confirm_tool
         audit_id = params[:audit_id]
         confirmed = params[:confirmed] == true || params[:confirmed] == 'true'
@@ -110,7 +93,6 @@ module Api
         stream_name = "ai_chat_#{audit_record.session_id.split('_').first}"
         
         if confirmed
-          # Execute the tool
           dispatcher = AiFunctionDispatcher.new(user: current_user)
           
           begin
@@ -140,7 +122,6 @@ module Api
             render json: { error: e.message }, status: :internal_server_error
           end
         else
-          # User rejected
           audit_record.reject!
           
           ActionCable.server.broadcast(stream_name, {
@@ -156,7 +137,6 @@ module Api
       end
 
       # POST /api/v1/ai_chat/send_message
-      # Non-streaming version (fallback)
       def send_message
         conversation = AiConversation.find(params[:conversation_id]) if params[:conversation_id].present?
         
@@ -172,7 +152,7 @@ module Api
           return
         end
 
-        # Create user message
+        # Create user message via model (which uses raw SQL)
         user_message = conversation.ai_messages.create!(
           role: "user",
           content: message_content
@@ -185,7 +165,7 @@ module Api
           action: "chat"
         )
 
-        # Create AI message
+        # Create AI message via model (which uses raw SQL)
         ai_message = conversation.ai_messages.create!(
           role: "assistant",
           content: response_content
@@ -250,57 +230,38 @@ module Api
             {
               id: c.id,
               title: c.title,
+              session_type: c.session_type,
               created_at: c.created_at.iso8601,
-              updated_at: c.updated_at.iso8601
+              updated_at: c.updated_at.iso8601,
+              message_count: c.ai_messages.count
             }
           end
         }
       end
 
-      # DELETE /api/v1/ai_chat/conversations/:id
-      def delete_conversation
-        conversation = current_user.ai_conversations.find_by(id: params[:id])
-        
-        unless conversation
-          render json: { error: "Conversation not found" }, status: :not_found
-          return
-        end
-
+      # DELETE /api/v1/ai_chat/:id
+      def destroy
+        conversation = current_user.ai_conversations.find(params[:id])
         conversation.destroy!
-
-        render json: {
-          success: true,
-          message: "Conversation deleted"
-        }
+        
+        render json: { success: true }
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Conversation not found" }, status: :not_found
+      rescue StandardError => e
+        render json: { error: e.message }, status: :internal_server_error
       end
 
       private
 
       def build_system_prompt(conversation)
-        # Use admin-defined AI system prompt from SiteSettings
-        # Users cannot modify this - only admins control AI behavior
-        base_prompt = SiteSetting.ai_system_prompt
-        
-        # Add user-specific subscription info
-        if current_user
-          plan = current_user.subscription_plan || 'Starter'
-          plan_data = SubscriptionPlan.find_by(name: plan)
-          credits = plan_data&.credits || 40
-          
-          user_context = <<~CONTEXT
-
-## CURRENT USER CONTEXT
-- User: #{current_user.name || current_user.email}
-- Subscription Plan: #{plan}
-- Monthly Credits: #{credits}
-
-REMEMBER: You must enforce the #{plan} plan limits for this user!
-CONTEXT
-          
-          base_prompt + user_context
-        else
-          base_prompt
+        base_prompt = SiteSetting.ai_system_prompt rescue "You are a helpful AI assistant."
+        subscription_info = ""
+        if current_user.subscription_plan.present?
+          plan_name = current_user.subscription_plan.is_a?(String) ? current_user.subscription_plan : current_user.subscription_plan.name
+          subscription_info = "\n\nUser Subscription: #{plan_name}"
         end
+        user_info = "\n\nUser: #{current_user.email}"
+        base_prompt + subscription_info + user_info
       end
     end
   end
