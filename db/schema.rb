@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_08_015000) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_09_000004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -73,7 +73,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_08_015000) do
     t.bigint "user_id", null: false
     t.string "title", default: "AI Chat"
     t.string "session_type", default: "general"
-    t.json "metadata"
+    t.json "metadata", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "context", default: {}
@@ -83,6 +83,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_08_015000) do
     t.datetime "archived_at"
     t.index ["archived"], name: "index_ai_conversations_on_archived"
     t.index ["created_at"], name: "index_ai_conversations_on_created_at"
+    t.index ["id"], name: "index_ai_conversations_on_id", unique: true
     t.index ["session_type"], name: "index_ai_conversations_on_session_type"
     t.index ["user_id"], name: "index_ai_conversations_on_user_id"
   end
