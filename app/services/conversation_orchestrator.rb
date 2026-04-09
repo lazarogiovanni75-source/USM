@@ -28,9 +28,9 @@ class ConversationOrchestrator < ApplicationService
   def call
     Rails.logger.info "[ConversationOrchestrator] === START ==="
     Rails.logger.info "[ConversationOrchestrator] user: #{user&.id} (#{user&.email})"
-    Rails.logger.info "[ConversationOrchestrator] conversation: #{conversation.id}, modality: #{modality}, stream: #{stream_channel.present?}"
+    Rails.logger.info "[ConversationOrchestrator] conversation: #{conversation.id rescue 'nil'}, modality: #{modality}"
     
-    save_user_message
+    conversation_id = save_user_message_raw
     intent = detect_intent
     Rails.logger.info "[ConversationOrchestrator] Detected intent: #{intent}"
     
@@ -43,7 +43,8 @@ class ConversationOrchestrator < ApplicationService
       handle_chat
     end
     
-    conversation.touch
+    touch_conversation
+    @assistant_response ||= ""
     
     {
       conversation_id: conversation.id,
@@ -53,11 +54,11 @@ class ConversationOrchestrator < ApplicationService
     Rails.logger.error "[ConversationOrchestrator] Error: #{e.class} - #{e.message}"
     Rails.logger.error e.backtrace.first(10).join("\n")
     
-    error_message = "I apologize, but I encountered an error processing your message. [#{e.class}: #{e.message}]"
+    error_message = "I apologize, but I encountered an error processing your message. [#{e.class}]"
     begin
-      save_assistant_message(error_message)
+      save_assistant_message_raw(error_message, conversation&.id)
     rescue => save_error
-      Rails.logger.error "[ConversationOrchestrator] Failed to save error message: #{save_error.message}"
+      Rails.logger.error "[ConversationOrchestrator] Failed to save error: #{save_error.message}"
     end
     broadcast_error(error_message) if stream_channel
     
@@ -92,46 +93,88 @@ class ConversationOrchestrator < ApplicationService
     })
   end
 
+  def conn
+    ActiveRecord::Base.connection
+  end
+
   def find_or_create_conversation(conversation_id)
     if conversation_id.present?
-      user.ai_conversations.find_by(id: conversation_id) || create_new_conversation
-    else
-      create_new_conversation
+      conv = user.ai_conversations.find_by(id: conversation_id)
+      return conv if conv
     end
+    create_new_conversation_raw
   end
 
-  def create_new_conversation
-    # Use model's raw SQL create method
-    AiConversation.create!(
-      user: user,
-      title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
-      session_type: 'chat',
-      metadata: { created_via: modality }
-    )
+  def create_new_conversation_raw
+    now = Time.current
+    title = "Chat #{now.strftime('%b %d, %I:%M %p')}"
+    metadata_json = { created_via: modality }.to_json
+    
+    result = conn.execute(<<~SQL)
+      INSERT INTO ai_conversations (user_id, title, session_type, metadata, 
+        context, memory_summary, session_metadata, archived, created_at, updated_at)
+      VALUES (#{user.id}, #{conn.quote(title)}, 'chat', #{conn.quote(metadata_json)}, 
+        '{}', '{}', '{}', false, '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}', 
+        '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}')
+      RETURNING id
+    SQL
+    
+    conversation_id = result.first['id']
+    AiConversation.find(conversation_id)
+  rescue => e
+    Rails.logger.error "[ConversationOrchestrator] create_new_conversation_raw failed: #{e.message}"
+    raise e
   end
 
-  def save_user_message
-    # Use model's raw SQL create method
-    AiMessage.create!(
-      ai_conversation: conversation,
-      role: 'user',
-      content: content,
-      message_type: 'text',
-      metadata: { modality: modality, created_at: Time.current }
-    )
-    Rails.logger.info "[ConversationOrchestrator] User message saved - conversation: #{conversation.id}"
+  def save_user_message_raw
+    now = Time.current
+    metadata_json = { modality: modality, created_at: now }.to_json
+    conversation_id = @conversation.id
+    
+    result = conn.execute(<<~SQL)
+      INSERT INTO ai_messages (ai_conversation_id, role, content, message_type, 
+        metadata, tokens_used, created_at, updated_at)
+      VALUES (#{conversation_id}, 'user', #{conn.quote(content)}, 'text', 
+        #{conn.quote(metadata_json)}, #{content.length / 4}, 
+        '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}', '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}')
+      RETURNING id
+    SQL
+    
+    Rails.logger.info "[ConversationOrchestrator] User message saved - conversation: #{conversation_id}"
+    conversation_id
+  rescue => e
+    Rails.logger.error "[ConversationOrchestrator] save_user_message_raw failed: #{e.message}"
+    raise e
   end
 
-  def save_assistant_message(content)
-    # Use model's raw SQL create method
-    AiMessage.create!(
-      ai_conversation: conversation,
-      role: 'assistant',
-      content: content,
-      message_type: 'text',
-      metadata: { model: CLAUDE_MODEL, created_at: Time.current }
-    )
-    Rails.logger.info "[ConversationOrchestrator] Assistant message saved - conversation: #{conversation.id}, length: #{content.length}"
+  def save_assistant_message_raw(content_str, conversation_id)
+    return unless conversation_id
+    now = Time.current
+    metadata_json = { model: CLAUDE_MODEL, created_at: now }.to_json
+    tokens = (content_str.length / 4.0).ceil
+    
+    conn.execute(<<~SQL)
+      INSERT INTO ai_messages (ai_conversation_id, role, content, message_type, 
+        metadata, tokens_used, created_at, updated_at)
+      VALUES (#{conversation_id}, 'assistant', #{conn.quote(content_str)}, 'text', 
+        #{conn.quote(metadata_json)}, #{tokens}, 
+        '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}', '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}')
+    SQL
+    
+    Rails.logger.info "[ConversationOrchestrator] Assistant message saved - conversation: #{conversation_id}"
+  rescue => e
+    Rails.logger.error "[ConversationOrchestrator] save_assistant_message_raw failed: #{e.message}"
+  end
+
+  def touch_conversation
+    return unless @conversation&.id
+    now = Time.current
+    conn.execute(<<~SQL)
+      UPDATE ai_conversations SET updated_at = '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}' 
+      WHERE id = #{@conversation.id}
+    SQL
+  rescue => e
+    Rails.logger.error "[ConversationOrchestrator] touch_conversation failed: #{e.message}"
   end
 
   def detect_intent
@@ -144,19 +187,10 @@ class ConversationOrchestrator < ApplicationService
     history = build_message_history
     Rails.logger.info "[ConversationOrchestrator] Message history built - #{history.size} messages"
     
-    raw_tools = @tools_enabled ? AiToolDefinitions.for_user(user) : nil
-    tools = convert_tools_to_anthropic_format(raw_tools)
-    
-    if tools.present?
-      Rails.logger.info "[ConversationOrchestrator] Tools enabled: #{tools.size} available"
-      @system_prompt = @system_prompt + tool_usage_instructions(tools)
-      blocking_chat_response(history, tools)
+    if stream_channel
+      stream_chat_response(history, nil)
     else
-      if stream_channel
-        stream_chat_response(history, nil)
-      else
-        blocking_chat_response(history, nil)
-      end
+      blocking_chat_response(history, nil)
     end
   end
 
@@ -165,10 +199,10 @@ class ConversationOrchestrator < ApplicationService
     
     initial_response = "I'll generate that image for you. This will take a moment..."
     broadcast_content(initial_response) if stream_channel
-    save_assistant_message(initial_response)
+    save_assistant_message_raw(initial_response, @conversation.id)
     
     ImageGenerationJob.perform_later(
-      conversation_id: conversation.id,
+      conversation_id: @conversation.id,
       prompt: content,
       user_id: user.id
     )
@@ -179,25 +213,34 @@ class ConversationOrchestrator < ApplicationService
   def handle_video_generation
     Rails.logger.info "[ConversationOrchestrator] Handling video generation intent"
     
-    initial_response = "I'll create that video for you. Video generation typically takes 1-2 minutes, I'll notify you when it's ready."
+    initial_response = "I'll create that video for you. Video generation typically takes 1-2 minutes."
     broadcast_content(initial_response) if stream_channel
-    save_assistant_message(initial_response)
+    save_assistant_message_raw(initial_response, @conversation.id)
     
     GenerateVideoJob.perform_later(
       prompt: content,
       user_id: user.id,
-      conversation_id: conversation.id
+      conversation_id: @conversation.id
     )
     
     @assistant_response = initial_response
   end
 
   def build_message_history
-    recent_messages = conversation.ai_messages
-      .order(created_at: :asc)
-      .last(MAX_HISTORY_MESSAGES)
+    return [] unless @conversation&.id
     
-    base_prompt = SiteSetting.ai_system_prompt rescue "You are a helpful AI assistant."
+    recent_messages = conn.execute(<<~SQL)
+      SELECT role, content FROM ai_messages 
+      WHERE ai_conversation_id = #{@conversation.id}
+      ORDER BY created_at ASC
+      LIMIT #{MAX_HISTORY_MESSAGES}
+    SQL
+    
+    base_prompt = begin
+      SiteSetting.ai_system_prompt
+    rescue
+      "You are a helpful AI assistant."
+    end
     
     subscription_info = ""
     if user.subscription_plan.present?
@@ -211,50 +254,25 @@ class ConversationOrchestrator < ApplicationService
     
     messages = []
     
-    recent_messages.each do |msg|
+    recent_messages.each do |row|
       messages << {
-        role: msg.role.to_sym,
-        content: msg.content
+        role: row['role'].to_sym,
+        content: row['content']
       }
     end
     
     messages
   end
 
-  def convert_tools_to_anthropic_format(tools)
-    return nil if tools.nil?
-    tools.map do |tool|
-      func = tool[:function] || tool["function"]
-      params = func[:parameters] || func["parameters"] || {}
-      {
-        name: func[:name] || func["name"],
-        description: func[:description] || func["description"],
-        input_schema: params
-      }
-    end
-  end
-
-  def tool_usage_instructions(tools)
-    return "" if tools.blank?
-    tool_list = tools.map { |t| "- #{t[:name]}: #{t[:description]}" }.join("\n")
-    <<~INSTRUCTIONS
-
-Available tools you can use:
-#{tool_list}
-
-When you want to use a tool, respond with a tool use block in your response.
-INSTRUCTIONS
-  end
-
   def stream_chat_response(history, tools)
     full_response = ""
     
-    LlmService.stream anthropic_messages: history, model: CLAUDE_MODEL do |chunk|
+    LlmService.stream(anthropic_messages: history, model: CLAUDE_MODEL) do |chunk|
       full_response += chunk
       broadcast_content(chunk)
     end
     
-    save_assistant_message(full_response)
+    save_assistant_message_raw(full_response, @conversation.id)
     broadcast_completion
     @assistant_response = full_response
   rescue => e
@@ -273,21 +291,7 @@ INSTRUCTIONS
     )
     
     response_content = response.dig(:content) || response[:text] || ""
-    
-    if response[:stop_reason] == 'tool_use'
-      Rails.logger.info "[ConversationOrchestrator] Tool use detected"
-      handle_tool_calls(response[:content], history)
-    else
-      save_assistant_message(response_content)
-      @assistant_response = response_content
-    end
-  end
-
-  def handle_tool_calls(tool_calls, history)
-    tool_calls.each do |tool_call|
-      executor = AiToolExecutor.new(user: user)
-      result = executor.execute(tool_call)
-      save_assistant_message("[Tool #{tool_call[:name]}: #{result}]")
-    end
+    save_assistant_message_raw(response_content, @conversation.id)
+    @assistant_response = response_content
   end
 end
