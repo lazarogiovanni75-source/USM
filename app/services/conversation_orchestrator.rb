@@ -105,23 +105,42 @@ class ConversationOrchestrator < ApplicationService
   end
 
   def save_user_message
+    # Use raw SQL insert to bypass Rails' unique index requirement on id column
+    now = Time.current
+    metadata_json = { modality: modality, created_at: now }.to_json
+    ActiveRecord::Base.connection.execute(
+      "INSERT INTO ai_messages (ai_conversation_id, role, content, message_type, metadata, created_at, updated_at) VALUES (#{conversation.id}, 'user', #{ActiveRecord::Base.connection.quote(content)}, 'text', #{ActiveRecord::Base.connection.quote(metadata_json)}, '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}', '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}')"
+    )
+    Rails.logger.info "[ConversationOrchestrator] User message saved via SQL - conversation: #{conversation.id}"
+  rescue => e
+    Rails.logger.error "[ConversationOrchestrator] Failed to save user message: #{e.message}"
+    # Fallback to regular create
     conversation.ai_messages.create!(
       role: 'user',
       content: content,
       message_type: 'text',
       metadata: { modality: modality, created_at: Time.current }
     )
-    Rails.logger.info "[ConversationOrchestrator] User message saved - conversation: #{conversation.id}"
   end
 
   def save_assistant_message(content)
+    # Use raw SQL insert to bypass Rails' unique index requirement on id column
+    now = Time.current
+    metadata_json = { model: CLAUDE_MODEL, created_at: now }.to_json
+    tokens = (content.length / 4.0).ceil
+    ActiveRecord::Base.connection.execute(
+      "INSERT INTO ai_messages (ai_conversation_id, role, content, message_type, metadata, tokens_used, created_at, updated_at) VALUES (#{conversation.id}, 'assistant', #{ActiveRecord::Base.connection.quote(content)}, 'text', #{ActiveRecord::Base.connection.quote(metadata_json)}, #{tokens}, '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}', '#{now.utc.strftime('%Y-%m-%d %H:%M:%S')}')"
+    )
+    Rails.logger.info "[ConversationOrchestrator] Assistant message saved via SQL - conversation: #{conversation.id}, length: #{content.length}"
+  rescue => e
+    Rails.logger.error "[ConversationOrchestrator] Failed to save assistant message: #{e.message}"
+    # Fallback to regular create
     conversation.ai_messages.create!(
       role: 'assistant',
       content: content,
       message_type: 'text',
       metadata: { model: CLAUDE_MODEL, created_at: Time.current }
     )
-    Rails.logger.info "[ConversationOrchestrator] Assistant message saved - conversation: #{conversation.id}, length: #{content.length}"
   end
 
   def detect_intent
