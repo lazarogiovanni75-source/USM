@@ -124,8 +124,14 @@ class WorkflowService
     when 'content_to_post'
       execute_content_to_post(workflow)
     else
-      raise WorkflowError, "Unknown workflow type: #{workflow.workflow_type}"
+      # Default to content_to_post for any other workflow type
+      execute_content_to_post(workflow)
     end
+  rescue => e
+    Rails.logger.error "Workflow execution error: #{e.message}"
+    # Mark workflow as failed but re-raise so the job catches it
+    workflow.update(status: :failed) if workflow.persisted?
+    raise
   end
 
   # Legacy class method support
@@ -282,9 +288,18 @@ class WorkflowService
   end
 
   def schedule_or_publish(user, content, media_url, media_type, social_account_id, scheduled_at, post_now)
-    social_account = SocialAccount.find_by(id: social_account_id) || user.social_accounts.first
+    social_account = if social_account_id.present?
+      SocialAccount.find_by(id: social_account_id)
+    else
+      user&.social_accounts&.first
+    end
     
-    return nil unless social_account
+    # If no social account, just save the content without posting
+    unless social_account
+      Rails.logger.info "No social account found - saving content as draft only"
+      content.update!(media_url: media_url) if media_url.present?
+      return nil
+    end
 
     content.update!(media_url: media_url) if media_url.present?
 
@@ -303,6 +318,11 @@ class WorkflowService
     end
 
     post
+  rescue => e
+    Rails.logger.error "Schedule/publish error: #{e.message}"
+    # Content was already created, just return nil for post
+    content.update!(media_url: media_url) if media_url.present?
+    nil
   end
 
   def update_step(workflow, step_type, output)

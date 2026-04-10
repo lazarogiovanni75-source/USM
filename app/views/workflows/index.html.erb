@@ -1,8 +1,8 @@
 <% content_for :title, "Workflows" %>
 
-<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated">
+<div class="min-h-screen bg-gray-50">
   <!-- Header -->
-  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+  <div class="bg-white border-b border-gray-200 sticky top-16 z-30">
     <div class="container-xl mx-auto px-4 py-4">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div class="flex items-center gap-4">
@@ -10,8 +10,8 @@
             <%= lucide_icon "git-branch", class: "w-7 h-7 text-white" %>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-primary">Workflows</h1>
-            <p class="text-sm text-muted">Automate content creation</p>
+            <h1 class="text-2xl font-bold text-gray-900">Workflows</h1>
+            <p class="text-sm text-gray-500">Automate content creation</p>
           </div>
         </div>
         <div class="flex flex-wrap gap-3">
@@ -28,11 +28,11 @@
     <% if @workflows.any? %>
       <div class="grid gap-4">
         <% @workflows.each do |workflow| %>
-          <div class="bg-white rounded-2xl p-6 shadow-sm border border-border/50">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
             <div class="flex items-center justify-between">
               <div class="flex-1">
                 <div class="flex items-center gap-3 mb-2">
-                  <h3 class="text-lg font-medium text-primary"><%= workflow.workflow_type.humanize %></h3>
+                  <h3 class="text-lg font-medium text-gray-900"><%= workflow.workflow_type.humanize %></h3>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= case workflow.status
                     when 'completed' then 'bg-green-100 text-green-700'
                     when 'running' then 'bg-blue-100 text-blue-700'
@@ -48,7 +48,7 @@
                     <%= workflow.status.humanize %>
                   </span>
                 </div>
-                <p class="text-sm text-muted mb-2">
+                <p class="text-sm text-gray-600 mb-2">
                   <% if workflow.params.present? %>
                     <% params_hash = workflow.params.is_a?(Hash) ? workflow.params : {} %>
                     <%= params_hash[:content_text]&.truncate(100) || 'No content provided' %>
@@ -56,21 +56,21 @@
                     No parameters
                   <% end %>
                 </p>
-                <p class="text-xs text-muted">Created <%= time_ago_in_words(workflow.created_at) %> ago</p>
+                <p class="text-xs text-gray-500">Created <%= time_ago_in_words(workflow.created_at) %> ago</p>
               </div>
               <div class="flex items-center gap-2 ml-4">
-                <%= link_to workflow_path(workflow), class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors" do %>
-                  <%= lucide_icon "eye", class: "w-4 h-4 text-primary" %>
+                <%= link_to workflow_path(workflow), class: "p-2 hover:bg-gray-100 rounded-lg transition-colors" do %>
+                  <%= lucide_icon "eye", class: "w-4 h-4 text-gray-700" %>
                 <% end %>
-                <%= button_to workflow_path(workflow), method: :delete, class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors", data: { confirm: "Are you sure?" } do %>
+                <%= button_to workflow_path(workflow), method: :delete, class: "p-2 hover:bg-gray-100 rounded-lg transition-colors", data: { confirm: "Are you sure?" } do %>
                   <%= lucide_icon "trash-2", class: "w-4 h-4 text-red-500" %>
                 <% end %>
               </div>
             </div>
             
             <% if workflow.workflow_steps.any? %>
-              <div class="mt-4 pt-4 border-t border-border/30">
-                <p class="text-xs font-medium text-muted mb-2">Steps:</p>
+              <div class="mt-4 pt-4 border-t border-gray-200">
+                <p class="text-xs font-medium text-gray-500 mb-2">Steps:</p>
                 <div class="flex flex-wrap gap-2">
                   <% workflow.workflow_steps.order(order: :asc).each do |step| %>
                     <span class="px-2 py-1 rounded-full text-xs <%= case step.status
@@ -89,10 +89,10 @@
         <% end %>
       </div>
     <% else %>
-      <div class="bg-white rounded-2xl p-12 shadow-sm border border-border/50 text-center">
-        <%= lucide_icon "git-branch", class: "w-16 h-16 text-muted mx-auto mb-4" %>
-        <h3 class="text-xl font-bold text-primary mb-2">No Workflows Yet</h3>
-        <p class="text-muted mb-6">Create your first workflow to automate content creation</p>
+      <div class="bg-white rounded-2xl p-12 shadow-sm border border-gray-200 text-center">
+        <%= lucide_icon "git-branch", class: "w-16 h-16 text-gray-400 mx-auto mb-4" %>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">No Workflows Yet</h3>
+        <p class="text-gray-500 mb-6">Create your first workflow to automate content creation</p>
         <%= link_to new_workflow_path, class: "btn-primary" do %>
           <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>Create Workflow
         <% end %>

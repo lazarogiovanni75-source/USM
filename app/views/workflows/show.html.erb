@@ -1,11 +1,11 @@
 <% content_for :title, "Workflow Details" %>
 
-<div class="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated"
+<div class="min-h-screen bg-gray-50"
      data-controller="workflow"
      data-workflow-workflow-id-value="<%= @workflow.id %>"
      data-workflow-workflow-status-value="<%= @workflow.status %>">
   <!-- Header -->
-  <div class="bg-white/80 backdrop-blur-lg border-b border-border/50 sticky top-16 z-30">
+  <div class="bg-white border-b border-gray-200 sticky top-16 z-30">
     <div class="container-xl mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
@@ -13,8 +13,8 @@
             <%= lucide_icon "arrow-left", class: "w-5 h-5" %>
           <% end %>
           <div>
-            <h1 class="text-2xl font-bold text-primary">Workflow Details</h1>
-            <p class="text-sm text-muted"><%= @workflow.workflow_type.humanize %></p>
+            <h1 class="text-2xl font-bold text-gray-900">Workflow Details</h1>
+            <p class="text-sm text-gray-500"><%= @workflow.workflow_type.humanize %></p>
           </div>
         </div>
         <span id="workflow-status-badge" class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium <%= case @workflow.status
@@ -50,41 +50,41 @@
   <div class="container-xl mx-auto px-4 py-6">
     <div class="grid gap-6">
       <!-- Details Card -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-border/50">
-        <h3 class="text-lg font-semibold text-primary mb-4">Workflow Information</h3>
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Workflow Information</h3>
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <dt class="text-sm font-medium text-muted">Type</dt>
-            <dd class="text-primary"><%= @workflow.workflow_type.humanize %></dd>
+            <dt class="text-sm font-medium text-gray-500">Type</dt>
+            <dd class="text-gray-900"><%= @workflow.workflow_type.humanize %></dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-muted">Status</dt>
-            <dd class="text-primary" id="workflow-status-detail"><%= @workflow.status.humanize %></dd>
+            <dt class="text-sm font-medium text-gray-500">Status</dt>
+            <dd class="text-gray-900" id="workflow-status-detail"><%= @workflow.status.humanize %></dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-muted">Created</dt>
-            <dd class="text-primary"><%= @workflow.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+            <dt class="text-sm font-medium text-gray-500">Created</dt>
+            <dd class="text-gray-900"><%= @workflow.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-muted">Updated</dt>
-            <dd class="text-primary"><%= @workflow.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+            <dt class="text-sm font-medium text-gray-500">Updated</dt>
+            <dd class="text-gray-900"><%= @workflow.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
           </div>
         </dl>
       </div>
 
       <!-- Parameters Card -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-border/50">
-        <h3 class="text-lg font-semibold text-primary mb-4">Parameters</h3>
-        <pre class="bg-surface-elevated rounded-lg p-4 overflow-x-auto text-sm font-mono text-primary"><%= JSON.pretty_generate(@workflow.params || {}) %></pre>
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Parameters</h3>
+        <pre class="bg-gray-100 rounded-lg p-4 overflow-x-auto text-sm font-mono text-gray-900"><%= JSON.pretty_generate(@workflow.params || {}) %></pre>
       </div>
 
       <!-- Steps Card -->
       <% if @workflow.workflow_steps.any? %>
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-border/50">
-          <h3 class="text-lg font-semibold text-primary mb-4">Workflow Steps</h3>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Workflow Steps</h3>
           <div class="space-y-4">
             <% @workflow.workflow_steps.order(order: :asc).each do |step| %>
-              <div class="flex items-start gap-4 p-4 bg-surface-elevated rounded-xl">
+              <div class="flex items-start gap-4 p-4 bg-gray-100 rounded-xl">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center <%= case step.status
                   when 'completed' then 'bg-green-100 text-green-600'
                   when 'running' then 'bg-blue-100 text-blue-600'
@@ -100,12 +100,12 @@
                 </div>
                 <div class="flex-1">
                   <div class="flex items-center justify-between mb-1">
-                    <h4 class="font-medium text-primary"><%= step.step_type.humanize %></h4>
-                    <span class="text-xs text-muted">Order: <%= step.order %></span>
+                    <h4 class="font-medium text-gray-900"><%= step.step_type.humanize %></h4>
+                    <span class="text-xs text-gray-500">Order: <%= step.order %></span>
                   </div>
-                  <p class="text-sm text-muted"><%= step.step_type.humanize %> - <%= step.status.humanize %></p>
+                  <p class="text-sm text-gray-600"><%= step.step_type.humanize %> - <%= step.status.humanize %></p>
                   <% if step.result.present? %>
-                    <pre class="mt-2 bg-white rounded-lg p-3 overflow-x-auto text-xs font-mono text-primary"><%= JSON.pretty_generate(step.result) %></pre>
+                    <pre class="mt-2 bg-white rounded-lg p-3 overflow-x-auto text-xs font-mono text-gray-900"><%= JSON.pretty_generate(step.result) %></pre>
                   <% end %>
                 </div>
               </div>
