@@ -184,16 +184,16 @@
           <div class="space-y-3 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600">Platform:</span>
-              <span class="font-medium"><%= @draft.platform.titleize %></span>
+              <span class="font-medium text-gray-900"><%= @draft.platform.titleize %></span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">Type:</span>
-              <span class="font-medium"><%= @draft.content_type.titleize %></span>
+              <span class="font-medium text-gray-900"><%= @draft.content_type.titleize %></span>
             </div>
             <% if @draft.quality_tier.present? %>
               <div class="flex justify-between">
                 <span class="text-gray-600">Quality:</span>
-                <span class="font-medium">
+                <span class="font-medium text-gray-900">
                   <% if @draft.quality_tier == 'hd' %>
                     <span class="inline-flex items-center">
                       ✨ HD
@@ -207,19 +207,19 @@
             <% end %>
             <div class="flex justify-between">
               <span class="text-gray-600">Status:</span>
-              <span class="font-medium"><%= @draft.status.humanize %></span>
+              <span class="font-medium text-gray-900"><%= @draft.status.humanize %></span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">Word Count:</span>
-              <span class="font-medium"><%= @draft.content.split.length %> words</span>
+              <span class="font-medium text-gray-900"><%= @draft.content.split.length %> words</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">Created:</span>
-              <span class="font-medium"><%= time_ago_in_words(@draft.created_at) %> ago</span>
+              <span class="font-medium text-gray-900"><%= time_ago_in_words(@draft.created_at) %> ago</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">Updated:</span>
-              <span class="font-medium"><%= time_ago_in_words(@draft.updated_at) %> ago</span>
+              <span class="font-medium text-gray-900"><%= time_ago_in_words(@draft.updated_at) %> ago</span>
             </div>
           </div>
         </div>
