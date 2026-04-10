@@ -151,15 +151,17 @@
 
   /* Add your custom components here */
 
-  /* Force visible text in textareas - fixes browser autofill issues */
+  /* Force visible text in textareas - fixes browser autofill and dark mode issues */
   textarea {
     -webkit-text-fill-color: #111827 !important;
     color: #111827 !important;
+    background-color: #ffffff !important;
   }
 
   .dark textarea {
-    -webkit-text-fill-color: #f9fafb !important;
-    color: #f9fafb !important;
+    -webkit-text-fill-color: #111827 !important;
+    color: #111827 !important;
+    background-color: #ffffff !important;
   }
 
   /* Handle autofill specifically */
@@ -177,9 +179,9 @@
   .dark textarea:-webkit-autofill:hover,
   .dark textarea:-webkit-autofill:focus,
   .dark textarea:-webkit-autofill:active {
-    -webkit-text-fill-color: #f9fafb !important;
-    color: #f9fafb !important;
-    background-color: #1f2937 !important;
+    -webkit-text-fill-color: #111827 !important;
+    color: #111827 !important;
+    background-color: #ffffff !important;
     transition: background-color 9999s ease-in-out 0s;
   }
 
