@@ -126,6 +126,10 @@ Rails.application.routes.draw do
   post '/api/v1/transcribe', to: 'chat#transcribe'
   post '/api/v1/speak', to: 'chat#speak'
 
+  # Otto-Pilot AI Chat
+  post 'api/v1/otto/chat', to: 'otto#chat'
+  post 'api/v1/otto/clear', to: 'otto#clear'
+
 
 
   # Authentication routes

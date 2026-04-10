@@ -54,8 +54,8 @@
     <% end %>
 
 
-<% if user_signed_in? && current_user.respond_to?(:assistant_enabled?) && current_user.assistant_enabled? %>
-  <%= render 'shared/assistant_bubble' %>
+<% if user_signed_in? %>
+  <%= render 'shared/otto_widget' %>
 <% end %>
 
   </body>

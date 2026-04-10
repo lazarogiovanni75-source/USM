@@ -1,0 +1,111 @@
+<!-- Otto-Pilot Floating Widget -->
+<div id="otto-widget" class="otto-widget-closed" data-controller="otto">
+
+  <!-- Toggle Button -->
+  <button id="otto-toggle" data-action="click->otto#toggle" aria-label="Open Otto-Pilot" class="flex items-center gap-2 bg-gradient-to-r from-primary to-purple-500 text-white border-none rounded-full px-5 py-3 cursor-pointer text-sm font-semibold shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+    </svg>
+    <span>Otto-Pilot</span>
+  </button>
+
+  <!-- Chat Panel -->
+  <div id="otto-panel" class="hidden flex-col w-96 h-[520px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200 mb-3" data-otto-target="panel">
+    <div id="otto-header" class="bg-gradient-to-r from-primary to-purple-500 px-4 py-3 flex items-center justify-between text-white">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-lg">🤖</div>
+        <div>
+          <div class="font-bold text-base">Otto-Pilot</div>
+          <div class="text-xs opacity-80">AI Assistant</div>
+        </div>
+      </div>
+      <div class="flex gap-1">
+        <button data-action="click->otto#clear" title="Clear conversation" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm hover:bg-white/20 transition-colors">🗑️</button>
+        <button data-action="click->otto#toggle" title="Close" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors">✕</button>
+      </div>
+    </div>
+
+    <div id="otto-messages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-gray-50" data-otto-target="messages">
+      <div class="otto-msg assistant flex justify-start">
+        <div class="max-w-[80%] px-4 py-3 rounded-2xl rounded-bl-md bg-white text-gray-800 text-sm shadow-sm">
+          👋 Hey! I'm Otto-Pilot, your AI assistant. I can help you write content, brainstorm ideas, answer questions, or anything else you need. What can I do for you today?
+        </div>
+      </div>
+    </div>
+
+    <div id="otto-input-area" class="p-3 bg-white border-t border-gray-100 flex items-end gap-2">
+      <textarea
+        id="otto-input"
+        data-action="keydown->otto#handleKeydown"
+        data-otto-target="input"
+        placeholder="Ask Otto anything..."
+        rows="1"
+        class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none outline-none focus:border-primary transition-colors leading-relaxed max-h-24 overflow-y-auto font-sans"
+      ></textarea>
+      <button id="otto-send" data-action="click->otto#send" class="w-10 h-10 bg-gradient-to-r from-primary to-purple-500 text-white rounded-xl flex items-center justify-center cursor-pointer hover:scale-105 transition-transform flex-shrink-0 border-none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .otto-widget-closed, .otto-widget-open {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .otto-widget-open #otto-panel {
+    display: flex !important;
+  }
+
+  .otto-widget-open #otto-toggle {
+    background: #6b7280 !important;
+  }
+
+  #otto-messages::-webkit-scrollbar { width: 4px; }
+  #otto-messages::-webkit-scrollbar-track { background: transparent; }
+  #otto-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+  .otto-msg.user .otto-bubble {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .otto-msg.assistant .otto-bubble {
+    background: white;
+    color: #1f2937;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .otto-typing .otto-bubble {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 14px;
+  }
+
+  .otto-dot {
+    width: 7px;
+    height: 7px;
+    background: #9ca3af;
+    border-radius: 50%;
+    animation: ottoBounce 1.2s infinite;
+  }
+
+  .otto-dot:nth-child(2) { animation-delay: 0.2s; }
+  .otto-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes ottoBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+</style>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_09_000004) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_10_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -565,6 +565,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_09_000004) do
     t.index ["user_id"], name: "index_orders_on_user_id"
   end
 
+  create_table "otto_messages", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "role", null: false
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "created_at"], name: "index_otto_messages_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_otto_messages_on_user_id"
+  end
+
   create_table "payments", force: :cascade do |t|
     t.string "payable_type", null: false
     t.bigint "payable_id", null: false
@@ -1100,6 +1110,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_09_000004) do
   add_foreign_key "clients", "users", column: "agency_user_id"
   add_foreign_key "content_suggestions", "draft_contents"
   add_foreign_key "content_template_variables", "content_templates"
+  add_foreign_key "otto_messages", "users"
   add_foreign_key "post_analytics", "scheduled_posts"
   add_foreign_key "postforme_analytics", "scheduled_posts"
   add_foreign_key "publish_queues", "users"

@@ -200,4 +200,7 @@ application.register("mobile-debug", MobileDebugController)
 application.register("brand-voice", BrandVoiceController)
 application.register("assistant-chat", AssistantChatController)
 
+// Otto Controller
+import OttoController from "./otto_controller"
+application.register("otto", OttoController)
 
