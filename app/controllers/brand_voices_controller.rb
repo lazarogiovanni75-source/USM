@@ -4,8 +4,17 @@ class BrandVoicesController < ApplicationController
   # GET /brand_voice
   def show
     @user = current_user
-    @examples = JSON.parse(@user.brand_voice_examples || "[]")
-    @answers = JSON.parse(@user.brand_voice_answers || "{}")
+    # Safely parse JSON with fallback to empty values
+    @examples = begin
+      JSON.parse(@user.brand_voice_examples || '[]')
+    rescue JSON::ParserError
+      []
+    end
+    @answers = begin
+      JSON.parse(@user.brand_voice_answers || '{}')
+    rescue JSON::ParserError
+      {}
+    end
   end
 
   # POST /brand_voice/analyze
