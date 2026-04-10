@@ -1,7 +1,7 @@
 {
   "deploy": {
     "startCommand": "./bin/railway-boot",
-    "preDeployCommand": "bundle exec rake db:ensure_columns && bundle exec rails db:migrate",
+    "preDeployCommand": "bundle exec rails db:migrate",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
