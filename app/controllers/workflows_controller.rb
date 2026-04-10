@@ -50,8 +50,8 @@ class WorkflowsController < ApplicationController
       begin
         JSON.parse(raw_params).with_indifferent_access
       rescue JSON::ParserError
-        flash[:alert] = 'Invalid JSON format in params.'
-        render :new and return
+        # Treat plain strings as content_text directly
+        { content_text: raw_params }
       end
     else
       raw_params.to_h.with_indifferent_access rescue {}
