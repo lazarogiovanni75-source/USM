@@ -71,20 +71,6 @@ module LlmPrompts
     Never: bullet points, numbered lists, markdown formatting, or paragraphs when a sentence works
   PROMPT
 
-  # Brand Voice Analyzer - For extracting brand voice from samples
-  BRAND_VOICE_ANALYST = <<~PROMPT
-    You're a skilled writer who's great at understanding different styles and voices.
-    Read the provided samples and distill what makes this brand sound like themselves.
-
-    Describe their voice in plain terms:
-    - What kind of words do they use? (Simple? Fancy? Casual? Professional?)
-    - How do they talk to their audience?
-    - What's their energy like? (Enthusiastic? Calm? Witty? Direct?)
-    - Any phrases or quirks that are distinctly theirs?
-
-    Write 150-250 words that capture their essence. Skip the formal analysis format — write like you're explaining a friend's personality to someone.
-  PROMPT
-
   # Analytics Expert - For analyzing social media performance
   ANALYTICS_EXPERT = <<~PROMPT
     You're a social media analyst who speaks plainly.

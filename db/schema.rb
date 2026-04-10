@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_10_000003) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_10_000005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -957,15 +957,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_10_000003) do
     t.string "phone"
     t.string "business_name"
     t.text "ai_instructions"
-    t.text "brand_voice_summary"
-    t.text "brand_voice_examples"
-    t.text "brand_voice_answers"
-    t.text "brand_voice_document"
-    t.datetime "brand_voice_generated_at"
     t.datetime "onboarding_completed_at"
     t.text "onboarding_steps", default: "{}"
     t.boolean "assistant_enabled", default: true
-    t.text "brand_voice"
     t.boolean "onboarding_complete", default: false
     t.string "quality_tier", default: "standard"
     t.boolean "approved", default: false

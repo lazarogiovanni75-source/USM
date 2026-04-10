@@ -7,27 +7,14 @@ class LlmService
   # Include human-sounding prompt constants
   include LlmPrompts
 
-  # Prepends brand voice instructions to system prompt if user has one
-  # This method should be called for every LLM generation to ensure brand voice is applied
+  # Prepends any custom instructions to system prompt
   def self.system_prompt_with_brand_voice(base_system_prompt, user)
-    return base_system_prompt unless user&.brand_voice_summary.present?
-
-    <<~PROMPT
-      ## Brand Voice Instructions
-      #{user.brand_voice_summary}
-
-      Always follow the brand voice instructions above when generating content.
-
-      ---
-
-      #{base_system_prompt}
-    PROMPT
+    base_system_prompt
   end
 
-  # Convenience method to inject brand voice into existing user object
+  # Convenience method for legacy compatibility
   def self.inject_brand_voice(user)
-    return nil unless user.present?
-    user.brand_voice_summary
+    ""
   end
 
   # Streaming call method for LlmStreamJob

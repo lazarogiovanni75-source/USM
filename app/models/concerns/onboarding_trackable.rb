@@ -8,35 +8,29 @@ module OnboardingTrackable
       path: "/social_account_connections",
       order: 1
     },
-    "setup_brand_voice" => {
-      label: "Set up your Brand Voice",
-      description: "Train the AI to write in your unique style",
-      path: "/brand_voice",
-      order: 2
-    },
     "generate_first_content" => {
       label: "Generate your first AI content",
       description: "Create your first post using the AI content generator",
       path: "/contents/new",
-      order: 3
+      order: 2
     },
     "create_first_campaign" => {
       label: "Create your first campaign",
       description: "Set up a multi-post campaign for maximum impact",
       path: "/campaigns/new",
-      order: 4
+      order: 3
     },
     "schedule_first_post" => {
       label: "Schedule your first post",
       description: "Schedule a post to go live automatically",
       path: "/scheduled_posts",
-      order: 5
+      order: 4
     },
     "setup_subscription" => {
       label: "Set up your subscription",
       description: "Choose a plan to unlock full features",
       path: "/subscription",
-      order: 6
+      order: 5
     }
   }.freeze
 

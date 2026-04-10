@@ -204,12 +204,6 @@ Rails.application.routes.draw do
     end
   end
 
-  # Brand Voice Profile
-  resource :brand_voice, only: [:show] do
-    post :analyze
-    delete :reset
-  end
-
   # AI Assistant routes
   resource :assistant, only: [] do
     post :chat
