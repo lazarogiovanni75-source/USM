@@ -4,7 +4,7 @@
   </div>
 
   <%= form_with model: @workflow, url: workflows_path, class: "space-y-6" do |f| %>
-    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-200 dark:border-gray-700">
       <% if @workflow.errors.any? %>
         <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p class="text-red-700"><%= @workflow.errors.full_messages.join(', ') %></p>

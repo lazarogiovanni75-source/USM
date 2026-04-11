@@ -1,6 +1,6 @@
 <!-- Navbar -->
 <div data-controller="dropdown">
-<nav class="sticky top-0 z-50 backdrop-blur-md bg-white border-b border-gray-200 dark:border-gray-700 shadow-sm">
+<nav class="sticky top-0 z-50 backdrop-blur-md bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
     <div class="container-xl mx-auto px-4">
       <div class="flex items-center justify-between h-16">
         <!-- Logo with image -->
@@ -13,71 +13,71 @@
 
         <!-- Desktop Nav - Simple links -->
         <div class="hidden md:flex items-center space-x-6">
-          <%= link_to "Features", pages_features_path, class: "text-gray-700 dark:text-gray-300 hover:text-purple-600" %>
-          <%= link_to "Pricing", pages_pricing_path, class: "text-gray-700 dark:text-gray-300 hover:text-purple-600" %>
-          <%= link_to "About", pages_about_path, class: "text-gray-700 dark:text-gray-300 hover:text-purple-600" %>
-          <%= link_to "Dashboard", dashboards_path, class: "text-gray-700 dark:text-gray-300 hover:text-purple-600" %>
+          <%= link_to "Features", pages_features_path, class: "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" %>
+          <%= link_to "Pricing", pages_pricing_path, class: "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" %>
+          <%= link_to "About", pages_about_path, class: "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" %>
+          <%= link_to "Dashboard", dashboards_path, class: "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" %>
           
           <!-- Tools Dropdown -->
           <div class="relative" data-controller="dropdown">
-            <button class="flex items-center text-gray-700 dark:text-gray-300 hover:text-purple-600 font-medium focus:outline-none" data-action="click->dropdown#toggle">
+            <button class="flex items-center text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium focus:outline-none" data-action="click->dropdown#toggle">
               Tools
               <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
-            <div data-dropdown-target="menu" class="hidden absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-              <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Tools</div>
-              <%= link_to content_creation_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+            <div data-dropdown-target="menu" class="hidden absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
+              <div class="px-4 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tools</div>
+              <%= link_to content_creation_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "pen-tool", class: "w-4 h-4 text-purple-500" %>
                 <span>Media Creation</span>
               <% end %>
-              <%= link_to contents_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to contents_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "file-text", class: "w-4 h-4 text-blue-500" %>
                 <span>Drafts/Approvals</span>
               <% end %>
-              <%= link_to engagement_analytics_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to engagement_analytics_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "bar-chart-2", class: "w-4 h-4 text-blue-500" %>
                 <span>Analytics</span>
               <% end %>
-              <%= link_to social_media_dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to social_media_dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-green-500" %>
                 <span>Social Media Dashboard</span>
               <% end %>
-              <%= link_to scheduled_posts_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to scheduled_posts_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "calendar", class: "w-4 h-4 text-orange-500" %>
                 <span>Posting Schedule</span>
               <% end %>
-              <%= link_to workflows_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to workflows_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "git-branch", class: "w-4 h-4 text-purple-500" %>
                 <span>Workflows</span>
               <% end %>
-              <%= link_to ai_marketing_strategy_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to ai_marketing_strategy_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "trending-up", class: "w-4 h-4 text-green-500" %>
                 <span>AI Marketing Strategy</span>
               <% end %>
-              <%= link_to autopilot_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to autopilot_index_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "rocket", class: "w-4 h-4 text-purple-500" %>
                 <span>Full Autopilot</span>
               <% end %>
-              <div class="border-t my-2"></div>
-              <%= link_to dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <div class="border-t my-2 dark:border-gray-700"></div>
+              <%= link_to dashboard_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-indigo-500" %>
                 <span>Dashboard</span>
               <% end %>
-              <%= link_to pages_features_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to pages_features_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "sparkles", class: "w-4 h-4 text-amber-500" %>
                 <span>Features</span>
               <% end %>
-              <%= link_to pages_pricing_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to pages_pricing_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "credit-card", class: "w-4 h-4 text-green-500" %>
                 <span>Pricing</span>
               <% end %>
-              <%= link_to pages_faq_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to pages_faq_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "help-circle", class: "w-4 h-4 text-blue-500" %>
                 <span>FAQ</span>
               <% end %>
-              <%= link_to pages_about_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50" do %>
+              <%= link_to pages_about_path, class: "flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "info", class: "w-4 h-4 text-blue-500" %>
                 <span>About</span>
               <% end %>
@@ -91,7 +91,7 @@
           <!-- Theme Toggle -->
           <div data-controller="theme" data-theme-storage-key-value="app-isdark">
             <button type="button"
-                    class="p-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    class="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                     data-action="click->theme#toggle">
               <span data-theme-target="lightIcon"><%= lucide_icon "sun", class: "w-5 h-5" %></span>
               <span data-theme-target="darkIcon" class="hidden"><%= lucide_icon "moon", class: "w-5 h-5" %></span>
@@ -114,7 +114,7 @@
         <!-- Mobile hamburger -->
         <button type="button"
                 data-action="click->dropdown#toggle"
-                class="md:hidden p-2 text-gray-900 hover:bg-gray-200">
+                class="md:hidden p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
           <%= lucide_icon "menu", class: "w-6 h-6" %>
         </button>
       </div>
@@ -123,17 +123,17 @@
 
   <!-- Mobile drawer -->
   <div data-dropdown-target="menu" class="hidden fixed inset-0 z-[100] md:hidden">
-    <div class="fixed inset-0 bg-black/50" data-action="click->dropdown#close"></div>
-    <div class="fixed right-0 top-0 h-full w-64 bg-white shadow-xl overflow-y-auto">
+    <div class="fixed inset-0 bg-black/50 dark:bg-black/70" data-action="click->dropdown#close"></div>
+    <div class="fixed right-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto">
       <div class="p-4">
-        <button type="button" data-action="click->dropdown#close" class="mb-4 p-2 text-black">
+        <button type="button" data-action="click->dropdown#close" class="mb-4 p-2 text-gray-900 dark:text-white">
           <%= lucide_icon "x", class: "w-6 h-6" %>
         </button>
 
         <!-- Mobile Theme Toggle -->
         <div class="mb-4 px-2" data-controller="theme" data-theme-storage-key-value="app-isdark">
           <button type="button"
-                  class="flex items-center gap-3 w-full p-3 text-black hover:bg-gray-100 rounded-lg transition-colors"
+                  class="flex items-center gap-3 w-full p-3 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   data-action="click->theme#toggle">
             <span data-theme-target="lightIcon"><%= lucide_icon "sun", class: "w-5 h-5" %></span>
             <span data-theme-target="darkIcon" class="hidden"><%= lucide_icon "moon", class: "w-5 h-5" %></span>
@@ -144,63 +144,63 @@
         <div class="mb-6 flex flex-col space-y-1">
           <!-- Tools Dropdown Mobile -->
           <div class="py-2 px-3">
-              <%= link_to content_creation_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to content_creation_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "pen-tool", class: "w-4 h-4 text-purple-500" %>
-                <span class="text-black">Media Creation</span>
+                <span class="text-gray-900 dark:text-white">Media Creation</span>
               <% end %>
-              <%= link_to contents_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to contents_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "file-text", class: "w-4 h-4 text-blue-500" %>
-                <span class="text-black">Drafts/Approvals</span>
+                <span class="text-gray-900 dark:text-white">Drafts/Approvals</span>
               <% end %>
-              <%= link_to engagement_analytics_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to engagement_analytics_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "bar-chart-2", class: "w-4 h-4 text-blue-500" %>
-                <span class="text-black">Analytics</span>
+                <span class="text-gray-900 dark:text-white">Analytics</span>
               <% end %>
-              <%= link_to social_media_dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to social_media_dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-green-500" %>
-                <span class="text-black">Social Media Dashboard</span>
+                <span class="text-gray-900 dark:text-white">Social Media Dashboard</span>
               <% end %>
-              <%= link_to scheduled_posts_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to scheduled_posts_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "calendar", class: "w-4 h-4 text-orange-500" %>
-                <span class="text-black">Posting Schedule</span>
+                <span class="text-gray-900 dark:text-white">Posting Schedule</span>
               <% end %>
-              <%= link_to workflows_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to workflows_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "git-branch", class: "w-4 h-4 text-purple-500" %>
-                <span class="text-black">Workflows</span>
+                <span class="text-gray-900 dark:text-white">Workflows</span>
               <% end %>
-              <%= link_to ai_marketing_strategy_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to ai_marketing_strategy_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "trending-up", class: "w-4 h-4 text-green-500" %>
-                <span class="text-black">AI Marketing Strategy</span>
+                <span class="text-gray-900 dark:text-white">AI Marketing Strategy</span>
               <% end %>
-              <%= link_to autopilot_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to autopilot_index_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "rocket", class: "w-4 h-4 text-purple-500" %>
-                <span class="text-black">Full Autopilot</span>
+                <span class="text-gray-900 dark:text-white">Full Autopilot</span>
               <% end %>
-              <div class="border-t border-gray-200 my-2"></div>
-              <%= link_to dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+              <%= link_to dashboard_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "layout-dashboard", class: "w-4 h-4 text-indigo-500" %>
-                <span class="text-black">Dashboard</span>
+                <span class="text-gray-900 dark:text-white">Dashboard</span>
               <% end %>
-              <%= link_to pages_features_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to pages_features_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "sparkles", class: "w-4 h-4 text-amber-500" %>
-                <span class="text-black">Features</span>
+                <span class="text-gray-900 dark:text-white">Features</span>
               <% end %>
-              <%= link_to pages_pricing_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to pages_pricing_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "credit-card", class: "w-4 h-4 text-green-500" %>
-                <span class="text-black">Pricing</span>
+                <span class="-gray-900 dark:text-white">Pricing</span>
               <% end %>
-              <%= link_to pages_faq_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to pages_faq_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "help-circle", class: "w-4 h-4 text-blue-500" %>
-                <span class="text-black">FAQ</span>
+                <span class="text-gray-900 dark:text-white">FAQ</span>
               <% end %>
-              <%= link_to pages_about_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100" do %>
+              <%= link_to pages_about_path, class: "flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" do %>
                 <%= lucide_icon "info", class: "w-4 h-4 text-blue-500" %>
-                <span class="text-black">About</span>
+                <span class="text-gray-900 dark:text-white">About</span>
               <% end %>
             </div>
           </div>
         </div>
-        <div class="border-t pt-4">
+        <div class="border-t pt-4 dark:border-gray-700">
           <% if current_user %>
             <%= render 'shared/user_dropdown' %>
           <% else %>

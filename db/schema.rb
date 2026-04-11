@@ -1065,6 +1065,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_11_035559) do
     t.text "error_message"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "result"
     t.index ["user_id"], name: "index_workflows_on_user_id"
   end
 

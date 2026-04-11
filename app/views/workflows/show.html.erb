@@ -1,11 +1,11 @@
 <div class="max-w-2xl mx-auto py-8 px-4">
   <div class="mb-6">
-    <%= link_to "← Back to Workflows", workflows_path, class: "text-gray-600 hover:text-gray-900" %>
+    <%= link_to "← Back to Workflows", workflows_path, class: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200" %>
   </div>
 
-  <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-200 dark:border-gray-700">
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 mb-2"><%= @workflow.title %></h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2"><%= @workflow.title %></h1>
       <div class="flex items-center gap-4">
         <span class="badge-primary"><%= @workflow.workflow_type.humanize %></span>
         <span class="badge-<%= @workflow.status == 'completed' ? 'success' : @workflow.status == 'failed' ? 'danger' : 'warning' %>">
@@ -15,8 +15,8 @@
     </div>
 
     <div class="mb-6">
-      <h2 class="text-sm font-medium text-gray-700 mb-2">Content</h2>
-      <div class="bg-gray-50 rounded-lg p-4 text-gray-900 whitespace-pre-wrap">
+      <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Content</h2>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
         <%= @workflow.content.presence || "No content provided" %>
       </div>
     </div>
@@ -27,26 +27,26 @@
       <%# Display caption if available %>
       <% if result_data['caption'] && result_data['caption']['success'] %>
         <div class="mb-6">
-          <h2 class="text-sm font-medium text-gray-700 mb-2">Generated Caption</h2>
-          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Generated Caption</h2>
+          <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
             <% if result_data['caption']['content'] %>
               <% caption_content = result_data['caption']['content'] %>
               <% if caption_content.is_a?(Hash) %>
                 <% if caption_content['title'].present? %>
-                  <p class="font-medium text-gray-900 mb-2"><%= caption_content['title'] %></p>
+                  <p class="font-medium text-gray-900 dark:text-gray-100 mb-2"><%= caption_content['title'] %></p>
                 <% end %>
-                <p class="text-gray-700 whitespace-pre-wrap"><%= caption_content['body'] || caption_content.to_s %></p>
+                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><%= caption_content['body'] || caption_content.to_s %></p>
               <% else %>
-                <p class="text-gray-700 whitespace-pre-wrap"><%= caption_content.to_s %></p>
+                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><%= caption_content.to_s %></p>
               <% end %>
             <% end %>
           </div>
         </div>
       <% elsif result_data['caption'] && result_data['caption'].is_a?(Hash) %>
         <div class="mb-6">
-          <h2 class="text-sm font-medium text-gray-700 mb-2">Generated Caption</h2>
-          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p class="text-gray-700 whitespace-pre-wrap"><%= result_data['caption'].to_s %></p>
+          <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Generated Caption</h2>
+          <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap"><%= result_data['caption'].to_s %></p>
           </div>
         </div>
       <% end %>
@@ -54,12 +54,12 @@
       <%# Display image if available %>
       <% if result_data['image_task_id'].present? %>
         <div class="mb-6">
-          <h2 class="text-sm font-medium text-gray-700 mb-2">Generated Image</h2>
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p class="text-sm text-gray-600 mb-2">
-              Status: <span class="font-medium">Processing</span>
+          <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Generated Image</h2>
+          <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              Status: <span class="font-medium text-gray-900 dark:text-gray-100">Processing</span>
             </p>
-            <p class="text-sm text-gray-500">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               Image is being generated. Task ID: <%= result_data['image_task_id'] %>
             </p>
             <% if @workflow.respond_to?(:draft) && @workflow.draft&.media_url.present? %>
@@ -74,12 +74,12 @@
       <%# Display video if available %>
       <% if result_data['video_task_id'].present? %>
         <div class="mb-6">
-          <h2 class="text-sm font-medium text-gray-700 mb-2">Generated Video</h2>
-          <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <p class="text-sm text-gray-600 mb-2">
-              Status: <span class="font-medium">Processing</span>
+          <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Generated Video</h2>
+          <div class="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              Status: <span class="font-medium text-gray-900 dark:text-gray-100">Processing</span>
             </p>
-            <p class="text-sm text-gray-500">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               Video is being generated. Task ID: <%= result_data['video_task_id'] %>
             </p>
           </div>
@@ -88,7 +88,7 @@
 
       <%# Post to Social Media button %>
       <% if result_data['caption'] && result_data['caption']['success'] || result_data['image_task_id'] || result_data['video_task_id'] %>
-        <div class="flex gap-3 pt-4 border-t border-gray-200">
+        <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <%= link_to "Post to Social Media", social_account_connections_path, 
               class: "btn-primary" %>
         </div>
@@ -97,14 +97,14 @@
 
     <% if @workflow.error_message.present? %>
       <div class="mb-6">
-        <h2 class="text-sm font-medium text-gray-700 mb-2">Error</h2>
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+        <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Error</h2>
+        <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-400">
           <%= @workflow.error_message %>
         </div>
       </div>
     <% end %>
 
-    <div class="flex gap-3 pt-4 border-t border-gray-200">
+    <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
       <%= button_to "Delete Workflow", workflow_path(@workflow), method: :delete, 
           class: "btn-danger",
           data: { confirm: "Delete this workflow?" } %>
