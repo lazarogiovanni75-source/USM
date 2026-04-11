@@ -29,13 +29,13 @@ class WorkflowsController < ApplicationController
   def create
     # Extract params from simple form fields
     workflow_type = params[:workflow_type]
-    content_text = params[:content_text]
+    content_text = params[:content_text].to_s.strip
     social_account_id = params[:social_account_id]
     post_now = params[:post_now] == "1"
     scheduled_at = params[:scheduled_at]
 
     # Validate required fields
-    unless content_text.present?
+    if content_text.blank?
       flash[:alert] = "Please enter content for your workflow."
       @social_accounts = current_user.social_accounts
       render :new and return
