@@ -14,7 +14,7 @@ class WorkflowService
     content = workflow.content
     return fail_workflow(workflow, "No content provided") if content.blank?
 
-    result = LlmService.new.generate_content(prompt: content)
+    result = LlmService.generate_content(prompt: content)
     workflow.update!(status: :completed)
     result
   rescue => e
@@ -25,7 +25,7 @@ class WorkflowService
     content = workflow.content
     return fail_workflow(workflow, "No content provided") if content.blank?
 
-    result = LlmService.new.generate_content(prompt: content)
+    result = LlmService.generate_content(prompt: content)
     ImageGenerationService.new.generate_image(prompt: content)
     workflow.update!(status: :completed)
     result
@@ -37,7 +37,7 @@ class WorkflowService
     content = workflow.content
     return fail_workflow(workflow, "No content provided") if content.blank?
 
-    result = LlmService.new.generate_content(prompt: content)
+    result = LlmService.generate_content(prompt: content)
     VideoGenerationService.new.generate_video(prompt: content)
     workflow.update!(status: :completed)
     result
