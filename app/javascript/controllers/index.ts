@@ -165,7 +165,3 @@ application.register("assistant-chat", AssistantChatController)
 // Otto Controller
 import OttoController from "./otto_controller"
 application.register("otto", OttoController)
-
-// Workflow Form Controller
-import WorkflowFormController from "./workflow_form_controller"
-application.register("workflow-form", WorkflowFormController)
