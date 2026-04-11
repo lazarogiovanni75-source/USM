@@ -62,8 +62,9 @@ class WorkflowsController < ApplicationController
       render :new and return
     end
     
-    # Extract workflow_type and title
+    # Extract workflow_type - check both nested (form_with model) and top-level params
     workflow_type = workflow_data ? (workflow_data['workflow_type'] || workflow_data[:workflow_type]) : nil
+    workflow_type ||= params[:workflow_type]
     title = workflow_data ? (workflow_data['title'] || workflow_data[:title] || 'Untitled Workflow') : 'Untitled Workflow'
     
     @workflow = current_user.workflows.new(
