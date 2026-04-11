@@ -21,6 +21,80 @@
       </div>
     </div>
 
+    <% if @workflow.status == 'completed' && @workflow.result.present? %>
+      <% result_data = JSON.parse(@workflow.result) %>
+      
+      <%# Display caption if available %>
+      <% if result_data['caption'] && result_data['caption']['success'] %>
+        <div class="mb-6">
+          <h2 class="text-sm font-medium text-gray-700 mb-2">Generated Caption</h2>
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <% if result_data['caption']['content'] %>
+              <% caption_content = result_data['caption']['content'] %>
+              <% if caption_content.is_a?(Hash) %>
+                <% if caption_content['title'].present? %>
+                  <p class="font-medium text-gray-900 mb-2"><%= caption_content['title'] %></p>
+                <% end %>
+                <p class="text-gray-700 whitespace-pre-wrap"><%= caption_content['body'] || caption_content.to_s %></p>
+              <% else %>
+                <p class="text-gray-700 whitespace-pre-wrap"><%= caption_content.to_s %></p>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% elsif result_data['caption'] && result_data['caption'].is_a?(Hash) %>
+        <div class="mb-6">
+          <h2 class="text-sm font-medium text-gray-700 mb-2">Generated Caption</h2>
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p class="text-gray-700 whitespace-pre-wrap"><%= result_data['caption'].to_s %></p>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Display image if available %>
+      <% if result_data['image_task_id'].present? %>
+        <div class="mb-6">
+          <h2 class="text-sm font-medium text-gray-700 mb-2">Generated Image</h2>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p class="text-sm text-gray-600 mb-2">
+              Status: <span class="font-medium">Processing</span>
+            </p>
+            <p class="text-sm text-gray-500">
+              Image is being generated. Task ID: <%= result_data['image_task_id'] %>
+            </p>
+            <% if @workflow.respond_to?(:draft) && @workflow.draft&.media_url.present? %>
+              <div class="mt-4">
+                <%= image_tag @workflow.draft.media_url, class: "rounded-lg max-w-full" %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Display video if available %>
+      <% if result_data['video_task_id'].present? %>
+        <div class="mb-6">
+          <h2 class="text-sm font-medium text-gray-700 mb-2">Generated Video</h2>
+          <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <p class="text-sm text-gray-600 mb-2">
+              Status: <span class="font-medium">Processing</span>
+            </p>
+            <p class="text-sm text-gray-500">
+              Video is being generated. Task ID: <%= result_data['video_task_id'] %>
+            </p>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Post to Social Media button %>
+      <% if result_data['caption'] && result_data['caption']['success'] || result_data['image_task_id'] || result_data['video_task_id'] %>
+        <div class="flex gap-3 pt-4 border-t border-gray-200">
+          <%= link_to "Post to Social Media", social_account_connections_path, 
+              class: "btn-primary" %>
+        </div>
+      <% end %>
+    <% end %>
+
     <% if @workflow.error_message.present? %>
       <div class="mb-6">
         <h2 class="text-sm font-medium text-gray-700 mb-2">Error</h2>
