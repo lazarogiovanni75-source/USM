@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_10_000005) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_11_035559) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -1057,13 +1057,15 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_10_000005) do
   end
 
   create_table "workflows", force: :cascade do |t|
-    t.integer "user_id"
+    t.bigint "user_id"
     t.string "workflow_type"
-    t.string "status"
-    t.text "params"
+    t.string "title"
+    t.text "content"
+    t.string "status", default: "pending"
+    t.text "error_message"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "title"
+    t.index ["user_id"], name: "index_workflows_on_user_id"
   end
 
   create_table "zapier_webhooks", force: :cascade do |t|
