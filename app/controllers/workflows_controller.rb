@@ -6,9 +6,11 @@ class WorkflowsController < ApplicationController
 
   def index
     @workflows = current_user.workflows.order(created_at: :desc)
+    @social_accounts = current_user.social_accounts
   end
 
   def show
+    @social_accounts = current_user.social_accounts
   end
 
   def run
@@ -21,64 +23,51 @@ class WorkflowsController < ApplicationController
 
   def new
     @workflow = current_user.workflows.build
+    @social_accounts = current_user.social_accounts
   end
 
   def create
-    # Handle both JSON API and form submissions - extract raw data first
-    workflow_data = params[:workflow]
-    
-    # Extract params from different possible structures
-    raw_params = nil
-    if workflow_data.present?
-      raw_params = workflow_data['params'] || workflow_data[:params]
-    end
-    raw_params ||= params[:params]
-    
-    # Validate content_text is provided
-    unless raw_params.present?
-      flash[:alert] = 'Please provide content parameters (params: {content_text: "..."}).'
+    # Extract params from simple form fields
+    workflow_type = params[:workflow_type]
+    content_text = params[:content_text]
+    social_account_id = params[:social_account_id]
+    post_now = params[:post_now] == "1"
+    scheduled_at = params[:scheduled_at]
+
+    # Validate required fields
+    unless content_text.present?
+      flash[:alert] = "Please enter content for your workflow."
+      @social_accounts = current_user.social_accounts
       render :new and return
     end
-    
-    # Parse the nested params - handle ActionController::Parameters, String, and Hash
-    parsed = case raw_params.class.name
-    when 'ActionController::Parameters'
-      raw_params.permit!.to_h.with_indifferent_access
-    when 'Hash'
-      raw_params.with_indifferent_access
-    when 'String'
-      begin
-        JSON.parse(raw_params).with_indifferent_access
-      rescue JSON::ParserError
-        # Treat plain strings as content_text directly
-        { content_text: raw_params }
-      end
-    else
-      raw_params.to_h.with_indifferent_access rescue {}
-    end
-    
-    unless parsed[:content_text].present?
-      flash[:alert] = 'Please provide a "content_text" key with your content.'
+
+    unless workflow_type.present?
+      flash[:alert] = "Please select a workflow type."
+      @social_accounts = current_user.social_accounts
       render :new and return
     end
-    
-    # Extract workflow_type - check both nested (form_with model) and top-level params
-    workflow_type = workflow_data ? (workflow_data['workflow_type'] || workflow_data[:workflow_type]) : nil
-    workflow_type ||= params[:workflow_type]
-    title = workflow_data ? (workflow_data['title'] || workflow_data[:title] || 'Untitled Workflow') : 'Untitled Workflow'
-    
+
+    # Build params hash for the workflow
+    workflow_params = {
+      content_text: content_text,
+      social_account_id: social_account_id.presence,
+      post_now: post_now,
+      scheduled_at: scheduled_at.presence
+    }.compact
+
     @workflow = current_user.workflows.new(
-      title: title,
+      title: content_text.truncate(50),
       workflow_type: workflow_type,
       status: 'pending'
     )
-    @workflow.params = parsed
+    @workflow.params = workflow_params
 
     if @workflow.save
       WorkflowExecutionJob.perform_later(@workflow.id)
       redirect_to workflows_path, notice: 'Workflow started successfully!'
     else
       flash[:alert] = "Failed: #{@workflow.errors.full_messages.join(', ')}"
+      @social_accounts = current_user.social_accounts
       render :new
     end
   end

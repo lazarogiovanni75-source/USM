@@ -19,40 +19,54 @@
   <!-- Form -->
   <div class="container-xl mx-auto px-4 py-6">
     <div class="max-w-2xl mx-auto">
-      <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
-        <%= form_with model: @workflow, local: true, class: "space-y-6" do |f| %>
+      <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-200" data-controller="workflow-form">
+        <%= form_with url: workflows_path, local: true, class: "space-y-6" do |f| %>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Workflow Type</label>
-            <%= f.select :workflow_type, 
+            <%= select_tag "workflow_type", 
                 options_for_select([
                   ['Content to Post', 'content_to_post'],
                   ['Content to Image Post', 'content_to_image_post'],
                   ['Content to Video Post', 'content_to_video_post']
-                ], f.object.workflow_type),
-                {}, 
+                ], 'content_to_post'), 
                 class: "form-input" %>
             <p class="mt-1 text-xs text-gray-500">Select the type of automated workflow</p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <%= f.select :status, 
-                options_for_select([
-                  ['Pending', 'pending'],
-                  ['Active', 'active'],
-                  ['Paused', 'paused']
-                ], f.object.status),
-                {}, 
-                class: "form-input" %>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+            <%= text_area_tag "content_text", nil, 
+                rows: 5, 
+                class: "form-textarea w-full",
+                placeholder: "Enter the content or topic you want to create..." %>
+            <p class="mt-1 text-xs text-gray-500">Describe what you want to post about</p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Parameters (JSON)</label>
-            <%= f.text_area :params, 
-                rows: 6, 
-                class: "form-input font-mono text-sm text-gray-900",
-                placeholder: '{"content_text": "Write your content here"}' %>
-            <p class="mt-1 text-xs text-gray-500">Enter JSON with a "content_text" key containing your content</p>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Social Account (Optional)</label>
+            <% if @social_accounts.any? %>
+              <%= select_tag "social_account_id", 
+                  options_from_collection_for_select(@social_accounts, "id", "platform_username", include_blank: "None (save as draft)"),
+                  class: "form-input w-full" %>
+            <% else %>
+              <p class="text-sm text-gray-500 italic">No social accounts connected. Content will be saved as draft.</p>
+            <% end %>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <div data-workflow-form-target="postNow">
+              <%= check_box_tag "post_now", "1", false, 
+                  class: "rounded border-gray-300 text-green-600 focus:ring-green-500",
+                  data: { action: "change->workflow-form#toggleScheduleOptions" } %>
+            </div>
+            <label for="post_now" class="text-sm font-medium text-gray-700">Post immediately</label>
+          </div>
+
+          <div data-workflow-form-target="scheduleOptions" id="schedule-options" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Schedule For</label>
+            <%= datetime_local_field_tag "scheduled_at", nil, 
+                class: "form-input w-full",
+                placeholder: "Select date and time" %>
           </div>
 
           <div class="flex gap-3 pt-4">
