@@ -234,7 +234,11 @@ export default class OttoController extends Controller {
   async startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(stream);
+      // Use mimeType for better compatibility
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus' 
+        : 'audio/webm';
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
       this.audioChunks = [];
       this.isRecording = true;
 
@@ -252,10 +256,14 @@ export default class OttoController extends Controller {
         stream.getTracks().forEach(track => track.stop());
       };
 
-      this.mediaRecorder.start();
+      // Request data every 100ms for smoother recording
+      this.mediaRecorder.start(100);
     } catch (error) {
-      console.error('Microphone access denied:', error);
-      showToast('Microphone access denied. Please allow microphone access.', 'error');
+      console.error('Microphone error:', error);
+      showToast('Could not access microphone. Please check permissions.', 'error');
+      this.isRecording = false;
+      this.updateMicButton(false);
+      this.updateVoiceStatus('idle');
     }
   }
 

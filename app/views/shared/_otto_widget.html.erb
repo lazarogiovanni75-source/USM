@@ -1,15 +1,6 @@
 <!-- Otto-Pilot Floating Widget -->
 <div id="otto-widget" class="otto-widget-closed" data-controller="otto">
 
-  <!-- Toggle Button -->
-  <button id="otto-toggle" data-action="click->otto#toggle" aria-label="Open Otto-Pilot" class="flex items-center gap-2 bg-gradient-to-r from-primary to-purple-500 text-white border-none rounded-full px-5 py-3 cursor-pointer text-sm font-semibold shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-    </svg>
-    <span>Otto-Pilot</span>
-  </button>
-
   <!-- Chat Panel -->
   <div id="otto-panel" class="hidden flex-col w-96 h-[520px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200 mb-3" data-otto-target="panel">
     <div id="otto-header" class="bg-gradient-to-r from-primary to-purple-500 px-4 py-3 flex items-center justify-between text-white">
@@ -58,6 +49,15 @@
       <span id="otto-status-text">Listening...</span>
     </div>
   </div>
+
+  <!-- Toggle Button (outside panel, always accessible) -->
+  <button id="otto-toggle" data-action="click->otto#toggle" aria-label="Open Otto-Pilot" class="w-full bg-gradient-to-r from-primary to-purple-500 text-white border-none rounded-full px-5 py-3 cursor-pointer text-sm font-semibold shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+    </svg>
+    <span>Otto-Pilot</span>
+  </button>
 </div>
 
 <style>
@@ -67,6 +67,9 @@
     right: 24px;
     z-index: 9999;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
   }
 
   .otto-widget-open #otto-panel {
@@ -115,6 +118,10 @@
   @keyframes ottoBounce {
     0%, 60%, 100% { transform: translateY(0); }
     30% { transform: translateY(-6px); }
+  }
+
+  #otto-mic-btn {
+    display: flex !important;
   }
 
   #otto-mic-btn.recording {
