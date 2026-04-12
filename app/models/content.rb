@@ -1,4 +1,4 @@
-class Content < ApplicationRecord
+texted "class Content < ApplicationRecord
   belongs_to :campaign, optional: true
   belongs_to :user
 

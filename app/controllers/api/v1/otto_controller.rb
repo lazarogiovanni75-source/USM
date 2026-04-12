@@ -22,7 +22,8 @@ module Api
           chat_response(user_message)
         end
       rescue => e
-        Rails.logger.error "Otto-Pilot error: #{e.message}"
+        Rails.logger.error "Otto-Pilot error: #{e.class} - #{e.message}"
+        Rails.logger.error "Backtrace: #{e.backtrace.first(5).join("\n")}"
         render json: { error: "Otto-Pilot is unavailable right now. Please try again." }, status: :internal_server_error
       end
 
@@ -373,11 +374,15 @@ module Api
       end
 
       def chat_response(message)
+        Rails.logger.info "[Otto] chat_response called with message: #{message[0..50]}..."
+        
         # Build conversation history (last 20 messages)
         history = current_user.otto_messages.recent.map do |msg|
           { role: msg.role, content: msg.content }
         end
 
+        Rails.logger.info "[Otto] Calling Anthropic API..."
+        
         # Call Anthropic API
         client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
 
@@ -389,6 +394,8 @@ module Api
         )
 
         assistant_reply = response.content.first.text
+
+        Rails.logger.info "[Otto] Anthropic response received: #{assistant_reply[0..50]}..."
 
         # Save assistant reply
         current_user.otto_messages.create!(role: "assistant", content: assistant_reply)
