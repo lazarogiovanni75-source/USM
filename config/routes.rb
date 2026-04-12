@@ -131,8 +131,14 @@ Rails.application.routes.draw do
   post '/api/v1/speak', to: 'chat#speak'
 
   # Otto-Pilot AI Chat
-  post 'api/v1/otto/chat', to: 'otto#chat'
-  post 'api/v1/otto/clear', to: 'otto#clear'
+  namespace :api do
+    namespace :v1 do
+      post 'otto/chat', to: 'otto#chat'
+      post 'otto/execute', to: 'otto#execute'
+      get 'otto/draft_status', to: 'otto#draft_status'
+      post 'otto/clear', to: 'otto#clear'
+    end
+  end
 
 
 

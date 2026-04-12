@@ -35,14 +35,14 @@ export default class OttoController extends Controller {
     }
     const target = event.target as HTMLTextAreaElement;
     target.style.height = 'auto';
-    target.style.height = `${Math.min(target.scrollHeight, 100)  }px`;
+    target.style.height = `${Math.min(target.scrollHeight, 100)}px`;
   }
 
   private escapeHtml(text: string): string {
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
+      .replace(/>/g, '&gt')
       .replace(/\n/g, '<br>');
   }
 
@@ -55,6 +55,83 @@ export default class OttoController extends Controller {
     div.innerHTML = `<div class="otto-bubble max-w-[80%] px-4 py-3 rounded-2xl ${bubbleClass} text-sm shadow-sm">${this.escapeHtml(content)}</div>`;
     this.messagesTarget.appendChild(div);
     this.messagesTarget.scrollTop = this.messagesTarget.scrollHeight;
+  }
+
+  private appendImageMessage(imageUrl: string, caption?: string) {
+    const div = document.createElement('div');
+    div.className = 'otto-msg assistant flex justify-start';
+    div.innerHTML = `
+      <div class="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-md bg-white shadow-sm">
+        <img src="${imageUrl}" alt="Generated image" class="rounded-lg max-w-full max-h-64 object-cover mb-2" loading="lazy" />
+        ${caption ? `<p class="text-sm text-gray-700">${this.escapeHtml(caption)}</p>` : ''}
+      </div>
+    `;
+    this.messagesTarget.appendChild(div);
+    this.messagesTarget.scrollTop = this.messagesTarget.scrollHeight;
+  }
+
+  private appendTaskResult(task: any) {
+    if (task.type === 'image' && task.draft_id) {
+      this.startPollingForImage(task.draft_id);
+    }
+  }
+
+  private startPollingForImage(draftId: number) {
+    // Create a polling container that will be updated via Turbo Stream
+    const container = document.createElement('div');
+    container.id = `otto-poll-${draftId}`;
+    container.innerHTML = `
+      <div class="otto-msg assistant flex justify-start">
+        <div class="max-w-[80%] px-4 py-3 rounded-2xl rounded-bl-md bg-white shadow-sm">
+          <div class="flex items-center gap-2 text-gray-500 text-sm">
+            <div class="otto-dot"></div>
+            <div class="otto-dot"></div>
+            <div class="otto-dot"></div>
+            <span>Generating image...</span>
+          </div>
+        </div>
+      </div>
+    `;
+    this.messagesTarget.appendChild(container);
+    this.messagesTarget.scrollTop = this.messagesTarget.scrollHeight;
+
+    // Poll using fetch - this is for Otto widget's image polling which is a background task
+    let attempts = 0;
+    const maxAttempts = 60;
+
+    const poll = () => {
+      attempts++;
+
+      fetch(`/api/v1/otto/draft_status?id=${draftId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-CSRF-Token': this.csrfToken || ''
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.media_url) {
+            // Remove polling indicator
+            container.remove();
+            // Show the image
+            this.appendImageMessage(data.media_url, data.content);
+            showToast('Image ready!', 'success');
+          } else if (attempts < maxAttempts && this.isOpen) {
+            setTimeout(poll, 5000);
+          } else if (attempts >= maxAttempts) {
+            container.remove();
+            this.appendMessage('assistant', 'Image generation is taking longer than expected. Check your drafts for the result.');
+          }
+        })
+        .catch(() => {
+          if (attempts < maxAttempts && this.isOpen) {
+            setTimeout(poll, 5000);
+          }
+        });
+    };
+
+    setTimeout(poll, 3000);
   }
 
   private showTyping() {
@@ -104,6 +181,10 @@ export default class OttoController extends Controller {
         this.hideTyping();
         if (data.reply) {
           this.appendMessage('assistant', data.reply);
+
+          if (data.task) {
+            this.appendTaskResult(data.task);
+          }
         } else {
           this.appendMessage('assistant', data.error || 'Something went wrong. Please try again.');
         }
