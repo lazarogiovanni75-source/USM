@@ -10,6 +10,9 @@ export default class OttoController extends Controller {
 
   private csrfToken: string | null = null;
   private isOpen = false;
+  private isRecording = false;
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
 
   connect() {
     const meta = document.querySelector('meta[name="csrf-token"]');
@@ -218,5 +221,127 @@ export default class OttoController extends Controller {
                 </div>
             </div>
         `;
+  }
+
+  async toggleMic() {
+    if (this.isRecording) {
+      this.stopRecording();
+    } else {
+      await this.startRecording();
+    }
+  }
+
+  async startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.audioChunks = [];
+      this.isRecording = true;
+
+      this.updateMicButton(true);
+      this.updateVoiceStatus('listening');
+
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          this.audioChunks.push(e.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = () => {
+        this.handleRecordingComplete();
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      this.mediaRecorder.start();
+    } catch (error) {
+      console.error('Microphone access denied:', error);
+      showToast('Microphone access denied. Please allow microphone access.', 'error');
+    }
+  }
+
+  stopRecording() {
+    if (this.mediaRecorder && this.isRecording) {
+      this.isRecording = false;
+      this.mediaRecorder.stop();
+      this.updateMicButton(false);
+      this.updateVoiceStatus('processing');
+    }
+  }
+
+  async handleRecordingComplete() {
+    if (this.audioChunks.length === 0) {
+      this.updateVoiceStatus('idle');
+      return;
+    }
+
+    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'voice.webm');
+
+    try {
+      const response = await fetch('/api/v1/otto/transcribe', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': this.csrfToken || '' },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.text) {
+        this.inputTarget.value = data.text;
+        this.inputTarget.dispatchEvent(new Event('input'));
+        this.send();
+      } else {
+        showToast(data.error || 'Could not understand audio. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      showToast('Transcription failed. Please try again.', 'error');
+    } finally {
+      this.updateVoiceStatus('idle');
+    }
+  }
+
+  private updateMicButton(recording: boolean) {
+    const micBtn = document.getElementById('otto-mic-btn');
+    if (micBtn) {
+      if (recording) {
+        micBtn.classList.add('recording');
+        micBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+          </svg>
+        `;
+      } else {
+        micBtn.classList.remove('recording');
+        micBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4
+                 m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+          </svg>
+        `;
+      }
+    }
+  }
+
+  private updateVoiceStatus(state: 'idle' | 'listening' | 'processing') {
+    const statusEl = document.getElementById('otto-voice-status');
+    const statusText = document.getElementById('otto-status-text');
+
+    if (!statusEl || !statusText) return;
+
+    statusEl.classList.remove('hidden', 'listening', 'processing');
+
+    if (state === 'idle') {
+      statusEl.classList.add('hidden');
+    } else if (state === 'listening') {
+      statusEl.classList.add('listening');
+      statusText.textContent = 'Listening...';
+    } else if (state === 'processing') {
+      statusEl.classList.add('processing');
+      statusText.textContent = 'Processing...';
+    }
   }
 }

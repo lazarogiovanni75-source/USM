@@ -35,6 +35,11 @@
     </div>
 
     <div id="otto-input-area" class="p-3 bg-white border-t border-gray-100 flex items-end gap-2">
+      <button id="otto-mic-btn" type="button" data-action="click->otto#toggleMic" class="w-10 h-10 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl flex items-center justify-center cursor-pointer transition-all flex-shrink-0 border-none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+      </button>
       <textarea
         id="otto-input"
         data-action="keydown->otto#handleKeydown"
@@ -48,6 +53,9 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
         </svg>
       </button>
+    </div>
+    <div id="otto-voice-status" class="hidden px-3 py-2 bg-gray-50 text-center text-xs text-gray-500 border-t border-gray-100">
+      <span id="otto-status-text">Listening...</span>
     </div>
   </div>
 </div>
@@ -107,5 +115,30 @@
   @keyframes ottoBounce {
     0%, 60%, 100% { transform: translateY(0); }
     30% { transform: translateY(-6px); }
+  }
+
+  #otto-mic-btn.recording {
+    background: #ef4444 !important;
+    color: white !important;
+    animation: ottoPulse 1s infinite;
+  }
+
+  #otto-mic-btn.recording:hover {
+    background: #dc2626 !important;
+  }
+
+  @keyframes ottoPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  #otto-voice-status.listening {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  #otto-voice-status.processing {
+    background: #f0f9ff;
+    color: #2563eb;
   }
 </style>

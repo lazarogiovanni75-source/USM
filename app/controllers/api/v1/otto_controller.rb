@@ -65,6 +65,40 @@ module Api
         render json: { success: true }
       end
 
+      def transcribe
+        audio_file = params[:audio]
+
+        unless audio_file
+          render json: { error: 'No audio file provided' }, status: :unprocessable_entity
+          return
+        end
+
+        uri = URI("https://api.openai.com/v1/audio/transcriptions")
+        request = Net::HTTP::Post.new(uri)
+        request["Authorization"] = "Bearer #{ENV['OPENAI_API_KEY']}"
+
+        form_data = [
+          ['file', audio_file.tempfile],
+          ['model', 'whisper-1']
+        ]
+
+        request.set_form form_data, 'multipart/form-data'
+
+        response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+          http.request(request)
+        end
+
+        if response.success?
+          render json: JSON.parse(response.body)
+        else
+          Rails.logger.error "Whisper transcription error: #{response.body}"
+          render json: { error: 'Transcription failed. Please try again.' }, status: :unprocessable_entity
+        end
+      rescue => e
+        Rails.logger.error "Transcribe error: #{e.message}"
+        render json: { error: 'Transcription failed. Please try again.' }, status: :internal_server_error
+      end
+
       private
 
       def task_request?(message)
