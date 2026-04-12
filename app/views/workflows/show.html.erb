@@ -52,20 +52,26 @@
       <% end %>
 
       <%# Display image if available %>
-      <% if result_data['image_task_id'].present? %>
+      <% if result_data['image_task_id'].present? || result_data['draft_id'].present? %>
+        <% image_url = @workflow.image_url %>
         <div class="mb-6">
           <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Generated Image</h2>
           <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              Status: <span class="font-medium text-gray-900 dark:text-gray-100">Processing</span>
-            </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              Image is being generated. Task ID: <%= result_data['image_task_id'] %>
-            </p>
-            <% if @workflow.respond_to?(:draft) && @workflow.draft&.media_url.present? %>
+            <% if image_url.present? %>
+              <p class="text-sm text-green-600 dark:text-green-400 mb-2 font-medium">✓ Image ready!</p>
               <div class="mt-4">
-                <%= image_tag @workflow.draft.media_url, class: "rounded-lg max-w-full" %>
+                <%= image_tag image_url, alt: "Generated image", class: "rounded-lg max-w-full" %>
               </div>
+            <% else %>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Status: <span class="font-medium text-gray-900 dark:text-gray-100">Processing</span>
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Image is being generated. Task ID: <%= result_data['image_task_id'] || 'Pending' %>
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Refresh the page in a few moments to see your image.
+              </p>
             <% end %>
           </div>
         </div>

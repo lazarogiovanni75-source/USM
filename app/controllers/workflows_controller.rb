@@ -14,7 +14,7 @@ class WorkflowsController < ApplicationController
 
     if @workflow.save
       WorkflowExecutionJob.perform_later(@workflow.id)
-      redirect_to workflows_path, notice: 'Workflow created successfully!'
+      redirect_to workflow_path(@workflow), notice: 'Workflow created successfully!'
     else
       flash[:alert] = @workflow.errors.full_messages.join(', ')
       render :new
