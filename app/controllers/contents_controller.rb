@@ -91,15 +91,20 @@ class ContentsController < ApplicationController
     end
   end
 
-  # Generate content variation
+  # Generate content variation - use WorkflowService for unified processing
   def generate_variation
     begin
-      generated_content = AiAutopilotService.new(action: 'generate_content_variation', content: @content).call
+      result = WorkflowService.create_content_with_media(
+        user: current_user,
+        content_text: "Generate a variation of: #{@content.body}",
+        generate_image: false,
+        generate_video: false
+      )
       
-      if generated_content
+      if result[:success]
         @new_content = current_user.contents.create!(
           title: "Variation of #{@content.title}",
-          body: generated_content[:body],
+          body: result[:caption] || "Variation generated",
           content_type: @content.content_type,
           platform: @content.platform,
           campaign_id: @content.campaign_id,
@@ -142,12 +147,14 @@ class ContentsController < ApplicationController
     render 'preview'
   end
 
-  # Optimize content
+  # Optimize content - use LlmService directly for suggestions
   def optimize
     begin
-      optimization_suggestions = AiAutopilotService.new(action: 'optimize_content', content: @content).call
-      @suggestions = optimization_suggestions[:suggestions] || []
-      @optimized_content = optimization_suggestions[:optimized_content]
+      prompt = "Analyze this social media content and provide 2-3 specific suggestions to improve engagement, hashtags, and call-to-action:\n\n#{@content.body}"
+      suggestions_text = LlmService.generate(prompt, user: current_user)
+      
+      @suggestions = suggestions_text ? suggestions_text.split('\n').select { |s| s.present? } : []
+      @optimized_content = suggestions_text
     rescue StandardError => e
       @error = "Error: #{e.message}"
     end

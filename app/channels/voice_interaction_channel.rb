@@ -77,27 +77,29 @@ class VoiceInteractionChannel < ApplicationCable::Channel
     )
   end
 
-  # Generate content via AI Autopilot
+  # Generate content via AI - use WorkflowService for unified processing
   def generate_content(data)
     campaign_id = data['campaign_id']
     content_type = data['content_type'] || 'post'
     platform = data['platform'] || 'general'
 
-    campaign = Campaign.find(campaign_id)
+    campaign = Campaign.find(campaign_id) if campaign_id
 
-    # Generate content using AI Autopilot
-    generated_content = AiAutopilotService.new(
-      action: 'generate_content',
-      campaign: campaign,
-      content_type: content_type,
-      platform: platform
-    ).call
+    # Use WorkflowService for unified content generation
+    result = WorkflowService.create_content_with_media(
+      user: current_user,
+      content_text: "Generate content for #{platform}",
+      generate_image: false,
+      generate_video: false
+    )
+
+    content_text = result[:caption] || result.dig(:content, :body) || "Content generated successfully"
 
     ActionCable.server.broadcast(
       @stream_name,
       {
         type: 'content-generated',
-        content: generated_content,
+        content: content_text,
         campaign_id: campaign_id,
         timestamp: Time.current
       }
@@ -113,7 +115,7 @@ class VoiceInteractionChannel < ApplicationCable::Channel
     )
   end
 
-  # Generate video via AI Autopilot
+  # Generate video via AI - use WorkflowService for unified processing
   def generate_video(data)
     campaign_id = data['campaign_id']
     topic = data['topic'] || 'social media content'
@@ -121,20 +123,21 @@ class VoiceInteractionChannel < ApplicationCable::Channel
 
     campaign = Campaign.find(campaign_id) if campaign_id
 
-    # Generate video using AI Autopilot
-    video = AiAutopilotService.new(
-      action: 'generate_video',
-      campaign: campaign,
-      video_params: { topic: topic, duration: duration }
-    ).call
+    # Use WorkflowService for unified video generation
+    result = WorkflowService.create_content_with_media(
+      user: current_user,
+      content_text: topic,
+      generate_image: false,
+      generate_video: true
+    )
 
     ActionCable.server.broadcast(
       @stream_name,
       {
         type: 'video-generated',
-        video: video,
-        campaign_id: campaign_id,
+        draft_id: result[:draft]&.id,
         topic: topic,
+        campaign_id: campaign_id,
         timestamp: Time.current
       }
     )

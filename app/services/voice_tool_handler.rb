@@ -69,30 +69,28 @@ class VoiceToolHandler
       )
     end
 
-    # Check if AiAutopilotService is available, if not, fallback to simple content
+    # Use WorkflowService for unified content generation
     begin
-      if defined?(AiAutopilotService)
-        content = AiAutopilotService.new(
-          action: 'generate_content',
-          campaign: campaign,
-          content_type: content_type,
-          platform: platform
-        ).call
+      result = WorkflowService.create_content_with_media(
+        user: @user,
+        content_text: topic,
+        generate_image: false,
+        generate_video: false
+      )
+      
+      if result[:success]
+        content_text = result[:caption] || "Generated content about #{topic}"
       else
-        # Fallback if service is unavailable
-        content = OpenStruct.new(
-          body: "Generated content about #{topic} for #{platform} platform with #{tone} tone.",
-          title: "Content about #{topic}"
-        )
+        content_text = "Generated content about #{topic} for #{platform} platform with #{tone} tone."
       end
 
       {
         status: "success",
-        content: content.body,
+        content: content_text,
         topic: topic,
         platform: platform,
         tone: tone,
-        message: "Content generated successfully!\n\n#{content.body[0..300]}#{'...' if content.body.length > 300}"
+        message: "Content generated successfully!\n\n#{content_text[0..300]}#{'...' if content_text.length > 300}"
       }
     rescue => e
       Rails.logger.error "[VoiceToolHandler] Content generation error: #{e.message}"
