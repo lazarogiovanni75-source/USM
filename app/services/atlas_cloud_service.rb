@@ -342,7 +342,7 @@ class AtlasCloudService
   def handle_response(response)
     parsed = response.parsed_response
 
-    Rails.logger.debug "[AtlasCloudService] Response code: #{response.code}, body: #{response.body[0..500]}"
+    Rails.logger.error "[AtlasCloudService] Response code: #{response.code}, body: #{response.body[0..500]}"
 
     case response.code
     when 200..299

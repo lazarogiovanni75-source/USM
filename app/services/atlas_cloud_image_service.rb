@@ -228,7 +228,7 @@ class AtlasCloudImageService
   def handle_response(response)
     parsed = response.parsed_response
 
-    Rails.logger.debug "[AtlasCloudImageService] Response code: #{response.code}, body: #{response.body[0..500]}"
+    Rails.logger.error "[AtlasCloudImageService] Response code: #{response.code}, body: #{response.body[0..500]}"
 
     case response.code
     when 200..299
