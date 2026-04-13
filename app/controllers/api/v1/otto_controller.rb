@@ -374,12 +374,13 @@ module Api
       end
 
       def chat_response(message)
-        Rails.logger.info "[Otto] chat_response called with message: #{message[0..50]}..."
+        Rails.logger.info "[Otto] chat_response START - message class: #{message.class}, value: #{message.to_s[0..30]}"
         
         # Build conversation history (last 20 messages)
         history = current_user.otto_messages.recent.map do |msg|
           { role: msg.role, content: msg.content }
         end
+        Rails.logger.info "[Otto] History built: #{history.length} messages"
 
         Rails.logger.info "[Otto] Calling Anthropic API..."
         
