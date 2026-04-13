@@ -233,7 +233,7 @@ class User < ApplicationRecord
   generates_token_for :password_reset, expires_in: 20.minutes
 
   has_many :sessions, dependent: :destroy
-  has_many :otto_messages, dependent: :destroy
+  has_many :otto_messages, dependent: :destroy if ActiveRecord::Base.connection.table_exists?(:otto_messages) rescue false
   has_many :payments, dependent: :destroy
   has_many :user_subscriptions, dependent: :destroy
 

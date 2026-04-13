@@ -1,4 +1,10 @@
 class OttoMessage < ApplicationRecord
+  def self.table_exists?
+    connection.table_exists?(:otto_messages)
+  rescue
+    false
+  end
+
   belongs_to :user
 
   validates :role, inclusion: { in: %w[user assistant] }
