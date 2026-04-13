@@ -8,7 +8,7 @@
         <%= lucide_icon "arrow-left", class: "w-4 h-4 mr-2" %>
         Back to Auto Responses
       <% end %>
-      <h1 class="text-3xl font-bold text-primary">Edit Trigger: <%= @trigger.name %></h1>
+      <h1 class="text-3xl font-bold text-gray-900">Edit Trigger: <%= @trigger.name %></h1>
       <p class="text-muted mt-2">Update your auto response trigger settings</p>
     </div>
 
@@ -17,7 +17,7 @@
       <%= form_with model: @trigger, url: auto_response_trigger_path(@trigger), method: :patch, local: true, class: "space-y-6" do |f| %>
         <!-- Name -->
         <div>
-          <%= f.label :name, "Trigger Name", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :name, "Trigger Name", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.text_field :name, class: "form-input w-full", placeholder: "e.g., Reply to Comments" %>
           <% if @trigger.errors[:name].any? %>
             <p class="mt-1 text-sm text-red-600"><%= @trigger.errors[:name].first %></p>
@@ -26,13 +26,13 @@
 
         <!-- Description -->
         <div>
-          <%= f.label :description, "Description", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :description, "Description", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.text_area :description, rows: 3, class: "form-input w-full", placeholder: "Describe what this trigger does..." %>
         </div>
 
         <!-- Trigger Type -->
         <div>
-          <%= f.label :trigger_type, "Trigger Type", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :trigger_type, "Trigger Type", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.select :trigger_type, 
               AutoResponseTrigger.trigger_types.keys.map { |k| [k.titleize, k] },
               {},
@@ -44,7 +44,7 @@
 
         <!-- Response Type -->
         <div>
-          <%= f.label :response_type, "Response Type", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :response_type, "Response Type", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.select :response_type,
               AutoResponseTrigger.response_types.keys.map { |k| [k.titleize, k] },
               {},
@@ -56,25 +56,25 @@
 
         <!-- Status -->
         <div>
-          <%= f.label :status, "Status", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :status, "Status", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <div class="flex items-center gap-4">
             <label class="inline-flex items-center">
               <%= f.radio_button :status, 'active', class: "form-radio" %>
-              <span class="ml-2 text-sm text-primary">Active</span>
+              <span class="ml-2 text-sm text-gray-900">Active</span>
             </label>
             <label class="inline-flex items-center">
               <%= f.radio_button :status, 'inactive', class: "form-radio" %>
-              <span class="ml-2 text-sm text-primary">Inactive</span>
+              <span class="ml-2 text-sm text-gray-900">Inactive</span>
             </label>
           </div>
         </div>
 
         <!-- Conditions (Advanced) -->
         <div class="border-t border-border/30 pt-6">
-          <h3 class="text-lg font-medium text-primary mb-4">Advanced Settings</h3>
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Advanced Settings</h3>
           
           <div>
-            <%= f.label :conditions, "Conditions (JSON array)", class: "block text-sm font-medium text-primary mb-2" %>
+            <%= f.label :conditions, "Conditions (JSON array)", class: "block text-sm font-medium text-gray-900 mb-2" %>
             <%= f.text_area :conditions, value: @trigger.conditions.to_json, rows: 4, class: "form-input w-full font-mono text-sm" %>
             <p class="mt-1 text-xs text-muted">Define conditions as JSON array</p>
           </div>

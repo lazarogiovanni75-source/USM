@@ -16,7 +16,7 @@
           <% @created_posts.each do |post| %>
             <div class="flex items-center justify-between p-3 bg-surface-elevated rounded-xl">
               <div>
-                <p class="text-sm font-medium text-primary line-clamp-1"><%= post.body %></p>
+                <p class="text-sm font-medium text-gray-900 line-clamp-1"><%= post.body %></p>
                 <p class="text-xs text-muted">Scheduled: <%= post.scheduled_at&.strftime("%B %d at %I:%M %p") || 'Not scheduled' %></p>
               </div>
               <span class="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Draft</span>

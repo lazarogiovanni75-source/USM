@@ -10,7 +10,7 @@
         <% end %>
         <div class="flex-1">
           <div class="flex items-center gap-3">
-            <h1 class="text-3xl font-bold text-primary"><%= @rule.name %></h1>
+            <h1 class="text-3xl font-bold text-gray-900"><%= @rule.name %></h1>
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <%= @rule.is_active? ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700' %>">
               <div class="w-2 h-2 rounded-full mr-2 <%= @rule.is_active? ? 'bg-green-400' : 'bg-gray-400' %>"></div>
               <%= @rule.is_active? ? 'Active' : 'Inactive' %>
@@ -45,7 +45,7 @@
           </div>
           <div>
             <p class="text-xs text-muted">Total Executions</p>
-            <p class="text-2xl font-bold text-primary"><%= @rule.rule_executions.count %></p>
+            <p class="text-2xl font-bold text-gray-900"><%= @rule.rule_executions.count %></p>
           </div>
         </div>
       </div>
@@ -56,7 +56,7 @@
           </div>
           <div>
             <p class="text-xs text-muted">Successful</p>
-            <p class="text-2xl font-bold text-primary"><%= @rule.rule_executions.where(status: 'executed').count %></p>
+            <p class="text-2xl font-bold text-gray-900"><%= @rule.rule_executions.where(status: 'executed').count %></p>
           </div>
         </div>
       </div>
@@ -67,7 +67,7 @@
           </div>
           <div>
             <p class="text-xs text-muted">Failed</p>
-            <p class="text-2xl font-bold text-primary"><%= @rule.rule_executions.where(status: 'failed').count %></p>
+            <p class="text-2xl font-bold text-gray-900"><%= @rule.rule_executions.where(status: 'failed').count %></p>
           </div>
         </div>
       </div>
@@ -78,7 +78,7 @@
           </div>
           <div>
             <p class="text-xs text-muted">Last Run</p>
-            <p class="text-lg font-bold text-primary"><%= @rule.rule_executions.last&.created_at ? time_ago_in_words(@rule.rule_executions.last.created_at) + ' ago' : 'Never' %></p>
+            <p class="text-lg font-bold text-gray-900"><%= @rule.rule_executions.last&.created_at ? time_ago_in_words(@rule.rule_executions.last.created_at) + ' ago' : 'Never' %></p>
           </div>
         </div>
       </div>
@@ -89,15 +89,15 @@
       <div class="lg:col-span-2 space-y-6">
         <!-- Configuration -->
         <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-          <h3 class="text-lg font-semibold text-primary mb-4">Configuration</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Configuration</h3>
           <dl class="grid grid-cols-2 gap-4">
             <div>
               <dt class="text-sm text-muted">Trigger Type</dt>
-              <dd class="text-lg font-medium text-primary"><%= @rule.trigger_type&.gsub('_', ' ')&.titleize || 'Not set' %></dd>
+              <dd class="text-lg font-medium text-gray-900"><%= @rule.trigger_type&.gsub('_', ' ')&.titleize || 'Not set' %></dd>
             </div>
             <div>
               <dt class="text-sm text-muted">Action Type</dt>
-              <dd class="text-lg font-medium text-primary"><%= @rule.action_type&.gsub('_', ' ')&.titleize || 'Not set' %></dd>
+              <dd class="text-lg font-medium text-gray-900"><%= @rule.action_type&.gsub('_', ' ')&.titleize || 'Not set' %></dd>
             </div>
             <div>
               <dt class="text-sm text-muted">Status</dt>
@@ -105,14 +105,14 @@
             </div>
             <div>
               <dt class="text-sm text-muted">Created</dt>
-              <dd class="text-lg font-medium text-primary"><%= @rule.created_at.strftime('%B %d, %Y') %></dd>
+              <dd class="text-lg font-medium text-gray-900"><%= @rule.created_at.strftime('%B %d, %Y') %></dd>
             </div>
           </dl>
         </div>
 
         <!-- Conditions & Actions -->
         <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-          <h3 class="text-lg font-semibold text-primary mb-4">Conditions & Actions</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Conditions & Actions</h3>
           <div class="grid grid-cols-2 gap-6">
             <div>
               <h4 class="text-sm font-medium text-muted mb-2">Conditions</h4>
@@ -120,7 +120,7 @@
                 <ul class="space-y-2">
                   <% @rule.conditions.each do |condition| %>
                     <li class="p-3 bg-surface-elevated rounded-lg">
-                      <code class="text-sm text-primary"><%= condition[:field] %> <%= condition[:operator] %> <%= condition[:value] %></code>
+                      <code class="text-sm text-gray-900"><%= condition[:field] %> <%= condition[:operator] %> <%= condition[:value] %></code>
                     </li>
                   <% end %>
                 </ul>
@@ -134,7 +134,7 @@
                 <ul class="space-y-2">
                   <% @rule.actions.each do |key, value| %>
                     <li class="p-3 bg-surface-elevated rounded-lg">
-                      <code class="text-sm text-primary"><%= key %>: <%= value %></code>
+                      <code class="text-sm text-gray-900"><%= key %>: <%= value %></code>
                     </li>
                   <% end %>
                 </ul>
@@ -147,7 +147,7 @@
 
         <!-- Recent Executions -->
         <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-          <h3 class="text-lg font-semibold text-primary mb-4">Recent Executions</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Executions</h3>
           <% if @executions.any? %>
             <div class="space-y-3">
               <% @executions.each do |execution| %>
@@ -157,7 +157,7 @@
                       <%= lucide_icon execution.status == 'executed' ? 'check' : 'x', class: "w-5 h-5 #{execution.status == 'executed' ? 'text-green-600' : 'text-red-600'}" %>
                     </div>
                     <div>
-                      <p class="font-medium text-primary"><%= execution.status.titleize %></p>
+                      <p class="font-medium text-gray-900"><%= execution.status.titleize %></p>
                       <p class="text-sm text-muted"><%= execution.created_at.strftime('%B %d at %I:%M %p') %></p>
                     </div>
                   </div>
@@ -180,7 +180,7 @@
       <div class="space-y-6">
         <!-- Quick Actions -->
         <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-          <h3 class="text-lg font-semibold text-primary mb-4">Quick Actions</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div class="space-y-3">
             <%= button_to test_rule_automation_rule_path(@rule), method: :post, 
                 class: "btn-secondary w-full justify-start" do %>
@@ -197,11 +197,11 @@
 
         <!-- Statistics -->
         <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-          <h3 class="text-lg font-semibold text-primary mb-4">Statistics</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
           <div class="space-y-4">
             <div class="flex justify-between">
               <span class="text-muted">Success Rate</span>
-              <span class="font-medium text-primary">
+              <span class="font-medium text-gray-900">
                 <% total = @rule.rule_executions.count %>
                 <% successful = @rule.rule_executions.where(status: 'executed').count %>
                 <%= total > 0 ? ((successful.to_f / total) * 100).round(1) : 0 %>%
@@ -209,17 +209,17 @@
             </div>
             <div class="flex justify-between">
               <span class="text-muted">Total Executions</span>
-              <span class="font-medium text-primary"><%= @rule.rule_executions.count %></span>
+              <span class="font-medium text-gray-900"><%= @rule.rule_executions.count %></span>
             </div>
             <div class="flex justify-between">
               <span class="text-muted">First Execution</span>
-              <span class="font-medium text-primary">
+              <span class="font-medium text-gray-900">
                 <%= @rule.rule_executions.order(:created_at).first&.created_at ? @rule.rule_executions.order(:created_at).first.created_at.strftime('%b %d') : 'Never' %>
               </span>
             </div>
             <div class="flex justify-between">
               <span class="text-muted">Last Execution</span>
-              <span class="font-medium text-primary">
+              <span class="font-medium text-gray-900">
                 <%= @rule.rule_executions.last&.created_at ? time_ago_in_words(@rule.rule_executions.last.created_at) + ' ago' : 'Never' %>
               </span>
             </div>

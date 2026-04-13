@@ -19,7 +19,7 @@
             <%= lucide_icon "trending-up", class: "w-7 h-7 text-white" %>
           </div>
           <div>
-            <h1 class="text-xl font-bold text-primary">AI Marketing Strategy</h1>
+            <h1 class="text-xl font-bold text-gray-900">AI Marketing Strategy</h1>
             <p class="text-sm text-muted">Analyze your social media data & get AI-powered recommendations</p>
           </div>
         </div>
@@ -70,7 +70,7 @@
       <div class="lg:col-span-1 space-y-6">
         <!-- Overall Score Card -->
         <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
-          <h3 class="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+          <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
             <%= lucide_icon "zap", class: "w-5 h-5 text-amber-500" %>
             Performance Score
           </h3>
@@ -83,7 +83,7 @@
                         class="text-success transition-all duration-1000"/>
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-3xl font-bold text-primary"><%= @insights[:overall_score] || 0 %>%</span>
+                <span class="text-3xl font-bold text-gray-900"><%= @insights[:overall_score] || 0 %>%</span>
               </div>
             </div>
           </div>
@@ -192,7 +192,7 @@
               <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <%= lucide_icon "sparkles", class: "w-8 h-8 text-primary" %>
               </div>
-              <h3 class="text-sm font-medium text-primary mb-1">Ready to Analyze</h3>
+              <h3 class="text-sm font-medium text-gray-900 mb-1">Ready to Analyze</h3>
               <p class="text-xs text-muted">Click "Analyze" to get AI-powered marketing recommendations</p>
             </div>
           <% end %>
@@ -241,7 +241,7 @@
               <% @analysis[:strategy][:kpis_to_track].each do |kpi| %>
                 <div class="p-4 bg-surface-elevated rounded-xl">
                   <p class="text-xs text-muted mb-1"><%= kpi[:name] %></p>
-                  <p class="text-lg font-bold text-primary"><%= kpi[:target] %></p>
+                  <p class="text-lg font-bold text-gray-900"><%= kpi[:target] %></p>
                 </div>
               <% end %>
             </div>

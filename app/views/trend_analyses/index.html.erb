@@ -10,7 +10,7 @@
             <%= lucide_icon "trending-up", class: "w-7 h-7 text-white" %>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-primary">Trend Analysis</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Trend Analysis</h1>
             <p class="text-sm text-muted">AI-powered insights for your content</p>
           </div>
         </div>
@@ -33,10 +33,10 @@
             <%= lucide_icon "brain", class: "w-5 h-5 text-white" %>
           </div>
           <div>
-            <h3 class="text-lg font-bold text-primary mb-2">AI Insights</h3>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">AI Insights</h3>
             <div class="space-y-2">
               <% @insights.each do |insight| %>
-                <p class="text-sm text-primary">• <%= insight %></p>
+                <p class="text-sm text-gray-900">• <%= insight %></p>
               <% end %>
             </div>
           </div>
@@ -49,7 +49,7 @@
       <!-- Content Trends -->
       <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold text-primary">Content Types</h2>
+          <h2 class="text-lg font-bold text-gray-900">Content Types</h2>
           <%= lucide_icon "file-text", class: "w-5 h-5 text-muted" %>
         </div>
         <% if @trends[:content_trends]&.any? %>
@@ -57,7 +57,7 @@
             <% @trends[:content_trends].first(3).each do |trend| %>
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <p class="text-sm font-medium text-primary capitalize"><%= trend[:content_type] %></p>
+                  <p class="text-sm font-medium text-gray-900 capitalize"><%= trend[:content_type] %></p>
                   <p class="text-xs text-muted"><%= trend[:current_count] %> posts</p>
                 </div>
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <%= trend[:trend_direction] == 'rising' ? 'bg-green-100 text-green-700' : trend[:trend_direction] == 'declining' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700' %>">
@@ -75,7 +75,7 @@
       <!-- Platform Trends -->
       <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold text-primary">Platform Performance</h2>
+          <h2 class="text-lg font-bold text-gray-900">Platform Performance</h2>
           <%= lucide_icon "share-2", class: "w-5 h-5 text-muted" %>
         </div>
         <% if @trends[:platform_trends]&.any? %>
@@ -83,7 +83,7 @@
             <% @trends[:platform_trends].first(3).each do |trend| %>
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <p class="text-sm font-medium text-primary capitalize"><%= trend[:platform] %></p>
+                  <p class="text-sm font-medium text-gray-900 capitalize"><%= trend[:platform] %></p>
                   <p class="text-xs text-muted"><%= trend[:current_engagement] %>% engagement</p>
                 </div>
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <%= trend[:trend_direction] == 'improving' ? 'bg-green-100 text-green-700' : trend[:trend_direction] == 'declining' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700' %>">
@@ -101,7 +101,7 @@
       <!-- Optimal Timing -->
       <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold text-primary">Optimal Timing</h2>
+          <h2 class="text-lg font-bold text-gray-900">Optimal Timing</h2>
           <%= lucide_icon "clock", class: "w-5 h-5 text-muted" %>
         </div>
         <% if @trends[:timing_trends]&.any? %>
@@ -109,7 +109,7 @@
             <% @trends[:timing_trends].first(3).each do |timing| %>
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-sm font-medium text-primary"><%= timing[:hour] %>:00</p>
+                  <p class="text-sm font-medium text-gray-900"><%= timing[:hour] %>:00</p>
                   <p class="text-xs text-muted"><%= timing[:avg_engagement] %>% engagement</p>
                 </div>
                 <span class="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
@@ -127,12 +127,12 @@
     <!-- Topic Trends -->
     <% if @trends[:topic_trends]&.any? %>
       <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-        <h2 class="text-lg font-bold text-primary mb-4">Topic Trends</h2>
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Topic Trends</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <% @trends[:topic_trends].first(6).each do |topic| %>
             <div class="bg-surface-elevated rounded-xl p-4">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-primary capitalize"><%= topic[:keyword] %></span>
+                <span class="text-sm font-medium text-gray-900 capitalize"><%= topic[:keyword] %></span>
                 <%= lucide_icon topic[:trend_direction] == 'rising' ? 'trending-up' : topic[:trend_direction] == 'declining' ? 'trending-down' : 'minus', class: "w-4 h-4 #{topic[:trend_direction] == 'rising' ? 'text-green-500' : topic[:trend_direction] == 'declining' ? 'text-red-500' : 'text-muted'}" %>
               </div>
               <p class="text-xs text-muted mb-2">Frequency: <%= topic[:recent_frequency] %></p>

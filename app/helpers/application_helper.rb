@@ -23,20 +23,20 @@ module ApplicationHelper
   end
 
   def platform_icon(platform)
-    icons = {
-      'instagram' => '📸',
-      'twitter' => '𝕏',
-      'x' => '𝕏',
-      'facebook' => '📘',
-      'linkedin' => '💼',
-      'tiktok' => '🎵',
-      'youtube' => '▶️',
-      'pinterest' => '📌',
-      'bluebird' => '🐦',
-      'threads' => '@',
-      'general' => '📱'
+    names = {
+      'instagram' => 'Instagram',
+      'twitter' => 'X (Twitter)',
+      'x' => 'X (Twitter)',
+      'facebook' => 'Facebook',
+      'linkedin' => 'LinkedIn',
+      'tiktok' => 'TikTok',
+      'youtube' => 'YouTube',
+      'pinterest' => 'Pinterest',
+      'bluebird' => 'Bluebird',
+      'threads' => 'Threads',
+      'general' => 'Social'
     }
-    icons[platform&.downcase] || '📱'
+    names[platform&.downcase] || 'Social'
   end
 
   def platform_svg(platform, size: 32)

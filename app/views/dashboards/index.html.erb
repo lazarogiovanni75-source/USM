@@ -180,20 +180,10 @@
                 <td class="py-3">
                   <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-br <%= account.platform == 'twitter' || account.platform == 'x' ? 'from-blue-400 to-blue-600' : account.platform == 'instagram' ? 'from-pink-500 to-purple-600' : account.platform == 'facebook' ? 'from-blue-600 to-blue-800' : account.platform == 'linkedin' ? 'from-blue-700 to-blue-900' : account.platform == 'tiktok' ? 'from-gray-800 to-black' : 'from-green-400 to-green-600' %> flex items-center justify-center text-white text-lg">
-                      <%= case account.platform
-                      when 'instagram' then '📷'
-                      when 'twitter' then '𝕏'
-                      when 'x' then '𝕏'
-                      when 'facebook' then '📘'
-                      when 'linkedin' then '💼'
-                      when 'tiktok' then '🎵'
-                      when 'youtube' then '▶️'
-                      when 'pinterest' then '📌'
-                      else '🌐'
-                      end %>
+                      <%= lucide_icon account.platform == 'twitter' || account.platform == 'x' ? 'twitter' : account.platform == 'instagram' ? 'instagram' : account.platform == 'facebook' ? 'facebook' : account.platform == 'linkedin' ? 'linkedin' : account.platform == 'tiktok' ? 'music' : 'globe', class: "w-4 h-4 text-white" %>
                     </div>
                     <div>
-                      <p class="font-medium text-primary text-sm"><%= account.platform_username.presence || account.platform.titleize %></p>
+                      <p class="font-medium text-gray-900 text-sm"><%= account.platform_username.presence || account.platform.titleize %></p>
                       <p class="text-xs text-muted capitalize"><%= account.platform %></p>
                     </div>
                   </div>
@@ -204,13 +194,13 @@
                   </span>
                 </td>
                 <td class="py-3 text-center">
-                  <p class="text-sm font-semibold text-primary"><%= number_with_delimiter(account.followers || 0) %></p>
+                  <p class="text-sm font-semibold text-gray-900"><%= number_with_delimiter(account.followers || 0) %></p>
                 </td>
                 <td class="py-3 text-center">
-                  <p class="text-sm font-semibold text-primary"><%= number_with_delimiter(account.messages || 0) %></p>
+                  <p class="text-sm font-semibold text-gray-900"><%= number_with_delimiter(account.messages || 0) %></p>
                 </td>
                 <td class="py-3 text-center">
-                  <p class="text-sm font-semibold text-primary"><%= analytics[:posts] || 0 %></p>
+                  <p class="text-sm font-semibold text-gray-900"><%= analytics[:posts] || 0 %></p>
                 </td>
                 <td class="py-3 text-center">
                   <p class="text-sm font-semibold text-green-600"><%= account.engagement || 0 %>%</p>
@@ -283,7 +273,7 @@
                       <div class="w-8 h-8 rounded-lg bg-gradient-to-br <%= post.social_account.platform == 'twitter' ? 'from-blue-400 to-blue-600' : 'from-pink-500 to-purple-600' %> flex items-center justify-center">
                         <%= lucide_icon post.social_account.platform == 'twitter' ? 'twitter' : 'instagram', class: "w-4 h-4 text-white" %>
                       </div>
-                      <span class="text-sm font-medium text-primary"><%= post.social_account.username %></span>
+                      <span class="text-sm font-medium text-gray-900"><%= post.social_account.username %></span>
                     <% end %>
                     <span class="text-xs text-muted">• <%= post.scheduled_at&.strftime('%b %d, %Y %H:%M') || 'Not scheduled' %></span>
                     <span class="px-2 py-0.5 text-xs rounded-full <%= post.status == 'published' ? 'bg-green-100 text-green-700' : post.status == 'scheduled' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600' %>">
@@ -419,7 +409,7 @@
                     <%= lucide_icon "clock", class: "w-4 h-4 text-white" %>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-primary truncate"><%= post.content&.title || 'Scheduled Post' %></p>
+                    <p class="text-sm font-medium text-gray-900 truncate"><%= post.content&.title || 'Scheduled Post' %></p>
                     <p class="text-xs text-muted"><%= post.scheduled_at&.strftime('%b %e, %l:%M %p') || 'No time' %></p>
                   </div>
                 </div>

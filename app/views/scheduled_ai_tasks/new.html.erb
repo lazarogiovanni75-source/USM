@@ -8,7 +8,7 @@
         <%= lucide_icon "arrow-left", class: "w-4 h-4 mr-2" %>
         Back to AI Tasks
       <% end %>
-      <h1 class="text-3xl font-bold text-primary">Create Scheduled AI Task</h1>
+      <h1 class="text-3xl font-bold text-gray-900">Create Scheduled AI Task</h1>
       <p class="text-muted mt-2">Automate your AI-powered content operations</p>
     </div>
 
@@ -17,7 +17,7 @@
       <%= form_with model: @task, url: scheduled_ai_tasks_path, local: true, class: "space-y-6" do |f| %>
         <!-- Name -->
         <div>
-          <%= f.label :name, "Task Name", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :name, "Task Name", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.text_field :name, class: "form-input w-full", placeholder: "e.g., Daily Content Generation" %>
           <% if @task.errors[:name].any? %>
             <p class="mt-1 text-sm text-red-600"><%= @task.errors[:name].first %></p>
@@ -26,13 +26,13 @@
 
         <!-- Description -->
         <div>
-          <%= f.label :description, "Description", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :description, "Description", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.text_area :description, rows: 3, class: "form-input w-full", placeholder: "Describe what this task does..." %>
         </div>
 
         <!-- Task Type -->
         <div>
-          <%= f.label :task_type, "Task Type", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :task_type, "Task Type", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.select :task_type, 
               ScheduledAiTask.task_types.keys.map { |k| [k.titleize, k] },
               { prompt: "Select task type..." },
@@ -45,7 +45,7 @@
 
         <!-- Schedule Type -->
         <div>
-          <%= f.label :schedule_type, "Schedule Type", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :schedule_type, "Schedule Type", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.select :schedule_type,
               ScheduledAiTask.schedule_types.keys.map { |k| [k.titleize, k] },
               { prompt: "Select schedule..." },
@@ -58,36 +58,36 @@
 
         <!-- Next Run At -->
         <div>
-          <%= f.label :next_run_at, "Next Run Time", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :next_run_at, "Next Run Time", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <%= f.datetime_field :next_run_at, class: "form-input w-full" %>
           <p class="mt-1 text-xs text-muted">When should this task first run?</p>
         </div>
 
         <!-- Status -->
         <div>
-          <%= f.label :status, "Status", class: "block text-sm font-medium text-primary mb-2" %>
+          <%= f.label :status, "Status", class: "block text-sm font-medium text-gray-900 mb-2" %>
           <div class="flex items-center gap-4">
             <label class="inline-flex items-center">
               <%= f.radio_button :status, 'active', checked: true, class: "form-radio" %>
-              <span class="ml-2 text-sm text-primary">Active</span>
+              <span class="ml-2 text-sm text-gray-900">Active</span>
             </label>
             <label class="inline-flex items-center">
               <%= f.radio_button :status, 'paused', class: "form-radio" %>
-              <span class="ml-2 text-sm text-primary">Paused</span>
+              <span class="ml-2 text-sm text-gray-900">Paused</span>
             </label>
             <label class="inline-flex items-center">
               <%= f.radio_button :status, 'inactive', class: "form-radio" %>
-              <span class="ml-2 text-sm text-primary">Inactive</span>
+              <span class="ml-2 text-sm text-gray-900">Inactive</span>
             </label>
           </div>
         </div>
 
         <!-- Configuration (Advanced) -->
         <div class="border-t border-border/30 pt-6">
-          <h3 class="text-lg font-medium text-primary mb-4">Advanced Configuration</h3>
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Advanced Configuration</h3>
           
           <div>
-            <%= f.label :config, "Task Configuration (JSON)", class: "block text-sm font-medium text-primary mb-2" %>
+            <%= f.label :config, "Task Configuration (JSON)", class: "block text-sm font-medium text-gray-900 mb-2" %>
             <%= f.text_area :config, rows: 6, class: "form-input w-full font-mono text-sm", placeholder: '{}' %>
             <p class="mt-1 text-xs text-muted">Custom configuration as JSON object (optional)</p>
           </div>
@@ -104,7 +104,7 @@
     <!-- Templates -->
     <% if @task_templates&.any? %>
       <div class="mt-8">
-        <h2 class="text-xl font-bold text-primary mb-4">Quick Start Templates</h2>
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Quick Start Templates</h2>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           <% @task_templates.each do |template| %>
             <div class="bg-white rounded-xl p-5 border border-border/50 hover:shadow-md transition-shadow">
@@ -114,9 +114,9 @@
                 </div>
                 <span class="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary"><%= template[:schedule_type]&.titleize %></span>
               </div>
-              <h3 class="font-medium text-primary mb-2"><%= template[:name] %></h3>
+              <h3 class="font-medium text-gray-900 mb-2"><%= template[:name] %></h3>
               <p class="text-sm text-muted mb-4"><%= template[:description] %></p>
-              <%= button_to "Use Template", create_from_template_scheduled_ai_tasks_path(template_id: template[:id]), method: :post, class: "text-sm text-primary hover:underline" %>
+              <%= button_to "Use Template", create_from_template_scheduled_ai_tasks_path(template_id: template[:id]), method: :post, class: "text-sm text-gray-900 hover:underline" %>
             </div>
           <% end %>
         </div>

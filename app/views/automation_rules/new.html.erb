@@ -8,7 +8,7 @@
         <%= link_to automation_rules_path, class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors" do %>
           <%= lucide_icon "arrow-left", class: "w-5 h-5 text-primary" %>
         <% end %>
-        <h1 class="text-3xl font-bold text-primary">Create Automation Rule</h1>
+        <h1 class="text-3xl font-bold text-gray-900">Create Automation Rule</h1>
       </div>
       <p class="text-muted">Set up automated workflows for your content</p>
     </div>
@@ -20,14 +20,14 @@
           <%= form_with(model: @rule, url: automation_rules_path, local: true) do |f| %>
             <!-- Basic Info -->
             <div class="mb-6">
-              <h3 class="text-lg font-semibold text-primary mb-4">Basic Information</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
               <div class="space-y-4">
                 <div>
-                  <%= f.label :name, "Rule Name", class: "block text-sm font-medium text-primary mb-2" %>
+                  <%= f.label :name, "Rule Name", class: "block text-sm font-medium text-gray-900 mb-2" %>
                   <%= f.text_field :name, class: "form-input w-full", placeholder: "e.g., Auto-schedule new content" %>
                 </div>
                 <div>
-                  <%= f.label :description, "Description", class: "block text-sm font-medium text-primary mb-2" %>
+                  <%= f.label :description, "Description", class: "block text-sm font-medium text-gray-900 mb-2" %>
                   <%= f.text_area :description, class: "form-input w-full", rows: 3, placeholder: "Describe what this automation does" %>
                 </div>
               </div>
@@ -35,7 +35,7 @@
 
             <!-- Trigger Events -->
             <div class="mb-6">
-              <h3 class="text-lg font-semibold text-primary mb-4">Trigger Events</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Trigger Events</h3>
               <p class="text-sm text-muted mb-4">When should this automation run?</p>
               <div class="grid grid-cols-2 gap-3">
                 <label class="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-surface-elevated">
@@ -67,7 +67,7 @@
 
             <!-- Action Type -->
             <div class="mb-6">
-              <h3 class="text-lg font-semibold text-primary mb-4">Action</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Action</h3>
               <p class="text-sm text-muted mb-4">What should happen?</p>
               <div class="grid grid-cols-2 gap-3">
                 <label class="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-surface-elevated">
@@ -101,15 +101,15 @@
       <!-- Sidebar - Templates -->
       <div class="lg:col-span-1">
         <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-          <h3 class="text-lg font-semibold text-primary mb-4">Quick Start Templates</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Start Templates</h3>
           <div class="space-y-3">
             <% (@rule_templates || []).each do |template| %>
               <div class="p-4 border border-border rounded-lg hover:border-primary transition-colors">
-                <h4 class="font-medium text-primary"><%= template[:name] %></h4>
+                <h4 class="font-medium text-gray-900"><%= template[:name] %></h4>
                 <p class="text-sm text-muted mt-1"><%= template[:description] %></p>
                 <%= button_to "Use Template", create_from_template_automation_rules_path(template_id: template[:id]), 
                     method: :post, 
-                    class: "mt-3 text-sm text-primary hover:underline" %>
+                    class: "mt-3 text-sm text-gray-900 hover:underline" %>
               </div>
             <% end %>
           </div>

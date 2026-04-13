@@ -33,7 +33,7 @@
           <!-- AI Prompt Input -->
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-primary mb-1">What do you want to create?</label>
+              <label class="block text-sm font-medium text-gray-900 mb-1">What do you want to create?</label>
               <textarea 
                 name="ai_prompt" 
                 class="form-textarea w-full" 
@@ -52,7 +52,7 @@
                   <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                     <%= lucide_icon "image", class: "w-4 h-4 text-white" %>
                   </div>
-                  <span class="text-sm font-medium text-primary">Generate Image</span>
+                  <span class="text-sm font-medium text-gray-900">Generate Image</span>
                 </div>
               </label>
               
@@ -63,7 +63,7 @@
                   <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
                     <%= lucide_icon "video", class: "w-4 h-4 text-white" %>
                   </div>
-                  <span class="text-sm font-medium text-primary">Generate Video</span>
+                  <span class="text-sm font-medium text-gray-900">Generate Video</span>
                 </div>
               </label>
               
@@ -74,26 +74,26 @@
                   <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                     <%= lucide_icon "send", class: "w-4 h-4 text-white" %>
                   </div>
-                  <span class="text-sm font-medium text-primary">Post Immediately</span>
+                  <span class="text-sm font-medium text-gray-900">Post Immediately</span>
                 </div>
               </label>
             </div>
             
             <!-- Schedule Option (shown when not posting now) -->
             <div data-campaign-workflow-target="scheduleOptions" class="hidden">
-              <label class="block text-sm font-medium text-primary mb-1">Schedule for later (optional)</label>
+              <label class="block text-sm font-medium text-gray-900 mb-1">Schedule for later (optional)</label>
               <input type="datetime-local" name="scheduled_at" class="form-input w-full" data-campaign-workflow-target="scheduledAt">
             </div>
             
             <!-- Social Accounts -->
             <div>
-              <label class="block text-sm font-medium text-primary mb-1">Post to social accounts (optional)</label>
+              <label class="block text-sm font-medium text-gray-900 mb-1">Post to social accounts (optional)</label>
               <% if @social_accounts.any? %>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <% @social_accounts.each do |account| %>
                     <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-border/50 hover:border-green-300 cursor-pointer">
                       <input type="checkbox" name="social_account_ids[]" value="<%= account.id %>" class="rounded border-border text-green-600 focus:ring-green-500">
-                      <span class="text-xs font-medium text-primary truncate"><%= account.platform.titleize %> - <%= account.username %></span>
+                      <span class="text-xs font-medium text-gray-900 truncate"><%= account.platform.titleize %> - <%= account.username %></span>
                     </label>
                   <% end %>
                 </div>
@@ -112,20 +112,20 @@
           </h2>
           <div class="space-y-4">
             <div>
-              <%= f.label :name, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.label :name, class: "block text-sm font-medium text-gray-900 mb-1" %>
               <%= f.text_field :name, class: "form-input w-full", placeholder: "Enter campaign name" %>
             </div>
             <div>
-              <%= f.label :description, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.label :description, class: "block text-sm font-medium text-gray-900 mb-1" %>
               <%= f.text_area :description, class: "form-textarea w-full", rows: 3, placeholder: "Describe your campaign" %>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <%= f.label :status, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :status, class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.select :status, Campaign.statuses.keys.map { |s| [s.titleize, s] }, {}, class: "form-select w-full" %>
               </div>
               <div>
-                <%= f.label :campaign_type, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :campaign_type, class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.select :campaign_type, Campaign.campaign_types.keys.map { |s| [s.titleize, s] }, {}, class: "form-select w-full" %>
               </div>
             </div>
@@ -141,16 +141,16 @@
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <%= f.label :goal, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :goal, class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.select :goal, Campaign.goals.keys.map { |s| [s.titleize, s] }, {}, class: "form-select w-full" %>
               </div>
               <div>
-                <%= f.label :goal_value, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :goal_value, class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.number_field :goal_value, class: "form-input w-full", placeholder: "Target value" %>
               </div>
             </div>
             <div>
-              <%= f.label :target_audience, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.label :target_audience, class: "block text-sm font-medium text-gray-900 mb-1" %>
               <%= f.text_area :target_audience, class: "form-textarea w-full", rows: 2, placeholder: "Describe your target audience" %>
             </div>
           </div>
@@ -165,30 +165,30 @@
           <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <%= f.label :start_date, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :start_date, class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.date_field :start_date, class: "form-input w-full" %>
               </div>
               <div>
-                <%= f.label :end_date, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :end_date, class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.date_field :end_date, class: "form-input w-full" %>
               </div>
             </div>
             <div>
-              <%= f.label :budget, class: "block text-sm font-medium text-primary mb-1" %>
+              <%= f.label :budget, class: "block text-sm font-medium text-gray-900 mb-1" %>
               <%= f.number_field :budget, class: "form-input w-full", step: 0.01, placeholder: "Campaign budget" %>
             </div>
             <div class="grid grid-cols-3 gap-4">
               <div>
-                <%= f.label :content_count, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :content_count, class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.number_field :content_count, class: "form-input w-full", placeholder: "Content pieces" %>
               </div>
               <div>
-                <%= f.label :video_count, "Videos (10s)", class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :video_count, "Videos (10s)", class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.number_field :video_count, class: "form-input w-full", placeholder: "2" %>
                 <p class="text-xs text-muted mt-1">10-second videos</p>
               </div>
               <div>
-                <%= f.label :image_count, class: "block text-sm font-medium text-primary mb-1" %>
+                <%= f.label :image_count, class: "block text-sm font-medium text-gray-900 mb-1" %>
                 <%= f.number_field :image_count, class: "form-input w-full", placeholder: "3" %>
               </div>
             </div>
@@ -205,7 +205,7 @@
             <% ['twitter', 'facebook', 'instagram', 'linkedin', 'tiktok', 'youtube'].each do |platform| %>
               <label class="flex items-center gap-2 p-3 rounded-xl border border-border/50 hover:bg-surface-elevated cursor-pointer transition-colors">
                 <%= f.check_box :platforms, { multiple: true, class: "rounded border-border text-primary focus:ring-primary" }, platform, false %>
-                <span class="text-sm font-medium text-primary capitalize"><%= platform %></span>
+                <span class="text-sm font-medium text-gray-900 capitalize"><%= platform %></span>
               </label>
             <% end %>
           </div>

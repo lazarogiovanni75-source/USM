@@ -8,7 +8,7 @@
         <%= link_to automation_rule_path(@rule), class: "p-2 hover:bg-surface-elevated rounded-lg transition-colors" do %>
           <%= lucide_icon "arrow-left", class: "w-5 h-5 text-primary" %>
         <% end %>
-        <h1 class="text-3xl font-bold text-primary">Edit Automation Rule</h1>
+        <h1 class="text-3xl font-bold text-gray-900">Edit Automation Rule</h1>
       </div>
       <p class="text-muted">Update your automation rule configuration</p>
     </div>
@@ -20,10 +20,10 @@
           <%= form_with(model: @rule, url: automation_rule_path(@rule), local: true, method: :patch) do |f| %>
             <!-- Basic Info -->
             <div class="mb-6">
-              <h3 class="text-lg font-semibold text-primary mb-4">Basic Information</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
               <div class="space-y-4">
                 <div>
-                  <%= f.label :name, "Rule Name", class: "block text-sm font-medium text-primary mb-2" %>
+                  <%= f.label :name, "Rule Name", class: "block text-sm font-medium text-gray-900 mb-2" %>
                   <%= f.text_field :name, class: "form-input w-full", placeholder: "e.g., Auto-schedule new content" %>
                 </div>
               </div>
@@ -31,7 +31,7 @@
 
             <!-- Trigger Type -->
             <div class="mb-6">
-              <h3 class="text-lg font-semibold text-primary mb-4">Trigger Event</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Trigger Event</h3>
               <p class="text-sm text-muted mb-4">When should this automation run?</p>
               <div class="grid grid-cols-2 gap-3">
                 <% ['content_created', 'content_published', 'engagement_received', 'draft_approved', 'scheduled_time', 'daily'].each do |trigger| %>
@@ -45,7 +45,7 @@
 
             <!-- Action Type -->
             <div class="mb-6">
-              <h3 class="text-lg font-semibold text-primary mb-4">Action</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Action</h3>
               <p class="text-sm text-muted mb-4">What should happen?</p>
               <div class="grid grid-cols-2 gap-3">
                 <% ['auto_schedule', 'auto_notice', 'auto_tag', 'auto_move', 'auto_ai_response'].each do |action| %>
@@ -70,7 +70,7 @@
       <div class="space-y-6">
         <!-- Rule Status -->
         <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-          <h3 class="text-lg font-semibold text-primary mb-4">Rule Status</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Rule Status</h3>
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <span class="text-muted">Current Status</span>

@@ -16,7 +16,7 @@
             <%= lucide_icon "arrow-left", class: "w-5 h-5 text-primary" %>
           <% end %>
           <div>
-            <h1 class="text-xl font-bold text-primary">Strategy History</h1>
+            <h1 class="text-xl font-bold text-gray-900">Strategy History</h1>
             <p class="text-sm text-muted">View your past marketing strategies and trends</p>
           </div>
         </div>
@@ -31,11 +31,11 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
           <h3 class="text-sm font-semibold text-muted mb-2">Total Strategies</h3>
-          <p class="text-3xl font-bold text-primary"><%= @histories.count %></p>
+          <p class="text-3xl font-bold text-gray-900"><%= @histories.count %></p>
         </div>
         <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
           <h3 class="text-sm font-semibold text-muted mb-2">Avg Score</h3>
-          <p class="text-3xl font-bold text-primary"><%= (@histories.average(:overall_score) || 0).round %>%</p>
+          <p class="text-3xl font-bold text-gray-900"><%= (@histories.average(:overall_score) || 0).round %>%</p>
         </div>
         <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6">
           <h3 class="text-sm font-semibold text-muted mb-2">Latest Trend</h3>
@@ -65,9 +65,9 @@
                 </div>
                 <div>
                   <div class="flex items-center gap-2 mb-1">
-                    <h3 class="text-lg font-semibold text-primary"><%= history.focus_area.titleize %></h3>
+                    <h3 class="text-lg font-semibold text-gray-900"><%= history.focus_area.titleize %></h3>
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                      <%= history.generated_by == 'auto_weekly' ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-600' %>">
+                      <%= history.generated_by == 'auto_weekly' ? 'bg-primary/10 text-gray-900' : 'bg-gray-100 text-gray-600' %>">
                       <%= history.generated_by == 'auto_weekly' ? 'Auto' : 'Manual' %>
                     </span>
                   </div>
@@ -93,7 +93,7 @@
         <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
           <%= lucide_icon "history", class: "w-10 h-10 text-primary" %>
         </div>
-        <h3 class="text-lg font-semibold text-primary mb-2">No Strategy History</h3>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Strategy History</h3>
         <p class="text-sm text-muted mb-6">Generate your first marketing strategy to start tracking</p>
         <%= link_to ai_marketing_strategy_index_path, class: "btn-primary cursor-pointer" do %>
           <%= lucide_icon "plus", class: "w-4 h-4 mr-2" %>

@@ -7,7 +7,7 @@
         <%= lucide_icon "bar-chart-3", class: "w-7 h-7 text-white" %>
       </div>
       <div>
-        <h1 class="text-2xl font-bold text-primary">Analytics</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Analytics</h1>
         <p class="text-sm text-muted">Post performance insights from Postforme</p>
       </div>
     </div>
@@ -39,7 +39,7 @@
         </div>
         <div>
           <p class="text-xs text-muted">Total Posts</p>
-          <p class="text-xl font-bold text-primary"><%= @dashboard_data[:summary][:total_posts] %></p>
+          <p class="text-xl font-bold text-gray-900"><%= @dashboard_data[:summary][:total_posts] %></p>
         </div>
       </div>
     </div>
@@ -51,7 +51,7 @@
         </div>
         <div>
           <p class="text-xs text-muted">Total Engagements</p>
-          <p class="text-xl font-bold text-primary"><%= number_with_delimiter(@dashboard_data[:summary][:total_engagement]) %></p>
+          <p class="text-xl font-bold text-gray-900"><%= number_with_delimiter(@dashboard_data[:summary][:total_engagement]) %></p>
         </div>
       </div>
     </div>
@@ -63,7 +63,7 @@
         </div>
         <div>
           <p class="text-xs text-muted">Impressions</p>
-          <p class="text-xl font-bold text-primary"><%= number_with_delimiter(@dashboard_data[:summary][:total_impressions]) %></p>
+          <p class="text-xl font-bold text-gray-900"><%= number_with_delimiter(@dashboard_data[:summary][:total_impressions]) %></p>
         </div>
       </div>
     </div>
@@ -75,7 +75,7 @@
         </div>
         <div>
           <p class="text-xs text-muted">Avg Rate</p>
-          <p class="text-xl font-bold text-primary"><%= @dashboard_data[:summary][:avg_engagement_rate] %>%</p>
+          <p class="text-xl font-bold text-gray-900"><%= @dashboard_data[:summary][:avg_engagement_rate] %>%</p>
         </div>
       </div>
     </div>
@@ -87,7 +87,7 @@
         </div>
         <div>
           <p class="text-xs text-muted">Total Clicks</p>
-          <p class="text-xl font-bold text-primary"><%= number_with_delimiter(@dashboard_data[:summary][:total_clicks]) %></p>
+          <p class="text-xl font-bold text-gray-900"><%= number_with_delimiter(@dashboard_data[:summary][:total_clicks]) %></p>
         </div>
       </div>
     </div>
@@ -97,7 +97,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
     <!-- Engagement Over Time -->
     <div class="bg-white rounded-2xl shadow-sm border border-border/50 p-6">
-      <h2 class="text-lg font-bold text-primary mb-4 flex items-center">
+      <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
         <%= lucide_icon "trending-up", class: "w-5 h-5 mr-2 text-green-500" %>
         Engagement Over Time
       </h2>
@@ -127,12 +127,12 @@
                 <%= lucide_icon platform[:icon], class: "w-4 h-4 text-white" %>
               </div>
               <div>
-                <p class="font-medium text-primary"><%= platform[:display_name] %></p>
+                <p class="font-medium text-gray-900"><%= platform[:display_name] %></p>
                 <p class="text-xs text-muted"><%= platform[:post_count] %> posts</p>
               </div>
             </div>
             <div class="text-right">
-              <p class="font-semibold text-primary"><%= number_with_delimiter(platform[:total_engagement]) %></p>
+              <p class="font-semibold text-gray-900"><%= number_with_delimiter(platform[:total_engagement]) %></p>
               <p class="text-xs text-muted"><%= platform[:engagement_rate] %>% rate</p>
             </div>
           </div>
@@ -169,9 +169,9 @@
               <% end %>
             </div>
             <div>
-              <h3 class="font-semibold text-primary"><%= insight[:title] %></h3>
+              <h3 class="font-semibold text-gray-900"><%= insight[:title] %></h3>
               <p class="text-sm text-muted mt-1"><%= insight[:description] %></p>
-              <p class="text-sm text-primary font-medium mt-2"><%= insight[:recommendation] %></p>
+              <p class="text-sm text-gray-900 font-medium mt-2"><%= insight[:recommendation] %></p>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
       <% @dashboard_data[:best_posting_times].first(6).each do |time| %>
         <div class="p-4 bg-surface-elevated rounded-xl text-center border border-border/30 hover:border-primary/30 transition-colors">
-          <p class="text-2xl font-bold text-primary"><%= time[:hour] %>:00</p>
+          <p class="text-2xl font-bold text-gray-900"><%= time[:hour] %>:00</p>
           <p class="text-sm text-muted"><%= time[:post_count] %> posts</p>
           <p class="text-xs text-green-600 font-medium mt-1">+<%= time[:avg_engagement].round(1) %> avg eng</p>
         </div>
@@ -240,7 +240,7 @@
                     </div>
                   <% end %>
                   <div class="min-w-0">
-                    <p class="font-medium text-primary truncate max-w-xs"><%= post[:title] %></p>
+                    <p class="font-medium text-gray-900 truncate max-w-xs"><%= post[:title] %></p>
                     <p class="text-xs text-muted"><%= post[:posted_at] %></p>
                   </div>
                 </div>
