@@ -387,7 +387,7 @@ module Api
         # Call Anthropic API
         client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
 
-        response = client.messages(
+        response = client.messages.create(
           model: "claude-sonnet-4-20250514",
           max_tokens: 1024,
           system: otto_system_prompt,
