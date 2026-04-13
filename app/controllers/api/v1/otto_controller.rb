@@ -383,6 +383,7 @@ module Api
         Rails.logger.info "[Otto] History built: #{history.length} messages"
 
         Rails.logger.info "[Otto] Calling Anthropic API with tools..."
+        Rails.logger.info "[Otto] Tools being sent: #{otto_tool_definitions.to_json}"
         
         # Call Anthropic API with tool definitions
         client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
