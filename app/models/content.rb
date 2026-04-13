@@ -1,7 +1,4 @@
-
-
-Please open app/controllers/api/v1/otto_controller.rb and find the system_prompt variable or method. Copy and paste the exact text content of the system prompt here in the chat — don't deploy anything, just show me what it says.
-Also confirm: was tool_choice: { "type" => "any" } actually added to the Anthropic API call for image/video requests? Show me the exact lines of the chat_response method where the Anthropic client is called, including the tool_choice parameter.class Content < ApplicationRecord
+class Content < ApplicationRecord
   belongs_to :campaign, optional: true
   belongs_to :user
 
