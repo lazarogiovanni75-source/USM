@@ -394,7 +394,7 @@ module Api
           system: otto_system_prompt,
           messages: history,
           tools: otto_tool_definitions,
-          tool_choice: { type: "auto" }
+          tool_choice: { type: "any" }
         )
 
         Rails.logger.info "[Otto] Anthropic response type: #{response.content.first.type rescue 'unknown'}"
