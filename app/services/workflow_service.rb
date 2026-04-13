@@ -3,8 +3,9 @@ class WorkflowService
     # Generate content with LLM
     llm_result = LlmService.generate_content(prompt: content_text)
     
-    # Get caption text
-    caption = llm_result[:content] || llm_result[:body] || content_text
+    # Get caption text - handle case where LLM returns a Hash instead of String
+    caption_raw = llm_result[:content] || llm_result[:body] || content_text
+    caption = caption_raw.is_a?(Hash) ? (caption_raw[:body] || caption_raw["body"] || caption_raw.to_s) : caption_raw.to_s
     hashtags = llm_result[:hashtags]
     
     # Generate media if requested
