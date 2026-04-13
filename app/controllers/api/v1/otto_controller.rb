@@ -89,7 +89,7 @@ module Api
           http.request(request)
         end
 
-        if response.success?
+        if response.is_a?(Net::HTTPSuccess)
           render json: JSON.parse(response.body)
         else
           Rails.logger.error "Whisper transcription error: #{response.body}"
