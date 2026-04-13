@@ -376,8 +376,8 @@ module Api
       def chat_response(message)
         Rails.logger.info "[Otto] chat_response START - message class: #{message.class}, value: #{message.to_s[0..30]}"
         
-        # Build conversation history (last 20 messages)
-        history = current_user.otto_messages.recent.map do |msg|
+        # Build conversation history (last 10 messages max)
+        history = current_user.otto_messages.order(created_at: :asc).last(10).map do |msg|
           { role: msg.role, content: msg.content }
         end
         Rails.logger.info "[Otto] History built: #{history.length} messages"
@@ -393,7 +393,8 @@ module Api
           max_tokens: 4096,
           system: otto_system_prompt,
           messages: history,
-          tools: otto_tool_definitions
+          tools: otto_tool_definitions,
+          tool_choice: { type: "auto" }
         )
 
         Rails.logger.info "[Otto] Anthropic response type: #{response.content.first.type rescue 'unknown'}"
@@ -437,7 +438,7 @@ module Api
         
         # If tools were executed, make another API call with the results
         if tool_outputs.any?
-          history_for_continuation = current_user.otto_messages.recent.map do |msg|
+          history_for_continuation = current_user.otto_messages.order(created_at: :asc).last(10).map do |msg|
             { role: msg.role, content: msg.content }
           end
           history_for_continuation << { role: "user", content: "Continue with your response." }
