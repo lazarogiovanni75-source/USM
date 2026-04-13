@@ -1,4 +1,5 @@
 <%# Social Account Connections Page %>
+<% postforme_status = PostformeService.new.connection_status rescue { status: 'error', message: 'Service unavailable', profiles_count: 0 } %>
 <div class="min-h-screen bg-gray-50" data-controller="social-account-connections">
   <!-- Header -->
   <div class="bg-white shadow-sm border-b border-gray-200">
@@ -8,12 +9,15 @@
           <h1 class="text-3xl font-bold text-gray-900">Connect Accounts</h1>
           <p class="mt-1 text-gray-600">Connect your social media accounts via Postforme</p>
         </div>
-        <%= link_to social_media_dashboard_index_path, class: "btn-secondary" do %>
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          View Dashboard
-        <% end %>
+        <div class="flex items-center gap-4">
+          <%= render 'shared/postforme_status', postforme_status: postforme_status %>
+          <%= link_to social_media_dashboard_index_path, class: "btn-secondary" do %>
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            View Dashboard
+          <% end %>
+        </div>
       </div>
     </div>
   </div>
@@ -44,7 +48,7 @@
           <p class="text-xs font-medium text-gray-500 mb-2">POSTFORME REDIRECT URL:</p>
           <div class="flex items-center gap-2">
             <code class="flex-1 text-xs bg-white px-2 py-1.5 rounded border border-gray-300 text-gray-700 truncate" id="oauth-callback-url">
-              https://ultimate-social-media-ec0aeaf8246a-web.clackypaas.com/auth/postforme/callback
+              https://ultimatesocialmedia01.com/auth/postforme/callback
             </code>
             <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('oauth-callback-url').textContent).then(() => { const btn = this; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); })" 
                     class="px-2 py-1 text-xs font-medium text-white bg-gray-600 hover:bg-gray-700 rounded transition-colors">

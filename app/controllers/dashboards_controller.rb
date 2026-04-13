@@ -89,6 +89,9 @@ class DashboardsController < ApplicationController
     @subscription_plan = @current_subscription&.subscription_plan
     @plan_limit_service = PlanLimitService.new(@user)
     
+    # Postforme Connection Status
+    @postforme_status = PostformeService.new.connection_status
+    
     # Selected conversation for message thread view
     if params[:conversation_id].present?
       @selected_conversation = @ai_conversations.find_by(id: params[:conversation_id])

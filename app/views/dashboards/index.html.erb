@@ -53,8 +53,12 @@
           </div>
         </div>
         
-        <!-- Right Side: Plan Info & Metrics -->
-          <div class="flex flex-wrap gap-3">
+        <!-- Right Side: Postforme Status & Metrics -->
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Postforme Connection Status -->
+            <div class="flex-shrink-0">
+              <%= render 'shared/postforme_status', postforme_status: @postforme_status %>
+            </div>
             <!-- Current Plan Card -->
             <% if @current_subscription && @subscription_plan %>
               <div class="group relative bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl px-5 py-3 shadow-sm border border-primary/20 hover:shadow-lg transition-all cursor-pointer">

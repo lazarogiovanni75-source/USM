@@ -218,6 +218,36 @@ class PostformeService
     @api_key.present?
   end
 
+  # Check connection status by testing the API
+  # @return [Hash] { status: 'connected'|'error'|'unconfigured', message: String, profiles_count: Integer|nil }
+  def connection_status
+    return { status: 'unconfigured', message: 'API key not set', profiles_count: 0 } unless configured?
+
+    begin
+      response = social_accounts
+      profiles = response['data'] || response
+      profiles_count = profiles.is_a?(Array) ? profiles.size : 0
+      
+      {
+        status: 'connected',
+        message: profiles_count > 0 ? "Connected - #{profiles_count} profile(s)" : 'Connected - No profiles',
+        profiles_count: profiles_count
+      }
+    rescue PostformeService::PostformeError => e
+      {
+        status: 'error',
+        message: "Error: #{e.message}",
+        profiles_count: 0
+      }
+    rescue StandardError => e
+      {
+        status: 'error',
+        message: "Connection failed: #{e.message}",
+        profiles_count: 0
+      }
+    end
+  end
+
   private
 
   attr_reader :api_key
