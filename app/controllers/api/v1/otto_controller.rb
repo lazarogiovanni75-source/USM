@@ -526,45 +526,45 @@ module Api
       def otto_tool_definitions
         [
           {
-            name: "generate_image",
-            description: "Generate an AI image. Creates images for social media posts, ads, or any visual content.",
-            input_schema: {
-              type: "object",
-              properties: {
-                prompt: {
-                  type: "string",
-                  description: "Detailed description of the image you want to generate"
+            "name" => "generate_image",
+            "description" => "Generate an AI image. Creates images for social media posts, ads, or any visual content.",
+            "input_schema" => {
+              "type" => "object",
+              "properties" => {
+                "prompt" => {
+                  "type" => "string",
+                  "description" => "Detailed description of the image you want to generate"
                 },
-                aspect_ratio: {
-                  type: "string",
-                  description: "Image aspect ratio: 1:1 (square), 16:9 (landscape), 9:16 (portrait)",
-                  enum: ["1:1", "16:9", "9:16", "4:3", "3:4"]
+                "aspect_ratio" => {
+                  "type" => "string",
+                  "description" => "Image aspect ratio: 1:1 (square), 16:9 (landscape), 9:16 (portrait)",
+                  "enum" => ["1:1", "16:9", "9:16", "4:3", "3:4"]
                 }
               },
-              required: ["prompt"]
+              "required" => ["prompt"]
             }
           },
           {
-            name: "generate_video",
-            description: "Generate an AI video. Creates short videos for social media content.",
-            input_schema: {
-              type: "object",
-              properties: {
-                prompt: {
-                  type: "string",
-                  description: "Description of the video scene and action"
+            "name" => "generate_video",
+            "description" => "Generate an AI video. Creates short videos for social media content.",
+            "input_schema" => {
+              "type" => "object",
+              "properties" => {
+                "prompt" => {
+                  "type" => "string",
+                  "description" => "Description of the video scene and action"
                 },
-                duration: {
-                  type: "integer",
-                  description: "Video duration in seconds (5-12)"
+                "duration" => {
+                  "type" => "integer",
+                  "description" => "Video duration in seconds (5-12)"
                 },
-                aspect_ratio: {
-                  type: "string",
-                  description: "Video aspect ratio: 16:9 (landscape) or 9:16 (portrait)",
-                  enum: ["16:9", "9:16"]
+                "aspect_ratio" => {
+                  "type" => "string",
+                  "description" => "Video aspect ratio: 16:9 (landscape) or 9:16 (portrait)",
+                  "enum" => ["16:9", "9:16"]
                 }
               },
-              required: ["prompt"]
+              "required" => ["prompt"]
             }
           }
         ]
