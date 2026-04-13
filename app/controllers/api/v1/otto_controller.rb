@@ -382,26 +382,192 @@ module Api
         end
         Rails.logger.info "[Otto] History built: #{history.length} messages"
 
-        Rails.logger.info "[Otto] Calling Anthropic API..."
+        Rails.logger.info "[Otto] Calling Anthropic API with tools..."
         
-        # Call Anthropic API
+        # Call Anthropic API with tool definitions
         client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
 
         response = client.messages.create(
           model: "claude-sonnet-4-6",
-          max_tokens: 1024,
+          max_tokens: 4096,
           system: otto_system_prompt,
-          messages: history
+          messages: history,
+          tools: otto_tool_definitions
         )
 
-        assistant_reply = response.content.first.text
+        Rails.logger.info "[Otto] Anthropic response type: #{response.content.first.type rescue 'unknown'}"
+        
+        # Process response - may include text and/or tool_use blocks
+        result = process_anthropic_response(response, history)
+        
+        render json: result
+      end
 
-        Rails.logger.info "[Otto] Anthropic response received: #{assistant_reply[0..50]}..."
-
+      def process_anthropic_response(response, history)
+        text_parts = []
+        tool_results = []
+        
+        # Process each content block in the response
+        response.content.each do |block|
+          case block.type
+          when 'text'
+            text_parts << block.text
+          when 'tool_use'
+            tool_results << { id: block.id, name: block.name, input: block.input }
+          end
+        end
+        
+        # Execute tools and get results
+        tool_outputs = []
+        tool_results.each do |tool_call|
+          result = execute_otto_tool(tool_call[:name], tool_call[:input])
+          tool_outputs << {
+            type: "tool_result",
+            tool_use_id: tool_call[:id],
+            content: result[:success] ? result.inspect : "Error: #{result[:error]}"
+          }
+          
+          # Save tool result to history
+          current_user.otto_messages.create!(
+            role: "user",
+            content: "Tool #{tool_call[:name]} result: #{result[:success] ? 'Success' : result[:error]}}"
+          )
+        end
+        
+        # If tools were executed, make another API call with the results
+        if tool_outputs.any?
+          history_for_continuation = current_user.otto_messages.recent.map do |msg|
+            { role: msg.role, content: msg.content }
+          end
+          history_for_continuation << { role: "user", content: "Continue with your response." }
+          
+          client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
+          follow_up = client.messages.create(
+            model: "claude-sonnet-4-6",
+            max_tokens: 1024,
+            system: otto_system_prompt,
+            messages: history_for_continuation,
+            tools: otto_tool_definitions
+          )
+          
+          follow_up.content.each do |block|
+            text_parts << block.text if block.type == 'text'
+          end
+        end
+        
+        final_reply = text_parts.join("\n")
+        
         # Save assistant reply
-        current_user.otto_messages.create!(role: "assistant", content: assistant_reply)
+        current_user.otto_messages.create!(role: "assistant", content: final_reply)
+        
+        { reply: final_reply }
+      rescue => e
+        Rails.logger.error "[Otto] process_anthropic_response error: #{e.message}"
+        { reply: "I encountered an error: #{e.message}" }
+      end
 
-        render json: { reply: assistant_reply }
+      def execute_otto_tool(tool_name, tool_input)
+        Rails.logger.info "[Otto] Executing tool: #{tool_name} with input: #{tool_input.inspect}"
+        
+        case tool_name
+        when 'generate_image'
+          prompt = tool_input['prompt'] || tool_input[:prompt]
+          aspect_ratio = tool_input['aspect_ratio'] || '1:1'
+          
+          result = AtlasCloudImageService.new.generate_image(
+            prompt: prompt,
+            aspect_ratio: aspect_ratio
+          )
+          
+          if result['task_id'].present?
+            # Schedule job to poll for completion
+            ImagePollJob.perform_later(nil, result['task_id'], 'atlascloud')
+            
+            # Create draft content
+            draft = DraftContent.create!(
+              user: current_user,
+              title: prompt.truncate(50),
+              content: prompt,
+              content_type: 'image',
+              platform: 'general',
+              status: 'pending',
+              metadata: { 'task_id' => result['task_id'] }
+            )
+            
+            { success: true, message: "Image generation started! Task ID: #{result['task_id']}. You'll be notified when it's ready.", draft_id: draft.id }
+          else
+            { success: false, error: result['error'] || 'Failed to start image generation' }
+          end
+        when 'generate_video'
+          prompt = tool_input['prompt'] || tool_input[:prompt]
+          duration = tool_input['duration'] || 5
+          aspect_ratio = tool_input['aspect_ratio'] || '16:9'
+          
+          result = AtlasCloudService.new.generate_video_from_text(
+            prompt: prompt,
+            duration: duration,
+            aspect_ratio: aspect_ratio
+          )
+          
+          if result['task_id'].present?
+            VideoPollJob.perform_later(nil, result['task_id'], 'atlascloud') if defined?(VideoPollJob)
+            { success: true, message: "Video generation started! Task ID: #{result['task_id']}. You'll be notified when it's ready." }
+          else
+            { success: false, error: result['error'] || 'Failed to start video generation' }
+          end
+        else
+          { success: false, error: "Unknown tool: #{tool_name}" }
+        end
+      rescue => e
+        Rails.logger.error "[Otto] Tool execution error: #{e.message}"
+        { success: false, error: e.message }
+      end
+
+      def otto_tool_definitions
+        [
+          {
+            name: "generate_image",
+            description: "Generate an AI image. Creates images for social media posts, ads, or any visual content.",
+            input_schema: {
+              type: "object",
+              properties: {
+                prompt: {
+                  type: "string",
+                  description: "Detailed description of the image you want to generate"
+                },
+                aspect_ratio: {
+                  type: "string",
+                  description: "Image aspect ratio: 1:1 (square), 16:9 (landscape), 9:16 (portrait)",
+                  enum: ["1:1", "16:9", "9:16", "4:3", "3:4"]
+                }
+              },
+              required: ["prompt"]
+            }
+          },
+          {
+            name: "generate_video",
+            description: "Generate an AI video. Creates short videos for social media content.",
+            input_schema: {
+              type: "object",
+              properties: {
+                prompt: {
+                  type: "string",
+                  description: "Description of the video scene and action"
+                },
+                duration: {
+                  type: "integer",
+                  description: "Video duration in seconds (5-12)"
+                },
+                aspect_ratio: {
+                  type: "string",
+                  description: "Video aspect ratio: 16:9 (landscape) or 9:16 (portrait)",
+                  enum: ["16:9", "9:16"]
+                }
+              },
+              required: ["prompt"]
+            }
+          }
+        ]
       end
 
       def otto_system_prompt
