@@ -419,48 +419,37 @@ module Api
           end
         end
         
-        # Execute tools and get results
-        tool_outputs = []
-        tool_results.each do |tool_call|
-          result = execute_otto_tool(tool_call[:name], tool_call[:input])
-          tool_outputs << {
-            type: "tool_result",
-            tool_use_id: tool_call[:id],
-            content: result[:success] ? result.inspect : "Error: #{result[:error]}"
-          }
-          
-          # Save tool result to history
-          current_user.otto_messages.create!(
-            role: "user",
-            content: "Tool #{tool_call[:name]} result: #{result[:success] ? 'Success' : result[:error]}}"
-          )
-        end
-        
-        # If tools were executed, make another API call with the results
-        if tool_outputs.any?
-          history_for_continuation = current_user.otto_messages.order(created_at: :asc).last(10).map do |msg|
-            { role: msg.role, content: msg.content }
-          end
-          history_for_continuation << { role: "user", content: "Continue with your response." }
-          
-          client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
-          follow_up = client.messages.create(
-            model: "claude-sonnet-4-6",
-            max_tokens: 1024,
-            system: otto_system_prompt,
-            messages: history_for_continuation,
-            tools: otto_tool_definitions
-          )
-          
-          follow_up.content.each do |block|
-            text_parts << block.text if block.type == 'text'
+        # Execute tools and return user-friendly message
+        if tool_results.any?
+          tool_results.each do |tool_call|
+            result = execute_otto_tool(tool_call[:name], tool_call[:input])
+            
+            # Save tool result to history
+            current_user.otto_messages.create!(
+              role: "user",
+              content: "Tool #{tool_call[:name]} result: #{result[:success] ? 'Success' : result[:error]}"
+            )
+            
+            # Return immediate feedback based on tool type
+            case tool_call[:name]
+            when 'generate_image'
+              reply = "⏳ Your image is being generated and will appear in your Drafts shortly!"
+            when 'generate_video'
+              reply = "🎬 Your video is being generated and will appear in your Drafts shortly!"
+            else
+              reply = "⏳ Your request is being processed and will appear in your Drafts shortly!"
+            end
+            
+            current_user.otto_messages.create!(role: "assistant", content: reply)
+            return { reply: reply }
           end
         end
         
+        # If no tools, return text response as normal
         final_reply = text_parts.join("\n")
         
         # Save assistant reply
-        current_user.otto_messages.create!(role: "assistant", content: final_reply)
+        current_user.otto_messages.create!(role: "assistant", content: final_reply) if final_reply.present?
         
         { reply: final_reply }
       rescue => e
