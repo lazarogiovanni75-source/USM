@@ -11,8 +11,11 @@ module Api
           return
         end
 
-        # Save the user's message
-        current_user.otto_messages.create!(role: "user", content: user_message)
+        # Save the user's message (use new + save to avoid validation exceptions)
+        msg = current_user.otto_messages.new(role: "user", content: user_message)
+        unless msg.save
+          Rails.logger.error "[Otto] Failed to save user message: #{msg.errors.full_messages}"
+        end
 
         # Check if this is a task request
         if task_request?(user_message)
