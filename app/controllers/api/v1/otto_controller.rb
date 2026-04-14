@@ -441,7 +441,7 @@ module Api
             # Save tool result to history
             current_user.otto_messages.create!(
               role: "user",
-              content: "Tool #{tool_call[:name]} result: #{result[:success] ? 'Success' : result[:error]}"
+              content: "Tool #{tool_call[:name]} result: #{result[:success] ? 'Success' : result[:error]}".to_s
             )
             
             # Return immediate feedback based on tool type
@@ -454,7 +454,7 @@ module Api
               reply = "⏳ Your request is being processed and will appear in your Drafts shortly!"
             end
             
-            current_user.otto_messages.create!(role: "assistant", content: reply)
+            current_user.otto_messages.create!(role: "assistant", content: reply.to_s)
             return { reply: reply }
           end
         end
