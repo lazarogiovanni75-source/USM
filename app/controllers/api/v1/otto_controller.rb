@@ -374,41 +374,49 @@ module Api
       end
 
       def chat_response(message)
-        Rails.logger.info "[Otto] chat_response START - message class: #{message.class}, value: #{message.to_s[0..30]}"
+        Rails.logger.info "[Otto] chat_response called"
         
-        # Build conversation history (last 10 messages max)
-        history = current_user.otto_messages.order(created_at: :asc).last(10).map do |msg|
-          { role: msg.role, content: msg.content }
+        begin
+          Rails.logger.info "[Otto] chat_response START - message class: #{message.class}, value: #{message.to_s[0..30]}"
+          
+          # Build conversation history (last 10 messages max)
+          history = current_user.otto_messages.order(created_at: :asc).last(10).map do |msg|
+            { role: msg.role, content: msg.content }
+          end
+          Rails.logger.info "[Otto] History built: #{history.length} messages"
+
+          Rails.logger.info "[Otto] Calling Anthropic API with tools..."
+          Rails.logger.info "[Otto] Tools being sent: #{otto_tool_definitions.to_json}"
+          
+          # Call Anthropic API with tool definitions
+          client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
+
+          response = client.messages.create(
+            model: "claude-sonnet-4-6",
+            max_tokens: 4096,
+            system: otto_system_prompt,
+            messages: history,
+            tools: otto_tool_definitions,
+            tool_choice: { "type" => "any" }
+          )
+
+          Rails.logger.info "[Otto] Anthropic response stop_reason: #{response.stop_reason.inspect}"
+          Rails.logger.info "[Otto] Anthropic response content count: #{response.content.length}"
+          Rails.logger.info "[Otto] Anthropic response content types: #{response.content.map(&:type).inspect}"
+          
+          # Handle tool_use stop_reason - execute tool and return success message
+          if response.stop_reason == "tool_use"
+            Rails.logger.info "[Otto] Stop reason is tool_use, processing..."
+          end
+          
+          # Process response - may include text and/or tool_use blocks
+          result = process_anthropic_response(response, history)
+          render json: result
+        rescue => e
+          Rails.logger.error "[Otto] chat_response CRASH: #{e.class} - #{e.message}"
+          Rails.logger.error e.backtrace.first(5).join("\n")
+          raise e
         end
-        Rails.logger.info "[Otto] History built: #{history.length} messages"
-
-        Rails.logger.info "[Otto] Calling Anthropic API with tools..."
-        Rails.logger.info "[Otto] Tools being sent: #{otto_tool_definitions.to_json}"
-        
-        # Call Anthropic API with tool definitions
-        client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
-
-        response = client.messages.create(
-          model: "claude-sonnet-4-6",
-          max_tokens: 4096,
-          system: otto_system_prompt,
-          messages: history,
-          tools: otto_tool_definitions,
-          tool_choice: { "type" => "any" }
-        )
-
-        Rails.logger.info "[Otto] Anthropic response stop_reason: #{response.stop_reason.inspect}"
-        Rails.logger.info "[Otto] Anthropic response content count: #{response.content.length}"
-        Rails.logger.info "[Otto] Anthropic response content types: #{response.content.map(&:type).inspect}"
-        
-        # Handle tool_use stop_reason - execute tool and return success message
-        if response.stop_reason == "tool_use"
-          Rails.logger.info "[Otto] Stop reason is tool_use, processing..."
-        end
-        
-        # Process response - may include text and/or tool_use blocks
-        result = process_anthropic_response(response, history)
-        render json: result
       end
 
       def process_anthropic_response(response, history)
@@ -507,6 +515,8 @@ module Api
             duration: duration,
             aspect_ratio: aspect_ratio
           )
+          
+          return { success: false, error: "Video service returned nil" } if result.nil?
           
           if result['task_id'].present?
             VideoPollJob.perform_later(nil, result['task_id'], 'atlascloud') if defined?(VideoPollJob)
