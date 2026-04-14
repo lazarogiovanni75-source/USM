@@ -179,17 +179,23 @@ export default class OttoController extends Controller {
       },
       body: JSON.stringify({ message })
     })
-      .then(response => response.json())
+      .then(response => {
+        console.log('[Otto] Response status:', response.status);
+        return response.json();
+      })
       .then(data => {
+        console.log('[Otto] Response data:', data);
         this.hideTyping();
-        if (data.reply) {
+        if (data.reply !== undefined) {
           this.appendMessage('assistant', data.reply);
 
           if (data.task) {
             this.appendTaskResult(data.task);
           }
+        } else if (data.error) {
+          this.appendMessage('assistant', data.error);
         } else {
-          this.appendMessage('assistant', data.error || 'Something went wrong. Please try again.');
+          this.appendMessage('assistant', 'Something went wrong. Please try again.');
         }
       })
       .catch(() => {
