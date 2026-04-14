@@ -186,7 +186,7 @@ export default class OttoController extends Controller {
       .then(data => {
         console.log('[Otto] Response data:', data);
         this.hideTyping();
-        if (data.reply !== undefined) {
+        if (data.reply !== undefined && data.reply !== null) {
           this.appendMessage('assistant', data.reply);
 
           if (data.task) {
