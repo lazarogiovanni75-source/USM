@@ -2,6 +2,7 @@ class DraftContent < ApplicationRecord
   include QualityTiers
 
   belongs_to :user
+  belongs_to :campaign, optional: true
   has_many :content_suggestions, dependent: :destroy
   
   # ActiveStorage for video/image attachments
