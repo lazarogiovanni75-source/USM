@@ -476,6 +476,8 @@ module Api
             aspect_ratio: aspect_ratio
           )
           
+          return { success: false, error: "Image service returned nil" } if result.nil?
+          
           if result['task_id'].present?
             # Schedule job to poll for completion
             ImagePollJob.perform_later(nil, result['task_id'], 'atlascloud')
