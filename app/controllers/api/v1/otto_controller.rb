@@ -22,8 +22,8 @@ module Api
           chat_response(user_message)
         end
       rescue => e
-        Rails.logger.error "Otto-Pilot error: #{e.class} - #{e.message}"
-        Rails.logger.error "Backtrace: #{e.backtrace.first(5).join("\n")}"
+        Rails.logger.error "[Otto] Unavailable error: #{e.class} - #{e.message}"
+        Rails.logger.error e.backtrace.first(3).join("\n")
         render json: { error: "Otto-Pilot is unavailable right now. Please try again." }, status: :internal_server_error
       end
 
@@ -397,11 +397,17 @@ module Api
           tool_choice: { "type" => "any" }
         )
 
-        Rails.logger.info "[Otto] Anthropic response type: #{response.content.first.type rescue 'unknown'}"
+        Rails.logger.info "[Otto] Anthropic response stop_reason: #{response.stop_reason.inspect}"
+        Rails.logger.info "[Otto] Anthropic response content count: #{response.content.length}"
+        Rails.logger.info "[Otto] Anthropic response content types: #{response.content.map(&:type).inspect}"
+        
+        # Handle tool_use stop_reason - execute tool and return success message
+        if response.stop_reason == "tool_use"
+          Rails.logger.info "[Otto] Stop reason is tool_use, processing..."
+        end
         
         # Process response - may include text and/or tool_use blocks
         result = process_anthropic_response(response, history)
-        
         render json: result
       end
 
