@@ -226,16 +226,35 @@ class MarketingStrategyAnalyzerService
   end
   
   def call_ai(prompt)
-    LlmService.chat(
+    raw_response = LlmService.chat(
       system: 'You are an expert social media marketing strategist. Always respond in valid JSON format.',
       messages: [
         { role: 'user', content: prompt }
       ],
       max_tokens: 1500
     )
+
+    # Parse the JSON response into a Hash
+    parse_ai_response(raw_response)
   rescue StandardError => e
     Rails.logger.error "[MarketingStrategyAnalyzer] AI call failed: #{e.message}"
-    { summary: 'AI analysis temporarily unavailable', error: e.message }
+    { summary: 'AI analysis temporarily unavailable', recommendations: [], growth_indicators: [], areas_for_improvement: [] }
+  end
+
+  def parse_ai_response(raw_response)
+    # Try to parse as JSON, fallback to a structured hash with the raw text
+    begin
+      parsed = JSON.parse(raw_response)
+      # Handle both string keys (from JSON) and symbol keys (expected by code)
+      if parsed.is_a?(Hash)
+        parsed.symbolize_keys!
+        parsed
+      else
+        { summary: raw_response, recommendations: [], growth_indicators: [], areas_for_improvement: [] }
+      end
+    rescue JSON::ParserError
+      { summary: raw_response, recommendations: [], growth_indicators: [], areas_for_improvement: [] }
+    end
   end
   
   def parse_strategy_response(response)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_13_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_14_121218) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -436,7 +436,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_13_000001) do
     t.text "error_message"
     t.string "quality_tier", default: "standard"
     t.integer "credit_cost", default: 1
+    t.bigint "campaign_id"
     t.index ["approval_token"], name: "index_draft_contents_on_approval_token", unique: true
+    t.index ["campaign_id"], name: "index_draft_contents_on_campaign_id"
     t.index ["postforme_post_id"], name: "index_draft_contents_on_postforme_post_id"
     t.index ["status"], name: "index_draft_contents_on_status"
     t.index ["user_id"], name: "index_draft_contents_on_user_id"
@@ -1107,6 +1109,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_13_000001) do
   add_foreign_key "clients", "users", column: "agency_user_id"
   add_foreign_key "content_suggestions", "draft_contents"
   add_foreign_key "content_template_variables", "content_templates"
+  add_foreign_key "draft_contents", "campaigns"
   add_foreign_key "otto_messages", "users"
   add_foreign_key "post_analytics", "scheduled_posts"
   add_foreign_key "postforme_analytics", "scheduled_posts"
