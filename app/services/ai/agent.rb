@@ -22,12 +22,13 @@ module Ai
       Ai::UsageTracker.track_llm_tokens(@campaign, estimated_tokens) if @campaign
 
       # Use LLM service with tool calling
-      response = LlmService.new(
+      response = LlmService.call_blocking_with_tools(
         prompt: prompt,
         system: system_message,
+        user: @user,
         tools: @tools,
-        tool_choice: "auto"
-      ).call_blocking
+        tool_choice: 'auto'
+      )
       
       # If we got plain text and it's not allowed, raise error
       if response.blank?

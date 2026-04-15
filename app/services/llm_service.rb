@@ -169,6 +169,42 @@ class LlmService
     raise TimeoutError, "Request to Anthropic API timed out: #{e.message}"
   end
 
+  # Blocking call with tool-calling support (for autonomous agents)
+  # Usage: LlmService.call_blocking_with_tools(prompt: '...', tools: [...], tool_choice: 'auto')
+  def self.call_blocking_with_tools(prompt:, system: nil, user: nil, tools: nil, tool_choice: 'auto', **options)
+    api_key = ENV['ANTHROPIC_API_KEY']
+
+    if api_key.blank?
+      raise ApiError, "ANTHROPIC_API_KEY environment variable is not configured"
+    end
+
+    client = Anthropic::Client.new(api_key: api_key)
+    model = options[:model] || ENV.fetch('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+    temperature = options[:temperature]&.to_f || 0.7
+    max_tokens = options[:max_tokens] || 4096
+
+    system_with_brand_voice = system_prompt_with_brand_voice(system, user)
+
+    messages = [{ role: 'user', content: prompt }]
+
+    create_params = {
+      model: model,
+      max_tokens: max_tokens,
+      messages: messages,
+      temperature: temperature,
+      tools: tools,
+      tool_choice: { type: tool_choice }
+    }
+    create_params[:system] = system_with_brand_voice if system_with_brand_voice
+
+    response = client.messages.create(**create_params)
+    response.content.first.text
+  rescue Anthropic::AuthenticationError => e
+    raise ApiError, "Anthropic API authentication failed: #{e.message}"
+  rescue Net::ReadTimeout, Net::OpenTimeout => e
+    raise TimeoutError, "Request to Anthropic API timed out: #{e.message}"
+  end
+
   # Chat method with conversation history support
   # Usage: LlmService.chat(system: '...', messages: [{role: 'user', content: '...'}, ...])
   def self.chat(system:, messages:, **options)

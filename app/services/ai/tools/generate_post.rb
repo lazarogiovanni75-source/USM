@@ -51,7 +51,7 @@ module Ai
           Return ONLY the caption text, no explanations.
         PROMPT
         
-        response = LlmService.new(prompt: prompt).call_blocking
+        response = LlmService.call_blocking(prompt: prompt, user: user)
         response.strip
       rescue => e
         Rails.logger.warn "[Tools::GeneratePost] Caption generation failed: #{e.message}"
