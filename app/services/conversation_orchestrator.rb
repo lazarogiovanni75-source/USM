@@ -29,7 +29,7 @@ class ConversationOrchestrator < ApplicationService
     Rails.logger.info "[ConversationOrchestrator] conversation: #{conversation.id rescue 'nil'}"
 
     # Save user message
-    conversation.ai_messages.create!(
+    conversation.ai_messages.create(
       role: 'user',
       content: content,
       message_type: 'text',
@@ -58,7 +58,7 @@ class ConversationOrchestrator < ApplicationService
     @assistant_response ||= ""
 
     # Save assistant message with action metadata
-    conversation.ai_messages.create!(
+    conversation.ai_messages.create(
       role: 'assistant',
       content: @assistant_response,
       message_type: 'text',
@@ -79,7 +79,7 @@ class ConversationOrchestrator < ApplicationService
 
     error_message = "I apologize, but I encountered an error processing your message. [#{e.class}]"
     begin
-      conversation.ai_messages.create!(
+      conversation.ai_messages.create(
         role: 'assistant',
         content: error_message,
         message_type: 'text'
