@@ -226,13 +226,12 @@ class MarketingStrategyAnalyzerService
   end
   
   def call_ai(prompt)
-    LlmService.new.chat(
+    LlmService.chat(
+      system: 'You are an expert social media marketing strategist. Always respond in valid JSON format.',
       messages: [
-        { role: 'system', content: 'You are an expert social media marketing strategist. Always respond in valid JSON format.' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 1500,
-      temperature: 0.7
+      max_tokens: 1500
     )
   rescue StandardError => e
     Rails.logger.error "[MarketingStrategyAnalyzer] AI call failed: #{e.message}"
@@ -242,10 +241,10 @@ class MarketingStrategyAnalyzerService
   def parse_strategy_response(response)
     # Try to parse as JSON, fallback to structured response
     begin
-      JSON.parse(response[:content]).symbolize_keys
+      JSON.parse(response).symbolize_keys
     rescue JSON::ParserError
       {
-        summary: response[:content],
+        summary: response,
         recommendations: [],
         action_items: [],
         content_ideas: [],
