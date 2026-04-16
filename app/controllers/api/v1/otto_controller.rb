@@ -363,7 +363,7 @@ module Api
       def build_image_success_message(result)
         draft = result[:draft]
         caption = result[:caption]
-        reply = "🖼️ Image generation started!\n\n"
+        reply = "Image generation started!\n\n"
 
         if caption.present?
           reply += "Caption: #{caption.truncate(100)}\n\n"
