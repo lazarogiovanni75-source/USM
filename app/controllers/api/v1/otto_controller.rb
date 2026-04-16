@@ -363,7 +363,7 @@ module Api
       def build_image_success_message(result)
         draft = result[:draft]
         caption = result[:caption]
-
+a  .. saw 1
         reply = "🖼️ Image generation started!\n\n"
 
         if caption.present?
@@ -414,7 +414,7 @@ module Api
           
           # Process response - may include text and/or tool_use blocks
           result = process_anthropic_response(response, history)
-          render json: result
+          render json: { reply: result[:reply].presence || "Done! Let me know if you need anything else." }
         rescue => e
           Rails.logger.error "[Otto] chat_response CRASH: #{e.class} - #{e.message}"
           Rails.logger.error e.backtrace.first(5).join("\n")
@@ -468,7 +468,7 @@ module Api
         # Save assistant reply
         current_user.otto_messages.create(role: "assistant", content: final_reply) if final_reply.present?
         
-        { reply: final_reply }
+        { reply: final_reply.presence || "I've completed your request!" }
       rescue => e
         Rails.logger.error "[Otto] process_anthropic_response error: #{e.message}"
         { reply: "I encountered an error: #{e.message}" }
