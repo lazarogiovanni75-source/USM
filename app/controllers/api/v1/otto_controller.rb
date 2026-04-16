@@ -19,12 +19,7 @@ module Api
         end
 
         # Check if this is a task request
-        if task_request?(user_message)
-          execute_task(user_message)
-        else
-          # Regular chat - call Anthropic API
-          chat_response(user_message)
-        end
+        chat_response(user_message)
       rescue => e
         Rails.logger.error "[Otto] Unavailable error: #{e.class} - #{e.message}"
         Rails.logger.error e.backtrace.first(3).join("\n")
