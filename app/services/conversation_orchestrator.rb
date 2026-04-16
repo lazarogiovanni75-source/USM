@@ -120,7 +120,7 @@ class ConversationOrchestrator < ApplicationService
       return conv if conv
     end
 
-    AiConversation.create!(
+    AiConversation.create(
       user: user,
       title: "Chat #{Time.current.strftime('%b %d, %I:%M %p')}",
       session_type: 'chat',
