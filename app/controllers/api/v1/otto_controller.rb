@@ -165,7 +165,7 @@ module Api
 
         if result[:success]
           reply = build_image_success_message(result)
-          current_user.otto_messages.create!(role: "assistant", content: reply)
+          current_user.otto_messages.create(role: "assistant", content: reply)
 
           render json: {
             reply: reply,
@@ -178,7 +178,7 @@ module Api
           }
         else
           error_reply = "❌ Image generation failed. Please try again with a different prompt."
-          current_user.otto_messages.create!(role: "assistant", content: error_reply)
+          current_user.otto_messages.create(role: "assistant", content: error_reply)
           render json: { reply: error_reply, error: true }
         end
       end
@@ -200,7 +200,7 @@ module Api
           reply += "Your video is being created and will be ready in 1-2 minutes.\n"
           reply += "I'll let you know when it's done!"
 
-          current_user.otto_messages.create!(role: "assistant", content: reply)
+          current_user.otto_messages.create(role: "assistant", content: reply)
 
           render json: {
             reply: reply,
@@ -212,7 +212,7 @@ module Api
           }
         else
           error_reply = "❌ Video generation failed. Please try again."
-          current_user.otto_messages.create!(role: "assistant", content: error_reply)
+          current_user.otto_messages.create(role: "assistant", content: error_reply)
           render json: { reply: error_reply, error: true }
         end
       end
@@ -234,7 +234,7 @@ module Api
           reply += "#{caption}\n\n"
           reply += "💡 Check your Drafts to edit or schedule this content."
 
-          current_user.otto_messages.create!(role: "assistant", content: reply)
+          current_user.otto_messages.create(role: "assistant", content: reply)
 
           render json: {
             reply: reply,
@@ -246,7 +246,7 @@ module Api
           }
         else
           error_reply = "❌ Content generation failed. Please try again."
-          current_user.otto_messages.create!(role: "assistant", content: error_reply)
+          current_user.otto_messages.create(role: "assistant", content: error_reply)
           render json: { reply: error_reply, error: true }
         end
       end
@@ -269,7 +269,7 @@ module Api
           reply += "→ Go to Social Accounts → Connect Profile\n\n"
           reply += "Or I can help you generate content to save for later!"
 
-          current_user.otto_messages.create!(role: "assistant", content: reply)
+          current_user.otto_messages.create(role: "assistant", content: reply)
           render json: { reply: reply }
           return
         end
@@ -290,7 +290,7 @@ module Api
           reply += "Your content has been published.\n"
           reply += "Check your #{platform_name} to see it live!"
 
-          current_user.otto_messages.create!(role: "assistant", content: reply)
+          current_user.otto_messages.create(role: "assistant", content: reply)
 
           render json: {
             reply: reply,
@@ -302,7 +302,7 @@ module Api
           }
         else
           error_reply = "❌ Posting failed. Please try again."
-          current_user.otto_messages.create!(role: "assistant", content: error_reply)
+          current_user.otto_messages.create(role: "assistant", content: error_reply)
           render json: { reply: error_reply, error: true }
         end
       end
@@ -457,7 +457,7 @@ module Api
               reply = "⏳ Your request is being processed and will appear in your Drafts shortly!"
             end
             
-            current_user.otto_messages.create!(role: "assistant", content: reply.to_s)
+            current_user.otto_messages.create(role: "assistant", content: reply.to_s)
             return { reply: reply }
           end
         end
@@ -466,7 +466,7 @@ module Api
         final_reply = text_parts.join("\n")
         
         # Save assistant reply
-        current_user.otto_messages.create!(role: "assistant", content: final_reply) if final_reply.present?
+        current_user.otto_messages.create(role: "assistant", content: final_reply) if final_reply.present?
         
         { reply: final_reply }
       rescue => e
@@ -494,7 +494,7 @@ module Api
             ImagePollJob.perform_later(nil, result['task_id'], 'atlascloud')
             
             # Create draft content
-            draft = DraftContent.create!(
+            draft = DraftContent.create(
               user: current_user,
               title: prompt.truncate(50),
               content: prompt,
