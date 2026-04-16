@@ -2,6 +2,7 @@ module Api
   module V1
     class OttoController < ApplicationController
       before_action :authenticate_user!
+      protect_from_forgery with: :null_session
 
       def chat
         user_message = params[:message].to_s.strip
