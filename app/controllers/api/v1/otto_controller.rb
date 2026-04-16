@@ -399,7 +399,7 @@ module Api
             system: otto_system_prompt,
             messages: history,
             tools: otto_tool_definitions,
-            tool_choice: { "type" => "any" }
+            tool_choice: { "type" => "auto" }
           )
 
           Rails.logger.info "[Otto] Anthropic response stop_reason: #{response.stop_reason.inspect}"
