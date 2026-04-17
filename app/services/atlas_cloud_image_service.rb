@@ -128,11 +128,13 @@ class AtlasCloudImageService
     # Get output/image URL
     output = nil
     if data['outputs'].is_a?(Array) && data['outputs'].any?
-      output = data['outputs'].first
-    elsif data['output'].present?
-      output = data['output']
-    elsif data['url'].present?
-      output = data['url']
+  output = data['outputs'].first
+elsif data['output'].present?
+  output = data['output']
+elsif data.dig('urls', 'get').present?
+  output = data.dig('urls', 'get')
+elsif data['url'].present?
+  output = data['url']
     end
 
     # Get error message if present
