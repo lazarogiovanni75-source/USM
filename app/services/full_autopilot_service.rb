@@ -129,7 +129,6 @@ class FullAutopilotService
       # Create draft content with campaign association
       draft = DraftContent.create!(
         user: @user,
-        campaign: @campaign,
         title: @campaign ? "Autopilot: #{@campaign.name} - #{Time.current.strftime('%Y-%m-%d')}" : "Autopilot Content - #{Time.current.strftime('%Y-%m-%d')}",
         content: content,
         content_type: 'post',
