@@ -43,8 +43,9 @@ class CampaignsController < ApplicationController
       # Handle AI Workflow if prompt provided
       if params[:ai_prompt].present?
         begin
-          result = WorkflowService.new(current_user).create_content_with_media(
-            content_text: params[:ai_prompt],
+          result = WorkflowService.create_content_with_media(
+  user: current_user,
+  content_text: params[:ai_prompt],
             generate_image: params[:generate_image].to_i == 1,
             generate_video: params[:generate_video].to_i == 1,
             post_now: params[:post_now].to_i == 1,
