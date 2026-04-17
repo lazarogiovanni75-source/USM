@@ -67,19 +67,19 @@ class ImagePollJob < ApplicationJob
         Rails.logger.error "ImagePollJob: Draft #{draft_id} failed - #{status_response['error']}"
       else
         # Retry after delay - task may still be registering
-        ImagePollJob.perform_later(draft_id, task_id, service, attempt + 1)
+        ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
       end
     elsif raw_status.in?(['in_progress', 'starting', 'pending', 'processing', 'running'])
       # Still processing, schedule next poll
-      ImagePollJob.perform_later(draft_id, task_id, service, attempt + 1)
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
     elsif raw_status == 'not_found'
       # Task not found yet - this is normal for first few seconds
       # Retry after delay
-      ImagePollJob.perform_later(draft_id, task_id, service, attempt + 1)
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
     else
       # Unknown status or still processing - schedule next poll
       Rails.logger.info "ImagePollJob: Unknown status '#{status_response['status']}' for draft #{draft_id}, will retry"
-      ImagePollJob.perform_later(draft_id, task_id, service, attempt + 1)
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
     end
   end
 
