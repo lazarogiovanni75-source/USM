@@ -424,9 +424,9 @@ module Api
         # Process each content block in the response
         response.content.each do |block|
           case block.type
-          when 'text'
+          when 'text', :text
             text_parts << (block.respond_to?(:text) ? block.text : block["text"].to_s)
-          when 'tool_use'
+          when 'tool_use', :tool_use
             tool_results << { id: block.id, name: block.name, input: block.input }
           end
         end
