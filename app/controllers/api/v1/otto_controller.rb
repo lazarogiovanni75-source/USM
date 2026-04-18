@@ -59,7 +59,10 @@ module Api
         Rails.logger.error "Draft status error: #{e.message}"
         render json: { error: "Failed to get draft status" }, status: :internal_server_error
       end
-
+def history
+  messages = current_user.otto_messages.order(created_at: :asc).last(20)
+  render json: { messages: messages.map { |m| { role: m.role, content: m.content } } }
+end
       def clear
         current_user.otto_messages.destroy_all
         render json: { success: true }
