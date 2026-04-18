@@ -136,6 +136,7 @@ Rails.application.routes.draw do
       post 'otto/chat', to: 'otto#chat'
       post 'otto/execute', to: 'otto#execute'
       get 'otto/draft_status', to: 'otto#draft_status'
+      get 'otto/history', to: 'otto#history'
       post 'otto/clear', to: 'otto#clear'
       post 'otto/transcribe', to: 'otto#transcribe'
     end
