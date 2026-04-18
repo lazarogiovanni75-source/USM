@@ -378,8 +378,10 @@ module Api
           Rails.logger.info "[Otto] chat_response START - message class: #{message.class}, value: #{message.to_s[0..30]}"
           
           # Build conversation history (last 10 messages max)
-          history = current_user.otto_messages.order(created_at: :asc).last(10).map do |msg|
-            { role: msg.role, content: msg.content }
+          history = current_user.otto_messages.order(created_at: :asc).last(20).map do |msg|
+  { role: msg.role, content: msg.content.to_s }
+          history = history.each_with_object([]) do |msg, arr|
+          arr << msg if arr.empty? || arr.last[:role] != msg[:role]
           end
           Rails.logger.info "[Otto] History built: #{history.length} messages"
 
