@@ -38,6 +38,15 @@ import VoiceCommandToggleController from "./voice_command_toggle_controller"
 application.register("voice-command-toggle", VoiceCommandToggleController)
 application.register("assistant-chat", AssistantChatController)
 
+import CalendarController from "./calendar_controller"
+application.register("calendar", CalendarController)
+application.register("assistant-chat", AssistantChatController)
+
+import CampaignWorkflowController from "./campaign_workflow_controller"
+application.register("campaign-workflow", CampaignWorkflowController)
+application.register("assistant-chat", AssistantChatController)
+
+
 import ContentCreationController from "./content_creation_controller"
 application.register("content-creation", ContentCreationController)
 application.register("assistant-chat", AssistantChatController)
