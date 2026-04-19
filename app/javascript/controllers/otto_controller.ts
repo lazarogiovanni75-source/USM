@@ -1,4 +1,4 @@
-import { Controller } from "@hotwired/stimulus";
+ andcpushimport { Controller } from "@hotwired/stimulus";
 import { showToast } from "../toast";
 
 export default class OttoController extends Controller {

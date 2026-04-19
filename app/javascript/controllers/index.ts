@@ -157,11 +157,6 @@ import AccordionController from "./accordion_controller"
 application.register("accordion", AccordionController)
 application.register("assistant-chat", AssistantChatController)
 
-// Mobile Debug Controller
-import MobileDebugController from "./mobile_debug_controller"
-application.register("mobile-debug", MobileDebugController)
-application.register("assistant-chat", AssistantChatController)
-
 // Otto Controller
 import OttoController from "./otto_controller"
 application.register("otto", OttoController)
