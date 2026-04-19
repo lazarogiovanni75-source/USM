@@ -247,7 +247,7 @@ export default class extends Controller<HTMLElement> {
       case 'complete':
         this.hideLoading()
         this.updateCommandHistory(data.command_text!, 'Completed')
-        this.updateAIResponse(data.content || data.response_text, data.result, data.command_type)
+        this.updateAIResponse(data.content || data.response_text || '', data.result, data.command_type || '')
         
         // Play TTS audio if available
         if (data.audio_url) {

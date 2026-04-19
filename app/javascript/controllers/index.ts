@@ -31,11 +31,11 @@ application.register("assistant-chat", AssistantChatController)
 
 
 import VoiceCommandController from "./voice_command_controller"
-application.register("calendar", CalendarController)
+application.register("voice-command", VoiceCommandController)
 application.register("assistant-chat", AssistantChatController)
 
-import CampaignWorkflowController from "./campaign_workflow_controller"
-application.register("campaign-workflow", CampaignWorkflowController)
+import VoiceCommandToggleController from "./voice_command_toggle_controller"
+application.register("voice-command-toggle", VoiceCommandToggleController)
 application.register("assistant-chat", AssistantChatController)
 
 import ContentCreationController from "./content_creation_controller"
@@ -118,14 +118,6 @@ import VideoProgressController from "./video_progress_controller"
 application.register("video-progress", VideoProgressController)
 application.register("assistant-chat", AssistantChatController)
 
-
-import VoiceCommandController from "./voice_command_controller"
-application.register("voice-command", VoiceCommandController)
-application.register("assistant-chat", AssistantChatController)
-
-import VoiceCommandToggleController from "./voice_command_toggle_controller"
-application.register("voice-command-toggle", VoiceCommandToggleController)
-application.register("assistant-chat", AssistantChatController)
 
 import VoiceFloatController from "./voice_float_controller"
 application.register("voice-float", VoiceFloatController)
