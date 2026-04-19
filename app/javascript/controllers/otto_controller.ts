@@ -244,4 +244,125 @@ export default class OttoController extends Controller {
             </div>
         `;
   }
+
+  toggleMic(): void {
+    const micBtn = document.getElementById('otto-mic-btn');
+    if (!micBtn) return;
+
+    if (this.isRecording) {
+      this.stopRecording();
+    } else {
+      this.startRecording();
+    }
+  }
+
+  private async startRecording(): Promise<void> {
+    const micBtn = document.getElementById('otto-mic-btn');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.audioChunks = [];
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        await this.sendAudio(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      this.mediaRecorder.start();
+      this.isRecording = true;
+      micBtn?.classList.add('recording');
+      this.updateVoiceStatus('Listening...', 'listening');
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      showToast('Microphone access denied', 'error');
+    }
+  }
+
+  private stopRecording(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.isRecording = false;
+    const micBtn = document.getElementById('otto-mic-btn');
+    micBtn?.classList.remove('recording');
+    this.updateVoiceStatus('', '');
+  }
+
+  private async sendAudio(audioBlob: Blob): Promise<void> {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+
+    this.showTyping();
+
+    try {
+      const response = await fetch('/api/v1/otto/transcribe', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': this.csrfToken || '' },
+        body: formData
+      });
+
+      const data = await response.json();
+      this.hideTyping();
+
+      if (data.text) {
+        this.appendMessage('user', data.text);
+        await this.processVoiceMessage(data.text);
+      } else if (data.error) {
+        this.appendMessage('assistant', `Error: ${data.error}`);
+      }
+    } catch (error) {
+      this.hideTyping();
+      this.appendMessage('assistant', 'Failed to process audio. Please try again.');
+    }
+  }
+
+  private async processVoiceMessage(message: string): Promise<void> {
+    this.showTyping();
+
+    fetch('/api/v1/otto/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.csrfToken || ''
+      },
+      body: JSON.stringify({ message })
+    })
+      .then(response => response.json())
+      .then(data => {
+        this.hideTyping();
+        if (data.reply) {
+          this.appendMessage('assistant', data.reply);
+        } else if (data.error) {
+          this.appendMessage('assistant', data.error);
+        }
+      })
+      .catch(() => {
+        this.hideTyping();
+        this.appendMessage('assistant', 'Connection error. Please try again.');
+      });
+  }
+
+  private updateVoiceStatus(text: string, status: string): void {
+    const statusEl = document.getElementById('otto-voice-status');
+    const statusText = document.getElementById('otto-status-text');
+    if (statusEl) {
+      if (status) {
+        statusEl.classList.remove('hidden');
+        statusEl.className = `px-3 py-2 bg-gray-50 text-center text-xs border-t border-gray-100 ${
+          status === 'listening' ? 'listening' : status === 'processing' ? 'processing' : ''}`;
+      } else {
+        statusEl.classList.add('hidden');
+      }
+    }
+    if (statusText) {
+      statusText.textContent = text;
+    }
+  }
 }
