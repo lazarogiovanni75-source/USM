@@ -1,9 +1,9 @@
-# frozen_string_literal: true
+"# frozen_string_literal: true
 
 class ProcessVoiceCommandJob < ApplicationJob
-  queue_as :default
+  MAX_RETRIES = 2
 
-  def perform(voice_command_id = nil)
+  def perform(voice_command_id = nil, attempt = 0)
     unless voice_command_id
       puts "ProcessVoiceCommandJob processed successfully (test mode)"
       return
@@ -20,27 +20,8 @@ class ProcessVoiceCommandJob < ApplicationJob
     begin
       result = execute_command(voice_command, command_type, prompt, stream_name)
 
-      ActionCable.server.broadcast(stream_name, {
-        type: 'complete',
-        voice_command_id: voice_command.id,
-        status: 'completed',
-        content: voice_command.response_text,
-        command_type: command_type,
-        timestamp: Time.current
-      })
-
     rescue StandardError => e
-      Rails.logger.error "ProcessVoiceCommandJob execution error: #{e.message}"
-
-      error_msg = "Error: #{e.message}"
-      voice_command.update!(status: 'failed', response_text: error_msg, error_message: e.message)
-
-      ActionCable.server.broadcast(stream_name, {
-        type: 'error',
-        voice_command_id: voice_command&.id,
-        error: e.message,
-        timestamp: Time.current
-      })
+      handle_command_error(e, voice_command, stream_name, attempt)
     end
   end
 
@@ -54,7 +35,7 @@ class ProcessVoiceCommandJob < ApplicationJob
     elsif text_downcase.include?('campaign')
       'create_campaign'
     # Image detection - require explicit intent
-    elsif text_downcase.match?(/\b(generate image|create image|make image|draw|create a picture|make a picture)\b/)
+    elsif text_downcase.match?(/(generate image|create image|make image|draw|create a picture|make a picture)/)
       'generate_image'
     elsif text_downcase.include?('content') || text_downcase.include?('post') || text_downcase.include?('generate') || text_downcase.include?('write') || text_downcase.include?('caption')
       'generate_content'
@@ -90,6 +71,82 @@ class ProcessVoiceCommandJob < ApplicationJob
     else
       execute_general_inquiry(voice_command, prompt)
     end
+
+    # Synthesize speech response via TTS
+    synthesize_speech_response(voice_command, stream_name)
+  rescue StandardError => e
+    raise e
+  end
+
+  def handle_command_error(error, voice_command, stream_name, attempt)
+    if attempt < MAX_RETRIES
+      Rails.logger.warn "ProcessVoiceCommandJob retry #{attempt + 1}/#{MAX_RETRIES}: #{error.message}"
+      retry_job(wait: 2**attempt)
+    else
+      Rails.logger.error "ProcessVoiceCommandJob failed after #{MAX_RETRIES} retries: #{error.message}"
+      error_msg = "Error: #{error.message} (after #{MAX_RETRIES} retries)"
+      voice_command&.update!(status: 'failed', response_text: error_msg, error_message: error.message)
+
+      ActionCable.server.broadcast(stream_name, {
+        type: 'error',
+        voice_command_id: voice_command&.id,
+        error: error_msg,
+        timestamp: Time.current
+      })
+    end
+  end
+
+  def synthesize_speech_response(voice_command, stream_name)
+    return unless voice_command.response_text
+
+    # Use VoiceConversationService for memory
+    conversation_service = VoiceConversationService.new(user: voice_command.user)
+
+    # Store the conversation for memory
+    conversation_service.add_user_message(voice_command.command_text)
+    conversation_service.add_assistant_message(voice_command.response_text)
+
+    # Synthesize the response using VoicePipelineService
+    pipeline = VoicePipelineService.new(user: voice_command.user)
+
+    if pipeline.tts_configured?
+      tts_result = pipeline.synthesize(voice_command.response_text)
+
+      if tts_result[:success] && tts_result[:audio_url]
+        # Broadcast with audio URL for TTS playback
+        ActionCable.server.broadcast(stream_name, {
+          type: 'complete',
+          voice_command_id: voice_command.id,
+          status: 'completed',
+          content: voice_command.response_text,
+          audio_url: tts_result[:audio_url],
+          command_type: voice_command.command_type,
+          timestamp: Time.current
+        })
+        return
+      end
+    end
+
+    # Fallback: broadcast without audio (TTS not available or failed)
+    ActionCable.server.broadcast(stream_name, {
+      type: 'complete',
+      voice_command_id: voice_command.id,
+      status: 'completed',
+      content: voice_command.response_text,
+      command_type: voice_command.command_type,
+      timestamp: Time.current
+    })
+  rescue StandardError => e
+    Rails.logger.error "TTS synthesis error: #{e.message}"
+    # Don't fail the whole command - broadcast text response without audio
+    ActionCable.server.broadcast(stream_name, {
+      type: 'complete',
+      voice_command_id: voice_command.id,
+      status: 'completed',
+      content: voice_command.response_text,
+      command_type: voice_command.command_type,
+      timestamp: Time.current
+    })
   end
 
   def execute_create_campaign(voice_command, prompt)
@@ -113,12 +170,14 @@ class ProcessVoiceCommandJob < ApplicationJob
       status: 'draft'
     )
 
-    confirmation = "Campaign Created!\n\n" \
-      "Name: #{campaign.name}\n" \
-      "Audience: #{campaign.target_audience}\n" \
-      "Budget: $#{campaign.budget}\n" \
-      "Duration: #{campaign.start_date.strftime('%B %d')} - #{campaign.end_date.strftime('%B %d, %Y')}\n\n" \
-      "What would you like to do next?"
+    confirmation = "Campaign Created!
+
+"       "Name: #{campaign.name}
+"       "Audience: #{campaign.target_audience}
+"       "Budget: $#{campaign.budget}
+"       "Duration: #{campaign.start_date.strftime('%B %d')} - #{campaign.end_date.strftime('%B %d, %Y')}
+
+"       "What would you like to do next?"
 
     voice_command.update!(status: 'completed', response_text: confirmation)
     campaign
@@ -153,12 +212,15 @@ class ProcessVoiceCommandJob < ApplicationJob
       status: 'draft'
     )
 
-    confirmation = "Content Generated!\n\n" \
-      "#{content.title}\n\n" \
-      "Preview: #{content_body.truncate(200)}\n\n" \
-      "Saved as draft\n" \
-      "Type: #{content.content_type}\n" \
-      "Platform: #{content.platform}"
+    confirmation = "Content Generated!
+
+"       "#{content.title}
+
+"       "Preview: #{content_body.truncate(200)}
+
+"       "Saved as draft
+"       "Type: #{content.content_type}
+"       "Platform: #{content.platform}"
 
     voice_command.update!(status: 'completed', response_text: confirmation)
     content
@@ -179,10 +241,11 @@ class ProcessVoiceCommandJob < ApplicationJob
       duration: duration
     )
 
-    confirmation = "Video Generation Started!\n\n" \
-      "Topic: #{topic}\n" \
-      "Duration: #{duration} seconds\n" \
-      "Status: Processing (usually takes 1-2 minutes)"
+    confirmation = "Video Generation Started!
+
+"       "Topic: #{topic}
+"       "Duration: #{duration} seconds
+"       "Status: Processing (usually takes 1-2 minutes)"
 
     voice_command.update!(status: 'processing', response_text: confirmation)
     video
@@ -205,8 +268,9 @@ class ProcessVoiceCommandJob < ApplicationJob
 
     social_account = user.social_accounts.where(is_connected: true).first
     unless social_account
-      confirmation = "No Social Accounts Connected\n\n" \
-        "To schedule posts, please connect a social media account first."
+      confirmation = "No Social Accounts Connected
+
+"         "To schedule posts, please connect a social media account first."
       voice_command.update!(status: 'completed', response_text: confirmation)
       return nil
     end
@@ -221,10 +285,11 @@ class ProcessVoiceCommandJob < ApplicationJob
       status: 'scheduled'
     )
 
-    confirmation = "Post Scheduled!\n\n" \
-      "When: #{scheduled_time.strftime('%B %d at %I:%M %p')}\n" \
-      "Platform: #{social_account.platform.titleize}\n" \
-      "Content: #{content.title}"
+    confirmation = "Post Scheduled!
+
+"       "When: #{scheduled_time.strftime('%B %d at %I:%M %p')}
+"       "Platform: #{social_account.platform.titleize}
+"       "Content: #{content.title}"
 
     voice_command.update!(status: 'completed', response_text: confirmation)
     scheduled_post
@@ -239,12 +304,13 @@ class ProcessVoiceCommandJob < ApplicationJob
     published_posts = user.scheduled_posts.where(status: 'published').count
     connected_accounts = user.social_accounts.where(is_connected: true).count
 
-    confirmation = "Your Analytics Overview\n\n" \
-      "Campaigns: #{total_campaigns}\n" \
-      "Total Content: #{total_content}\n" \
-      "Scheduled Posts: #{total_scheduled}\n" \
-      "Published: #{published_posts}\n" \
-      "Connected Accounts: #{connected_accounts}"
+    confirmation = "Your Analytics Overview
+
+"       "Campaigns: #{total_campaigns}
+"       "Total Content: #{total_content}
+"       "Scheduled Posts: #{total_scheduled}
+"       "Published: #{published_posts}
+"       "Connected Accounts: #{connected_accounts}"
 
     voice_command.update!(status: 'completed', response_text: confirmation)
     { content: total_content, scheduled: total_scheduled, campaigns: total_campaigns }
@@ -260,7 +326,7 @@ class ProcessVoiceCommandJob < ApplicationJob
   end
 
   def extract_campaign_name(prompt)
-    if prompt =~ /(?:called|named|for|campaign\s+)(["']?)([^"']+)\1/i
+    if prompt =~ /(?:called|named|for|campaign\s+)(["']?)([^"']+)/i
       $2.strip.titleize
     elsif prompt =~ /^(?:create\s+)?(.+?)(?:\s+campaign|$)/i
       $1.strip.titleize
@@ -346,12 +412,22 @@ class ProcessVoiceCommandJob < ApplicationJob
   end
 
   def generate_ai_response(prompt, user)
-    system_prompt = "You are Pilot, a friendly marketing assistant."
+    # Get conversation service for memory
+    conversation_service = VoiceConversationService.new(user: user)
+    conversation_service.add_user_message(prompt)
+
+    system_prompt = conversation_service.system_prompt
+
+    # Get conversation history for context
+    history_context = conversation_service.formatted_history
+    full_prompt = history_context ? "#{history_context}
+
+User: #{prompt}" : prompt
 
     begin
       response = ''
       LlmService.call(
-        prompt: prompt,
+        prompt: full_prompt,
         system: system_prompt,
         user: user,
         model: 'gpt-4o'
@@ -364,4 +440,4 @@ class ProcessVoiceCommandJob < ApplicationJob
       "Hi! I'm Pilot, your social media assistant. I can help you create campaigns, generate content, schedule posts, or analyze performance. What would you like to do?"
     end
   end
-end
+end"

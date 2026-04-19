@@ -12,6 +12,7 @@ interface VoiceCommandEvent {
   timestamp?: string
   campaign?: any
   content?: any
+  audio_url?: string
 }
 
 export default class extends Controller<HTMLElement> {
@@ -44,6 +45,8 @@ export default class extends Controller<HTMLElement> {
   private recognition: any
   private channel: any
   private restartTimeout: any = null
+  private retryCount = 0
+  private maxRetries = 2
 
   connect(): void {
     console.log("VoiceCommand connected")
@@ -93,15 +96,25 @@ export default class extends Controller<HTMLElement> {
         const nonFatalErrors = ['no-speech', 'aborted', 'audio-capture', 'network', 'not-allowed']
         
         if (nonFatalErrors.includes(event.error)) {
+          this.retryCount = 0 // Reset retry count on non-fatal errors
           if (this.shouldKeepListening && !this.isProcessing) {
             this.scheduleRestart()
           }
           return
         }
         
-        this.updateMicrophoneStatus(`Error: ${event.error}`, 'error')
-        this.isRecording = false
-        this.shouldKeepListening = false
+        // Retry logic for other errors
+        if (this.retryCount < this.maxRetries) {
+          this.retryCount++
+          console.log(`Retrying speech recognition (${this.retryCount}/${this.maxRetries})`)
+          this.updateMicrophoneStatus(`Retrying... (${this.retryCount}/${this.maxRetries})`, 'processing')
+          this.scheduleRestart()
+        } else {
+          this.updateMicrophoneStatus(`Error: ${event.error}`, 'error')
+          this.isRecording = false
+          this.shouldKeepListening = false
+          this.retryCount = 0
+        }
       }
 
       this.recognition.onend = () => {
@@ -231,10 +244,16 @@ export default class extends Controller<HTMLElement> {
       case 'command-received':
         this.updateCommandHistory(data.command_text!, 'Processing')
         break
-      case 'command-completed':
+      case 'complete':
         this.hideLoading()
         this.updateCommandHistory(data.command_text!, 'Completed')
-        this.updateAIResponse(data.response_text!, data.result, data.command_type!)
+        this.updateAIResponse(data.content || data.response_text, data.result, data.command_type)
+        
+        // Play TTS audio if available
+        if (data.audio_url) {
+          this.playTTSAudio(data.audio_url)
+        }
+        
         this.isProcessing = false
         this.autoRestartListening()
         break
@@ -264,8 +283,18 @@ export default class extends Controller<HTMLElement> {
     }
   }
 
+  private playTTSAudio(audioUrl: string): void {
+    console.log('Playing TTS audio:', audioUrl)
+    
+    const audio = new Audio(audioUrl)
+    audio.play().catch(err => {
+      console.error('TTS playback error:', err)
+    })
+  }
+
   private autoRestartListening(): void {
     this.updateMicrophoneStatus('Restarting...', 'processing')
+    this.retryCount = 0 // Reset retry count after successful command
     
     // Immediate restart after response
     this.restartTimeout = setTimeout(() => {

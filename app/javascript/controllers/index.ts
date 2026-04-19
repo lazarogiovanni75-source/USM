@@ -30,11 +30,7 @@ application.register("ai-marketing-strategy", AiMarketingStrategyController)
 application.register("assistant-chat", AssistantChatController)
 
 
-import AssemblyAiVoiceController from "./assembly_ai_voice_controller"
-application.register("assembly-ai-voice", AssemblyAiVoiceController)
-application.register("assistant-chat", AssistantChatController)
-
-import CalendarController from "./calendar_controller"
+import VoiceCommandController from "./voice_command_controller"
 application.register("calendar", CalendarController)
 application.register("assistant-chat", AssistantChatController)
 
