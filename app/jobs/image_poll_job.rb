@@ -8,13 +8,14 @@ class ImagePollJob < ApplicationJob
   MAX_ATTEMPTS = 300 # Poll for up to 10 minutes (300 * 2 seconds)
   POLL_INTERVAL = 2.seconds
 
-  def perform(draft_id, task_id = nil, service = nil, attempt = 0)
+  def perform(draft_id = nil, task_id = nil, service = nil)
+    @attempt ||= 0
     # Add delay for first few attempts to allow generation to start
     # In inline mode, jobs run immediately, so we need to wait for the API
-    if attempt < 3
-      Rails.logger.info "ImagePollJob: Waiting before poll attempt #{attempt + 1}"
+    if @attempt < 3
+      Rails.logger.info "ImagePollJob: Waiting before poll attempt #{@attempt + 1}"
       sleep(2)
-    elsif attempt > 0
+    elsif @attempt > 0
       # Wait 2 seconds between polls as per Atlas Cloud async polling spec
       sleep(2)
     end
@@ -23,7 +24,7 @@ class ImagePollJob < ApplicationJob
 
     return if draft.media_url.present?
 
-    if attempt >= MAX_ATTEMPTS
+    if @attempt >= MAX_ATTEMPTS
       draft.update(status: 'failed')
       Rails.logger.error "ImagePollJob: Max attempts reached for draft #{draft_id}"
       return
@@ -43,7 +44,7 @@ class ImagePollJob < ApplicationJob
     # Get status based on service
     status_response = get_status(service, task_id)
 
-    Rails.logger.info "ImagePollJob: Draft #{draft_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Attempt: #{attempt}"
+    Rails.logger.info "ImagePollJob: Draft #{draft_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Attempt: #{@attempt}"
 
     # Normalize status for comparison
     raw_status = status_response['status']&.downcase
@@ -62,24 +63,28 @@ class ImagePollJob < ApplicationJob
       end
     elsif raw_status.in?(['failed', 'error'])
       # Only mark as failed after a few attempts (allow time for task to register)
-      if attempt >= 3
+      if @attempt >= 3
         draft.update(status: 'failed')
         Rails.logger.error "ImagePollJob: Draft #{draft_id} failed - #{status_response['error']}"
       else
         # Retry after delay - task may still be registering
-        ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
+        @attempt += 1
+        ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service)
       end
     elsif raw_status.in?(['in_progress', 'starting', 'pending', 'processing', 'running'])
       # Still processing, schedule next poll
-      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
+      @attempt += 1
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service)
     elsif raw_status == 'not_found'
       # Task not found yet - this is normal for first few seconds
       # Retry after delay
-      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
+      @attempt += 1
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service)
     else
       # Unknown status or still processing - schedule next poll
       Rails.logger.info "ImagePollJob: Unknown status '#{status_response['status']}' for draft #{draft_id}, will retry"
-      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
+      @attempt += 1
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service)
     end
   end
 
