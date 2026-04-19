@@ -105,7 +105,7 @@ class AtlasCloudService
   # @return [Hash] { task_id:, output:, status: }
   #
   def generate_video_from_text(prompt:,
-                                model: 'atlascloud/magi-1-24b',
+                                model: 'bytedance/seedance-v1-pro-fast/text-to-video',
                                 aspect_ratio: '16:9',
                                 duration: 5,
                                 quality: 'standard')
@@ -144,7 +144,7 @@ class AtlasCloudService
   #
   def generate_video_from_image(image_url:,
                                  prompt: '',
-                                 model: 'atlascloud/magi-1-24b',
+                                 model: 'atlascloud/wan-2.2-turbo-spicy/image-to-video',
                                  aspect_ratio: '16:9',
                                  duration: 5,
                                  quality: 'standard')
