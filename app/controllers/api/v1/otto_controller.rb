@@ -523,7 +523,7 @@ end
           return { success: false, error: "Video service returned nil" } if result.nil?
           
           if result['task_id'].present?
-            VideoPollJob.perform_later(nil, result['task_id'], 'atlascloud') if defined?(VideoPollJob)
+            VideoPollJob.perform_later(nil, result['task_id']) if defined?(VideoPollJob)
             { success: true, message: "Video generation started! Task ID: #{result['task_id']}. You'll be notified when it's ready." }
           else
             { success: false, error: result['error'] || 'Failed to start video generation' }

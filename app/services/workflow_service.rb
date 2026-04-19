@@ -63,7 +63,7 @@ class WorkflowService
         )
         
         # Schedule video polling
-        VideoPollJob.perform_later(draft.id, video_result[:task_id], video_result[:service]) if defined?(VideoPollJob)
+        VideoPollJob.perform_later(draft.id, video_result[:task_id]) if defined?(VideoPollJob)
         
         media_type = 'video'
       end

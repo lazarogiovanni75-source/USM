@@ -258,7 +258,7 @@ class ContentCreationController < ApplicationController
         
         draft = current_user.draft_contents.create!(draft_attrs)
 
-        VideoPollJob.perform_later(draft.id, result[:task_id], service)
+        VideoPollJob.perform_later(draft.id, result[:task_id])
 
         redirect_to draft_path(draft), notice: 'Video generation started! Check back in a few moments.'
       else
