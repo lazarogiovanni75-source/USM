@@ -1,4 +1,4 @@
- andcpushimport { Controller } from "@hotwired/stimulus";
+import { Controller } from "@hotwired/stimulus";
 import { showToast } from "../toast";
 
 export default class OttoController extends Controller {
@@ -20,36 +20,36 @@ export default class OttoController extends Controller {
   }
 
   toggle() {
-  this.isOpen = !this.isOpen;
-  const widget = document.getElementById('otto-widget');
-  if (widget) {
-    widget.classList.toggle('otto-widget-open', this.isOpen);
-    widget.classList.toggle('otto-widget-closed', !this.isOpen);
+    this.isOpen = !this.isOpen;
+    const widget = document.getElementById('otto-widget');
+    if (widget) {
+      widget.classList.toggle('otto-widget-open', this.isOpen);
+      widget.classList.toggle('otto-widget-closed', !this.isOpen);
+    }
+    if (this.isOpen) {
+      this.loadHistory();
+      setTimeout(() => this.inputTarget?.focus(), 100);
+    }
   }
-  if (this.isOpen) {
-    this.loadHistory();
-    setTimeout(() => this.inputTarget?.focus(), 100);
-  }
-}
 
-private loadHistory() {
-  const userMessages = this.messagesTarget.querySelectorAll('.otto-msg.user').length;
-  if (userMessages > 0) return;
+  private loadHistory() {
+    const userMessages = this.messagesTarget.querySelectorAll('.otto-msg.user').length;
+    if (userMessages > 0) return;
 
-  fetch('/api/v1/otto/history', {
-    headers: { 'X-CSRF-Token': this.csrfToken || '' }
-  })
-    .then(r => r.json())
-    .then(data => {
-      if (data.messages && data.messages.length > 0) {
-        this.messagesTarget.innerHTML = '';
-        data.messages.forEach((msg: {role: string, content: string}) => {
-          this.appendMessage(msg.role as 'user' | 'assistant', msg.content);
-        });
-      }
+    fetch('/api/v1/otto/history', {
+      headers: { 'X-CSRF-Token': this.csrfToken || '' }
     })
-    .catch(() => {});
-}
+      .then(r => r.json())
+      .then(data => {
+        if (data.messages && data.messages.length > 0) {
+          this.messagesTarget.innerHTML = '';
+          data.messages.forEach((msg: {role: string, content: string}) => {
+            this.appendMessage(msg.role as 'user' | 'assistant', msg.content);
+          });
+        }
+      })
+      .catch(() => {});
+  }
 
   handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -65,7 +65,7 @@ private loadHistory() {
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt')
+      .replace(/>/g, '&gt;')
       .replace(/\n/g, '<br>');
   }
 
@@ -100,7 +100,6 @@ private loadHistory() {
   }
 
   private startPollingForImage(draftId: number) {
-    // Create a polling container that will be updated via Turbo Stream
     const container = document.createElement('div');
     container.id = `otto-poll-${draftId}`;
     container.innerHTML = `
@@ -118,7 +117,6 @@ private loadHistory() {
     this.messagesTarget.appendChild(container);
     this.messagesTarget.scrollTop = this.messagesTarget.scrollHeight;
 
-    // Poll using fetch - this is for Otto widget's image polling which is a background task
     let attempts = 0;
     const maxAttempts = 60;
 
@@ -135,9 +133,7 @@ private loadHistory() {
         .then(response => response.json())
         .then(data => {
           if (data.media_url) {
-            // Remove polling indicator
             container.remove();
-            // Show the image
             this.appendImageMessage(data.media_url, data.content);
             showToast('Image ready!', 'success');
           } else if (attempts < maxAttempts && this.isOpen) {
@@ -247,135 +243,5 @@ private loadHistory() {
                 </div>
             </div>
         `;
-  }
-
-  async toggleMic() {
-    if (this.isRecording) {
-      this.stopRecording();
-    } else {
-      await this.startRecording();
-    }
-  }
-
-  async startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Use mimeType for better compatibility
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-        ? 'audio/webm;codecs=opus' 
-        : 'audio/webm';
-      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
-      this.audioChunks = [];
-      this.isRecording = true;
-
-      this.updateMicButton(true);
-      this.updateVoiceStatus('listening');
-
-      this.mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          this.audioChunks.push(e.data);
-        }
-      };
-
-      this.mediaRecorder.onstop = () => {
-        this.handleRecordingComplete();
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      // Request data every 100ms for smoother recording
-      this.mediaRecorder.start(100);
-    } catch (error) {
-      console.error('Microphone error:', error);
-      showToast('Could not access microphone. Please check permissions.', 'error');
-      this.isRecording = false;
-      this.updateMicButton(false);
-      this.updateVoiceStatus('idle');
-    }
-  }
-
-  stopRecording() {
-    if (this.mediaRecorder && this.isRecording) {
-      this.isRecording = false;
-      this.mediaRecorder.stop();
-      this.updateMicButton(false);
-      this.updateVoiceStatus('processing');
-    }
-  }
-
-  async handleRecordingComplete() {
-    if (this.audioChunks.length === 0) {
-      this.updateVoiceStatus('idle');
-      return;
-    }
-
-    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-    const formData = new FormData();
-    formData.append('audio', audioBlob, 'voice.webm');
-
-    try {
-      const response = await fetch('/api/v1/otto/transcribe', {
-        method: 'POST',
-        headers: { 'X-CSRF-Token': this.csrfToken || '' },
-        body: formData
-      });
-
-      const data = await response.json();
-
-      if (data.text) {
-        this.inputTarget.value = data.text;
-        this.inputTarget.dispatchEvent(new Event('input'));
-        this.send();
-      } else {
-        showToast(data.error || 'Could not understand audio. Please try again.', 'error');
-      }
-    } catch (error) {
-      console.error('Transcription error:', error);
-      showToast('Transcription failed. Please try again.', 'error');
-    } finally {
-      this.updateVoiceStatus('idle');
-    }
-  }
-
-  private updateMicButton(recording: boolean) {
-    const micBtn = document.getElementById('otto-mic-btn');
-    if (micBtn) {
-      if (recording) {
-        micBtn.classList.add('recording');
-        micBtn.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
-          </svg>
-        `;
-      } else {
-        micBtn.classList.remove('recording');
-        micBtn.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4
-                 m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-          </svg>
-        `;
-      }
-    }
-  }
-
-  private updateVoiceStatus(state: 'idle' | 'listening' | 'processing') {
-    const statusEl = document.getElementById('otto-voice-status');
-    const statusText = document.getElementById('otto-status-text');
-
-    if (!statusEl || !statusText) return;
-
-    statusEl.classList.remove('hidden', 'listening', 'processing');
-
-    if (state === 'idle') {
-      statusEl.classList.add('hidden');
-    } else if (state === 'listening') {
-      statusEl.classList.add('listening');
-      statusText.textContent = 'Listening...';
-    } else if (state === 'processing') {
-      statusEl.classList.add('processing');
-      statusText.textContent = 'Processing...';
-    }
   }
 }
