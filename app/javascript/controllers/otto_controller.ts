@@ -20,16 +20,36 @@ export default class OttoController extends Controller {
   }
 
   toggle() {
-    this.isOpen = !this.isOpen;
-    const widget = document.getElementById('otto-widget');
-    if (widget) {
-      widget.classList.toggle('otto-widget-open', this.isOpen);
-      widget.classList.toggle('otto-widget-closed', !this.isOpen);
-    }
-    if (this.isOpen) {
-      setTimeout(() => this.inputTarget?.focus(), 100);
-    }
+  this.isOpen = !this.isOpen;
+  const widget = document.getElementById('otto-widget');
+  if (widget) {
+    widget.classList.toggle('otto-widget-open', this.isOpen);
+    widget.classList.toggle('otto-widget-closed', !this.isOpen);
   }
+  if (this.isOpen) {
+    this.loadHistory();
+    setTimeout(() => this.inputTarget?.focus(), 100);
+  }
+}
+
+private loadHistory() {
+  const userMessages = this.messagesTarget.querySelectorAll('.otto-msg.user').length;
+  if (userMessages > 0) return;
+
+  fetch('/api/v1/otto/history', {
+    headers: { 'X-CSRF-Token': this.csrfToken || '' }
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.messages && data.messages.length > 0) {
+        this.messagesTarget.innerHTML = '';
+        data.messages.forEach((msg: {role: string, content: string}) => {
+          this.appendMessage(msg.role as 'user' | 'assistant', msg.content);
+        });
+      }
+    })
+    .catch(() => {});
+}
 
   handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' && !event.shiftKey) {
