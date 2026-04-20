@@ -117,25 +117,20 @@ class AtlasCloudImageService
   def image_status(task_id)
     result = get_request("/api/v1/model/prediction/#{task_id}")
 
-    Rails.logger.debug "[AtlasCloudImageService] Task status response: #{result.inspect}"
+    Rails.logger.info "[AtlasCloudImageService] Raw status response for #{task_id}: #{result.inspect}"
 
     # Handle response - API wraps everything in 'data' key
     data = result.dig('data') || result
 
+    Rails.logger.debug "[AtlasCloudImageService] Extracted data: #{data.inspect}"
+
     # Normalize status
     status = normalize_status(data['status'] || 'unknown')
 
-    # Get output/image URL
-    output = nil
-    if data['outputs'].is_a?(Array) && data['outputs'].any?
-  output = data['outputs'].first
-elsif data['output'].present?
-  output = data['output']
-elsif data.dig('urls', 'get').present?
-  output = data.dig('urls', 'get')
-elsif data['url'].present?
-  output = data['url']
-    end
+    # Get output/image URL - try multiple patterns
+    output = extract_output_url(data)
+
+    Rails.logger.info "[AtlasCloudImageService] Task #{task_id} - Status: #{status}, Output found: #{output.present?}"
 
     # Get error message if present
     error = data['error'] || data['error_message']
@@ -198,6 +193,67 @@ elsif data['url'].present?
       result.dig('data', 'task_id') ||
       result['id'] ||
       result['task_id']
+  end
+
+  # Extract output URL from various possible response structures
+  def extract_output_url(data)
+    # Try data.outputs array (common pattern)
+    if data['outputs'].is_a?(Array) && data['outputs'].any?
+      output = data['outputs'].first
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.outputs: #{output}"
+      return output
+    end
+
+    # Try data.output directly
+    if data['output'].present?
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.output: #{data['output']}"
+      return data['output']
+    end
+
+    # Try data.data.output (nested)
+    if data['data'].is_a?(Hash) && data.dig('data', 'output').present?
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.data.output: #{data.dig('data', 'output')}"
+      return data.dig('data', 'output')
+    end
+
+    # Try data.urls.get
+    if data.dig('urls', 'get').present?
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.urls.get: #{data.dig('urls', 'get')}"
+      return data.dig('urls', 'get')
+    end
+
+    # Try data.url
+    if data['url'].present?
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.url: #{data['url']}"
+      return data['url']
+    end
+
+    # Try data.result
+    if data['result'].present?
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.result: #{data['result']}"
+      return data['result']
+    end
+
+    # Try data.data.result
+    if data['data'].is_a?(Hash) && data.dig('data', 'result').present?
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.data.result: #{data.dig('data', 'result')}"
+      return data.dig('data', 'result')
+    end
+
+    # Try data.generated_media
+    if data['generated_media'].present?
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.generated_media: #{data['generated_media']}"
+      return data['generated_media']
+    end
+
+    # Try data.images array
+    if data['images'].is_a?(Array) && data['images'].any?
+      Rails.logger.debug "[AtlasCloudImageService] Found output in data.images: #{data['images'].first}"
+      return data['images'].first
+    end
+
+    Rails.logger.warn "[AtlasCloudImageService] No output URL found in response data"
+    nil
   end
 
   def fetch_api_key

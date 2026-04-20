@@ -41,21 +41,22 @@ class VideoPollJob < ApplicationJob
 
     status_response = get_status(service, task_id)
 
-    Rails.logger.info "VideoPollJob: Draft #{content_item_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Output: #{status_response['output'] ? status_response['output'][0..50] : 'nil'}, Attempt: #{attempt}"
+    Rails.logger.info "VideoPollJob: Draft #{content_item_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Output: #{status_response['output'] ? status_response['output'][0..100] : 'nil'}, Attempt: #{attempt}"
 
     raw_status = status_response['status']&.downcase
 
     if raw_status.in?(['success', 'completed', 'done', 'finished', 'ready'])
-      if status_response['output'].present?
+      output_url = status_response['output']
+      if output_url.present?
         draft.update(
-          media_url: status_response['output'],
+          media_url: output_url,
           status: 'draft',
           metadata: draft.metadata.merge({ 'completed_at' => Time.current.to_i })
         )
 
         if VideoStorageService.s3_configured?
           Rails.logger.info "VideoPollJob: Uploading video to S3 for draft #{content_item_id}..."
-          success = VideoStorageService.store_video_from_url(draft, status_response['output'])
+          success = VideoStorageService.store_video_from_url(draft, output_url)
           if success
             Rails.logger.info "VideoPollJob: Successfully uploaded video to S3 for draft #{content_item_id}"
           else
@@ -63,10 +64,10 @@ class VideoPollJob < ApplicationJob
           end
         end
 
-        Rails.logger.info "VideoPollJob: Draft #{content_item_id} completed successfully with video: #{status_response['output']}"
+        Rails.logger.info "VideoPollJob: Draft #{content_item_id} completed successfully with video: #{output_url}"
       else
         draft.update(status: 'failed', metadata: draft.metadata.merge({ 'error' => 'Success but no output' }))
-        Rails.logger.error "VideoPollJob: Draft #{content_item_id} succeeded but no output"
+        Rails.logger.error "VideoPollJob: Draft #{content_item_id} succeeded but no output URL"
       end
     elsif raw_status.in?(['failed', 'error'])
       error_msg = status_response['error'] || status_response['message'] || 'Video generation failed without details'

@@ -37,17 +37,18 @@ class ImagePollJob < ApplicationJob
     end
 
     status_response = get_status(service, task_id)
-    Rails.logger.info "ImagePollJob: Draft #{draft_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Attempt: #{@attempt}"
+    Rails.logger.info "ImagePollJob: Draft #{draft_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Output: #{status_response['output'] ? 'present' : 'nil'}, Attempt: #{@attempt}"
 
     raw_status = status_response['status']&.downcase
 
     if raw_status.in?(['success', 'completed', 'done', 'ready'])
-      if status_response['output'].present?
-        draft.update(media_url: status_response['output'], status: 'draft')
-        Rails.logger.info "ImagePollJob: Draft #{draft_id} completed successfully"
+      output_url = status_response['output']
+      if output_url.present?
+        draft.update(media_url: output_url, status: 'draft')
+        Rails.logger.info "ImagePollJob: Draft #{draft_id} completed successfully with URL: #{output_url}"
       else
         draft.update(status: 'failed')
-        Rails.logger.error "ImagePollJob: Draft #{draft_id} succeeded but no output"
+        Rails.logger.error "ImagePollJob: Draft #{draft_id} succeeded but no output URL"
       end
     elsif raw_status.in?(['failed', 'error'])
       if @attempt >= 3
