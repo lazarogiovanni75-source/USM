@@ -10,7 +10,7 @@ class VoiceSettingsController < ApplicationController
   end
 
   def create
-    @voice_setting = current_user.voice_settings.find_or_initialize_by
+    @voice_setting = current_user.voice_settings.first_or_initialize
     
     # Handle TTS enabled toggle (safely handle missing column)
     if params.key?(:tts_enabled) && @voice_setting.respond_to?(:tts_enabled=)
