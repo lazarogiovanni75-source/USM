@@ -11,7 +11,21 @@ class VoiceSettingsController < ApplicationController
 
   def update
     @voice_setting = current_user.voice_settings.first_or_initialize
-    @voice_setting.enabled = params[:enabled] == 'true' if params[:enabled].present?
+    
+    # Handle TTS enabled toggle
+    if params.key?(:tts_enabled)
+      @voice_setting.tts_enabled = params[:tts_enabled] == true || params[:tts_enabled] == 'true'
+    end
+    
+    # Handle language selection
+    if params.key?(:language)
+      @voice_setting.language = params[:language]
+    end
+    
+    # Also allow enabled param if present
+    if params.key?(:enabled)
+      @voice_setting.enabled = params[:enabled] == true || params[:enabled] == 'true'
+    end
 
     if @voice_setting.save
       flash[:notice] = "Voice settings updated"

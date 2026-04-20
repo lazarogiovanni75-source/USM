@@ -11,6 +11,8 @@ export default class OttoController extends Controller {
   private csrfToken: string | null = null;
   private isOpen = false;
   private isRecording = false;
+  private isTTSEnabled = false;
+  private selectedLanguage = 'en';
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
 
@@ -29,6 +31,41 @@ export default class OttoController extends Controller {
     if (this.isOpen) {
       this.loadHistory();
       setTimeout(() => this.inputTarget?.focus(), 100);
+    }
+  }
+
+  toggleTTS(): void {
+    this.isTTSEnabled = !this.isTTSEnabled;
+    const onIcon = document.getElementById('otto-tts-on-icon');
+    const offIcon = document.getElementById('otto-tts-off-icon');
+    if (onIcon && offIcon) {
+      onIcon.classList.toggle('hidden', !this.isTTSEnabled);
+      offIcon.classList.toggle('hidden', this.isTTSEnabled);
+    }
+    // Save preference to server
+    fetch('/voice_settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.csrfToken || ''
+      },
+      body: JSON.stringify({ tts_enabled: this.isTTSEnabled })
+    }).catch(() => {});
+  }
+
+  changeLanguage(): void {
+    const select = document.getElementById('otto-language-select') as HTMLSelectElement;
+    if (select) {
+      this.selectedLanguage = select.value;
+      // Save language preference to server
+      fetch('/voice_settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.csrfToken || ''
+        },
+        body: JSON.stringify({ language: this.selectedLanguage })
+      }).catch(() => {});
     }
   }
 
@@ -208,6 +245,11 @@ export default class OttoController extends Controller {
           if (data.task) {
             this.appendTaskResult(data.task);
           }
+
+          // Play TTS audio if available and enabled
+          if (data.audio_url && this.isTTSEnabled) {
+            this.playAudio(data.audio_url);
+          }
         } else if (data.error) {
           this.appendMessage('assistant', data.error);
         } else {
@@ -339,6 +381,10 @@ export default class OttoController extends Controller {
         this.hideTyping();
         if (data.reply) {
           this.appendMessage('assistant', data.reply);
+          // Play TTS audio if available and enabled
+          if (data.audio_url && this.isTTSEnabled) {
+            this.playAudio(data.audio_url);
+          }
         } else if (data.error) {
           this.appendMessage('assistant', data.error);
         }
@@ -363,6 +409,17 @@ export default class OttoController extends Controller {
     }
     if (statusText) {
       statusText.textContent = text;
+    }
+  }
+
+  private playAudio(audioUrl: string): void {
+    try {
+      const audio = new Audio(audioUrl);
+      audio.play().catch(() => {
+        // Silently fail if audio playback fails
+      });
+    } catch {
+      // Silently fail - never show error to user
     }
   }
 }

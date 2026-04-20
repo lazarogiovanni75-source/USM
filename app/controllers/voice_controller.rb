@@ -24,10 +24,21 @@ class VoiceController < ApplicationController
       voice_id: params[:voice_id]
     )
     
-    if user_voice_setting.update(
+    update_params = {
       tone: params[:tone],
       speed: params[:speed]
-    )
+    }
+    
+    # Handle tts_enabled if provided
+    update_params[:tts_enabled] = (params[:tts_enabled] == 'true' || params[:tts_enabled] == true) if params.key?(:tts_enabled)
+    
+    # Handle language if provided
+    update_params[:language] = params[:language] if params.key?(:language)
+    
+    # Handle enabled if provided
+    update_params[:enabled] = (params[:enabled] == 'true' || params[:enabled] == true) if params.key?(:enabled)
+    
+    if user_voice_setting.update(update_params)
       flash[:notice] = "Voice settings saved"
     else
       flash[:alert] = user_voice_setting.errors.full_messages.join(', ')

@@ -76,13 +76,17 @@ end
           return
         end
 
+        # Get user's language preference
+        language = current_user.voice_settings.first&.language || 'en'
+
         uri = URI("https://api.openai.com/v1/audio/transcriptions")
         request = Net::HTTP::Post.new(uri)
         request["Authorization"] = "Bearer #{ENV['OPENAI_API_KEY']}"
 
         form_data = [
           ['file', audio_file.tempfile],
-          ['model', 'whisper-1']
+          ['model', 'whisper-1'],
+          ['language', language]
         ]
 
         request.set_form form_data, 'multipart/form-data'
@@ -415,7 +419,23 @@ end
           
           # Process response - may include text and/or tool_use blocks
           result = process_anthropic_response(response, history)
-          render json: { reply: result[:reply].presence || "Done! Let me know if you need anything else." }
+          reply_text = result[:reply].presence || "Done! Let me know if you need anything else."
+
+          # Check if user has TTS enabled and synthesize speech
+          audio_url = nil
+          begin
+            voice_settings = current_user.voice_settings.first_or_initialize
+            if voice_settings.tts_enabled?
+              pipeline = VoicePipelineService.new(user: current_user)
+              tts_result = pipeline.synthesize(reply_text, voice: voice_settings.voice_id.presence || 'alloy')
+              audio_url = tts_result[:audio_url] if tts_result[:success]
+            end
+          rescue => e
+            # Silently fail TTS - never show error to user
+            Rails.logger.warn "[Otto] TTS failed: #{e.message}"
+          end
+
+          render json: { reply: reply_text, audio_url: audio_url }
         rescue => e
           Rails.logger.error "[Otto] chat_response CRASH: #{e.class} - #{e.message}"
           Rails.logger.error e.backtrace.first(5).join("\n")

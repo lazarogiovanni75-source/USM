@@ -383,6 +383,8 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
             next if line.match?(/fetch\s*\(\s*[`'"]\/api\/v1\/otto\//)
             # Exempt fetch calls to /otto/chat and /otto/clear
             next if line.match?(/fetch\s*\(\s*[`'"]\/api\/v1\/otto\/(chat|clear)['"]/)
+            # Exempt fetch calls to /voice_settings (saves user preferences, no DOM updates needed)
+            next if line.match?(/fetch\s*\(\s*[`'"]\/voice_settings['"]/)
 
             violations << {
               file: relative_path,

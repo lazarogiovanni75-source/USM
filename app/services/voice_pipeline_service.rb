@@ -290,19 +290,8 @@ class VoicePipelineService
   end
 
   def save_audio_response(audio_body, content_type)
-    # Save to ActiveStorage or file system
-    filename = "tts_#{Time.current.to_i}_#{SecureRandom.hex(4)}.mp3"
-    
-    # Use Rails temp directory
-    temp_path = Rails.root.join('tmp', 'audio', filename)
-    FileUtils.mkdir_p(temp_path.parent)
-    
-    File.open(temp_path, 'wb') do |f|
-      f.write(audio_body)
-    end
-
-    # Return URL - in production this would be a CDN URL
-    "/tmp/audio/#{filename}"
+    # Return base64 data URL for immediate browser playback
+    "data:audio/mpeg;base64,#{Base64.strict_encode64(audio_body)}"
   end
 
   def generate_ai_response(text, prompt)
