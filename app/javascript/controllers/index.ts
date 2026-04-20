@@ -48,11 +48,8 @@ application.register("assistant-chat", AssistantChatController)
 application.register("mobile-debug", MobileDebugController)
 application.register("postforme-status", PostformeStatusController)
 
-import VoiceCommandToggleController from "./voice_command_toggle_controller"
-application.register("voice-command-toggle", VoiceCommandToggleController)
-application.register("assistant-chat", AssistantChatController)
-application.register("mobile-debug", MobileDebugController)
-application.register("postforme-status", PostformeStatusController)
+import VoiceInteractionController from "./voice_interaction_controller"
+application.register("voice-interaction", VoiceInteractionController)
 
 import CalendarController from "./calendar_controller"
 application.register("calendar", CalendarController)
@@ -151,12 +148,6 @@ application.register("assistant-chat", AssistantChatController)
 application.register("mobile-debug", MobileDebugController)
 application.register("postforme-status", PostformeStatusController)
 
-import SimpleVoiceController from "./simple_voice_controller"
-application.register("simple-voice", SimpleVoiceController)
-application.register("assistant-chat", AssistantChatController)
-application.register("mobile-debug", MobileDebugController)
-application.register("postforme-status", PostformeStatusController)
-
 import SocialAccountConnectionsController from "./social_account_connections_controller"
 application.register("social-account-connections", SocialAccountConnectionsController)
 application.register("assistant-chat", AssistantChatController)
@@ -183,25 +174,6 @@ application.register("postforme-status", PostformeStatusController)
 
 import VideoProgressController from "./video_progress_controller"
 application.register("video-progress", VideoProgressController)
-application.register("assistant-chat", AssistantChatController)
-application.register("mobile-debug", MobileDebugController)
-application.register("postforme-status", PostformeStatusController)
-
-
-import VoiceFloatController from "./voice_float_controller"
-application.register("voice-float", VoiceFloatController)
-application.register("assistant-chat", AssistantChatController)
-application.register("mobile-debug", MobileDebugController)
-application.register("postforme-status", PostformeStatusController)
-
-import VoiceInteractionController from "./voice_interaction_controller"
-application.register("voice-interaction", VoiceInteractionController)
-application.register("assistant-chat", AssistantChatController)
-application.register("mobile-debug", MobileDebugController)
-application.register("postforme-status", PostformeStatusController)
-
-import VoiceToggleController from "./voice_toggle_controller"
-application.register("voice-toggle", VoiceToggleController)
 application.register("assistant-chat", AssistantChatController)
 application.register("mobile-debug", MobileDebugController)
 application.register("postforme-status", PostformeStatusController)
