@@ -21,9 +21,18 @@ class ApplicationJob < ActiveJob::Base
   private
 
   def broadcast_job_error(exception)
-    # Filter backtrace to show only user code
-    filtered_backtrace = Rails.backtrace_cleaner.clean(exception.backtrace || [])
-    user_backtrace = filtered_backtrace.empty? ? exception.backtrace&.first(10) : filtered_backtrace.first(10)
+    # Safely get backtrace with nil checks
+    backtrace = exception.try(:backtrace)
+    if backtrace.present?
+      if Rails.respond_to?(:backtrace_cleaner) && Rails.backtrace_cleaner
+        filtered = Rails.backtrace_cleaner.clean(backtrace)
+        user_backtrace = filtered.any? ? filtered.first(10) : backtrace.first(10)
+      else
+        user_backtrace = backtrace.first(10)
+      end
+    else
+      user_backtrace = []
+    end
 
     error_data = {
       message: "#{exception.class}: #{exception.message}",
@@ -31,17 +40,17 @@ class ApplicationJob < ActiveJob::Base
       job_id: job_id,
       queue: queue_name,
       exception_class: exception.class.name,
-      backtrace: user_backtrace&.join("\n")
+      backtrace: user_backtrace.join("\n")
     }
 
-    # Broadcast inline turbo-stream without template
-    Turbo::StreamsChannel.broadcast_render_to(
-      "system_monitor",
-      inline: "<turbo-stream action='report_async_error' data-error='<%= error_data.to_json.gsub(\"'\", \"&#39;\") %>'></turbo-stream>",
-      locals: { error_data: error_data }
-    )
+    # Broadcast error to system monitor channel
+    ActionCable.server.broadcast("system_monitor", {
+      type: 'job_error',
+      html: "<turbo-stream action='report_async_error' target='system_monitor_errors'></turbo-stream>",
+      error_data: error_data
+    })
   rescue => broadcast_error
     # Silently fail if broadcast fails (don't disrupt job error handling)
-    Rails.logger.error("Failed to broadcast job error: #{broadcast_error.message}", broadcast: false)
+    puts "[Job Error] Broadcast failed: #{broadcast_error.class} - #{broadcast_error.message}"
   end
 end

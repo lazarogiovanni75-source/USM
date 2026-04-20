@@ -28,7 +28,16 @@ export default class extends Controller {
         signed_stream_name: this.signedNameValue
       },
       {
-        received(data: string) {
+        received: (data: string | object) => {
+          // Handle object-based broadcasts (job_error, etc.)
+          if (data && typeof data === 'object' && 'type' in data) {
+            const typedData = data as { type: string; error_data?: Record<string, string> }
+            if (typedData.type === 'job_error') {
+              this.handleJobError(typedData)
+            }
+            return
+          }
+
           // Parse and execute turbo-stream actions
           if (data && typeof data === 'string') {
             const template = document.createElement('template')
@@ -52,5 +61,11 @@ export default class extends Controller {
   disconnect() {
     // Never disconnect the global subscription (data-turbo-permanent should prevent this anyway)
     console.log('[SystemMonitor] Controller disconnected, but keeping global subscription alive')
+  }
+
+  protected handleJobError(data: { type: string; error_data?: Record<string, string> }): void {
+    const errorData = data.error_data || {}
+    const message = errorData.message || 'An error occurred in a background job'
+    console.error('[Job Error]', message)
   }
 }

@@ -448,18 +448,17 @@ end
               content: "Tool #{tool_call[:name]} result: #{result[:success] ? 'Success' : result[:error]}".to_s
             )
             
-            # Return immediate feedback based on tool type
+            # Return tool result for AI to form proper response (avoids infinite loop)
             case tool_call[:name]
             when 'generate_image'
-              reply = "⏳ Your image is being generated and will appear in your Drafts shortly!"
+              reply = "Image generation started! You'll be notified when it's ready in your Drafts."
             when 'generate_video'
-              reply = "🎬 Your video is being generated and will appear in your Drafts shortly!"
+              reply = "Video generation started! You'll be notified when it's ready in your Drafts."
             else
-              reply = "⏳ Your request is being processed and will appear in your Drafts shortly!"
+              reply = "Request processed successfully!"
             end
             
-            current_user.otto_messages.create(role: "assistant", content: reply.to_s)
-            return { reply: reply }
+            { reply: reply, tool_result: result }
           end
         end
         
