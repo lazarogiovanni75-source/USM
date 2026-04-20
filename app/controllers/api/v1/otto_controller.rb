@@ -437,38 +437,32 @@ end
           end
         end
         
-        # Execute tools and return user-friendly message
-        if tool_results.any?
-          tool_results.each do |tool_call|
-            result = execute_otto_tool(tool_call[:name], tool_call[:input])
-            
-            # Save tool result to history
-            current_user.otto_messages.create!(
-              role: "user",
-              content: "Tool #{tool_call[:name]} result: #{result[:success] ? 'Success' : result[:error]}".to_s
-            )
-            
-            # Return tool result for AI to form proper response (avoids infinite loop)
-            case tool_call[:name]
-            when 'generate_image'
-              reply = "Image generation started! You'll be notified when it's ready in your Drafts."
-            when 'generate_video'
-              reply = "Video generation started! You'll be notified when it's ready in your Drafts."
-            else
-              reply = "Request processed successfully!"
-            end
-            
-            { reply: reply, tool_result: result }
+        # Execute tools and collect results
+        tool_replies = []
+        tool_results_list = []
+        
+        tool_results.each do |tool_call|
+          result = execute_otto_tool(tool_call[:name], tool_call[:input])
+          tool_results_list << result
+          
+          case tool_call[:name]
+          when 'generate_image'
+            tool_replies << "Image generation started! You'll be notified when it's ready in your Drafts."
+          when 'generate_video'
+            tool_replies << "Video generation started! You'll be notified when it's ready in your Drafts."
+          else
+            tool_replies << "Request processed successfully!"
           end
         end
         
-        # If no tools, return text response as normal
-        final_reply = text_parts.join("\n")
+        all_replies = text_parts + tool_replies
+        final_reply = all_replies.join("\n\n")
         
-        # Save assistant reply
-        current_user.otto_messages.create(role: "assistant", content: final_reply) if final_reply.present?
+        if final_reply.present?
+          current_user.otto_messages.create(role: "assistant", content: final_reply)
+        end
         
-        { reply: final_reply.presence || "I've completed your request!" }
+        { reply: final_reply.presence || "Done! Let me know if you need anything else." }
       rescue => e
         Rails.logger.error "[Otto] process_anthropic_response error: #{e.message}"
         { reply: "I encountered an error: #{e.message}" }
