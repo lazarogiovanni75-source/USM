@@ -29,11 +29,15 @@ class VoiceController < ApplicationController
       speed: params[:speed]
     }
     
-    # Handle tts_enabled if provided
-    update_params[:tts_enabled] = (params[:tts_enabled] == 'true' || params[:tts_enabled] == true) if params.key?(:tts_enabled)
+    # Handle tts_enabled if provided and column exists
+    if params.key?(:tts_enabled) && user_voice_setting.respond_to?(:tts_enabled=)
+      update_params[:tts_enabled] = (params[:tts_enabled] == 'true' || params[:tts_enabled] == true)
+    end
     
-    # Handle language if provided
-    update_params[:language] = params[:language] if params.key?(:language)
+    # Handle language if provided and column exists
+    if params.key?(:language) && user_voice_setting.respond_to?(:language=)
+      update_params[:language] = params[:language]
+    end
     
     # Handle enabled if provided
     update_params[:enabled] = (params[:enabled] == 'true' || params[:enabled] == true) if params.key?(:enabled)

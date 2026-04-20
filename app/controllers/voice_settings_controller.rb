@@ -12,13 +12,13 @@ class VoiceSettingsController < ApplicationController
   def update
     @voice_setting = current_user.voice_settings.first_or_initialize
     
-    # Handle TTS enabled toggle
-    if params.key?(:tts_enabled)
+    # Handle TTS enabled toggle (safely handle missing column)
+    if params.key?(:tts_enabled) && @voice_setting.respond_to?(:tts_enabled=)
       @voice_setting.tts_enabled = params[:tts_enabled] == true || params[:tts_enabled] == 'true'
     end
     
-    # Handle language selection
-    if params.key?(:language)
+    # Handle language selection (safely handle missing column)
+    if params.key?(:language) && @voice_setting.respond_to?(:language=)
       @voice_setting.language = params[:language]
     end
     
