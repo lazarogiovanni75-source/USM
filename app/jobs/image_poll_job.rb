@@ -8,7 +8,7 @@ class ImagePollJob < ApplicationJob
   MAX_ATTEMPTS = 300 # Poll for up to 10 minutes (300 * 2 seconds)
   POLL_INTERVAL = 2.seconds
 
-  def perform(draft_id = nil, task_id = nil, service = nil)
+  def perform(draft_id, task_id = nil, service = nil)
     @attempt ||= 0
     # Add delay for first few attempts to allow generation to start
     # In inline mode, jobs run immediately, so we need to wait for the API
