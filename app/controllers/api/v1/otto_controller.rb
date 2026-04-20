@@ -440,6 +440,7 @@ end
         # Execute tools and collect results
         tool_replies = []
         tool_results_list = []
+        image_generated = false
         
         tool_results.each do |tool_call|
           result = execute_otto_tool(tool_call[:name], tool_call[:input])
@@ -447,11 +448,15 @@ end
           
           case tool_call[:name]
           when 'generate_image'
-            tool_replies << "Image generation started! You'll be notified when it's ready in your Drafts."
+            # Only add the message if image generation was actually initiated
+            if result[:success] == true
+              tool_replies << "Image generation started! You'll be notified when it's ready in your Drafts."
+              image_generated = true
+            end
           when 'generate_video'
-            tool_replies << "Video generation started! You'll be notified when it's ready in your Drafts."
-          else
-            tool_replies << "Request processed successfully!"
+            if result[:success] == true
+              tool_replies << "Video generation started! You'll be notified when it's ready in your Drafts."
+            end
           end
         end
         
@@ -589,6 +594,18 @@ end
           - Explaining how to use features in the app
 
           When the user requests image or video generation, you MUST use the generate_image or generate_video tools. Do not describe what you would generate — actually call the tool.
+
+IMPORTANT: Only call generate_image or generate_video when the user EXPLICITLY asks you to create, generate, or make an image or video. Do NOT call these tools for casual mentions, questions about images, or references to existing images.
+
+Examples of when to call the tool:
+- "Generate an image of a sunset"
+- "Create a video about our product"
+- "Make me a picture of a cat"
+
+Examples of when NOT to call the tool:
+- "What resolution should I use for my image?"
+- "Can you describe this image?"
+- "I uploaded an image earlier"
 
           You are friendly, concise, and encouraging. You speak like a knowledgeable social media expert and marketing strategist. Keep responses clear and actionable. When generating content, always provide ready-to-use copy the user can post directly.
 
