@@ -57,9 +57,26 @@ class AtlasCloudService
     'qwen/qwen-image-2.0/edit' => 'Qwen 2.0 Image Edit (Premium)'
   }.freeze
 
+  # Dual video model selection based on text content
+  VIDEO_MODEL_TEXT = 'google/veo-3.1-lite'.freeze
+  VIDEO_MODEL_VISUAL = 'alibaba/wan-2.5'.freeze
+  VIDEO_DEFAULTS = { resolution: '720p', max_duration: 10 }.freeze
+
   class Error < StandardError; end
   class AuthenticationError < Error; end
   class GenerationError < Error; end
+
+  # Detect if prompt contains text elements
+  TEXT_PATTERNS = [
+    /\btext\b/i,
+    /\btitle\b/i,
+    /\bcaption\b/i,
+    /\bwords?\b/i,
+    /\bsays?\b/i,
+    /\breads?\b/i,
+    /\boverlay\b/i,
+    /"[^"]+"/
+  ].freeze
 
   def initialize(api_key = nil)
     @api_key = api_key || fetch_api_key
@@ -105,21 +122,27 @@ class AtlasCloudService
   # @return [Hash] { task_id:, output:, status: }
   #
   def generate_video_from_text(prompt:,
-                               model: 'bytedance/seedance-v1-pro-fast/text-to-video',
+                               model: nil,
                                aspect_ratio: '16:9',
-                               duration: 5,
+                               duration: VIDEO_DEFAULTS[:max_duration],
                                quality: 'standard')
+    selected_model = model.presence || select_video_model(prompt)
+    resolution = VIDEO_DEFAULTS[:resolution]
+
     body = {
-      model: model,
+      model: selected_model,
       prompt: prompt,
       aspect_ratio: aspect_ratio,
       duration: duration,
+      resolution: resolution,
       quality: quality
     }
 
-    Rails.logger.info "[AtlasCloudService] Submitting text-to-video with model: #{model}, quality: #{quality}"
+    Rails.logger.info "[AtlasCloudService] Submitting text-to-video with model: #{selected_model}, resolution: #{resolution}"
+
 
     result = post_request('/api/v1/model/generateVideo', body)
+
 
     task_id = extract_task_id(result)
 
@@ -130,6 +153,20 @@ class AtlasCloudService
       Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
       { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || 'Failed to start video generation' }
     end
+  end
+
+  def select_video_model(prompt)
+    if prompt_contains_text?(prompt)
+      Rails.logger.info "[AtlasCloudService] Prompt contains text - using Veo 3.1 lite"
+      VIDEO_MODEL_TEXT
+    else
+      Rails.logger.info "[AtlasCloudService] Prompt is purely visual - using Wan 2.5"
+      VIDEO_MODEL_VISUAL
+    end
+  end
+
+  def prompt_contains_text?(prompt)
+    TEXT_PATTERNS.any? { |pattern| pattern.match?(prompt) }
   end
 
   # Generate video from an image (image-to-video)
