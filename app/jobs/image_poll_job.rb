@@ -41,7 +41,7 @@ class ImagePollJob < ApplicationJob
 
     raw_status = status_response['status']&.downcase
 
-    if raw_status.in?(['success', 'completed', 'done', 'ready'])
+    if raw_status.in?(['success', 'completed', 'done', 'ready', 'succeeded'])
       output_url = status_response['output']
       if output_url.present?
         draft.update(media_url: output_url, status: 'draft')

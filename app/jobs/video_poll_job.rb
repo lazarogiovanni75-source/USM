@@ -45,7 +45,7 @@ class VideoPollJob < ApplicationJob
 
     raw_status = status_response['status']&.downcase
 
-    if raw_status.in?(['success', 'completed', 'done', 'finished', 'ready'])
+    if raw_status.in?(['success', 'completed', 'done', 'finished', 'ready', 'succeeded'])
       output_url = status_response['output']
       if output_url.present?
         draft.update(
