@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_14_121218) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_20_184020) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -1028,6 +1028,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_14_121218) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "enabled"
+    t.boolean "tts_enabled", default: false
+    t.string "language", default: "en"
     t.index ["user_id"], name: "index_voice_settings_on_user_id"
     t.index ["voice_id"], name: "index_voice_settings_on_voice_id"
   end

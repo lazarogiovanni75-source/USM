@@ -425,7 +425,7 @@ end
           audio_url = nil
           begin
             voice_settings = current_user.voice_settings.first_or_initialize
-            if voice_settings.tts_enabled?
+            if voice_settings.respond_to?(:tts_enabled) && voice_settings.tts_enabled
               pipeline = VoicePipelineService.new(user: current_user)
               tts_result = pipeline.synthesize(reply_text, voice: voice_settings.voice_id.presence || 'alloy')
               audio_url = tts_result[:audio_url] if tts_result[:success]

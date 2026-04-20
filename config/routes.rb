@@ -247,7 +247,7 @@ Rails.application.routes.draw do
   # End autopilot routes
 
   # Voice Settings routes
-  resource :voice_settings, only: [:show, :edit, :update]
+  resources :voice_settings, only: [:show, :edit, :update, :create]
 
   # Application routes
   resource :profile, only: [:show, :edit] do
