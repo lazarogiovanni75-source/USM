@@ -8,20 +8,18 @@ class ImagePollJob < ApplicationJob
   MAX_ATTEMPTS = 300
   POLL_INTERVAL = 2.seconds
 
-  def perform(draft_id, task_id = nil, service = nil)
-    @attempt ||= 0
-
-    if @attempt < 3
-      Rails.logger.info "ImagePollJob: Waiting before poll attempt #{@attempt + 1}"
+  def perform(draft_id, task_id = nil, service = nil, attempt = 0)
+    if attempt < 3
+      Rails.logger.info "ImagePollJob: Waiting before poll attempt #{attempt + 1}"
       sleep(2)
-    elsif @attempt > 0
+    elsif attempt > 0
       sleep(2)
     end
 
     draft = DraftContent.find(draft_id)
     return if draft.media_url.present?
 
-    if @attempt >= MAX_ATTEMPTS
+    if attempt >= MAX_ATTEMPTS
       draft.update(status: 'failed')
       Rails.logger.error "ImagePollJob: Max attempts reached for draft #{draft_id}"
       return
@@ -37,7 +35,7 @@ class ImagePollJob < ApplicationJob
     end
 
     status_response = get_status(service, task_id)
-    Rails.logger.info "ImagePollJob: Draft #{draft_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Output: #{status_response['output'] ? 'present' : 'nil'}, Attempt: #{@attempt}"
+    Rails.logger.info "ImagePollJob: Draft #{draft_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Output: #{status_response['output'] ? 'present' : 'nil'}, Attempt: #{attempt}"
 
     raw_status = status_response['status']&.downcase
 
@@ -56,19 +54,18 @@ class ImagePollJob < ApplicationJob
         draft.update(status: 'failed')
         Rails.logger.error "ImagePollJob: Draft #{draft_id} failed - #{status_response['error']}"
       else
-        @attempt += 1
-        ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service)
+        ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
       end
     elsif raw_status.in?(['in_progress', 'starting', 'pending', 'processing', 'running'])
-      @attempt += 1
-      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service)
+      attempt += 1
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt)
     elsif raw_status == 'not_found'
-      @attempt += 1
-      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service)
+      attempt += 1
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt)
     else
       Rails.logger.info "ImagePollJob: Unknown status '#{status_response['status']}' for draft #{draft_id}, will retry"
-      @attempt += 1
-      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service)
+      attempt += 1
+      ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt)
     end
   end
 

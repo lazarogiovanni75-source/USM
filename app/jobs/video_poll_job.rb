@@ -9,8 +9,7 @@ class VideoPollJob < ApplicationJob
   MAX_ATTEMPTS = 3600 # Poll for up to 2 hours (3600 * 2 seconds)
   POLL_INTERVAL = 2.seconds
 
-  def perform(content_item_id, task_id)
-    attempt = 0
+  def perform(content_item_id, task_id, attempt = 0)
 
     # Get service and task_id from draft metadata if content_item_id is provided
     if content_item_id.present?
@@ -80,7 +79,7 @@ class VideoPollJob < ApplicationJob
         Rails.logger.error "VideoPollJob: Max attempts reached for draft #{content_item_id}"
         return
       end
-      VideoPollJob.set(wait: 2.seconds).perform_later(content_item_id, task_id)
+      VideoPollJob.set(wait: 2.seconds).perform_later(content_item_id, task_id, attempt + 1)
     elsif raw_status == 'not_found' || raw_status.nil?
       max_not_found_retries = 60
 
@@ -91,7 +90,7 @@ class VideoPollJob < ApplicationJob
         return
       end
       Rails.logger.warn "VideoPollJob: Task #{task_id} not found (attempt #{attempt + 1}/#{max_not_found_retries}), continuing to poll..."
-      VideoPollJob.set(wait: 2.seconds).perform_later(content_item_id, task_id)
+      VideoPollJob.set(wait: 2.seconds).perform_later(content_item_id, task_id, attempt + 1)
     else
       if attempt >= MAX_ATTEMPTS
         draft.update(status: 'failed', metadata: draft.metadata.merge({ 'error' => "Unknown status: #{status_response['status']}" }))
@@ -99,7 +98,7 @@ class VideoPollJob < ApplicationJob
         return
       end
       Rails.logger.warn "VideoPollJob: Unknown status '#{status_response['status']}' for draft #{content_item_id}"
-      VideoPollJob.set(wait: 2.seconds).perform_later(content_item_id, task_id)
+      VideoPollJob.set(wait: 2.seconds).perform_later(content_item_id, task_id, attempt + 1)
     end
   end
 
