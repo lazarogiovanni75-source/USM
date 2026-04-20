@@ -72,7 +72,7 @@ class VoicePipelineService
   # @return [Hash] { success: bool, audio_url: string, error: string }
   def synthesize(text, options = {})
     voice = options[:voice] || 'alloy'
-    model = options[:model] || 'gpt-4o-mini-tts'  # Use premium model by default
+    model = options[:model] || 'tts-1-hd'  # Use HD model for better quality
     speed = options[:speed] || 1.0
 
     Rails.logger.info "[VoicePipeline] Synthesizing with OpenAI (voice: #{voice}, model: #{model})"
@@ -204,7 +204,7 @@ class VoicePipelineService
       voice: 'alloy',
       voice_name: 'Alloy',
       language: 'en',
-      model: 'gpt-4o-mini-tts',  # Premium model
+      model: 'tts-1-hd',
       speed: 1.0
     }
   end
