@@ -20,8 +20,7 @@ class VideoGenerationService
   # @return [Hash] Result with task_id and metadata
   #
   def self.generate_video(prompt:, duration: '5', aspect_ratio: '16:9', model: nil, quality: 'standard')
-    model ||= 'vidu/q3-pro/text-to-video'
-    
+    # Pass model: nil to let AtlasCloudService auto-select based on prompt content
     service = AtlasCloudService.new
 
     unless service.configured?

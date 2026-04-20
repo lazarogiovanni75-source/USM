@@ -199,9 +199,9 @@ class ContentCreationController < ApplicationController
 
   def generate_video
     prompt = params[:prompt]
-    model = params[:model] || 'atlascloud/magi-1-24b'
+    model = params[:model] # nil = auto-select based on prompt
     aspect_ratio = params[:aspect_ratio] || '16:9'
-    duration = params[:duration] || '5'
+    duration = params[:duration] || '10'
     source_image_url = params[:source_image_url]
     quality = params[:quality] || 'standard'
     

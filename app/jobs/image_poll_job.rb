@@ -46,6 +46,7 @@ class ImagePollJob < ApplicationJob
       if output_url.present?
         draft.update(media_url: output_url, status: 'draft')
         Rails.logger.info "ImagePollJob: Draft #{draft_id} completed successfully with URL: #{output_url}"
+        Rails.logger.info "ImagePollJob: VERIFIED - Saved media_url to Draft #{draft_id}: #{draft.reload.media_url}"
       else
         draft.update(status: 'failed')
         Rails.logger.error "ImagePollJob: Draft #{draft_id} succeeded but no output URL"

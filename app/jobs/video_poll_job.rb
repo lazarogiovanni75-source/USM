@@ -65,6 +65,7 @@ class VideoPollJob < ApplicationJob
         end
 
         Rails.logger.info "VideoPollJob: Draft #{content_item_id} completed successfully with video: #{output_url}"
+        Rails.logger.info "VideoPollJob: VERIFIED - Saved media_url to Draft #{content_item_id}: #{draft.reload.media_url}"
       else
         draft.update(status: 'failed', metadata: draft.metadata.merge({ 'error' => 'Success but no output' }))
         Rails.logger.error "VideoPollJob: Draft #{content_item_id} succeeded but no output URL"
