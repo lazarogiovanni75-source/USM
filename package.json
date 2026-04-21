@@ -4,7 +4,7 @@
   "scripts": {
     "build": "run-p lint build:js build:css && sh -c 'cp app/assets/builds/*.js app/assets/builds/*.css public/assets/ 2>/dev/null || true'",
     "build:dev": "run-p lint build:js build:css",
-    "build:prod": "run-p build:css build:js:prod",
+    "build:prod": "run-p build:css build:js:prod && npm run copy-assets",
     "copy-assets": "cp app/assets/builds/*.js app/assets/builds/*.css public/assets/",
     "deploy:build": "npm run build && npm run copy-assets",
     "build:js": "esbuild app/javascript/application.js --bundle --sourcemap=inline --format=esm --outdir=app/assets/builds --public-path=/assets --loader:.ts=ts --loader:.tsx=tsx --target=es2017",
