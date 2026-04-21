@@ -42,8 +42,8 @@ export default class OttoController extends Controller {
       onIcon.classList.toggle('hidden', !this.isTTSEnabled);
       offIcon.classList.toggle('hidden', this.isTTSEnabled);
     }
-    // Save preference to server
-    fetch('/voice_settings', {
+    // Save preference to server (silent AJAX via API)
+    fetch('/api/v1/voice_settings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,8 +57,8 @@ export default class OttoController extends Controller {
     const select = document.getElementById('otto-language-select') as HTMLSelectElement;
     if (select) {
       this.selectedLanguage = select.value;
-      // Save language preference to server
-      fetch('/voice_settings', {
+      // Save language preference to server (silent AJAX via API)
+      fetch('/api/v1/voice_settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

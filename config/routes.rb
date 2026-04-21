@@ -134,6 +134,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       post 'otto/chat', to: 'otto#chat'
+      post 'voice_settings', to: 'voice_settings#create'
       post 'otto/execute', to: 'otto#execute'
       get 'otto/draft_status', to: 'otto#draft_status'
       get 'otto/history', to: 'otto#history'
