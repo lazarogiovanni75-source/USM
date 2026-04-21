@@ -19,6 +19,9 @@ export default class OttoController extends Controller {
   connect() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     this.csrfToken = meta instanceof HTMLMetaElement ? meta.content : null;
+    // Load TTS preference from localStorage
+    this.isTTSEnabled = localStorage.getItem('otto_tts_enabled') === 'true';
+    this.updateTTSIcons();
   }
 
   toggle() {
@@ -36,36 +39,23 @@ export default class OttoController extends Controller {
 
   toggleTTS(): void {
     this.isTTSEnabled = !this.isTTSEnabled;
+    localStorage.setItem('otto_tts_enabled', this.isTTSEnabled ? 'true' : 'false');
+    this.updateTTSIcons();
+  }
+
+  private updateTTSIcons(): void {
     const onIcon = document.getElementById('otto-tts-on-icon');
     const offIcon = document.getElementById('otto-tts-off-icon');
     if (onIcon && offIcon) {
       onIcon.classList.toggle('hidden', !this.isTTSEnabled);
       offIcon.classList.toggle('hidden', this.isTTSEnabled);
     }
-    // Save preference to server (silent AJAX via API)
-    fetch('/api/v1/voice_settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': this.csrfToken || ''
-      },
-      body: JSON.stringify({ tts_enabled: this.isTTSEnabled })
-    }).catch(() => {});
   }
 
   changeLanguage(): void {
     const select = document.getElementById('otto-language-select') as HTMLSelectElement;
     if (select) {
       this.selectedLanguage = select.value;
-      // Save language preference to server (silent AJAX via API)
-      fetch('/api/v1/voice_settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': this.csrfToken || ''
-        },
-        body: JSON.stringify({ language: this.selectedLanguage })
-      }).catch(() => {});
     }
   }
 
@@ -246,8 +236,8 @@ export default class OttoController extends Controller {
             this.appendTaskResult(data.task);
           }
 
-          // Play TTS audio if available and enabled
-          if (data.audio_url && this.isTTSEnabled) {
+          // Play TTS audio if available and enabled (checked via localStorage)
+          if (data.audio_url && localStorage.getItem('otto_tts_enabled') === 'true') {
             this.playAudio(data.audio_url);
           }
         } else if (data.error) {

@@ -421,15 +421,13 @@ end
           result = process_anthropic_response(response, history)
           reply_text = result[:reply].presence || "Done! Let me know if you need anything else."
 
-          # Check if user has TTS enabled and synthesize speech
+          # Always attempt TTS synthesis - client decides whether to play via localStorage
           audio_url = nil
           begin
-            voice_settings = current_user.voice_settings.first_or_initialize
-            if voice_settings.respond_to?(:tts_enabled) && voice_settings.tts_enabled
-              pipeline = VoicePipelineService.new(user: current_user)
-              tts_result = pipeline.synthesize(reply_text, voice: voice_settings.voice_id.presence || 'alloy')
-              audio_url = tts_result[:audio_url] if tts_result[:success]
-            end
+            pipeline = VoicePipelineService.new(user: current_user)
+            voice_id = current_user.voice_settings.first&.voice_id.presence || 'alloy'
+            tts_result = pipeline.synthesize(reply_text, voice: voice_id)
+            audio_url = tts_result[:audio_url] if tts_result[:success]
           rescue => e
             # Silently fail TTS - never show error to user
             Rails.logger.warn "[Otto] TTS failed: #{e.message}"
