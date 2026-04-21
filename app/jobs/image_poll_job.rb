@@ -50,7 +50,7 @@ class ImagePollJob < ApplicationJob
         Rails.logger.error "ImagePollJob: Draft #{draft_id} succeeded but no output URL"
       end
     elsif raw_status.in?(['failed', 'error'])
-      if @attempt >= 3
+      if attempt >= 3
         draft.update(status: 'failed')
         Rails.logger.error "ImagePollJob: Draft #{draft_id} failed - #{status_response['error']}"
       else
