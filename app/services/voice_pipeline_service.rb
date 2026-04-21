@@ -187,7 +187,7 @@ class VoicePipelineService
   def fetch_api_key(service)
     case service
     when :openai
-      ENV['ANTHROPIC_API_KEY'] || ENV['OPENAI_API_KEY'] || ENV['ULTIMATE_OPENAI_API_KEY'] || Figaro.env.openai_api_key
+      ENV['OPENAI_API_KEY'] || ENV['ULTIMATE_OPENAI_API_KEY'] || Figaro.env.openai_api_key
     end
   end
 
