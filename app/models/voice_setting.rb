@@ -16,4 +16,18 @@ class VoiceSetting < ApplicationRecord
     return 'en' unless respond_to?(:language)
     language.presence || 'en'
   end
+
+  # Voice mode: 'auto' (auto-send on silence) or 'manual' (press again to send)
+  def voice_mode
+    return 'auto' unless respond_to?(:voice_mode)
+    voice_mode.presence || 'auto'
+  end
+
+  def auto_mode?
+    voice_mode == 'auto'
+  end
+
+  def manual_mode?
+    voice_mode == 'manual'
+  end
 end

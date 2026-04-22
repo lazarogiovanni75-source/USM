@@ -51,7 +51,7 @@ class ChatController < ApplicationController
       uri,
       {
         model: "gpt-4o-mini-tts",
-        voice: "alloy",
+        voice: "echo",
         input: params[:text]
       }.to_json,
       {

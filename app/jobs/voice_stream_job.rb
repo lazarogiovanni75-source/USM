@@ -234,7 +234,7 @@ class VoiceStreamJob < ApplicationJob
       
       # Use gpt-4o-mini-tts for premium quality voice (same as voice_chat_controller)
       # Available voices: alloy, echo, fable, onyx, nova, shimmer
-      voice = ENV['OTTO_VOICE'] || 'alloy'
+      voice = ENV['OTTO_VOICE'] || 'echo'
       
       response = HTTParty.post(
         'https://api.openai.com/v1/audio/speech',

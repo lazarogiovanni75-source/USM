@@ -24,6 +24,7 @@ export default class OttoController extends Controller {
     // Load TTS preference from localStorage
     this.isTTSEnabled = localStorage.getItem('otto_tts_enabled') === 'true';
     this.updateTTSIcons();
+    this.updateVoiceModeIcons();
 
     // Listen for conversation events from sidebar
     document.addEventListener('otto:load-conversation', this.handleLoadConversation);
@@ -93,6 +94,24 @@ export default class OttoController extends Controller {
     this.isTTSEnabled = !this.isTTSEnabled;
     localStorage.setItem('otto_tts_enabled', this.isTTSEnabled ? 'true' : 'false');
     this.updateTTSIcons();
+  }
+
+  toggleVoiceMode(): void {
+    const currentMode = this.voiceMode;
+    const newMode = currentMode === 'auto' ? 'manual' : 'auto';
+    localStorage.setItem('otto_voice_mode', newMode);
+    this.updateVoiceModeIcons();
+    showToast(`Voice mode: ${newMode === 'auto' ? 'Auto (sends on silence)' : 'Manual (press again to send)'}`, 'info');
+  }
+
+  private updateVoiceModeIcons(): void {
+    const autoIcon = document.getElementById('otto-voice-mode-auto-icon');
+    const manualIcon = document.getElementById('otto-voice-mode-manual-icon');
+    if (autoIcon && manualIcon) {
+      const isAuto = this.voiceMode === 'auto';
+      autoIcon.classList.toggle('hidden', !isAuto);
+      manualIcon.classList.toggle('hidden', isAuto);
+    }
   }
 
   private updateTTSIcons(): void {
@@ -414,10 +433,22 @@ export default class OttoController extends Controller {
     }
 
     if (this.isRecording) {
-      this.stopRecording();
+      if (this.voiceMode === 'manual') {
+        // Manual mode: stop and send
+        this.stopRecording(true);
+      } else {
+        // Auto mode: stop recording
+        this.stopRecording(false);
+      }
     } else {
       this.startRecording();
     }
+  }
+
+  private get voiceMode(): 'auto' | 'manual' {
+    // Check localStorage for voice mode preference
+    const mode = localStorage.getItem('otto_voice_mode');
+    return (mode === 'manual') ? 'manual' : 'auto';
   }
 
   private startRecording() {
@@ -429,15 +460,18 @@ export default class OttoController extends Controller {
     this.speechRecognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       this.inputTarget.value = transcript;
-      this.send();
+      // Auto mode: send immediately when speech is detected
+      if (this.voiceMode === 'auto') {
+        this.send();
+      }
     };
 
     this.speechRecognition.onerror = () => {
-      this.stopRecording();
+      this.stopRecording(false);
     };
 
     this.speechRecognition.onend = () => {
-      this.stopRecording();
+      this.stopRecording(false);
     };
 
     this.speechRecognition.start();
@@ -455,12 +489,13 @@ export default class OttoController extends Controller {
     if (statusText) statusText.textContent = 'Listening...';
   }
 
-  private stopRecording() {
+  private stopRecording(send: boolean) {
     if (this.speechRecognition) {
       this.speechRecognition.stop();
       this.speechRecognition = null;
     }
     this.isRecording = false;
+
 
     const micBtn = document.getElementById('otto-mic-btn');
     const statusDiv = document.getElementById('otto-voice-status');
@@ -469,6 +504,11 @@ export default class OttoController extends Controller {
     if (statusDiv) {
       statusDiv.classList.add('hidden');
       statusDiv.classList.remove('listening', 'processing');
+    }
+
+    // Manual mode: send when user presses mic again to stop
+    if (send && this.inputTarget.value.trim()) {
+      this.send();
     }
   }
 

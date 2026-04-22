@@ -425,7 +425,7 @@ end
           audio_url = nil
           begin
             pipeline = VoicePipelineService.new(user: current_user)
-            voice_id = current_user.voice_settings.first&.voice_id.presence || 'alloy'
+            voice_id = current_user.voice_settings.first&.voice_id.presence || 'echo'
             tts_result = pipeline.synthesize(reply_text, voice: voice_id)
             audio_url = tts_result[:audio_url] if tts_result[:success]
           rescue => e
