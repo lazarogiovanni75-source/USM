@@ -406,8 +406,7 @@ end
             system: otto_system_prompt(language),
             messages: history,
             tools: otto_tool_definitions,
-            tool_choice: { "type" => "auto" },
-            anthropic_beta: ["interleaved-thinking-2025-05-14"]
+            tool_choice: { "type" => "auto" }
           )
 
           Rails.logger.info "[Otto] Anthropic response stop_reason: #{response.stop_reason.inspect}"
