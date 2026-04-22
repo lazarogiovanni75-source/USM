@@ -218,7 +218,7 @@ Rails.application.routes.draw do
   end
 
   # AI Assistant routes
-  resource :assistant, only: [] do
+  resources :assistant, only: [:index, :show, :destroy] do
     post :chat
     post :complete_step
     delete :clear

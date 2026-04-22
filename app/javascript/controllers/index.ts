@@ -201,3 +201,7 @@ application.register("postforme-status", PostformeStatusController)
 // Otto Controller
 import OttoController from "./otto_controller"
 application.register("otto", OttoController)
+
+// Otto Sidebar Controller
+import OttoSidebarController from "./otto_sidebar_controller"
+application.register("otto-sidebar", OttoSidebarController)

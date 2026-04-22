@@ -147,6 +147,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_21_230000) do
     t.string "current_page"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "title"
     t.index ["user_id"], name: "index_assistant_conversations_on_user_id"
   end
 

@@ -15,6 +15,8 @@ export default class OttoController extends Controller {
   private selectedLanguage = 'en';
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
+  private currentConversationId: string | null = null;
+  private speechRecognition: any = null;
 
   connect() {
     const meta = document.querySelector('meta[name="csrf-token"]');
@@ -22,6 +24,47 @@ export default class OttoController extends Controller {
     // Load TTS preference from localStorage
     this.isTTSEnabled = localStorage.getItem('otto_tts_enabled') === 'true';
     this.updateTTSIcons();
+
+    // Listen for conversation events from sidebar
+    document.addEventListener('otto:load-conversation', this.handleLoadConversation);
+    document.addEventListener('otto:new-conversation', this.handleNewConversation);
+    document.addEventListener('otto:conversation-deleted', this.handleConversationDeleted);
+  }
+
+  disconnect() {
+    document.removeEventListener('otto:load-conversation', this.handleLoadConversation);
+    document.removeEventListener('otto:new-conversation', this.handleNewConversation);
+    document.removeEventListener('otto:conversation-deleted', this.handleConversationDeleted);
+  }
+
+  private handleLoadConversation = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    const { id, title, messages } = customEvent.detail;
+    this.currentConversationId = id?.toString() || null;
+    this.loadMessages(messages);
+    this.updateHeaderTitle(title);
+  }
+
+  private handleNewConversation = () => {
+    this.currentConversationId = null;
+    this.messagesTarget.innerHTML = '';
+    this.addWelcomeMessage();
+    this.updateHeaderTitle('New Chat');
+  }
+
+  private handleConversationDeleted = () => {
+    this.currentConversationId = null;
+    this.messagesTarget.innerHTML = '';
+    this.addWelcomeMessage();
+    this.updateHeaderTitle('New Chat');
+  }
+
+  private updateHeaderTitle(title: string) {
+    const titleEl = document.getElementById('otto-header-title');
+    if (titleEl) {
+      const truncated = title.length > 30 ? `${title.substring(0, 30)}...` : title;
+      titleEl.textContent = truncated;
+    }
   }
 
   toggle() {
@@ -34,6 +77,15 @@ export default class OttoController extends Controller {
     if (this.isOpen) {
       this.loadHistory();
       setTimeout(() => this.inputTarget?.focus(), 100);
+    }
+  }
+
+  toggleSidebar() {
+    const sidebar = document.getElementById('otto-sidebar');
+    if (sidebar) {
+      // Dispatch event to open sidebar
+      const customEvent = new CustomEvent('otto:open-sidebar');
+      document.dispatchEvent(customEvent);
     }
   }
 
@@ -60,22 +112,96 @@ export default class OttoController extends Controller {
   }
 
   private loadHistory() {
+    // If we have a conversation ID, load it; otherwise check for messages
+    if (this.currentConversationId) {
+      this.loadConversationById(this.currentConversationId);
+      return;
+    }
+    
+    // Check if there are any messages already displayed
     const userMessages = this.messagesTarget.querySelectorAll('.otto-msg.user').length;
     if (userMessages > 0) return;
 
-    fetch('/api/v1/otto/history', {
-      headers: { 'X-CSRF-Token': this.csrfToken || '' }
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.messages && data.messages.length > 0) {
-          this.messagesTarget.innerHTML = '';
-          data.messages.forEach((msg: {role: string, content: string}) => {
-            this.appendMessage(msg.role as 'user' | 'assistant', msg.content);
-          });
+    // Try to load most recent conversation
+    this.loadMostRecentConversation();
+  }
+
+  private async loadMostRecentConversation() {
+    try {
+      const response = await fetch('/assistant', {
+        headers: {
+          'X-CSRF-Token': this.csrfToken || '',
+          'Accept': 'application/json'
         }
-      })
-      .catch(() => {});
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.conversations && data.conversations.length > 0) {
+        const recent = data.conversations[0];
+        this.currentConversationId = recent.id.toString();
+        await this.loadConversationById(recent.id.toString());
+      } else {
+        this.addWelcomeMessage();
+      }
+    } catch (error) {
+      console.error('[Otto] Error loading recent conversation:', error);
+      this.addWelcomeMessage();
+    }
+  }
+
+  private async loadConversationById(id: string) {
+    try {
+      const response = await fetch(`/assistant/${id}`, {
+        headers: { 
+          'X-CSRF-Token': this.csrfToken || '',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        this.addWelcomeMessage();
+        return;
+      }
+      
+      const data = await response.json();
+      if (data.messages && data.messages.length > 0) {
+        this.messagesTarget.innerHTML = '';
+        data.messages.forEach((msg: {role: string, content: string}) => {
+          if (msg.role === 'user' || msg.role === 'assistant') {
+            this.appendMessage(msg.role as 'user' | 'assistant', msg.content);
+          }
+        });
+        this.updateHeaderTitle(data.title);
+      } else {
+        this.addWelcomeMessage();
+      }
+    } catch (error) {
+      console.error('[Otto] Error loading conversation:', error);
+      this.addWelcomeMessage();
+    }
+  }
+
+  private loadMessages(messages: Array<{role: string, content: string}>) {
+    this.messagesTarget.innerHTML = '';
+    if (messages && messages.length > 0) {
+      messages.forEach((msg) => {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          this.appendMessage(msg.role as 'user' | 'assistant', msg.content);
+        }
+      });
+    } else {
+      this.addWelcomeMessage();
+    }
+  }
+
+  private addWelcomeMessage() {
+    this.messagesTarget.innerHTML = '';
+    const welcome = "👋 Hey! I'm Otto-Pilot, your AI assistant. I can help you " +
+      "write content, brainstorm ideas, answer questions, or anything else you " +
+      "need. What can I do for you today?";
+    this.appendMessage('assistant', welcome);
   }
 
   handleKeydown(event: KeyboardEvent) {
@@ -214,13 +340,19 @@ export default class OttoController extends Controller {
     this.appendMessage('user', message);
     this.showTyping();
 
+    // Include conversation_id if we have one
+    const body: { message: string; conversation_id?: string } = { message };
+    if (this.currentConversationId) {
+      body.conversation_id = this.currentConversationId;
+    }
+
     fetch('/api/v1/otto/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-Token': this.csrfToken || ''
       },
-      body: JSON.stringify({ message })
+      body: JSON.stringify(body)
     })
       .then(response => {
         console.log('[Otto] Response status:', response.status);
@@ -236,6 +368,11 @@ export default class OttoController extends Controller {
             this.appendTaskResult(data.task);
           }
 
+          // Update conversation ID if returned
+          if (data.conversation_id) {
+            this.currentConversationId = data.conversation_id.toString();
+          }
+
           // Play TTS audio if available and enabled (checked via localStorage)
           if (data.audio_url && localStorage.getItem('otto_tts_enabled') === 'true') {
             this.playAudio(data.audio_url);
@@ -248,7 +385,7 @@ export default class OttoController extends Controller {
       })
       .catch(() => {
         this.hideTyping();
-        this.appendMessage('assistant', 'Connection error. Please check your internet and try again.');
+        this.appendMessage('assistant', 'Network error. Please check your connection.');
       })
       .finally(() => {
         if (sendBtn) {
@@ -256,30 +393,25 @@ export default class OttoController extends Controller {
           sendBtn.style.opacity = '1';
           sendBtn.style.cursor = 'pointer';
         }
-        this.inputTarget.focus();
       });
   }
 
   clear() {
-    showToast('Conversation cleared!', 'success');
+    // Use a simple approach - start new conversation
+    this.messagesTarget.innerHTML = '';
+    this.currentConversationId = null;
+    this.addWelcomeMessage();
+    this.updateHeaderTitle('New Chat');
 
-    fetch('/api/v1/otto/clear', {
-      method: 'POST',
-      headers: { 'X-CSRF-Token': this.csrfToken || '' }
-    });
-
-    this.messagesTarget.innerHTML = `
-            <div class="otto-msg assistant flex justify-start">
-                <div class="max-w-[80%] px-4 py-3 rounded-2xl rounded-bl-md bg-white text-gray-800 text-sm shadow-sm">
-                    👋 Conversation cleared! How can I help you?
-                </div>
-            </div>
-        `;
+    // Notify sidebar to refresh
+    document.dispatchEvent(new CustomEvent('otto:conversation-cleared'));
   }
 
-  toggleMic(): void {
-    const micBtn = document.getElementById('otto-mic-btn');
-    if (!micBtn) return;
+  toggleMic() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      showToast('Speech recognition not supported in this browser', 'error');
+      return;
+    }
 
     if (this.isRecording) {
       this.stopRecording();
@@ -288,128 +420,60 @@ export default class OttoController extends Controller {
     }
   }
 
-  private async startRecording(): Promise<void> {
+  private startRecording() {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    this.speechRecognition = new SpeechRecognition();
+    this.speechRecognition.continuous = false;
+    this.speechRecognition.interimResults = false;
+
+    this.speechRecognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      this.inputTarget.value = transcript;
+      this.send();
+    };
+
+    this.speechRecognition.onerror = () => {
+      this.stopRecording();
+    };
+
+    this.speechRecognition.onend = () => {
+      this.stopRecording();
+    };
+
+    this.speechRecognition.start();
+    this.isRecording = true;
+
     const micBtn = document.getElementById('otto-mic-btn');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(stream);
-      this.audioChunks = [];
+    const statusDiv = document.getElementById('otto-voice-status');
+    const statusText = document.getElementById('otto-status-text');
 
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
-
-      this.mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-        await this.sendAudio(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      this.mediaRecorder.start();
-      this.isRecording = true;
-      micBtn?.classList.add('recording');
-      this.updateVoiceStatus('Listening...', 'listening');
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      showToast('Microphone access denied', 'error');
+    if (micBtn) micBtn.classList.add('recording');
+    if (statusDiv) {
+      statusDiv.classList.remove('hidden');
+      statusDiv.classList.add('listening');
     }
+    if (statusText) statusText.textContent = 'Listening...';
   }
 
-  private stopRecording(): void {
-    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-      this.mediaRecorder.stop();
+  private stopRecording() {
+    if (this.speechRecognition) {
+      this.speechRecognition.stop();
+      this.speechRecognition = null;
     }
     this.isRecording = false;
+
     const micBtn = document.getElementById('otto-mic-btn');
-    micBtn?.classList.remove('recording');
-    this.updateVoiceStatus('', '');
-  }
+    const statusDiv = document.getElementById('otto-voice-status');
 
-  private async sendAudio(audioBlob: Blob): Promise<void> {
-    const formData = new FormData();
-    formData.append('audio', audioBlob, 'recording.webm');
-
-    this.showTyping();
-
-    try {
-      const response = await fetch('/api/v1/otto/transcribe', {
-        method: 'POST',
-        headers: { 'X-CSRF-Token': this.csrfToken || '' },
-        body: formData
-      });
-
-      const data = await response.json();
-      this.hideTyping();
-
-      if (data.text) {
-        this.appendMessage('user', data.text);
-        await this.processVoiceMessage(data.text);
-      } else if (data.error) {
-        this.appendMessage('assistant', `Error: ${data.error}`);
-      }
-    } catch (error) {
-      this.hideTyping();
-      this.appendMessage('assistant', 'Failed to process audio. Please try again.');
+    if (micBtn) micBtn.classList.remove('recording');
+    if (statusDiv) {
+      statusDiv.classList.add('hidden');
+      statusDiv.classList.remove('listening', 'processing');
     }
   }
 
-  private async processVoiceMessage(message: string): Promise<void> {
-    this.showTyping();
-
-    fetch('/api/v1/otto/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': this.csrfToken || ''
-      },
-      body: JSON.stringify({ message })
-    })
-      .then(response => response.json())
-      .then(data => {
-        this.hideTyping();
-        if (data.reply) {
-          this.appendMessage('assistant', data.reply);
-          // Play TTS audio if available and enabled
-          if (data.audio_url && this.isTTSEnabled) {
-            this.playAudio(data.audio_url);
-          }
-        } else if (data.error) {
-          this.appendMessage('assistant', data.error);
-        }
-      })
-      .catch(() => {
-        this.hideTyping();
-        this.appendMessage('assistant', 'Connection error. Please try again.');
-      });
-  }
-
-  private updateVoiceStatus(text: string, status: string): void {
-    const statusEl = document.getElementById('otto-voice-status');
-    const statusText = document.getElementById('otto-status-text');
-    if (statusEl) {
-      if (status) {
-        statusEl.classList.remove('hidden');
-        statusEl.className = `px-3 py-2 bg-gray-50 text-center text-xs border-t border-gray-100 ${
-          status === 'listening' ? 'listening' : status === 'processing' ? 'processing' : ''}`;
-      } else {
-        statusEl.classList.add('hidden');
-      }
-    }
-    if (statusText) {
-      statusText.textContent = text;
-    }
-  }
-
-  private playAudio(audioUrl: string): void {
-    try {
-      const audio = new Audio(audioUrl);
-      audio.play().catch(() => {
-        // Silently fail if audio playback fails
-      });
-    } catch {
-      // Silently fail - never show error to user
-    }
+  private playAudio(url: string) {
+    const audio = new Audio(url);
+    audio.play().catch(() => {});
   }
 }

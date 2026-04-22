@@ -373,12 +373,13 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
             # Exempt fetch calls to /speak (returns binary audio/mpeg)
             next if line.match?(/fetch\s*\(\s*['"]\/speak['"]/)
             # Exempt fetch calls to /chat and /transcribe (voice chat APIs)
-            next if line.match?(/fetch\s*\(\s*['"]\/chat['"]/)
-            next if line.match?(/fetch\s*\(\s*['"]\/transcribe['"]/)
+            next if line.match?(/fetch\s*\(\s*[`'"]\/chat[`'"]/)
+            next if line.match?(/fetch\s*\(\s*[`'"]\/transcribe[`'"]/)
             # Exempt fetch calls to /campaign_builder (custom modal forms)
             next if line.match?(/fetch\s*\(\s*[`'"]\/campaign_builder\//)
             # Exempt fetch calls to /assistant (real-time chat)
-            next if line.match?(/fetch\s*\(\s*['"]\/assistant\//)
+            next if line.match?(/fetch\s*\(\s*['"]\/assistant['"]/)  # index endpoint
+            next if line.match?(/fetch\s*\(\s*[`'"]\/assistant\//)  # show/delete with trailing slash
             # Exempt fetch calls from Otto-Pilot widget (background polling for image/video generation)
             next if line.match?(/fetch\s*\(\s*[`'"]\/api\/v1\/otto\//)
             # Exempt fetch calls to /otto/chat and /otto/clear

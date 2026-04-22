@@ -2,10 +2,26 @@ class AssistantsController < ApplicationController
   before_action :authenticate_user!
   before_action :load_or_create_conversation
 
+  # GET /assistant - List all conversations
+  def index
+    conversations = current_user.assistant_conversations
+      .order(updated_at: :desc)
+      .limit(50)
+      .map { |c| { id: c.id, title: c.title.presence || "New conversation", updated_at: c.updated_at, message_count: c.messages_array.count } }
+    render json: { conversations: conversations }
+  end
+
   # POST /assistant/chat
   def chat
     user_message = params[:message].to_s.strip
     current_page = params[:current_page] || "dashboard"
+    conversation_id = params[:conversation_id]
+
+    # Load specific conversation if provided
+    if conversation_id.present?
+      @conversation = current_user.assistant_conversations.find_by(id: conversation_id)
+      @conversation ||= current_user.assistant_conversations.create(user: current_user)
+    end
 
     return render json: { error: "Message required" }, status: :bad_request if user_message.blank?
 
@@ -32,12 +48,40 @@ class AssistantsController < ApplicationController
 
     render json: {
       reply: reply,
+      conversation_id: @conversation.id,
+      conversation_title: @conversation.title,
       onboarding_progress: current_user.onboarding_progress,
       next_step: current_user.next_onboarding_step
     }
   rescue => e
     Rails.logger.error "Assistant chat error: #{e.message}"
     render json: { error: e.message }, status: :internal_server_error
+  end
+
+  # GET /assistant/:id - Load a specific conversation
+  def show
+    @conversation = current_user.assistant_conversations.find_by(id: params[:id])
+    if @conversation.nil?
+      render json: { error: "Conversation not found" }, status: :not_found
+      return
+    end
+    render json: {
+      id: @conversation.id,
+      title: @conversation.title.presence || "New conversation",
+      messages: @conversation.messages_array,
+      updated_at: @conversation.updated_at
+    }
+  end
+
+  # DELETE /assistant/:id - Delete a conversation
+  def destroy
+    @conversation = current_user.assistant_conversations.find_by(id: params[:id])
+    if @conversation.nil?
+      render json: { error: "Conversation not found" }, status: :not_found
+      return
+    end
+    @conversation.destroy
+    render json: { success: true }
   end
 
   # POST /assistant/complete_step
@@ -53,8 +97,9 @@ class AssistantsController < ApplicationController
 
   # DELETE /assistant/clear
   def clear
-    @conversation.clear!
-    render json: { success: true }
+    # Create a new conversation instead of clearing
+    new_conversation = current_user.assistant_conversations.create(user: current_user)
+    render json: { success: true, conversation_id: new_conversation.id }
   end
 
   private
