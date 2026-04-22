@@ -160,7 +160,7 @@ class VoicePipelineService
     if @user&.voice_settings&.any?
       settings = @user.voice_settings.first
       @user_voice_settings = {
-        voice: settings.voice || 'alloy',
+        voice: settings.voice || 'echo',
         voice_name: settings.name || 'Default',
         language: settings.language || 'en',
         model: settings.model || 'gpt-4o-mini-tts',
@@ -201,8 +201,8 @@ class VoicePipelineService
 
   def default_voice_settings
     {
-      voice: 'alloy',
-      voice_name: 'Alloy',
+      voice: 'echo',
+      voice_name: 'Echo',
       language: 'en',
       model: 'tts-1-hd',
       speed: 1.0

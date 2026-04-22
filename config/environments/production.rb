@@ -110,7 +110,7 @@ smtp_username = ENV["EMAIL_SMTP_USERNAME"] || ENV["SMTP_USERNAME"] || "apikey"
   # config.active_job.queue_name_prefix = "myapp_production"
 
   # Enable GoodJob async mode for background job processing
-  config.good_job.execution_mode = :async
+  config.good_job.execution_mode = :external
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
