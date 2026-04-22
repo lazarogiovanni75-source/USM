@@ -426,7 +426,8 @@ end
           begin
             pipeline = VoicePipelineService.new(user: current_user)
             voice_id = current_user.voice_settings.first&.voice_id.presence || 'echo'
-            tts_result = pipeline.synthesize(reply_text, voice: voice_id)
+            language = params[:language] || current_user.voice_settings.first&.language || 'en'
+            tts_result = pipeline.synthesize(reply_text, voice: voice_id, language: language)
             audio_url = tts_result[:audio_url] if tts_result[:success]
           rescue => e
             # Silently fail TTS - never show error to user

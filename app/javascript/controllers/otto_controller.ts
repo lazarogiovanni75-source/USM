@@ -23,6 +23,11 @@ export default class OttoController extends Controller {
     this.csrfToken = meta instanceof HTMLMetaElement ? meta.content : null;
     // Load TTS preference from localStorage
     this.isTTSEnabled = localStorage.getItem('otto_tts_enabled') === 'true';
+    // Load saved language or default to en
+    this.selectedLanguage = localStorage.getItem('otto_language') || 'en';
+    // Update language selector to match saved preference
+    const langSelect = document.getElementById('otto-language-select') as HTMLSelectElement;
+    if (langSelect) langSelect.value = this.selectedLanguage;
     this.updateTTSIcons();
     this.updateVoiceModeIcons();
 
@@ -127,6 +132,7 @@ export default class OttoController extends Controller {
     const select = document.getElementById('otto-language-select') as HTMLSelectElement;
     if (select) {
       this.selectedLanguage = select.value;
+      localStorage.setItem('otto_language', select.value);
     }
   }
 
@@ -359,11 +365,12 @@ export default class OttoController extends Controller {
     this.appendMessage('user', message);
     this.showTyping();
 
-    // Include conversation_id if we have one
-    const body: { message: string; conversation_id?: string } = { message };
+    // Include conversation_id and language if available
+    const body: { message: string; conversation_id?: string; language?: string } = { message };
     if (this.currentConversationId) {
       body.conversation_id = this.currentConversationId;
     }
+    body.language = this.selectedLanguage;
 
     fetch('/api/v1/otto/chat', {
       method: 'POST',
@@ -455,6 +462,8 @@ export default class OttoController extends Controller {
     this.speechRecognition.continuous = this.voiceMode === 'manual';
     this.speechRecognition.interimResults = true;
     this.speechRecognition.maxAlternatives = 1;
+    // Set the language based on user's selection
+    this.speechRecognition.lang = this.selectedLanguage;
 
 
     this.speechRecognition.onresult = (event: any) => {
