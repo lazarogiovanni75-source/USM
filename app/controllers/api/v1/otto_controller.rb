@@ -397,15 +397,17 @@ end
           Rails.logger.info "[Otto] Tools being sent: #{otto_tool_definitions.to_json}"
           
           # Call Anthropic API with tool definitions
+          language = params[:language] || current_user.voice_settings.first&.language || 'en'
           client = Anthropic::Client.new(api_key: ENV["ANTHROPIC_API_KEY"])
 
           response = client.messages.create(
             model: "claude-sonnet-4-6",
             max_tokens: 4096,
-            system: otto_system_prompt,
+            system: otto_system_prompt(language),
             messages: history,
             tools: otto_tool_definitions,
-            tool_choice: { "type" => "auto" }
+            tool_choice: { "type" => "auto" },
+            anthropic_beta: ["interleaved-thinking-2025-05-14"]
           )
 
           Rails.logger.info "[Otto] Anthropic response stop_reason: #{response.stop_reason.inspect}"
@@ -418,7 +420,8 @@ end
           end
           
           # Process response - may include text and/or tool_use blocks
-          result = process_anthropic_response(response, history)
+          language = params[:language] || current_user.voice_settings.first&.language || 'en'
+          result = process_anthropic_response(response, history, language)
           reply_text = result[:reply].presence || "Done! Let me know if you need anything else."
 
           # Always attempt TTS synthesis - client decides whether to play via localStorage
@@ -442,7 +445,7 @@ end
         end
       end
 
-      def process_anthropic_response(response, history)
+      def process_anthropic_response(response, history, language = 'en')
         text_parts = []
         tool_results = []
         
@@ -600,9 +603,34 @@ end
         ]
       end
 
-      def otto_system_prompt
+      def otto_system_prompt(language = 'en')
+        language_names = {
+          'en' => 'English', 'es' => 'Spanish', 'fr' => 'French', 'de' => 'German', 'it' => 'Italian',
+          'pt' => 'Portuguese', 'zh' => 'Chinese', 'ja' => 'Japanese', 'ko' => 'Korean',
+          'ar' => 'Arabic', 'ru' => 'Russian', 'hi' => 'Hindi', 'th' => 'Thai',
+          'vi' => 'Vietnamese', 'id' => 'Indonesian', 'ms' => 'Malay', 'tl' => 'Tagalog',
+          'nl' => 'Dutch', 'pl' => 'Polish', 'tr' => 'Turkish', 'uk' => 'Ukrainian',
+          'cs' => 'Czech', 'el' => 'Greek', 'he' => 'Hebrew', 'ro' => 'Romanian',
+          'hu' => 'Hungarian', 'sv' => 'Swedish', 'da' => 'Danish', 'fi' => 'Finnish',
+          'no' => 'Norwegian', 'bg' => 'Bulgarian', 'hr' => 'Croatian', 'sr' => 'Serbian',
+          'sk' => 'Slovak', 'sl' => 'Slovenian', 'et' => 'Estonian', 'lv' => 'Latvian',
+          'lt' => 'Lithuanian', 'mk' => 'Macedonian', 'sq' => 'Albanian', 'ca' => 'Catalan',
+          'gl' => 'Galician', 'is' => 'Icelandic', 'mk' => 'Macedonian', 'ne' => 'Nepali',
+          'mr' => 'Marathi', 'bn' => 'Bengali', 'ta' => 'Tamil', 'te' => 'Telugu',
+          'ml' => 'Malayalam', 'kn' => 'Kannada', 'gu' => 'Gujarati', 'pa' => 'Punjabi',
+          'fa' => 'Persian', 'ur' => 'Urdu', 'am' => 'Amharic', 'sw' => 'Swahili',
+          'mi' => 'Maori', 'cy' => 'Welsh', 'ka' => 'Georgian', 'hy' => 'Armenian',
+          'az' => 'Azerbaijani', 'kk' => 'Kazakh', 'uz' => 'Uzbek', 'tg' => 'Tajik',
+          'mn' => 'Mongolian', 'lo' => 'Lao', 'km' => 'Khmer', 'my' => 'Burmese',
+          'si' => 'Sinhala', 'ht' => 'Haitian Creole'
+        }
+        lang_name = language_names[language] || language.upcase
+
         <<~PROMPT
           You are Otto-Pilot, an AI assistant built into Ultimate Social Media — an AI-powered social media automation platform.
+
+
+          IMPORTANT: You MUST respond in #{lang_name} (#{language}) regardless of what language the user writes in or what language their previous messages are in. Always speak #{lang_name}.
 
           You help users with:
           - Writing social media captions, posts, and content for any platform (Instagram, Facebook, TikTok, LinkedIn, X, Pinterest, Bluesky, Threads, YouTube)
