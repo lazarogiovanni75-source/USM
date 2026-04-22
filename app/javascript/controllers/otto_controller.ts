@@ -433,20 +433,15 @@ export default class OttoController extends Controller {
     }
 
     if (this.isRecording) {
-      if (this.voiceMode === 'manual') {
-        // Manual mode: stop and send
-        this.stopRecording(true);
-      } else {
-        // Auto mode: stop recording
-        this.stopRecording(false);
-      }
+      // User pressed mic to stop - stop and send (both modes)
+      this.stopRecording(true);
     } else {
+      // User pressed mic to start recording
       this.startRecording();
     }
   }
 
   private get voiceMode(): 'auto' | 'manual' {
-    // Check localStorage for voice mode preference
     const mode = localStorage.getItem('otto_voice_mode');
     return (mode === 'manual') ? 'manual' : 'auto';
   }
@@ -454,60 +449,72 @@ export default class OttoController extends Controller {
   private startRecording() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     this.speechRecognition = new SpeechRecognition();
-    this.speechRecognition.continuous = false;
-    this.speechRecognition.interimResults = false;
+    
+    // Auto mode: detect end of speech and send automatically
+    // Manual mode: keep listening until user presses mic again
+    this.speechRecognition.continuous = this.voiceMode === 'manual';
+    this.speechRecognition.interimResults = true;
+    this.speechRecognition.maxAlternatives = 1;
+
 
     this.speechRecognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
+      // Get the final transcript
+      const lastResultIndex = event.results.length - 1;
+      const result = event.results[lastResultIndex];
+      const transcript = result[0].transcript;
       this.inputTarget.value = transcript;
-      // Auto mode: send immediately when speech is detected
-      if (this.voiceMode === 'auto') {
-        this.send();
-      }
     };
 
     this.speechRecognition.onerror = () => {
-      this.stopRecording(false);
+      // Only stop UI state, don't send (error occurred)
+      this.isRecording = false;
+      this.updateMicUI(false);
     };
 
     this.speechRecognition.onend = () => {
-      this.stopRecording(false);
+      if (this.isRecording) {
+        // Still marked as recording means it stopped unexpectedly
+        // Only stop UI state, but in manual mode don't auto-send
+        this.isRecording = false;
+        this.updateMicUI(false);
+      }
     };
 
     this.speechRecognition.start();
     this.isRecording = true;
+    this.updateMicUI(true);
+  }
 
+  private updateMicUI(recording: boolean) {
     const micBtn = document.getElementById('otto-mic-btn');
     const statusDiv = document.getElementById('otto-voice-status');
     const statusText = document.getElementById('otto-status-text');
 
-    if (micBtn) micBtn.classList.add('recording');
-    if (statusDiv) {
-      statusDiv.classList.remove('hidden');
-      statusDiv.classList.add('listening');
+    if (micBtn) {
+      micBtn.classList.toggle('recording', recording);
     }
-    if (statusText) statusText.textContent = 'Listening...';
+    if (statusDiv) {
+      statusDiv.classList.toggle('hidden', !recording);
+      statusDiv.classList.toggle('listening', recording);
+      statusDiv.classList.toggle('processing', !recording);
+    }
+    if (statusText) {
+      statusText.textContent = this.voiceMode === 'manual' ? 'Tap mic to send...' : 'Listening...';
+    }
   }
 
   private stopRecording(send: boolean) {
+    const wasRecording = this.isRecording;
+    
     if (this.speechRecognition) {
       this.speechRecognition.stop();
       this.speechRecognition = null;
     }
     this.isRecording = false;
+    this.updateMicUI(false);
 
-
-    const micBtn = document.getElementById('otto-mic-btn');
-    const statusDiv = document.getElementById('otto-voice-status');
-
-    if (micBtn) micBtn.classList.remove('recording');
-    if (statusDiv) {
-      statusDiv.classList.add('hidden');
-      statusDiv.classList.remove('listening', 'processing');
-    }
-
-    // Manual mode: send when user presses mic again to stop
-    if (send && this.inputTarget.value.trim()) {
+    // Only send if user pressed stop AND there's text AND in manual mode OR auto mode with silence detection
+    if (send && wasRecording && this.inputTarget.value.trim()) {
       this.send();
     }
   }
