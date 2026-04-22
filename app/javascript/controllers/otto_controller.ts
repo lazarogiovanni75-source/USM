@@ -17,6 +17,9 @@ export default class OttoController extends Controller {
   private audioChunks: Blob[] = [];
   private currentConversationId: string | null = null;
   private speechRecognition: any = null;
+  private isOnboarding = false;
+  private onboardingStep = 0;
+  private brandProfileData: any = {};
 
   connect() {
     const meta = document.querySelector('meta[name="csrf-token"]');
@@ -82,6 +85,7 @@ export default class OttoController extends Controller {
     }
     if (this.isOpen) {
       this.loadHistory();
+      this.checkOnboardingStatus();
       setTimeout(() => this.inputTarget?.focus(), 100);
     }
   }
@@ -452,6 +456,229 @@ export default class OttoController extends Controller {
     const mode = localStorage.getItem('otto_voice_mode');
     return (mode === 'manual') ? 'manual' : 'auto';
   }
+
+  // ========== ONBOARDING METHODS ==========
+
+  checkOnboardingStatus() {
+    fetch('/api/v1/otto/brand_profile_status', {
+      headers: {
+        'X-CSRF-Token': this.csrfToken || '',
+        'Accept': 'application/json'
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.needs_onboarding) {
+          this.openOnboarding(data.onboarding_step || 0);
+        }
+      });
+  }
+
+  openOnboarding(startStep: number = 0) {
+    this.isOnboarding = true;
+    this.onboardingStep = startStep;
+    this.brandProfileData = {};
+    this.messagesTarget.innerHTML = '';
+    
+    // Show onboarding dismiss button
+    const dismissBtn = document.getElementById('otto-onboarding-dismiss');
+    if (dismissBtn) dismissBtn.classList.remove('hidden');
+    
+    if (!this.isOpen) {
+      this.toggle();
+    }
+    
+    // Show welcome message
+    this.appendOnboardingMessage(
+      "👋 Welcome to Otto-Pilot! I'm here to help you create amazing content for your brand. " +
+      "To personalize my assistance, let me ask you a few quick questions about your business.",
+      []
+    );
+    
+    setTimeout(() => this.promptOnboardingStep2(), 1500);
+  }
+
+  private appendOnboardingMessage(content: string, buttons: string[]) {
+    const div = document.createElement('div');
+    div.className = 'otto-msg assistant flex justify-start';
+    
+    let html = `<div class="otto-bubble max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-md bg-white shadow-sm">
+      <p class="text-sm leading-relaxed">${content.replace(/\n/g, '<br>')}</p>`;
+    
+    if (buttons.length > 0) {
+      html += '<div class="flex flex-wrap gap-2 mt-3">';
+      buttons.forEach((btn) => {
+        const btnHtml = `<button class="onboarding-btn px-4 py-2 text-sm rounded-full `
+          + `border border-primary/30 bg-white hover:bg-primary/10 transition-colors" `
+          + `data-value="${btn}">${btn}</button>`;
+        html += btnHtml;
+      });
+      html += '</div>';
+    }
+    
+    html += '</div>';
+    div.innerHTML = html;
+    this.messagesTarget.appendChild(div);
+    this.messagesTarget.scrollTop = this.messagesTarget.scrollHeight;
+    
+    // Attach click handlers to buttons
+    div.querySelectorAll('.onboarding-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const value = btn.getAttribute('data-value');
+        if (value) this.handleOnboardingButtonClick(value);
+      });
+    });
+  }
+
+  private handleOnboardingButtonClick(value: string) {
+    this.appendMessage('user', value);
+    this.handleOnboardingResponse(value);
+  }
+
+  private handleOnboardingResponse(value: string) {
+    switch (this.onboardingStep) {
+      case 2: // Business name
+        this.brandProfileData.business_name = value;
+        this.promptOnboardingStep3();
+        break;
+      case 3: // Industry
+        this.brandProfileData.industry = value;
+        this.promptOnboardingStep4();
+        break;
+      case 4: // Website
+        if (value.toLowerCase() === 'yes' || value.toLowerCase() === 'skip') {
+          this.appendOnboardingMessage('Please enter your website URL:', []);
+          // Wait for text input
+        } else {
+          this.brandProfileData.website_url = '';
+          this.promptOnboardingStep5();
+        }
+        break;
+      case 5: // Products/Services
+        this.brandProfileData.products_services = value;
+        this.promptOnboardingStep6();
+        break;
+      case 6: // Content tone
+        this.brandProfileData.content_tone = value.toLowerCase();
+        this.promptOnboardingStep7();
+        break;
+      case 7: // Posting topics
+        this.brandProfileData.posting_topics = value;
+        this.promptOnboardingStep8();
+        break;
+      case 8: // Topics to avoid
+        this.brandProfileData.topics_to_avoid = value;
+        this.completeOnboarding();
+        break;
+    }
+  }
+
+  private promptOnboardingStep2() {
+    this.onboardingStep = 2;
+    this.appendOnboardingMessage(
+      "What's the name of your business or brand?",
+      []
+    );
+  }
+
+  private promptOnboardingStep3() {
+    this.onboardingStep = 3;
+    this.appendOnboardingMessage(
+      "What industry are you in? Choose one that fits best.",
+      ['E-commerce', 'Technology', 'Healthcare', 'Finance', 'Food & Beverage', 'Travel', 'Education', 'Real Estate', 'Fashion', 'Entertainment', 'Other']
+    );
+  }
+
+  private promptOnboardingStep4() {
+    this.onboardingStep = 4;
+    this.appendOnboardingMessage(
+      "Do you have a website? Share the URL if you'd like me to learn more about your brand.",
+      ['Yes, I have a website', 'No website yet']
+    );
+  }
+
+  private promptOnboardingStep5() {
+    this.onboardingStep = 5;
+    this.appendOnboardingMessage(
+      "What products or services do you offer? Tell me a bit about what you sell.",
+      []
+    );
+  }
+
+  private promptOnboardingStep6() {
+    this.onboardingStep = 6;
+    this.appendOnboardingMessage(
+      "What tone should your content have? Choose one that matches your brand voice.",
+      ['Professional', 'Casual', 'Humorous', 'Inspirational']
+    );
+  }
+
+  private promptOnboardingStep7() {
+    this.onboardingStep = 7;
+    this.appendOnboardingMessage(
+      "What topics would you like to post about? (e.g., product updates, tips, behind-the-scenes, industry news)",
+      []
+    );
+  }
+
+  private promptOnboardingStep8() {
+    this.onboardingStep = 8;
+    this.appendOnboardingMessage(
+      "Any topics you'd like me to avoid? (e.g., politics, controversial issues, competitor mentions)",
+      []
+    );
+  }
+
+  private completeOnboarding() {
+    // Save brand profile via API
+    fetch('/api/v1/otto/complete_onboarding', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.csrfToken || ''
+      },
+      body: JSON.stringify(this.brandProfileData)
+    })
+      .then(response => response.json())
+      .then(data => {
+        this.appendOnboardingMessage(
+          "🎉 That's a wrap! Your brand profile is all set. Now I can help you create content that truly resonates with your audience. What would you like to work on today?",
+          []
+        );
+        this.isOnboarding = false;
+        this.onboardingStep = 99;
+        this.brandProfileData = {};
+      });
+  }
+
+  dismissOnboarding() {
+    fetch('/api/v1/otto/dismiss_onboarding', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': this.csrfToken || '',
+        'Accept': 'application/json'
+      }
+    })
+      .then(() => {
+        this.isOnboarding = false;
+        this.closeOnboardingPanel();
+      });
+  }
+
+  private closeOnboardingPanel() {
+    // Hide onboarding dismiss button
+    const dismissBtn = document.getElementById('otto-onboarding-dismiss');
+    if (dismissBtn) dismissBtn.classList.add('hidden');
+    
+    this.isOpen = false;
+    const widget = document.getElementById('otto-widget');
+    if (widget) {
+      widget.classList.remove('otto-widget-open');
+      widget.classList.add('otto-widget-closed');
+    }
+  }
+
+  // ========== END ONBOARDING METHODS ==========
 
   private startRecording() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;

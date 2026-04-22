@@ -92,6 +92,10 @@ class DashboardsController < ApplicationController
     # Postforme Connection Status
     @postforme_status = PostformeService.new.connection_status
     
+    # Brand Profile Onboarding Status
+    @brand_profile = BrandProfile.get_or_create_for(@user)
+    @show_onboarding_banner = @brand_profile.needs_onboarding_reminder?
+    
     # Selected conversation for message thread view
     if params[:conversation_id].present?
       @selected_conversation = @ai_conversations.find_by(id: params[:conversation_id])

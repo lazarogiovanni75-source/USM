@@ -18,6 +18,12 @@ module Api
           Rails.logger.error "[Otto] Failed to save user message: #{msg.errors.full_messages}"
         end
 
+        # Check if user wants to update brand profile
+        if brand_update_intent?(user_message)
+          handle_brand_profile_update(user_message)
+          return
+        end
+
         # Check if this is a task request
         chat_response(user_message)
       rescue => e
@@ -59,9 +65,81 @@ module Api
         Rails.logger.error "Draft status error: #{e.message}"
         render json: { error: "Failed to get draft status" }, status: :internal_server_error
       end
-def history
+      def history
   messages = current_user.otto_messages.order(created_at: :asc).last(20)
   render json: { messages: messages.map { |m| { role: m.role, content: m.content } } }
+end
+
+def start_onboarding
+  brand_profile = BrandProfile.get_or_create_for(current_user)
+  if brand_profile.onboarding_completed
+    render json: { error: "Onboarding already completed" }, status: :unprocessable_entity
+  else
+    brand_profile.resume_onboarding
+    render json: { 
+      needs_onboarding: true, 
+      step: brand_profile.onboarding_step,
+      brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
+    }
+  end
+end
+
+def dismiss_onboarding
+  brand_profile = current_user.brand_profile
+  if brand_profile
+    brand_profile.dismiss_onboarding
+    render json: { success: true }
+  else
+    render json: { success: true }
+  end
+end
+
+def brand_profile_status
+  brand_profile = BrandProfile.get_or_create_for(current_user)
+  render json: {
+    needs_onboarding: brand_profile.needs_onboarding_reminder?,
+    onboarding_completed: brand_profile.onboarding_completed,
+    onboarding_step: brand_profile.onboarding_step,
+    brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid, :onboarding_step])
+  }
+end
+
+def complete_onboarding
+  brand_profile = BrandProfile.get_or_create_for(current_user)
+  
+  brand_profile.assign_attributes(
+    business_name: params[:business_name],
+    industry: params[:industry],
+    website_url: params[:website_url],
+    products_services: params[:products_services],
+    content_tone: params[:content_tone],
+    posting_topics: params[:posting_topics],
+    topics_to_avoid: params[:topics_to_avoid]
+  )
+  
+  brand_profile.complete_onboarding!
+  
+  render json: {
+    success: true,
+    brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
+  }
+end
+
+def brand_profile_update
+  brand_profile = BrandProfile.get_or_create_for(current_user)
+  
+  # Update only the fields provided
+  update_params = %i[business_name industry website_url products_services content_tone posting_topics topics_to_avoid]
+  update_params.each do |field|
+    brand_profile[field] = params[field] if params[field].present?
+  end
+  
+  brand_profile.save
+  
+  render json: {
+    success: true,
+    brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
+  }
 end
       def clear
         current_user.otto_messages.destroy_all
@@ -107,6 +185,65 @@ end
       end
 
       private
+
+      def brand_update_intent?(message)
+        brand_update_keywords = [
+          'update my brand', 'change my brand', 'edit my brand', 'modify my brand',
+          'update my profile', 'change my profile', 'edit my profile', 'modify my profile',
+          'change my business name', 'edit my business', 'update my business',
+          'change my industry', 'edit my industry', 'update my industry',
+          'change my website', 'edit my website', 'update my website',
+          'change my products', 'edit my products', 'update my products',
+          'change my tone', 'edit my tone', 'update my tone',
+          'change my topics', 'edit my topics', 'update my topics',
+          'i want to edit', 'i want to change', 'i want to update',
+          'change my info', 'edit my info', 'update my info'
+        ]
+        message_lower = message.downcase
+        brand_update_keywords.any? { |keyword| message_lower.include?(keyword) }
+      end
+
+      def handle_brand_profile_update(message)
+        brand_profile = BrandProfile.get_or_create_for(current_user)
+        reply = "Sure! I can help you update your brand profile. "
+        
+        # Determine what they want to change based on message content
+        if message.downcase.include?('business name')
+          reply << "What would you like your business name to be?"
+          @onboarding_context = { update_field: 'business_name' }
+        elsif message.downcase.include?('industry')
+          reply << "What industry are you in? (Marketing, E-commerce, Restaurant, Fitness, Real Estate, Beauty, Technology, Other)"
+          @onboarding_context = { update_field: 'industry' }
+        elsif message.downcase.include?('website')
+          reply << "What is your website URL?"
+          @onboarding_context = { update_field: 'website_url' }
+        elsif message.downcase.include?('product') || message.downcase.include?('service')
+          reply << "Tell me about your products or services."
+          @onboarding_context = { update_field: 'products_services' }
+        elsif message.downcase.include?('tone')
+          reply << "What tone should your content have? (Professional, Casual, Humorous, Inspirational)"
+          @onboarding_context = { update_field: 'content_tone' }
+        elsif message.downcase.include?('topic')
+          reply << "What topics would you like to post about?"
+          @onboarding_context = { update_field: 'posting_topics' }
+        else
+          reply = "I can help you update any part of your brand profile. Just tell me what you'd like to change:"
+          reply << "\n• Business name\n• Industry\n• Website URL\n• Products/Services\n• Content tone\n• Posting topics"
+          @onboarding_context = nil
+        end
+        
+        render json: { reply: reply }
+      end
+
+      def brand_profile
+        @brand_profile ||= current_user.brand_profile || BrandProfile.new(user: current_user)
+      end
+
+      def should_start_onboarding?
+        return false if params[:skip_onboarding].present?
+        brand_profile = BrandProfile.get_or_create_for(current_user)
+        !brand_profile.onboarding_completed
+      end
 
       def task_request?(message)
         task_keywords = [

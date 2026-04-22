@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_22_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_22_211819) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -231,6 +231,24 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_22_000001) do
     t.datetime "updated_at", null: false
     t.index ["is_active"], name: "index_automation_rules_on_is_active"
     t.index ["user_id"], name: "index_automation_rules_on_user_id"
+  end
+
+  create_table "brand_profiles", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "business_name"
+    t.string "industry"
+    t.string "website_url"
+    t.text "products_services"
+    t.string "content_tone"
+    t.text "posting_topics"
+    t.text "topics_to_avoid"
+    t.boolean "onboarding_completed", default: false
+    t.datetime "onboarding_dismissed_at"
+    t.integer "onboarding_step", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "onboarding_completed"], name: "index_brand_profiles_on_user_id_and_onboarding_completed"
+    t.index ["user_id"], name: "index_brand_profiles_on_user_id", unique: true
   end
 
   create_table "buffer_analytics", force: :cascade do |t|
@@ -1106,6 +1124,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_22_000001) do
   add_foreign_key "auto_responses", "response_templates"
   add_foreign_key "auto_responses", "users"
   add_foreign_key "automation_rule_executions", "automation_rules"
+  add_foreign_key "brand_profiles", "users"
   add_foreign_key "campaign_tasks", "campaigns"
   add_foreign_key "campaign_usages", "campaigns"
   add_foreign_key "campaigns", "clients"

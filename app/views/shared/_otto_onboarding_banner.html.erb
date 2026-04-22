@@ -1,0 +1,24 @@
+<!-- Onboarding Reminder Banner -->
+<% if @show_onboarding_banner %>
+  <div id="otto-onboarding-banner" class="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-2xl p-4 mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-lg">
+          🤖
+        </div>
+        <div>
+          <h3 class="font-bold text-primary">Complete Your Brand Profile</h3>
+          <p class="text-sm text-muted">Help Otto-Pilot personalize content for your brand with a quick setup</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <%= button_to "Start Setup", "#", 
+          class: "btn-primary",
+          data: { action: "click->otto#openOnboarding", controller: "otto" } %>
+        <%= button_to "Remind Later", "#", 
+          class: "btn-secondary",
+          data: { action: "click->otto#dismissOnboarding", controller: "otto" } %>
+      </div>
+    </div>
+  </div>
+<% end %>

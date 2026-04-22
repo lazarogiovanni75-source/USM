@@ -7,6 +7,7 @@ class ProfilesController < ApplicationController
 
   def edit
     @user = current_user
+    @brand_profile = BrandProfile.get_or_create_for(@user)
   end
 
   def update
@@ -20,6 +21,22 @@ class ProfilesController < ApplicationController
       end
       redirect_to profile_path, notice: "Profile updated #{additional_notice}"
     else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def update_brand_profile
+    @brand_profile = BrandProfile.get_or_create_for(current_user)
+    
+    brand_params = params.require(:brand_profile).permit(
+      :business_name, :industry, :website_url, :products_services, 
+      :content_tone, :posting_topics, :topics_to_avoid
+    )
+    
+    if @brand_profile.update(brand_params)
+      redirect_to edit_profile_path, notice: "Brand profile updated successfully"
+    else
+      @user = current_user
       render :edit, status: :unprocessable_entity
     end
   end

@@ -1,5 +1,5 @@
 <div class="container-sm py-12">
-    <div class="card-elevated">
+    <div class="card-elevated mb-6">
       <div class="card-body">
         <h1 class="text-2xl font-bold text-primary mb-8">Edit Profile</h1>
 
@@ -30,6 +30,91 @@
         <% end %>
       </div>
     </div>
+
+    <!-- Brand Profile Section -->
+    <div class="card-elevated">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-primary">Brand Profile</h2>
+            <p class="text-sm text-muted">Tell us about your brand so Otto can create personalized content</p>
+          </div>
+          <% if @brand_profile.onboarding_completed %>
+            <span class="badge-success">Completed</span>
+          <% else %>
+            <span class="badge-warning">Incomplete</span>
+          <% end %>
+        </div>
+
+        <%= form_with model: @brand_profile, url: update_brand_profile_path, method: :post, local: true, class: "space-y-6" do |form| %>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <%= form.label :business_name, class: "form-label" do %>
+                Business Name
+              <% end %>
+              <%= form.text_field :business_name, class: "form-input", placeholder: "e.g., Acme Corp" %>
+            </div>
+
+            <div>
+              <%= form.label :industry, class: "form-label" do %>
+                Industry
+              <% end %>
+              <%= form.select :industry, 
+                options_for_select(BrandProfile::INDUSTRIES.map { |i| [i, i] }, @brand_profile.industry), 
+                { include_blank: "Select an industry" }, 
+                class: "form-select" %>
+            </div>
+          </div>
+
+          <div>
+            <%= form.label :website_url, class: "form-label" do %>
+              Website URL
+            <% end %>
+            <%= form.url_field :website_url, class: "form-input", placeholder: "https://yourwebsite.com" %>
+          </div>
+
+          <div>
+            <%= form.label :products_services, class: "form-label" do %>
+              Products or Services
+            <% end %>
+            <%= form.text_area :products_services, rows: 3, class: "form-textarea", placeholder: "Describe what you offer..." %>
+          </div>
+
+          <div>
+            <%= form.label :content_tone, class: "form-label" do %>
+              Content Tone
+            <% end %>
+            <div class="flex flex-wrap gap-3">
+              <% BrandProfile::CONTENT_TONES.each do |tone| %>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <%= form.radio_button :content_tone, tone, class: "w-4 h-4 text-primary" %>
+                  <span class="text-sm text-gray-700 capitalize"><%= tone %></span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+
+          <div>
+            <%= form.label :posting_topics, class: "form-label" do %>
+              Posting Topics
+            <% end %>
+            <%= form.text_area :posting_topics, rows: 3, class: "form-textarea", placeholder: "What topics would you like to post about? (e.g., product updates, tips, behind-the-scenes)" %>
+          </div>
+
+          <div>
+            <%= form.label :topics_to_avoid, class: "form-label" do %>
+              Topics to Avoid
+            <% end %>
+            <%= form.text_area :topics_to_avoid, rows: 2, class: "form-textarea", placeholder: "Any topics you'd like us to avoid?" %>
+          </div>
+
+          <div class="pt-4">
+            <div class="flex justify-end space-x-3">
+              <%= form.submit "Update Brand Profile", class: "btn-primary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>

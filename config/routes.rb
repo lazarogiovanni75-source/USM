@@ -140,10 +140,12 @@ Rails.application.routes.draw do
       get 'otto/history', to: 'otto#history'
       post 'otto/clear', to: 'otto#clear'
       post 'otto/transcribe', to: 'otto#transcribe'
+      post 'otto/start_onboarding', to: 'otto#start_onboarding'
+      post 'otto/dismiss_onboarding', to: 'otto#dismiss_onboarding'
+      get 'otto/brand_profile_status', to: 'otto#brand_profile_status'
+      post 'otto/complete_onboarding', to: 'otto#complete_onboarding'
     end
   end
-
-
 
   # Authentication routes
   get 'sign_in', to: 'sessions#new', as: :new_user_session
@@ -170,6 +172,9 @@ Rails.application.routes.draw do
   # Identity email management
   get 'emails', to: 'identity/emails#edit', as: :edit_identity_email
   patch 'emails', to: 'identity/emails#update'
+  
+  # Brand Profile routes
+  post 'profile/brand_profile', to: 'profiles#update_brand_profile', as: :update_brand_profile
   
   # Convenience aliases for navbar
   get 'sign_in', to: 'sessions#new', as: :sign_in
