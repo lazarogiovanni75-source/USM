@@ -507,10 +507,7 @@ end
           return { success: false, error: "Image service returned nil" } if result.nil?
           
           if result['task_id'].present?
-            # Schedule job to poll for completion
-            ImagePollJob.perform_later(nil, result['task_id'], 'atlascloud')
-            
-            # Create draft content
+            # Create draft content first
             draft = DraftContent.create(
               user: current_user,
               title: prompt.truncate(50),
@@ -520,6 +517,9 @@ end
               status: 'pending',
               metadata: { 'task_id' => result['task_id'] }
             )
+            
+            # Schedule job to poll for completion with correct draft_id
+            ImagePollJob.perform_later(draft.id, result['task_id'], 'atlas_cloud_image')
             
             { success: true, message: "Image generation started! Task ID: #{result['task_id']}. You'll be notified when it's ready.", draft_id: draft.id }
           else
