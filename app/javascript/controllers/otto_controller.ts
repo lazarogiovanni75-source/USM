@@ -278,6 +278,8 @@ export default class OttoController extends Controller {
   private appendTaskResult(task: any) {
     if (task.type === 'image' && task.draft_id) {
       this.startPollingForImage(task.draft_id);
+    } else if (task.type === 'video' && task.draft_id) {
+      this.startPollingForVideo(task.draft_id);
     }
   }
 
@@ -333,6 +335,78 @@ export default class OttoController extends Controller {
     };
 
     setTimeout(poll, 3000);
+  }
+
+  private appendVideoMessage(videoUrl: string, caption?: string) {
+    const div = document.createElement('div');
+    div.className = 'otto-msg assistant flex justify-start';
+    div.innerHTML = `
+      <div class="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-md bg-white shadow-sm">
+        <video src="${videoUrl}" controls class="rounded-lg max-w-full max-h-80 object-cover mb-2">
+          Your browser does not support video playback.
+        </video>
+        ${caption ? `<p class="text-sm text-gray-700">${this.escapeHtml(caption)}</p>` : ''}
+      </div>
+    `;
+    this.messagesTarget.appendChild(div);
+    this.messagesTarget.scrollTop = this.messagesTarget.scrollHeight;
+  }
+
+  private startPollingForVideo(draftId: number) {
+    const container = document.createElement('div');
+    container.id = `otto-poll-video-${draftId}`;
+    container.innerHTML = `
+      <div class="otto-msg assistant flex justify-start">
+        <div class="max-w-[80%] px-4 py-3 rounded-2xl rounded-bl-md bg-white shadow-sm">
+          <div class="flex items-center gap-2 text-gray-500 text-sm">
+            <div class="otto-dot"></div>
+            <div class="otto-dot"></div>
+            <div class="otto-dot"></div>
+            <span>Generating video...</span>
+          </div>
+        </div>
+      </div>
+    `;
+    this.messagesTarget.appendChild(container);
+    this.messagesTarget.scrollTop = this.messagesTarget.scrollHeight;
+
+    let attempts = 0;
+    const maxAttempts = 180; // Videos can take longer (up to 15 minutes)
+
+    const poll = () => {
+      attempts++;
+
+      fetch(`/api/v1/otto/draft_status?id=${draftId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-CSRF-Token': this.csrfToken || ''
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.media_url) {
+            container.remove();
+            this.appendVideoMessage(data.media_url, data.content);
+            showToast('Video ready!', 'success');
+          } else if (data.status === 'failed') {
+            container.remove();
+            this.appendMessage('assistant', 'Video generation failed. Please try again.');
+          } else if (attempts < maxAttempts && this.isOpen) {
+            setTimeout(poll, 10000); // Poll every 10 seconds for video
+          } else if (attempts >= maxAttempts) {
+            container.remove();
+            this.appendMessage('assistant', 'Video generation is taking longer than expected. Check your drafts for the result.');
+          }
+        })
+        .catch(() => {
+          if (attempts < maxAttempts && this.isOpen) {
+            setTimeout(poll, 10000);
+          }
+        });
+    };
+
+    setTimeout(poll, 5000); // Wait longer for video to start
   }
 
   private showTyping() {

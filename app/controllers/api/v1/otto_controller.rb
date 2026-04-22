@@ -66,81 +66,80 @@ module Api
         render json: { error: "Failed to get draft status" }, status: :internal_server_error
       end
       def history
-  messages = current_user.otto_messages.order(created_at: :asc).last(20)
-  render json: { messages: messages.map { |m| { role: m.role, content: m.content } } }
-end
+        messages = current_user.otto_messages.order(created_at: :asc).last(20)
+        render json: { messages: messages.map { |m| { role: m.role, content: m.content } } }
+      end
 
-def start_onboarding
-  brand_profile = BrandProfile.get_or_create_for(current_user)
-  if brand_profile.onboarding_completed
-    render json: { error: "Onboarding already completed" }, status: :unprocessable_entity
-  else
-    brand_profile.resume_onboarding
-    render json: { 
-      needs_onboarding: true, 
-      step: brand_profile.onboarding_step,
-      brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
-    }
-  end
-end
+      def start_onboarding
+        brand_profile = BrandProfile.get_or_create_for(current_user)
+        if brand_profile.onboarding_completed
+          render json: { error: "Onboarding already completed" }, status: :unprocessable_entity
+        else
+          brand_profile.resume_onboarding
+          render json: {
+            needs_onboarding: true,
+            step: brand_profile.onboarding_step,
+            brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
+          }
+        end
+      end
 
-def dismiss_onboarding
-  brand_profile = current_user.brand_profile
-  if brand_profile
-    brand_profile.dismiss_onboarding
-    render json: { success: true }
-  else
-    render json: { success: true }
-  end
-end
+      def dismiss_onboarding
+        brand_profile = current_user.brand_profile
+        if brand_profile
+          brand_profile.dismiss_onboarding
+          render json: { success: true }
+        else
+          render json: { success: true }
+        end
+      end
 
-def brand_profile_status
-  brand_profile = BrandProfile.get_or_create_for(current_user)
-  render json: {
-    needs_onboarding: brand_profile.needs_onboarding_reminder?,
-    onboarding_completed: brand_profile.onboarding_completed,
-    onboarding_step: brand_profile.onboarding_step,
-    brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid, :onboarding_step])
-  }
-end
+      def brand_profile_status
+        brand_profile = BrandProfile.get_or_create_for(current_user)
+        render json: {
+          needs_onboarding: brand_profile.needs_onboarding_reminder?,
+          onboarding_completed: brand_profile.onboarding_completed,
+          onboarding_step: brand_profile.onboarding_step,
+          brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid, :onboarding_step])
+        }
+      end
 
-def complete_onboarding
-  brand_profile = BrandProfile.get_or_create_for(current_user)
-  
-  brand_profile.assign_attributes(
-    business_name: params[:business_name],
-    industry: params[:industry],
-    website_url: params[:website_url],
-    products_services: params[:products_services],
-    content_tone: params[:content_tone],
-    posting_topics: params[:posting_topics],
-    topics_to_avoid: params[:topics_to_avoid]
-  )
-  
-  brand_profile.complete_onboarding!
-  
-  render json: {
-    success: true,
-    brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
-  }
-end
+      def complete_onboarding
+        brand_profile = BrandProfile.get_or_create_for(current_user)
 
-def brand_profile_update
-  brand_profile = BrandProfile.get_or_create_for(current_user)
-  
-  # Update only the fields provided
-  update_params = %i[business_name industry website_url products_services content_tone posting_topics topics_to_avoid]
-  update_params.each do |field|
-    brand_profile[field] = params[field] if params[field].present?
-  end
-  
-  brand_profile.save
-  
-  render json: {
-    success: true,
-    brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
-  }
-end
+        brand_profile.assign_attributes(
+          business_name: params[:business_name],
+          industry: params[:industry],
+          website_url: params[:website_url],
+          products_services: params[:products_services],
+          content_tone: params[:content_tone],
+          posting_topics: params[:posting_topics],
+          topics_to_avoid: params[:topics_to_avoid]
+        )
+
+        brand_profile.complete_onboarding!
+
+        render json: {
+          success: true,
+          brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
+        }
+      end
+
+      def brand_profile_update
+        brand_profile = BrandProfile.get_or_create_for(current_user)
+
+        update_params = %i[business_name industry website_url products_services content_tone posting_topics topics_to_avoid]
+        update_params.each do |field|
+          brand_profile[field] = params[field] if params[field].present?
+        end
+
+        brand_profile.save
+
+        render json: {
+          success: true,
+          brand_profile: brand_profile.as_json(only: [:business_name, :industry, :website_url, :products_services, :content_tone, :posting_topics, :topics_to_avoid])
+        }
+      end
       def clear
         current_user.otto_messages.destroy_all
         render json: { success: true }
