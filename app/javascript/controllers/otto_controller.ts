@@ -465,24 +465,87 @@ export default class OttoController extends Controller {
       this.inputTarget.value = transcript;
     };
 
-    this.speechRecognition.onerror = () => {
-      // Only stop UI state, don't send (error occurred)
-      this.isRecording = false;
-      this.updateMicUI(false);
+    this.speechRecognition.onerror = (event: any) => {
+      // Only stop UI state if it's a fatal error, not for silence/no-match
+      if (event.error === 'no-speech' || event.error === 'aborted') {
+        // These are expected - restart in manual mode
+        if (this.voiceMode === 'manual' && this.isRecording) {
+          this.restartRecording();
+        } else {
+          this.isRecording = false;
+          this.updateMicUI(false);
+        }
+      } else {
+        // Fatal error - stop everything
+        this.isRecording = false;
+        this.updateMicUI(false);
+      }
     };
 
     this.speechRecognition.onend = () => {
       if (this.isRecording) {
-        // Still marked as recording means it stopped unexpectedly
-        // Only stop UI state, but in manual mode don't auto-send
-        this.isRecording = false;
-        this.updateMicUI(false);
+        // In manual mode, restart recognition to keep listening
+        // In auto mode, this is expected and we'll stop below
+        if (this.voiceMode === 'manual') {
+          this.restartRecording();
+        } else {
+          // Auto mode: speech ended, stop and send
+          this.isRecording = false;
+          this.updateMicUI(false);
+          if (this.inputTarget.value.trim()) {
+            this.send();
+          }
+        }
       }
     };
 
     this.speechRecognition.start();
     this.isRecording = true;
     this.updateMicUI(true);
+  }
+
+  private restartRecording() {
+    // Restart speech recognition for manual mode (keep-alive)
+    if (!this.isRecording) return;
+    
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const previousTranscript = this.inputTarget.value;
+    
+    this.speechRecognition = new SpeechRecognition();
+    this.speechRecognition.continuous = true;
+    this.speechRecognition.interimResults = true;
+    this.speechRecognition.maxAlternatives = 1;
+
+
+    this.speechRecognition.onresult = (event: any) => {
+      const lastResultIndex = event.results.length - 1;
+      const result = event.results[lastResultIndex];
+      const transcript = result[0].transcript;
+      this.inputTarget.value = transcript;
+    };
+
+    this.speechRecognition.onerror = (event: any) => {
+      if (event.error === 'no-speech' || event.error === 'aborted') {
+        if (this.voiceMode === 'manual' && this.isRecording) {
+          this.restartRecording();
+        } else {
+          this.isRecording = false;
+          this.updateMicUI(false);
+        }
+      } else {
+        this.isRecording = false;
+        this.updateMicUI(false);
+      }
+    };
+
+    this.speechRecognition.onend = () => {
+      if (this.isRecording && this.voiceMode === 'manual') {
+        this.restartRecording();
+      }
+    };
+
+    this.speechRecognition.start();
+    // UI stays in recording state
   }
 
   private updateMicUI(recording: boolean) {
