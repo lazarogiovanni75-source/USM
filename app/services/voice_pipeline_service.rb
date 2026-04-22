@@ -71,7 +71,7 @@ class VoicePipelineService
   # @param options [Hash] Options like :voice, :model, :speed
   # @return [Hash] { success: bool, audio_url: string, error: string }
   def synthesize(text, options = {})
-    voice = options[:voice] || 'alloy'
+    voice = options[:voice] || 'echo'
     model = options[:model] || 'tts-1-hd'  # Use HD model for better quality
     speed = options[:speed] || 1.0
 
