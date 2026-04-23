@@ -24,7 +24,12 @@ module Api
           return
         end
 
-        # Check if this is a task request
+        # Check if this is a task request (image/video/content generation)
+        if task_request?(user_message)
+          execute_task(user_message)
+          return
+        end
+
         chat_response(user_message)
       rescue => e
         Rails.logger.error "[Otto] Unavailable error: #{e.class} - #{e.message}"
