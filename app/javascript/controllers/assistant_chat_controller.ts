@@ -65,7 +65,7 @@ export default class extends Controller<HTMLElement> {
     try {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
       
-      const response = await fetch('/assistant/chat', {
+      const response = await fetch('/assistants/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -35,7 +35,7 @@ export default class OttoSidebarController extends Controller {
 
   async loadConversations() {
     try {
-      const response = await fetch('/assistant/', {
+      const response = await fetch('/assistants/', {
         headers: {
           'X-CSRF-Token': this.csrfToken || '',
           'Accept': 'application/json'
@@ -115,7 +115,7 @@ export default class OttoSidebarController extends Controller {
     if (!conversationId) return;
 
     try {
-      const response = await fetch(`/assistant/${conversationId}`, {
+      const response = await fetch(`/assistants/${conversationId}`, {
         headers: {
           'X-CSRF-Token': this.csrfToken || '',
           'Accept': 'application/json'
@@ -162,7 +162,7 @@ export default class OttoSidebarController extends Controller {
     }
 
     try {
-      const response = await fetch(`/assistant/${conversationId}`, {
+      const response = await fetch(`/assistants/${conversationId}`, {
         method: 'DELETE',
         headers: {
           'X-CSRF-Token': this.csrfToken || '',

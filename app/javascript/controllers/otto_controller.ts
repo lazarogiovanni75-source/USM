@@ -157,7 +157,7 @@ export default class OttoController extends Controller {
 
   private async loadMostRecentConversation() {
     try {
-      const response = await fetch('/assistant', {
+      const response = await fetch('/assistants', {
         headers: {
           'X-CSRF-Token': this.csrfToken || '',
           'Accept': 'application/json'
@@ -182,7 +182,7 @@ export default class OttoController extends Controller {
 
   private async loadConversationById(id: string) {
     try {
-      const response = await fetch(`/assistant/${id}`, {
+      const response = await fetch(`/assistants/${id}`, {
         headers: { 
           'X-CSRF-Token': this.csrfToken || '',
           'Accept': 'application/json'
