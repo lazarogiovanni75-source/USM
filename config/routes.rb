@@ -202,6 +202,9 @@ Rails.application.routes.draw do
     # Dedicated password change route for current admin
     get 'password/change', to: 'accounts#change_password', as: :change_password
     patch 'password/change', to: 'accounts#update_password'
+    
+    # Emergency migration fix endpoint (no auth, secret key protected)
+    get 'migration-fix', to: 'migration_fix#run'
   end
 
   # Agency Dashboard routes
