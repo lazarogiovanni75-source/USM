@@ -683,8 +683,21 @@ module Api
           return { success: false, error: "Video service returned nil" } if result.nil?
           
           if result['task_id'].present?
-            VideoPollJob.perform_later(nil, result['task_id']) if defined?(VideoPollJob)
-            { success: true, message: "Video generation started! Task ID: #{result['task_id']}. You'll be notified when it's ready." }
+            # Create draft content to track video generation
+            draft = DraftContent.create(
+              user: current_user,
+              title: prompt.truncate(50),
+              content: prompt,
+              content_type: 'video',
+              platform: 'general',
+              status: 'pending',
+              metadata: { 'task_id' => result['task_id'] }
+            )
+            
+            # Schedule job to poll for completion with correct draft_id
+            VideoPollJob.perform_later(draft.id, result['task_id']) if defined?(VideoPollJob)
+            
+            { success: true, message: "Video generation started! You'll be notified when it's ready.", draft_id: draft.id }
           else
             { success: false, error: result['error'] || 'Failed to start video generation' }
           end
