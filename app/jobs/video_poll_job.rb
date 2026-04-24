@@ -109,30 +109,52 @@ class VideoPollJob < ApplicationJob
     when 'atlas_cloud', 'atlas_cloud_video'
       begin
         AtlasCloudService.new.task_status(task_id)
+      rescue AtlasCloudService::AuthenticationError => e
+        error_msg = 'Authentication failed - please check your Atlas Cloud API key'
+        draft = DraftContent.find_by(id: @content_item_id) if defined?(@content_item_id)
+        draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg })) if defined?(@content_item_id)
+        Rails.logger.error "VideoPollJob: Authentication error for task #{task_id}: #{e.message}"
+        return { 'status' => 'failed', 'error' => error_msg }
       rescue AtlasCloudService::Error => e
-        error_msg = e.message.downcase
-        if error_msg.include?('404') || error_msg.include?('not found') ||
-           error_msg.include?('server error: 500') || error_msg.include?('server error: 502') ||
-           error_msg.include?('server error: 503') || error_msg.include?('server error: 504') ||
-           error_msg.include?('connection error') || error_msg.include?('timeout')
-          Rails.logger.warn "VideoPollJob: Task #{task_id} got temporary error '#{e.message}', will retry..."
+        error_msg_lower = e.message.downcase
+        if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up')
+          error_msg = 'Insufficient credits - please top up your Atlas Cloud account'
+          draft = DraftContent.find_by(id: @content_item_id) if defined?(@content_item_id)
+          draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg })) if defined?(@content_item_id)
+          Rails.logger.error "VideoPollJob: Insufficient credits for task #{task_id}"
+          return { 'status' => 'failed', 'error' => error_msg }
+        elsif error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
+              error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
+          error_msg = "Atlas Cloud server error - #{e.message}"
+          draft = DraftContent.find_by(id: @content_item_id) if defined?(@content_item_id)
+          draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg })) if defined?(@content_item_id)
+          Rails.logger.error "VideoPollJob: Atlas Cloud server error for task #{task_id}: #{e.message}"
+          return { 'status' => 'failed', 'error' => error_msg }
+        elsif error_msg_lower.include?('404') || error_msg_lower.include?('not found')
           return { 'status' => 'not_found', 'error' => e.message }
+        elsif error_msg_lower.include?('rate limit')
+          # Retry rate limit errors
+          return { 'status' => 'not_found', 'error' => e.message }
+        else
+          raise
         end
-        raise
       end
     else
       begin
         AtlasCloudService.new.task_status(task_id)
       rescue AtlasCloudService::Error => e
-        error_msg = e.message.downcase
-        if error_msg.include?('404') || error_msg.include?('not found') ||
-           error_msg.include?('server error: 500') || error_msg.include?('server error: 502') ||
-           error_msg.include?('server error: 503') || error_msg.include?('server error: 504') ||
-           error_msg.include?('connection error') || error_msg.include?('timeout')
-          Rails.logger.warn "VideoPollJob: Task #{task_id} got temporary error '#{e.message}', will retry..."
+        error_msg_lower = e.message.downcase
+        if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up') ||
+           error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
+           error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
+          return { 'status' => 'failed', 'error' => e.message }
+        elsif error_msg_lower.include?('404') || error_msg_lower.include?('not found') ||
+              error_msg_lower.include?('rate limit') || error_msg_lower.include?('connection error') ||
+              error_msg_lower.include?('timeout')
           return { 'status' => 'not_found', 'error' => e.message }
+        else
+          raise
         end
-        raise
       end
     end
   end

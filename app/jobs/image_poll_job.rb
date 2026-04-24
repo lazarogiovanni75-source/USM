@@ -76,12 +76,35 @@ class ImagePollJob < ApplicationJob
     when 'atlas_cloud_image', 'atlas_cloud'
       begin
         AtlasCloudImageService.new.task_status(task_id)
+      rescue AtlasCloudImageService::AuthenticationError => e
+        error_msg = 'Authentication failed - please check your Atlas Cloud API key'
+        draft = DraftContent.find_by(id: draft_id)
+        draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
+        Rails.logger.error "ImagePollJob: Authentication error for task #{task_id}: #{e.message}"
+        return { 'status' => 'failed', 'error' => error_msg }
       rescue AtlasCloudImageService::Error => e
-        if e.message.include?('404') || e.message.include?('not found')
+        error_msg_lower = e.message.downcase
+        if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up')
+          error_msg = 'Insufficient credits - please top up your Atlas Cloud account'
+          draft = DraftContent.find_by(id: draft_id)
+          draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
+          Rails.logger.error "ImagePollJob: Insufficient credits for task #{task_id}"
+          return { 'status' => 'failed', 'error' => error_msg }
+        elsif error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
+              error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
+          error_msg = "Atlas Cloud server error - #{e.message}"
+          draft = DraftContent.find_by(id: draft_id)
+          draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
+          Rails.logger.error "ImagePollJob: Atlas Cloud server error for task #{task_id}: #{e.message}"
+          return { 'status' => 'failed', 'error' => error_msg }
+        elsif error_msg_lower.include?('404') || error_msg_lower.include?('not found')
           Rails.logger.warn "ImagePollJob: Task #{task_id} not found yet, will retry..."
           return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
+        elsif error_msg_lower.include?('rate limit')
+          return { 'status' => 'not_found', 'error' => e.message }
+        else
+          raise
         end
-        raise
       end
     when 'openai'
       { 'status' => 'success', 'output' => task_id }
@@ -89,10 +112,18 @@ class ImagePollJob < ApplicationJob
       begin
         AtlasCloudImageService.new.task_status(task_id)
       rescue AtlasCloudImageService::Error => e
-        if e.message.include?('404') || e.message.include?('not found')
-          return { 'status' => 'not_found', 'error' => 'Task not found - may still be processing' }
+        error_msg_lower = e.message.downcase
+        if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up') ||
+           error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
+           error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
+          return { 'status' => 'failed', 'error' => e.message }
+        elsif error_msg_lower.include?('404') || error_msg_lower.include?('not found') ||
+              error_msg_lower.include?('rate limit') || error_msg_lower.include?('connection error') ||
+              error_msg_lower.include?('timeout')
+          return { 'status' => 'not_found', 'error' => e.message }
+        else
+          raise
         end
-        raise
       end
     end
   end
