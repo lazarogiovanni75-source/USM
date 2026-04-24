@@ -6,24 +6,17 @@
 # Authentication: Bearer token via ATLASCLOUD_API_KEY environment variable
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
-  DEFAULT_MODEL = 'qwen/qwen-image-2.0/text-to-image'
+  DEFAULT_MODEL = 'bytedance/seedream-v4.5/sequential'
   TIMEOUT = 120
 
-  # Available image models (user selected) - organized by tier
+  # Available image models (ByteDance Seedream only)
   AVAILABLE_MODELS = {
-    # Standard tier
-    'qwen/qwen-image-2.0/text-to-image' => 'Qwen 2.0 Text-to-Image (Standard)',
-    'z-image/turbo' => 'Z-Turbo (Standard)',
-    # Premium tier
-    'google/nano-banana-2/text-to-image' => 'Google Nano Banana 2 (Premium)',
-    # HD tier
-    'google/imagen4-ultra' => 'Google Imagen 4 Ultra (HD)'
+    'bytedance/seedream-v4.5/sequential' => 'ByteDance Seedream 4.5 (Text-to-Image)'
   }.freeze
 
-  # Image edit models
+  # Image edit models (ByteDance Seedream only)
   IMAGE_EDIT_MODELS = {
-    'qwen/qwen-image-2.0/edit' => 'Qwen 2.0 Image Edit',
-    'alibaba/qwen-image/edit' => 'Alibaba Qwen Image Edit'
+    'bytedance/seedream-v4.5/edit-sequential' => 'ByteDance Seedream 4.5 (Image Edit)'
   }.freeze
 
   class Error < StandardError; end
@@ -85,7 +78,7 @@ class AtlasCloudImageService
   #
   def edit_image(image_url:,
                  prompt:,
-                 model: 'qwen/qwen-image-2.0/edit',
+                 model: 'bytedance/seedream-v4.5/edit-sequential',
                  aspect_ratio: '1:1')
     body = {
       model: model,

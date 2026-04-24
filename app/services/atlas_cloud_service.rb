@@ -34,27 +34,14 @@ class AtlasCloudService
     'atlascloud/wan-2.2-turbo-spicy/image-to-video' => 'Wan 2.2 Turbo Spicy Image-to-Video'
   }.freeze
 
-  # Available image models (user selected)
-  # Tiers: standard, premium
+  # Available image models (ByteDance Seedream only)
   IMAGE_MODELS = {
-    # Standard Tier
-    'qwen/qwen-image-2.0/text-to-image' => 'Qwen 2.0 Text-to-Image (Standard)',
-    
-    # Premium/HD Tier
-    'google/nano-banana-2/text-to-image' => 'Google Nano Banana 2 (Premium)',
-    'google/imagen4-ultra' => 'Google Imagen 4 Ultra (HD)',
-    
-    # Legacy
-    'z-image/turbo' => 'Z-Turbo'
+    'bytedance/seedream-v4.5/sequential' => 'ByteDance Seedream 4.5 (Text-to-Image)'
   }.freeze
 
-  # Image editing models
+  # Image editing models (ByteDance Seedream only)
   IMAGE_EDIT_MODELS = {
-    # Standard Tier
-    'alibaba/qwen-image/edit' => 'Qwen Image Edit (Standard)',
-    
-    # Premium Tier
-    'qwen/qwen-image-2.0/edit' => 'Qwen 2.0 Image Edit (Premium)'
+    'bytedance/seedream-v4.5/edit-sequential' => 'ByteDance Seedream 4.5 (Image Edit)'
   }.freeze
 
   # Dual video model selection based on text content
@@ -86,11 +73,11 @@ class AtlasCloudService
   # Generate image using Atlas Cloud unified API
   #
   # @param prompt [String] Text prompt describing the image
-  # @param model [String] Model ID (default: black-forest-labs/flux-1.1-pro)
+  # @param model [String] Model ID (default: bytedance/seedream-v4.5/sequential)
   # @param aspect_ratio [String] Aspect ratio (16:9, 9:16, 1:1, 4:3, 3:4)
   # @return [Hash] { task_id:, output:, status: }
   #
-  def generate_image(prompt:, model: 'black-forest-labs/flux-1.1-pro', aspect_ratio: '1:1')
+  def generate_image(prompt:, model: 'bytedance/seedream-v4.5/sequential', aspect_ratio: '1:1')
     body = {
       model: model,
       prompt: prompt,
