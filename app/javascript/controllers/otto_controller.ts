@@ -768,11 +768,22 @@ export default class OttoController extends Controller {
 
 
     this.speechRecognition.onresult = (event: any) => {
-      // Get the final transcript
-      const lastResultIndex = event.results.length - 1;
-      const result = event.results[lastResultIndex];
-      const transcript = result[0].transcript;
-      this.inputTarget.value = transcript;
+      // Get all results and concatenate transcripts
+      let fullTranscript = this.inputTarget.value || '';
+      
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        // Only add final transcripts to avoid duplication
+        if (result.isFinal) {
+          const transcript = result[0].transcript.trim();
+          // Only add if not already included (prevent duplicates)
+          if (transcript && !fullTranscript.includes(transcript)) {
+            fullTranscript = fullTranscript ? `${fullTranscript} ${transcript}` : transcript;
+          }
+        }
+      }
+      
+      this.inputTarget.value = fullTranscript;
     };
 
     this.speechRecognition.onerror = (event: any) => {
@@ -827,10 +838,20 @@ export default class OttoController extends Controller {
 
 
     this.speechRecognition.onresult = (event: any) => {
-      const lastResultIndex = event.results.length - 1;
-      const result = event.results[lastResultIndex];
-      const transcript = result[0].transcript;
-      this.inputTarget.value = transcript;
+      // Accumulate all final transcripts
+      let fullTranscript = this.inputTarget.value || '';
+      
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          const transcript = result[0].transcript.trim();
+          if (transcript && !fullTranscript.includes(transcript)) {
+            fullTranscript = fullTranscript ? `${fullTranscript} ${transcript}` : transcript;
+          }
+        }
+      }
+      
+      this.inputTarget.value = fullTranscript;
     };
 
     this.speechRecognition.onerror = (event: any) => {
