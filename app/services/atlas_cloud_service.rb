@@ -14,11 +14,11 @@ class AtlasCloudService
 
   # Available text-to-video models (ByteDance Seedance only)
   TEXT_TO_VIDEO_MODELS = {
-    'bytedance/seedance-v1.5-pro/text-to-video-fast' => 'Seedance V1.5 Pro (Text-to-Video, 12s, 720p)'
+    'bytedance/seedance-v1.5-pro/text-to-video-fast' => 'ByteDance Seedance V1.5 Pro'
   }.freeze
 
   IMAGE_TO_VIDEO_MODELS = {
-    'bytedance/seedance-v1.5-pro/image-to-video-fast' => 'Seedance V1.5 Pro (Image-to-Video)'
+    'bytedance/seedance-v1.5-pro/image-to-video-fast' => 'ByteDance Seedance V1.5 Pro'
   }.freeze
 
   # Available image models (ByteDance Seedream only)
