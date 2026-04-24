@@ -758,9 +758,9 @@ export default class OttoController extends Controller {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     this.speechRecognition = new SpeechRecognition();
     
-    // Manual mode: keep listening continuously, stop and send when user presses mic
-    // Auto mode: continuous mode with silence detection and auto-send
-    this.speechRecognition.continuous = true;
+    // Manual mode: single speech segment, user presses to stop and send
+    // Auto mode: continuous with silence detection and auto-send
+    this.speechRecognition.continuous = this.voiceMode !== 'manual';
     this.speechRecognition.interimResults = true;
     this.speechRecognition.maxAlternatives = 1;
     // Set the language based on user's selection
