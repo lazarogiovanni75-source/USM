@@ -238,21 +238,9 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Model</label>
               <select name="model" class="form-select w-full">
-                <optgroup label="Standard Tier">
-                  <% @image_models.select { |_, name| name.include?('Standard') || name.include?('Z-Turbo') }.each do |model_id, model_name| %>
-                    <option value="<%= model_id %>" <%= 'selected' if model_id == 'qwen/qwen-image-2.0/text-to-image' %>><%= model_name %></option>
-                  <% end %>
-                </optgroup>
-                <optgroup label="Premium Tier">
-                  <% @image_models.select { |_, name| name.include?('Premium') }.each do |model_id, model_name| %>
-                    <option value="<%= model_id %>"><%= model_name %></option>
-                  <% end %>
-                </optgroup>
-                <optgroup label="HD Tier">
-                  <% @image_models.select { |_, name| name.include?('HD') }.each do |model_id, model_name| %>
-                    <option value="<%= model_id %>"><%= model_name %></option>
-                  <% end %>
-                </optgroup>
+                <% @image_models.each do |model_id, model_name| %>
+                  <option value="<%= model_id %>" <%= 'selected' if model_id == 'bytedance/seedream-v4.5/sequential' %>><%= model_name %></option>
+                <% end %>
               </select>
             </div>
             <div>
@@ -313,21 +301,9 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Model</label>
               <select name="model" class="form-select w-full">
-                <optgroup label="Image-to-Video (HD - 1080p, 8s)">
-                  <% @video_models.select { |k, _| k.include?('image-to-video') }.each do |model_id, model_name| %>
-                    <option value="<%= model_id %>"><%= model_name %></option>
-                  <% end %>
-                </optgroup>
-                <optgroup label="Text-to-Video (HD - 720p, 12s)">
-                  <% @video_models.select { |k, _| k.include?('text-to-video') && k.include?('seedance') }.each do |model_id, model_name| %>
-                    <option value="<%= model_id %>"><%= model_name %></option>
-                  <% end %>
-                </optgroup>
-                <optgroup label="Text-to-Video (Standard)">
-                  <% @video_models.select { |k, _| k.include?('text-to-video') && !k.include?('seedance') }.each do |model_id, model_name| %>
-                    <option value="<%= model_id %>" <%= 'selected' if model_id == 'vidu/q3-pro/text-to-video' %>><%= model_name %></option>
-                  <% end %>
-                </optgroup>
+                <% @video_models.each do |model_id, model_name| %>
+                  <option value="<%= model_id %>"><%= model_name %></option>
+                <% end %>
               </select>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -349,7 +325,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Source Image URL (optional)</label>
-              <input type="url" name="source_image_url" class="form-input w-full" placeholder="https://... (for Wan 2.2 image-to-video)">
+              <input type="url" name="source_image_url" class="form-input w-full" placeholder="https://... (for image-to-video)">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quality</label>
@@ -379,7 +355,7 @@
             </div>
             <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
               <p class="text-xs text-amber-800 dark:text-amber-300">
-                <strong>Tip:</strong> To use Wan 2.2 Turbo Spicy image-to-video, enter a generated image URL above.
+                <strong>Tip:</strong> To use Seedance image-to-video, enter a generated image URL above.
               </p>
             </div>
             <button type="submit" class="btn-primary w-full">
