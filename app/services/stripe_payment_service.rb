@@ -214,38 +214,41 @@ class StripePaymentService < ApplicationService
   end
 
   # Handle subscription invoice payments (recurring billing)
-  # CLACKY_NOTE: Only needed for subscription-based payments
-  # If you're using subscriptions, implement this to create payment records for each billing cycle
+  # Also resets credits on monthly renewal
   def self.handle_invoice_payment_success(invoice)
     subscription_id = invoice['subscription']
     return unless subscription_id
 
-    # Implement subscription billing logic here
-    # subscription = Subscription.find_by(stripe_subscription_id: subscription_id)
-    # return unless subscription
-    #
-    # subscription.payments.create!(
-    #   amount: invoice['amount_paid'] / 100.0,
-    #   currency: invoice['currency'],
-    #   status: 'paid',
-    #   stripe_payment_intent_id: invoice['payment_intent'],
-    #   user: subscription.user,
-    #   metadata: { invoice_id: invoice['id'], billing_cycle: Time.at(invoice['created']).to_date }
-    # )
+    # Find UserSubscription and reset credits
+    user_subscription = UserSubscription.find_by(stripe_subscription_id: subscription_id)
+    if user_subscription.present?
+      user_subscription.reset_credits!
+      Rails.logger.info "Credits reset for subscription #{subscription_id} on renewal"
+    end
 
     Rails.logger.info "Invoice payment succeeded for subscription #{subscription_id}"
   end
 
-  # CLACKY_NOTE: Only needed for subscription-based payments
+  # Handle subscription created/updated - sync status and reset credits on new subscriptions
   def self.handle_subscription_update(subscription)
-    # Sync subscription status from Stripe
-    # sub = Subscription.find_by(stripe_subscription_id: subscription['id'])
-    # sub&.update!(
-    #   status: subscription['status'],
-    #   current_period_end: Time.at(subscription['current_period_end'])
-    # )
-
-    Rails.logger.info "Subscription updated: #{subscription['id']}"
+    stripe_sub_id = subscription['id']
+    user_subscription = UserSubscription.find_by(stripe_subscription_id: stripe_sub_id)
+    
+    if user_subscription.present?
+      # Sync subscription status
+      status = subscription['status']
+      user_subscription.update!(status: status)
+      
+      # Reset credits on new active subscription
+      if status == 'active' && user_subscription.credits_reset_at.nil?
+        user_subscription.reset_credits!
+        Rails.logger.info "Credits initialized for new subscription #{stripe_sub_id}"
+      end
+      
+      Rails.logger.info "Subscription #{stripe_sub_id} updated to status: #{status}"
+    else
+      Rails.logger.info "Subscription update for unknown subscription: #{stripe_sub_id}"
+    end
   end
 
   # CLACKY_NOTE: Only needed for subscription-based payments

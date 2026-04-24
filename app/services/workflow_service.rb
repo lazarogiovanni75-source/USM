@@ -17,9 +17,20 @@ class WorkflowService
     draft = nil
     
     if generate_image
+      # Check credits before generation
+      subscription = user.user_subscriptions.active.first
+      credit_cost = 1
+      
+      unless subscription && subscription.has_credits?(credit_cost)
+        return { success: false, error: "You don't have enough credits. Please upgrade your plan or wait for your monthly reset." }
+      end
+      
       image_result = ImageGenerationService.generate_image(prompt: visual_prompt)
       
       if image_result[:success] && image_result[:task_id].present?
+        # Deduct credits
+        subscription&.deduct_credits!(credit_cost)
+        
         draft = DraftContent.create!(
           user: user,
           title: caption.truncate(50),
@@ -48,9 +59,20 @@ class WorkflowService
         media_type = 'image'
       end
     elsif generate_video
+      # Check credits before generation
+      subscription = user.user_subscriptions.active.first
+      credit_cost = 5
+      
+      unless subscription && subscription.has_credits?(credit_cost)
+        return { success: false, error: "You don't have enough credits. Please upgrade your plan or wait for your monthly reset." }
+      end
+      
       video_result = VideoGenerationService.generate_video(prompt: visual_prompt)
       
       if video_result[:success] && video_result[:task_id].present?
+        # Deduct credits
+        subscription&.deduct_credits!(credit_cost)
+        
         draft = DraftContent.create!(
           user: user,
           title: caption.truncate(50),

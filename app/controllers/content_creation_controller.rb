@@ -142,6 +142,14 @@ class ContentCreationController < ApplicationController
     quality = 'standard' unless QualityTiers.valid_quality?(quality)
     credit_cost = QualityTiers.credit_cost_for(:image, quality)
 
+    # Check credits before generation
+    subscription = current_user.user_subscriptions.active.first
+    unless subscription && subscription.has_credits?(credit_cost)
+      redirect_to content_creation_index_path, 
+        alert: "You don't have enough credits. Please upgrade your plan or wait for your monthly reset."
+      return
+    end
+
     Rails.logger.info "[ContentCreation] Starting image generation - prompt: #{prompt&.length} chars, quality: #{quality}"
 
     begin
@@ -157,6 +165,9 @@ class ContentCreationController < ApplicationController
       if result[:success]
         service = result[:service]
         task_id = result[:task_id]
+        
+        # Deduct credits after successful generation start
+        subscription&.deduct_credits!(credit_cost)
         
         Rails.logger.info "[ContentCreation] Creating draft with task_id: #{task_id}"
         
@@ -209,6 +220,14 @@ class ContentCreationController < ApplicationController
     quality = 'standard' unless QualityTiers.valid_quality?(quality)
     credit_cost = QualityTiers.credit_cost_for(:video, quality)
 
+    # Check credits before generation
+    subscription = current_user.user_subscriptions.active.first
+    unless subscription && subscription.has_credits?(credit_cost)
+      redirect_to content_creation_index_path,
+        alert: "You don't have enough credits. Please upgrade your plan or wait for your monthly reset."
+      return
+    end
+
     begin
       if prompt.blank? || prompt.length < 10
         raise ArgumentError, 'Please provide a more detailed prompt (at least 10 characters)'
@@ -235,6 +254,9 @@ class ContentCreationController < ApplicationController
 
       if result[:success]
         service = result[:service]
+        
+        # Deduct credits after successful generation start
+        subscription&.deduct_credits!(credit_cost)
         
         draft_attrs = {
           title: "Video - #{prompt[0..50]}",

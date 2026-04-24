@@ -2,9 +2,18 @@ module Ai
   module Tools
     class GenerateVideo
       class Error < StandardError; end
+      class InsufficientCreditsError < Error; end
       
       def self.call(user:, campaign: nil, prompt:, duration: "10", model: "bytedance/seedance-v1.5-pro/text-to-video-fast", **)
         Rails.logger.info "[Tools::GenerateVideo] Generating video: #{prompt}"
+        
+        # Get active subscription and check credits
+        subscription = user.user_subscriptions.active.first
+        credit_cost = 5 # Video costs 5 credits
+        
+        unless subscription && subscription.has_credits?(credit_cost)
+          raise InsufficientCreditsError, "You don't have enough credits. Please upgrade your plan or wait for your monthly reset."
+        end
         
         # Prevent duplicate video generations - check for recent pending videos with same prompt
         recent_video = user.videos.where(
@@ -32,6 +41,9 @@ module Ai
         )
         
         if result[:success]
+          # Deduct credits
+          subscription&.deduct_credits!(credit_cost)
+          
           # Optionally attach to campaign
           if campaign
             campaign.update!(strategy: (campaign.strategy || {}).merge(
@@ -52,6 +64,9 @@ module Ai
         else
           { success: false, error: result[:error] }
         end
+      rescue InsufficientCreditsError => e
+        Rails.logger.warn "[Tools::GenerateVideo] Insufficient credits: #{e.message}"
+        { success: false, error: e.message, requires_upgrade: true }
       rescue => e
         Rails.logger.error "[Tools::GenerateVideo] Error: #{e.message}"
         { success: false, error: e.message }

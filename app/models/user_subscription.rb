@@ -8,6 +8,13 @@ class UserSubscription < ApplicationRecord
 
   enum :status, { pending: 'pending', active: 'active', canceled: 'canceled', expired: 'expired' }, default: :pending
 
+  # Credit constants per plan type
+  PLAN_CREDITS = {
+    'starter' => 180,
+    'entrepreneur' => 360,
+    'pro' => 600
+  }.freeze
+
   # Payment interface methods - REQUIRED for Stripe integration
   def customer_name
     user.name
@@ -43,5 +50,50 @@ class UserSubscription < ApplicationRecord
 
   def expired?
     expires_at.present? && expires_at < Time.current
+  end
+
+  # Credit management methods
+
+  # Returns the credit amount for the current plan
+  def plan_credits
+    PLAN_CREDITS[subscription_plan.name.downcase] || 180
+  end
+
+  # Deductions credits if sufficient balance exists
+  # @param amount [Integer] Number of credits to deduct
+  # @return [Boolean] true if deduction successful, false if insufficient credits
+  # @raise [StandardError] if save fails unexpectedly
+  def deduct_credits!(amount)
+    return false if credits_remaining < amount
+
+    self.credits_remaining -= amount
+    save!
+    true
+  rescue ActiveRecord::RecordInvalid
+    false
+  end
+
+  # Resets credits to full plan amount and updates reset timestamp
+  # Called on subscription renewal or initial activation
+  def reset_credits!
+    self.credits_remaining = plan_credits
+    self.credits_reset_at = Time.current
+    save!
+  end
+
+  # Check if user has enough credits for a specific action
+  # @param amount [Integer] Number of credits required
+  # @return [Boolean] true if user has sufficient credits
+  def has_credits?(amount)
+    credits_remaining >= amount
+  end
+
+  # Returns a hash with current credit status
+  def credit_status
+    {
+      remaining: credits_remaining,
+      total: plan_credits,
+      reset_at: credits_reset_at
+    }
   end
 end

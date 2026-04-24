@@ -316,6 +316,19 @@ module Api
               content_id: result[:content]&.id
             }
           }
+        elsif result[:error]&.include?("don't have enough credits") || result[:error]&.include?("upgrade")
+          # Credit check failure - friendly conversational response
+          subscription = current_user.user_subscriptions.active.first
+          credit_status = subscription ? "You have #{subscription.credits_remaining} credits remaining." : "You don't have an active subscription."
+          reply = "😕 Oh no! You're out of credits.
+
+"
+          reply += "#{credit_status} Images cost 1 credit each.
+
+"
+          reply += "Your credits reset at the start of each month, or you can upgrade your plan for more credits."
+          current_user.otto_messages.create(role: "assistant", content: reply)
+          render json: { reply: reply, error: true, requires_upgrade: true }
         else
           error_reply = "❌ Image generation failed. Please try again with a different prompt."
           current_user.otto_messages.create(role: "assistant", content: error_reply)
@@ -350,6 +363,15 @@ module Api
               status: 'processing'
             }
           }
+        elsif result[:error]&.include?("don't have enough credits") || result[:error]&.include?("upgrade")
+          # Credit check failure - friendly conversational response
+          subscription = current_user.user_subscriptions.active.first
+          credit_status = subscription ? "You have #{subscription.credits_remaining} credits remaining." : "You don't have an active subscription."
+          reply = "😕 Oh no! You're out of credits.\n\n"
+          reply += "#{credit_status} Videos cost 5 credits each.\n\n"
+          reply += "Your credits reset at the start of each month, or you can upgrade your plan for more credits."
+          current_user.otto_messages.create(role: "assistant", content: reply)
+          render json: { reply: reply, error: true, requires_upgrade: true }
         else
           error_reply = "❌ Video generation failed. Please try again."
           current_user.otto_messages.create(role: "assistant", content: error_reply)
