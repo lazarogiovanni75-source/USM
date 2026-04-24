@@ -253,31 +253,6 @@
                 <option value="3:4">Portrait (3:4)</option>
               </select>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quality</label>
-              <div class="grid grid-cols-2 gap-3">
-                <label class="quality-option relative cursor-pointer">
-                  <input type="radio" name="quality" value="standard" checked class="sr-only peer">
-                  <div class="peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/20 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3 transition-all hover:border-primary-300">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-semibold text-gray-900 dark:text-white">⚡ Standard</span>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">720p / 1024x1024</p>
-                    <p class="text-xs font-medium text-primary-600 dark:text-primary-400">1 credit</p>
-                  </div>
-                </label>
-                <label class="quality-option relative cursor-pointer">
-                  <input type="radio" name="quality" value="hd" class="sr-only peer">
-                  <div class="peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/20 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3 transition-all hover:border-primary-300">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-semibold text-gray-900 dark:text-white">✨ HD</span>
-                      <span class="px-1.5 py-0.5 text-xs font-medium bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded">HD</span>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">1080p / 2048x2048</p>
-                    <p class="text-xs font-medium text-primary-600 dark:text-primary-400">2 credits</p>
-                  </div>
-                </label>
-              </div>
             </div>
             <button type="submit" class="btn-primary w-full">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,36 +302,6 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Source Image URL (optional)</label>
               <input type="url" name="source_image_url" class="form-input w-full" placeholder="https://... (for image-to-video)">
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quality</label>
-              <div class="grid grid-cols-2 gap-3">
-                <label class="quality-option relative cursor-pointer">
-                  <input type="radio" name="quality" value="standard" checked class="sr-only peer">
-                  <div class="peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/20 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3 transition-all hover:border-primary-300">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-semibold text-gray-900 dark:text-white">⚡ Standard</span>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">480p / 720p</p>
-                    <p class="text-xs font-medium text-primary-600 dark:text-primary-400">2 credits</p>
-                  </div>
-                </label>
-                <label class="quality-option relative cursor-pointer">
-                  <input type="radio" name="quality" value="hd" class="sr-only peer">
-                  <div class="peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/20 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-3 transition-all hover:border-primary-300">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-semibold text-gray-900 dark:text-white">✨ HD</span>
-                      <span class="px-1.5 py-0.5 text-xs font-medium bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded">HD</span>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">1080p / 4K</p>
-                    <p class="text-xs font-medium text-primary-600 dark:text-primary-400">4 credits</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-              <p class="text-xs text-amber-800 dark:text-amber-300">
-                <strong>Tip:</strong> To use Seedance image-to-video, enter a generated image URL above.
-              </p>
             </div>
             <button type="submit" class="btn-primary w-full">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -421,40 +366,6 @@
             <% end %>
           </div>
         </div>
-
-        <!-- Voice Commands (Entrepreneur+ only) -->
-        <% if current_user&.can_use_voice_autopilot? %>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Voice Commands</h3>
-          <div class="space-y-3">
-            <button id="start-voice-btn" class="w-full btn-secondary flex items-center justify-center">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-              </svg>
-              Start Voice Input
-            </button>
-            <div class="text-xs text-gray-500 dark:text-gray-400 text-center">
-              "Create a post about [topic] for [platform]"
-            </div>
-          </div>
-        </div>
-        <% else %>
-        <!-- Voice Commands Upgrade Prompt for Starter users -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div class="flex items-center justify-center mb-4">
-            <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-              </svg>
-            </div>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">Unlock Voice Commands</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center">Upgrade to Entrepreneur or Pro for voice-controlled autopilot</p>
-          <a href="/subscription" class="btn-primary w-full text-center block">
-            Upgrade Plan
-          </a>
-        </div>
-        <% end %>
       </div>
 
       <!-- Main Content Area -->
