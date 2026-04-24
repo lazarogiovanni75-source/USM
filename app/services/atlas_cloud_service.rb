@@ -12,26 +12,13 @@ class AtlasCloudService
   BASE_URL = 'https://api.atlascloud.ai'
   TIMEOUT = 120
 
-  # Available text-to-video models (user selected)
-  # Tiers: standard (basic), hd (high quality), premium (best quality)
+  # Available text-to-video models (ByteDance Seedance only)
   TEXT_TO_VIDEO_MODELS = {
-    # HD Tier: 8 seconds max, 1080p
-    'atlascloud/wan-2.2-turbo-spicy/image-to-video' => 'Wan 2.2 Turbo Spicy HD (8s, 1080p)',
-    'atlascloud/wan-2.2-turbo-spicy/image-to-video-lora' => 'Wan 2.2 Turbo Spicy LoRA HD (8s, 1080p)',
-    
-    # Standard Tier: 12 seconds max, 720p
-    'bytedance/seedance-v1-pro-fast/text-to-video' => 'Seedance V1 Fast (12s, 720p)',
-    
-    # Premium HD Tier: 12 seconds max, 720p
-    'bytedance/seedance-v1.5-pro/image-to-video-fast' => 'Seedance V1.5 Pro HD (12s, 720p)',
-    'bytedance/seedance-v1.5-pro/text-to-video-fast' => 'Seedance V1.5 Pro Fast HD (12s, 720p)',
-    
-    # Legacy
-    'vidu/q3-pro/text-to-video' => 'Vidu Q3-Pro Text-to-Video'
+    'bytedance/seedance-v1.5-pro/text-to-video-fast' => 'Seedance V1.5 Pro (Text-to-Video, 12s, 720p)'
   }.freeze
 
   IMAGE_TO_VIDEO_MODELS = {
-    'atlascloud/wan-2.2-turbo-spicy/image-to-video' => 'Wan 2.2 Turbo Spicy Image-to-Video'
+    'bytedance/seedance-v1.5-pro/image-to-video-fast' => 'Seedance V1.5 Pro (Image-to-Video)'
   }.freeze
 
   # Available image models (ByteDance Seedream only)
@@ -45,8 +32,8 @@ class AtlasCloudService
   }.freeze
 
   # Dual video model selection based on text content
-  VIDEO_MODEL_TEXT = 'google/veo-3.1-lite'.freeze
-  VIDEO_MODEL_VISUAL = 'alibaba/wan-2.5'.freeze
+  VIDEO_MODEL_TEXT = 'bytedance/seedance-v1.5-pro/text-to-video-fast'.freeze
+  VIDEO_MODEL_VISUAL = 'bytedance/seedance-v1.5-pro/image-to-video-fast'.freeze
   VIDEO_DEFAULTS = { resolution: '720p', max_duration: 10 }.freeze
 
   class Error < StandardError; end
@@ -168,7 +155,7 @@ class AtlasCloudService
   #
   def generate_video_from_image(image_url:,
                                 prompt: '',
-                                model: 'atlascloud/wan-2.2-turbo-spicy/image-to-video',
+                                model: 'bytedance/seedance-v1.5-pro/image-to-video-fast',
                                 aspect_ratio: '16:9',
                                 duration: 5,
                                 quality: 'standard')
