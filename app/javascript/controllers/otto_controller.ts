@@ -804,19 +804,9 @@ export default class OttoController extends Controller {
     };
 
     this.speechRecognition.onend = () => {
-      if (this.isRecording) {
-        // In manual mode: restart to keep listening until user presses mic to stop
-        // In auto mode: speech ended, stop and send
-        if (this.voiceMode === 'manual') {
-          this.restartRecording();
-        } else {
-          this.isRecording = false;
-          this.updateMicUI(false);
-          if (this.inputTarget.value.trim()) {
-            this.send();
-          }
-        }
-      }
+      // In manual mode: do NOT restart - keep the current instance alive
+      // Mic stays on until user presses button to stop
+      // Just keep isRecording true and wait
     };
 
     this.speechRecognition.start();
@@ -869,11 +859,7 @@ export default class OttoController extends Controller {
     };
 
     this.speechRecognition.onend = () => {
-      // In manual mode, restart recording to keep listening
-      // User presses mic button to stop and send
-      if (this.isRecording && this.voiceMode === 'manual') {
-        this.restartRecording();
-      }
+      // In manual mode: do NOT restart - mic stays on until user presses to stop
     };
 
     this.speechRecognition.start();
