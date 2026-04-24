@@ -136,6 +136,7 @@ Rails.application.routes.draw do
   # Otto-Pilot AI Chat
   namespace :api do
     namespace :v1 do
+      post 'voice/stream', to: 'voice_stream#stream'
       post 'otto/chat', to: 'otto#chat'
       post 'voice_settings', to: 'voice_settings#create'
       post 'otto/execute', to: 'otto#execute'
