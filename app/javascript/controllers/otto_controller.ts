@@ -758,9 +758,9 @@ export default class OttoController extends Controller {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     this.speechRecognition = new SpeechRecognition();
     
-    // Manual mode: single utterance only, user presses mic to start/stop
+    // Manual mode: keep listening continuously, stop and send when user presses mic
     // Auto mode: continuous mode with silence detection and auto-send
-    this.speechRecognition.continuous = this.voiceMode !== 'manual';
+    this.speechRecognition.continuous = true;
     this.speechRecognition.interimResults = true;
     this.speechRecognition.maxAlternatives = 1;
     // Set the language based on user's selection
@@ -794,12 +794,10 @@ export default class OttoController extends Controller {
 
     this.speechRecognition.onend = () => {
       if (this.isRecording) {
-        // In manual mode: stop recording, wait for user to press mic to send
+        // In manual mode: restart to keep listening until user presses mic to stop
         // In auto mode: speech ended, stop and send
         if (this.voiceMode === 'manual') {
-          this.isRecording = false;
-          this.updateMicUI(false);
-          // DO NOT auto-send - wait for user to press send button
+          this.restartRecording();
         } else {
           this.isRecording = false;
           this.updateMicUI(false);
@@ -850,8 +848,11 @@ export default class OttoController extends Controller {
     };
 
     this.speechRecognition.onend = () => {
-      // In manual mode, just stop - don't restart
-      // User must press mic button to start new recording
+      // In manual mode, restart recording to keep listening
+      // User presses mic button to stop and send
+      if (this.isRecording && this.voiceMode === 'manual') {
+        this.restartRecording();
+      }
     };
 
     this.speechRecognition.start();
@@ -878,7 +879,6 @@ export default class OttoController extends Controller {
 
   private stopRecording(send: boolean) {
     const wasRecording = this.isRecording;
-    const wasManualMode = this.voiceMode === 'manual';
     
     if (this.speechRecognition) {
       this.speechRecognition.stop();
@@ -887,15 +887,12 @@ export default class OttoController extends Controller {
     this.isRecording = false;
     this.updateMicUI(false);
 
-    // In manual mode, show hint to press send instead of auto-sending
-    if (wasRecording && wasManualMode && this.inputTarget.value.trim()) {
-      const hint = document.getElementById('otto-review-hint');
-      if (hint) {
-        hint.classList.remove('hidden');
-        // Hide hint after 5 seconds
-        setTimeout(() => hint.classList.add('hidden'), 5000);
+    // In manual mode: always send when user presses to stop
+    // In auto mode: only send if triggered by silence detection (send=true)
+    if (wasRecording && this.inputTarget.value.trim()) {
+      if (this.voiceMode === 'manual' || send) {
+        this.send();
       }
-      // DO NOT auto-send - wait for user to press send
     }
   }
 
