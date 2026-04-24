@@ -3,7 +3,7 @@ module Ai
     class GenerateVideo
       class Error < StandardError; end
       
-      def self.call(user:, campaign: nil, prompt:, duration: "10", model: "seedance-v1-pro", **)
+      def self.call(user:, campaign: nil, prompt:, duration: "10", model: "bytedance/seedance-v1.5-pro/text-to-video-fast", **)
         Rails.logger.info "[Tools::GenerateVideo] Generating video: #{prompt}"
         
         # Prevent duplicate video generations - check for recent pending videos with same prompt

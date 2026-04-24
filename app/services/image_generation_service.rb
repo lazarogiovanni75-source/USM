@@ -13,7 +13,7 @@ class ImageGenerationService
   # @param prompt [String] Text prompt for image
   # @param size [String] Image size
   # @param quality [String] Image quality tier (standard, hd)
-  # @param model [String] Model to use (default: black-forest-labs/flux-1.1-pro)
+  # @param model [String] Model to use (default: bytedance/seedream-v4.5/sequential)
   # @return [Hash] Result with task_id and metadata
   #
   def self.generate_image(prompt:, size: '1:1', quality: 'standard', model: nil)

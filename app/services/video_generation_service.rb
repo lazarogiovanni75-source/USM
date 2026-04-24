@@ -10,12 +10,12 @@ class VideoGenerationService
   class VideoGenerationError < StandardError; end
   class ServiceUnavailableError < VideoGenerationError; end
 
-  # Generate text-to-video using Vidu Q3-Pro
+  # Generate text-to-video using ByteDance Seedance V1.5 Pro
   #
   # @param prompt [String] Text prompt for video
   # @param duration [String] Video duration
   # @param aspect_ratio [String] Aspect ratio
-  # @param model [String] Model to use (default: Vidu Q3-Pro)
+  # @param model [String] Model to use (default: bytedance/seedance-v1.5-pro/text-to-video-fast)
   # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] Result with task_id and metadata
   #
@@ -55,18 +55,18 @@ class VideoGenerationService
     end
   end
 
-  # Generate video from an existing image using Wan 2.2 Turbo Spicy
+  # Generate video from an existing image using ByteDance Seedance V1.5 Pro
   #
   # @param image_url [String] URL of source image
   # @param prompt [String] Optional prompt to guide the video
   # @param duration [String] Video duration
   # @param aspect_ratio [String] Aspect ratio
-  # @param model [String] Model to use (default: Wan 2.2 Turbo Spicy)
+  # @param model [String] Model to use (default: bytedance/seedance-v1.5-pro/image-to-video-fast)
   # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] Result with task_id and metadata
   #
   def self.generate_video_from_image(image_url:, prompt: '', duration: '5', aspect_ratio: '16:9', model: nil, quality: 'standard')
-    model ||= 'atlascloud/wan-2.2-turbo-spicy/image-to-video'
+    model ||= 'bytedance/seedance-v1.5-pro/image-to-video-fast'
     
     service = AtlasCloudService.new
 

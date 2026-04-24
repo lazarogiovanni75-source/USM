@@ -59,8 +59,8 @@ module Ai
               },
               model: {
                 type: "string",
-                enum: ["seedance-v1-pro", "seedance-v1"],
-                description: "Video model version (seedance-v1-pro is higher quality)"
+                enum: ["bytedance/seedance-v1.5-pro/text-to-video-fast", "bytedance/seedance-v1.5-pro/image-to-video-fast"],
+                description: "Video model (bytedance/seedance-v1.5-pro for text-to-video or image-to-video)"
               }
             },
             required: ["prompt"]

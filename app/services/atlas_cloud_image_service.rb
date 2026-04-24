@@ -31,7 +31,7 @@ class AtlasCloudImageService
   # Generate image using Atlas Cloud unified API
   #
   # @param prompt [String] Text prompt describing the image
-  # @param model [String] Model ID (default: black-forest-labs/flux-1.1-pro)
+  # @param model [String] Model ID (default: bytedance/seedream-v4.5/sequential)
   # @param aspect_ratio [String] Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
   # @param n [Integer] Number of images to generate
   # @param quality [String] Quality tier (standard, hd)
