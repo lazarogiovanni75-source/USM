@@ -251,9 +251,7 @@ module Api
 
       def task_request?(message)
         task_keywords = [
-          'generate an image', 'generate image', 'create an image', 'create image',
-          'make an image', 'make image', 'generate a video', 'generate video',
-          'create a video', 'create video', 'post to', 'post on', 'publish to',
+          'post to', 'post on', 'publish to',
           'publish on', 'schedule a post', 'schedule post', 'share to',
           'create content', 'write content', 'generate content', 'create a post',
           'write a post', 'draft content'
@@ -285,8 +283,6 @@ module Api
       end
 
       def detect_task_type(message)
-        return 'generate_image' if message.match?(/\b(generate|create|make)\b.*\b(image|picture|photo)\b/i)
-        return 'generate_video' if message.match?(/\b(generate|create|make)\b.*\bvideo\b/i)
         return 'post_social' if message.match?(/\b(post|publish|share)\b.*\b(to|on)\b/i) ||
                                   message.match?(/\b(to|on)\b.*\b(instagram|facebook|twitter|x|tiktok|linkedin)\b/i)
         return 'create_content' if message.match?(/\b(content|post|caption)\b/) ||
@@ -547,7 +543,7 @@ module Api
             system: otto_system_prompt(language),
             messages: history,
             tools: otto_tool_definitions,
-            tool_choice: { "type" => "auto" }
+            tool_choice: { type: "auto" }
           )
 
           Rails.logger.info "[Otto] Anthropic response stop_reason: #{response.stop_reason.inspect}"
@@ -713,45 +709,47 @@ module Api
       def otto_tool_definitions
         [
           {
-            "name" => "generate_image",
-            "description" => "Generate an AI image. Creates images for social media posts, ads, or any visual content.",
-            "input_schema" => {
-              "type" => "object",
-              "properties" => {
-                "prompt" => {
-                  "type" => "string",
-                  "description" => "Detailed description of the image you want to generate"
+            name: "generate_image",
+            description: "Generate an AI image. Creates images for social media posts, ads, or any visual content.",
+            input_schema: {
+              type: "object",
+              properties: {
+                prompt: {
+                  type: "string",
+                  description: "Detailed description of the image you want to generate"
                 },
-                "aspect_ratio" => {
-                  "type" => "string",
-                  "description" => "Image aspect ratio: 1:1 (square), 16:9 (landscape), 9:16 (portrait)",
-                  "enum" => ["1:1", "16:9", "9:16", "4:3", "3:4"]
+                aspect_ratio: {
+                  type: "string",
+                  description: "Image aspect ratio: 1:1 (square), 16:9 (landscape), 9:16 (portrait)",
+                  enum: ["1:1", "16:9", "9:16", "4:3", "3:4"]
                 }
               },
-              "required" => ["prompt"]
+              required: ["prompt"]
             }
           },
           {
-            "name" => "generate_video",
-            "description" => "Generate an AI video. Creates short videos for social media content.",
-            "input_schema" => {
-              "type" => "object",
-              "properties" => {
-                "prompt" => {
-                  "type" => "string",
-                  "description" => "Description of the video scene and action"
+            name: "generate_video",
+            description: "Generate an AI video. Creates short videos for social media content. Use this when user asks to create, generate, or make a video.",
+            input_schema: {
+              type: "object",
+              properties: {
+                prompt: {
+                  type: "string",
+                  description: "Description of the video scene and action - be specific about what happens in the video"
                 },
-                "duration" => {
-                  "type" => "integer",
-                  "description" => "Video duration in seconds (5-12)"
+                duration: {
+                  type: "integer",
+                  description: "Video duration in seconds (5-12)",
+                  minimum: 5,
+                  maximum: 12
                 },
-                "aspect_ratio" => {
-                  "type" => "string",
-                  "description" => "Video aspect ratio: 16:9 (landscape) or 9:16 (portrait)",
-                  "enum" => ["16:9", "9:16"]
+                aspect_ratio: {
+                  type: "string",
+                  description: "Video aspect ratio: 16:9 (landscape) or 9:16 (portrait)",
+                  enum: ["16:9", "9:16"]
                 }
               },
-              "required" => ["prompt"]
+              required: ["prompt"]
             }
           }
         ]
@@ -794,19 +792,32 @@ module Api
           - Answering any general questions the user has
           - Explaining how to use features in the app
 
-          When the user requests image or video generation, you MUST use the generate_image or generate_video tools. Do not describe what you would generate — actually call the tool.
+          ## CRITICAL: Using Tools for Content Generation
 
-IMPORTANT: Only call generate_image or generate_video when the user EXPLICITLY asks you to create, generate, or make an image or video. Do NOT call these tools for casual mentions, questions about images, or references to existing images.
+          When a user asks you to GENERATE, CREATE, or MAKE an image or video, you MUST call the tool immediately. Do NOT just describe what you would create — actually call the tool.
 
-Examples of when to call the tool:
-- "Generate an image of a sunset"
-- "Create a video about our product"
-- "Make me a picture of a cat"
+          Your available tools are:
+          - generate_image: Creates AI images
+          - generate_video: Creates AI videos (5-12 seconds)
 
-Examples of when NOT to call the tool:
-- "What resolution should I use for my image?"
-- "Can you describe this image?"
-- "I uploaded an image earlier"
+          How to use tools:
+          1. When user says "generate a video of a sunset", call generate_video with a detailed prompt
+          2. When user says "create an image showing a cat", call generate_image with a descriptive prompt
+          3. The tools will tell the backend to create the content
+          4. You'll be notified when the content is ready
+
+          ## When to Call Tools
+
+          ✅ ALWAYS call tools when user explicitly asks:
+          - "Generate an image of..."
+          - "Create a video about..."
+          - "Make me a picture..."
+          - "I want a video showing..."
+
+          ❌ NEVER call tools for:
+          - Questions about image/video formats ("What resolution should I use?")
+          - Casual mentions ("I saw a video earlier")
+          - Requests to describe existing images
 
           You are friendly, concise, and encouraging. You speak like a knowledgeable social media expert and marketing strategist. Keep responses clear and actionable. When generating content, always provide ready-to-use copy the user can post directly.
 

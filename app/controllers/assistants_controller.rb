@@ -37,11 +37,28 @@ class AssistantsController < ApplicationController
       { role: m["role"], content: m["content"] }
     end
 
-    # Call Claude via LlmService
-    reply = LlmService.chat(system: system, messages: messages)
+    # Get available tools for the AI assistant
+    tools = AiVoiceTools::TOOLS
 
-    # Save assistant reply
-    @conversation.add_message!("assistant", reply)
+    # Call Claude via LlmService with tools
+    response = LlmService.chat(system: system, messages: messages, tools: tools, tool_choice: 'auto')
+
+    # Handle tool execution if any tools were called
+    reply = response[:text]
+    if response[:tool_calls].present?
+      tool_results = execute_tools(response[:tool_calls])
+      # Add assistant's text response first
+      @conversation.add_message!("assistant", reply) if reply.present?
+      # Add tool results as assistant messages
+      tool_results.each do |tool_result|
+        @conversation.add_message!("assistant", tool_result)
+      end
+      # If no text reply, use the last tool result as the response
+      reply = tool_results.last if reply.blank?
+    else
+      # Save assistant reply
+      @conversation.add_message!("assistant", reply) if reply.present?
+    end
 
     # Check if any onboarding steps were triggered
     check_onboarding_triggers(user_message)
@@ -56,6 +73,35 @@ class AssistantsController < ApplicationController
   rescue => e
     Rails.logger.error "Assistant chat error: #{e.message}"
     render json: { error: e.message }, status: :internal_server_error
+  end
+
+  # Execute tools called by the AI
+  def execute_tools(tool_calls)
+    results = []
+    tool_handler = VoiceToolHandler.new(user: current_user)
+
+    tool_calls.each do |tool_call|
+      tool_name = tool_call[:name]
+      tool_input = tool_call[:input]
+      tool_id = tool_call[:id]
+
+      Rails.logger.info "[AssistantsController] Executing tool: #{tool_name} with input: #{tool_input.inspect}"
+
+      begin
+        result = tool_handler.execute(tool_name, tool_input)
+
+        if result[:status] == "success" || result[:status] == "processing"
+          results << result[:message] || "Action completed successfully!"
+        else
+          results << "❌ Error: #{result[:error] || 'Something went wrong'}"
+        end
+      rescue => e
+        Rails.logger.error "[AssistantsController] Tool execution error: #{e.message}"
+        results << "❌ Error executing #{tool_name}: #{e.message}"
+      end
+    end
+
+    results
   end
 
   # GET /assistant/:id - Load a specific conversation

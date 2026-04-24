@@ -225,8 +225,33 @@ class LlmService
       messages: messages
     }
     
+    # Add tool support if tools are provided
+    if options[:tools].present?
+      create_params[:tools] = options[:tools]
+      create_params[:tool_choice] = { type: options[:tool_choice] || 'auto' }
+    end
+    
     response = client.messages.create(**create_params)
-    response.content.first.text
+    
+    # Return structured response including tool calls if any
+    result = {
+      text: response.content.first.text,
+      stop_reason: response.stop_reason
+    }
+    
+    # Check for tool calls in the response
+    tool_calls = response.content.select { |block| block.type == 'tool_use' }
+    if tool_calls.any?
+      result[:tool_calls] = tool_calls.map do |block|
+        {
+          name: block.name,
+          input: block.input,
+          id: block.id
+        }
+      end
+    end
+    
+    result
   rescue Anthropic::AuthenticationError => e
     raise ApiError, "Anthropic API authentication failed: #{e.message}"
   rescue Net::ReadTimeout, Net::OpenTimeout => e

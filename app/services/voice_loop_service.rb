@@ -62,8 +62,8 @@ class VoiceLoopService
     end
   end
 
-  # Step 2: Send to Claude with full conversation history
-  def process_with_claude(user_message)
+  # Step 2: Send to Claude with full conversation history and tools support
+  def process_with_claude(user_message, tools: nil, tool_choice: 'auto')
     # Add user message to history
     conversation_history << { role: 'user', content: user_message }
 
@@ -87,18 +87,54 @@ class VoiceLoopService
     request['x-api-key'] = api_key
     request['anthropic-version'] = '2023-06-01'
     request['anthropic-dangerous-direct-browser-access'] = 'true'
-    request.body = {
+
+    # Build request body
+    request_body = {
       model: model,
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: trimmed_history
-    }.to_json
+    }
+
+    # Add tool support if tools are provided
+    if tools.present?
+      request_body[:tools] = tools
+      request_body[:tool_choice] = { type: tool_choice }
+    end
+
+    request.body = request_body.to_json
 
     response = http.request(request)
 
     if response.is_a?(Net::HTTPSuccess)
       result = JSON.parse(response.body)
-      claude_response = result.dig('content', 0, 'text') || ''
+
+      # Check if Claude wants to use tools
+      content_blocks = result['content'] || []
+      tool_use_blocks = content_blocks.select { |c| c['type'] == 'tool_use' }
+      text_blocks = content_blocks.select { |c| c['type'] == 'text' }
+
+      # If tool calls were made, execute them and return results
+      if tool_use_blocks.any?
+        tool_results = execute_tools_for_voice(tool_use_blocks)
+
+        # Add assistant's tool call messages to history
+        tool_use_blocks.each do |block|
+          conversation_history << {
+            role: 'assistant',
+            content: "[tool_call] #{block['name']}: #{block['input'].to_json}"
+          }
+        end
+
+        # Return tool execution results
+        return {
+          tool_calls_executed: true,
+          results: tool_results,
+          original_response: text_blocks.map { |t| t['text'] }.join(' ')
+        }
+      end
+
+      claude_response = text_blocks.map { |t| t['text'] }.join(' ') || ''
 
       # Add assistant response to history
       conversation_history << { role: 'assistant', content: claude_response }
@@ -113,6 +149,34 @@ class VoiceLoopService
       Rails.logger.error "Claude API error: #{error_msg}"
       raise "Claude error: #{error_msg}"
     end
+  end
+
+  # Execute tools for voice commands
+  def execute_tools_for_voice(tool_calls)
+    results = []
+    tool_handler = VoiceToolHandler.new(user: @user)
+
+    tool_calls.each do |tool_call|
+      tool_name = tool_call['name']
+      tool_input = tool_call['input']
+
+      Rails.logger.info "[VoiceLoopService] Executing tool: #{tool_name} with input: #{tool_input.inspect}"
+
+      begin
+        result = tool_handler.execute(tool_name, tool_input)
+
+        if result[:status] == "success" || result[:status] == "processing"
+          results << { tool: tool_name, status: result[:status], message: result[:message] }
+        else
+          results << { tool: tool_name, status: "error", error: result[:error] }
+        end
+      rescue => e
+        Rails.logger.error "[VoiceLoopService] Tool execution error: #{e.message}"
+        results << { tool: tool_name, status: "error", error: e.message }
+      end
+    end
+
+    results
   end
 
   # Step 3: Convert text to speech using OpenAI TTS
@@ -161,9 +225,23 @@ class VoiceLoopService
 
     return { error: 'Could not transcribe audio' } if transcribed_text.blank?
 
-    # Step 2: Process with Claude
-    claude_response = process_with_claude(transcribed_text)
-    Rails.logger.info "VoiceLoop: Claude response - '#{claude_response}'"
+    # Step 2: Process with Claude (with tools for video/image generation)
+    claude_response = process_with_claude(transcribed_text, tools: AiVoiceTools::TOOLS, tool_choice: 'auto')
+    Rails.logger.info "VoiceLoop: Claude response - '#{claude_response.inspect}'"
+
+    # Handle tool execution results
+    if claude_response.is_a?(Hash) && claude_response[:tool_calls_executed]
+      tool_results = claude_response[:results]
+      tool_summary = tool_results.map { |r| "#{r[:tool]}: #{r[:status]}" }.join(', ')
+
+      return {
+        transcribed_text: transcribed_text,
+        claude_response: "I've executed the following tools: #{tool_summary}",
+        tool_results: tool_results,
+        conversation_id: @conversation_id,
+        message_count: conversation_history.length / 2
+      }
+    end
 
     return { error: 'Claude failed to respond' } if claude_response.blank?
 
