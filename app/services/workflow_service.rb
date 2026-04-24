@@ -187,14 +187,37 @@ class WorkflowService
     # Generate caption with LLM
     llm_result = LlmService.generate_content(prompt: content)
     
+    # Generate a separate visual prompt for the video
+    visual_prompt = generate_visual_prompt(content, llm_result[:content] || content)
+    
     # Generate video with Atlas Cloud
-    video_result = VideoGenerationService.generate_video(prompt: content)
+    video_result = VideoGenerationService.generate_video(prompt: visual_prompt)
+    
+    # Create DraftContent to track the video and poll for completion
+    draft = DraftContent.create!(
+      user: workflow.user,
+      title: (llm_result[:content] || content).truncate(50),
+      content: llm_result[:content] || content,
+      content_type: 'video',
+      platform: 'general',
+      status: 'pending',
+      media_url: nil,
+      metadata: {
+        'task_id' => video_result[:task_id],
+        'service' => video_result[:service],
+        'workflow_id' => workflow.id
+      }
+    )
+    
+    # Schedule polling job to check for video completion
+    VideoPollJob.perform_later(draft.id, video_result[:task_id]) if defined?(VideoPollJob)
     
     # Save combined results
     result_data = {
       caption: llm_result,
       video_task_id: video_result[:task_id],
-      video_service: video_result[:service]
+      video_service: video_result[:service],
+      draft_id: draft.id
     }
     workflow.update!(status: :completed, result: result_data.to_json)
     result_data

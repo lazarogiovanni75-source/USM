@@ -563,6 +563,7 @@ module Api
           language = params[:language] || current_user.voice_settings.first&.language || 'en'
           result = process_anthropic_response(response, history, language)
           reply_text = result[:reply].presence || "Done! Let me know if you need anything else."
+          task_info = result[:task]
 
           # Always attempt TTS synthesis - client decides whether to play via localStorage
           audio_url = nil
@@ -577,7 +578,7 @@ module Api
             Rails.logger.warn "[Otto] TTS failed: #{e.message}"
           end
 
-          render json: { reply: reply_text, audio_url: audio_url }
+          render json: { reply: reply_text, audio_url: audio_url, task: task_info }.compact
         rescue => e
           Rails.logger.error "[Otto] chat_response CRASH: #{e.class} - #{e.message}"
           Rails.logger.error e.backtrace.first(5).join("\n")
@@ -602,7 +603,7 @@ module Api
         # Execute tools and collect results
         tool_replies = []
         tool_results_list = []
-        image_generated = false
+        task_info = nil
         
         tool_results.each do |tool_call|
           result = execute_otto_tool(tool_call[:name], tool_call[:input])
@@ -610,14 +611,14 @@ module Api
           
           case tool_call[:name]
           when 'generate_image'
-            # Only add the message if image generation was actually initiated
             if result[:success] == true
               tool_replies << "Image generation started! You'll be notified when it's ready in your Drafts."
-              image_generated = true
+              task_info = { type: 'image', draft_id: result[:draft_id] }
             end
           when 'generate_video'
             if result[:success] == true
               tool_replies << "Video generation started! You'll be notified when it's ready in your Drafts."
+              task_info = { type: 'video', draft_id: result[:draft_id] }
             end
           end
         end
@@ -629,7 +630,7 @@ module Api
           current_user.otto_messages.create(role: "assistant", content: final_reply)
         end
         
-        { reply: final_reply.presence || "Done! Let me know if you need anything else." }
+        { reply: final_reply.presence || "Done! Let me know if you need anything else.", task: task_info }
       rescue => e
         Rails.logger.error "[Otto] process_anthropic_response error: #{e.message}"
         { reply: "I encountered an error: #{e.message}" }
