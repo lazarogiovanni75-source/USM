@@ -758,12 +758,11 @@ export default class OttoController extends Controller {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     this.speechRecognition = new SpeechRecognition();
     
-    // Manual mode: single speech segment, user presses to stop and send
+    // Manual mode: single utterance, manual restart on silence (prevents mic cycling)
     // Auto mode: continuous with silence detection and auto-send
-    this.speechRecognition.continuous = this.voiceMode !== 'manual';
+    this.speechRecognition.continuous = false;
     this.speechRecognition.interimResults = true;
     this.speechRecognition.maxAlternatives = 1;
-    // Set the language based on user's selection
     this.speechRecognition.lang = this.selectedLanguage;
 
 
@@ -804,9 +803,10 @@ export default class OttoController extends Controller {
     };
 
     this.speechRecognition.onend = () => {
-      // In manual mode: do NOT restart - keep the current instance alive
-      // Mic stays on until user presses button to stop
-      // Just keep isRecording true and wait
+      // In manual mode: restart recognition to keep listening until user presses to stop
+      if (this.isRecording && this.voiceMode === 'manual') {
+        this.restartRecording();
+      }
     };
 
     this.speechRecognition.start();
@@ -815,16 +815,16 @@ export default class OttoController extends Controller {
   }
 
   private restartRecording() {
-    // Restart speech recognition for manual mode (keep-alive)
-    if (!this.isRecording) return;
+    // Restart speech recognition for manual mode
+    if (!this.isRecording || this.voiceMode !== 'manual') return;
     
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const previousTranscript = this.inputTarget.value;
     
     this.speechRecognition = new SpeechRecognition();
-    this.speechRecognition.continuous = true;
+    this.speechRecognition.continuous = false;
     this.speechRecognition.interimResults = true;
     this.speechRecognition.maxAlternatives = 1;
+    this.speechRecognition.lang = this.selectedLanguage;
 
 
     this.speechRecognition.onresult = (event: any) => {
