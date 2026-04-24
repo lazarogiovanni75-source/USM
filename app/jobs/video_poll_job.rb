@@ -10,6 +10,7 @@ class VideoPollJob < ApplicationJob
   POLL_INTERVAL = 2.seconds
 
   def perform(content_item_id, task_id, attempt = 0)
+    @content_item_id = content_item_id # Store for use in get_status error handling
 
     # Get service and task_id from draft metadata if content_item_id is provided
     if content_item_id.present?
@@ -38,7 +39,7 @@ class VideoPollJob < ApplicationJob
       return
     end
 
-    status_response = get_status(service, task_id)
+    status_response = get_status(service, task_id, content_item_id)
 
     Rails.logger.info "VideoPollJob: Draft #{content_item_id}, Service #{service}, Task #{task_id}, Status: #{status_response['status']}, Output: #{status_response['output'] ? status_response['output'][0..100] : 'nil'}, Attempt: #{attempt}"
 
@@ -104,7 +105,8 @@ class VideoPollJob < ApplicationJob
 
   private
 
-  def get_status(service, task_id)
+  def get_status(service, task_id, content_item_id = nil)
+    @content_item_id ||= content_item_id # Ensure instance var is set
     case service
     when 'atlas_cloud', 'atlas_cloud_video'
       begin

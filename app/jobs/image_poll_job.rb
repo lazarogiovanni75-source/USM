@@ -9,6 +9,8 @@ class ImagePollJob < ApplicationJob
   POLL_INTERVAL = 2.seconds
 
   def perform(draft_id, task_id = nil, service = nil, attempt = 0)
+    @draft_id = draft_id # Store for use in get_status error handling
+
     if attempt < 3
       Rails.logger.info "ImagePollJob: Waiting before poll attempt #{attempt + 1}"
       sleep(2)
@@ -72,13 +74,14 @@ class ImagePollJob < ApplicationJob
   private
 
   def get_status(service, task_id)
+    draft_id = @draft_id
     case service
     when 'atlas_cloud_image', 'atlas_cloud'
       begin
         AtlasCloudImageService.new.task_status(task_id)
       rescue AtlasCloudImageService::AuthenticationError => e
         error_msg = 'Authentication failed - please check your Atlas Cloud API key'
-        draft = DraftContent.find_by(id: draft_id)
+        draft = DraftContent.find_by(id: @draft_id)
         draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
         Rails.logger.error "ImagePollJob: Authentication error for task #{task_id}: #{e.message}"
         return { 'status' => 'failed', 'error' => error_msg }
@@ -86,14 +89,14 @@ class ImagePollJob < ApplicationJob
         error_msg_lower = e.message.downcase
         if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up')
           error_msg = 'Insufficient credits - please top up your Atlas Cloud account'
-          draft = DraftContent.find_by(id: draft_id)
+          draft = DraftContent.find_by(id: @draft_id)
           draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
           Rails.logger.error "ImagePollJob: Insufficient credits for task #{task_id}"
           return { 'status' => 'failed', 'error' => error_msg }
         elsif error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
               error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
           error_msg = "Atlas Cloud server error - #{e.message}"
-          draft = DraftContent.find_by(id: draft_id)
+          draft = DraftContent.find_by(id: @draft_id)
           draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
           Rails.logger.error "ImagePollJob: Atlas Cloud server error for task #{task_id}: #{e.message}"
           return { 'status' => 'failed', 'error' => error_msg }
