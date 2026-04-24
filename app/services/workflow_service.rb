@@ -1,6 +1,6 @@
 class WorkflowService
   def self.create_content_with_media(user:, content_text:, generate_image: false, generate_video: false, post_now: false, social_account_id: nil, scheduled_at: nil)
-    # Generate content with LLM
+    # Generate caption with LLM using content_text as the topic/subject
     llm_result = LlmService.generate_content(prompt: content_text)
     
     # Get caption text - handle case where LLM returns a Hash instead of String
@@ -8,13 +8,16 @@ class WorkflowService
     caption = caption_raw.is_a?(Hash) ? (caption_raw[:body] || caption_raw["body"] || caption_raw.to_s) : caption_raw.to_s
     hashtags = llm_result[:hashtags]
     
-    # Generate media if requested
+    # Generate a separate visual prompt for image/video based on the content topic
+    visual_prompt = generate_visual_prompt(content_text, caption)
+    
+    # Generate media if requested - use visual_prompt for the image/video
     media_url = nil
     media_type = nil
     draft = nil
     
     if generate_image
-      image_result = ImageGenerationService.generate_image(prompt: content_text)
+      image_result = ImageGenerationService.generate_image(prompt: visual_prompt)
       
       if image_result[:success] && image_result[:task_id].present?
         draft = DraftContent.create!(
@@ -45,7 +48,7 @@ class WorkflowService
         media_type = 'image'
       end
     elsif generate_video
-      video_result = VideoGenerationService.generate_video(prompt: content_text)
+      video_result = VideoGenerationService.generate_video(prompt: visual_prompt)
       
       if video_result[:success] && video_result[:task_id].present?
         draft = DraftContent.create!(
@@ -204,5 +207,39 @@ class WorkflowService
   def fail_workflow(workflow, error_message)
     workflow.update!(status: :failed, error_message: error_message)
     nil
+  end
+
+  # Generate a visual prompt for image/video that is separate from the caption
+  # Takes the content_text (user's topic) and caption (generated text) and creates
+  # a descriptive visual prompt for the AI image/video generator
+  def self.generate_visual_prompt(content_text, caption)
+    # Create a visual description prompt based on the topic
+    visual_instruction = "Create a visually appealing, professional image that represents: "
+    visual_instruction += content_text
+    
+    # Add style hints based on caption tone/keywords
+    style_hints = []
+    caption_lower = caption.downcase
+    
+    if caption_lower.include?('professional') || caption_lower.include?('business')
+      style_hints << "clean corporate style"
+    end
+    if caption_lower.include?('fun') || caption_lower.include?('playful') || caption_lower.include?('creative')
+      style_hints << "vibrant and energetic"
+    end
+    if caption_lower.include?('sale') || caption_lower.include?('discount') || caption_lower.include?('deal')
+      style_hints << "bold promotional style"
+    end
+    if caption_lower.include?('behind') || caption_lower.include?('team') || caption_lower.include?('people')
+      style_hints << "featuring people in a natural setting"
+    end
+    
+    # Add style hints if found
+    visual_instruction += ". " + style_hints.join(', ') if style_hints.any?
+    
+    # Standard visual quality hints
+    visual_instruction += ". High quality, social media ready, professional lighting."
+    
+    visual_instruction
   end
 end
