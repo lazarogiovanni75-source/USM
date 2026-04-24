@@ -46,6 +46,9 @@ Rails.application.routes.draw do
   # Health check endpoint for Railway
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Emergency migration fix (no auth required)
+  get 'migration-fix', to: 'migration_fix#run'
+
   # Webhook routes for Postforme (API namespace)
   namespace :api do
     namespace :v1 do
