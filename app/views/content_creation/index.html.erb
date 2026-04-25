@@ -35,6 +35,62 @@
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" data-controller="mobile-debug">
+    <% subscription = current_user.user_subscriptions.active.first %>
+    <% if subscription %>
+      <% credits_info = subscription.credit_status %>
+      <!-- Credits Display Banner -->
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-4 mb-6 text-white">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+          <div class="flex items-center gap-4">
+            <div class="bg-white/20 rounded-full p-3">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm text-white/80">Your Credits</p>
+              <p class="text-2xl font-bold"><%= credits_info[:remaining] %> / <%= credits_info[:total] %></p>
+              <p class="text-xs text-white/70"><%= subscription.subscription_plan.name %> Plan</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+              <p class="text-xs text-white/70">Resets</p>
+              <p class="text-sm font-medium"><%= credits_info[:reset_at].strftime('%b %d, %Y') if credits_info[:reset_at] %></p>
+            </div>
+            <% if subscription.credits_remaining < 50 %>
+              <a href="/subscription" class="bg-yellow-500 hover:bg-yellow-600 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Top Up Credits
+              </a>
+            <% end %>
+          </div>
+        </div>
+        <% credits_percentage = (credits_info[:remaining].to_f / credits_info[:total] * 100).round %>
+        <div class="mt-3 bg-white/20 rounded-full h-2">
+          <div class="bg-white rounded-full h-2 transition-all" style="width: <%= credits_percentage %>%"></div>
+        </div>
+      </div>
+    <% else %>
+      <!-- No Subscription Banner -->
+      <div class="bg-gradient-to-r from-red-500 to-orange-500 rounded-xl shadow-lg p-4 mb-6 text-white">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="bg-white/20 rounded-full p-3">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-lg font-bold">No Active Subscription</p>
+              <p class="text-sm text-white/80">Subscribe to generate AI images and videos</p>
+            </div>
+          </div>
+          <a href="/subscription" class="bg-white hover:bg-gray-100 text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            Subscribe Now
+          </a>
+        </div>
+      </div>
+    <% end %>
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6" data-controller="content-creation">
       
       <!-- Sidebar: Quick Actions & Templates -->
