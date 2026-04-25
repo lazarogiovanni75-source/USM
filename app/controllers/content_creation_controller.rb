@@ -183,8 +183,7 @@ class ContentCreationController < ApplicationController
             'service' => service, 
             'model' => model,
             'aspect_ratio' => size,
-            'quality_tier' => quality,
-            'overlay_text' => overlay_text
+            'quality_tier' => quality
           }
         }
         draft_attrs[:quality_tier] = quality if DraftContent.column_names.include?('quality_tier')
