@@ -8,7 +8,7 @@ module QualityTiers
       label: "Standard",
       description: "Great for everyday posts, social media content, and drafts",
       resolution: "720p / 1024x1024",
-      credit_cost: 1,
+      credit_cost: 2,
       badge: nil,
       icon: "⚡",
       atlas_quality: "standard"
@@ -17,7 +17,7 @@ module QualityTiers
       label: "HD",
       description: "High definition output. Perfect for ads, hero images, and premium content",
       resolution: "1080p / 2048x2048",
-      credit_cost: 2,
+      credit_cost: 3,
       badge: "HD",
       icon: "✨",
       atlas_quality: "hd"
@@ -25,8 +25,8 @@ module QualityTiers
   }.freeze
 
   CREDIT_COSTS = {
-    image: { standard: 1, hd: 2 },
-    video: { standard: 2, hd: 4 }
+    image: { standard: 2, hd: 3 },
+    video: { standard: 5, hd: 8 }
   }.freeze
 
   def self.credit_cost_for(media_type, quality)
