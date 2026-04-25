@@ -16,9 +16,9 @@ class PlanLimitService
     current_count < @user.max_posts_per_month
   end
 
-  # Check if user can connect another platform
+  # Check if user can connect another platform (always true - unlimited)
   def can_connect_platform?
-    @user.social_accounts.count < @user.max_platforms
+    true
   end
 
   # Check if campaign can generate more videos (always true - unlimited)
@@ -63,8 +63,8 @@ class PlanLimitService
   end
 
   def platform_limit_error
-    return nil if can_connect_platform?
-    "You've reached your platform limit (#{@user.max_platforms}). Upgrade to #{next_plan} for more."
+    # Platform limits removed - all users can connect all 9 platforms
+    nil
   end
 
   def video_limit_error(campaign)

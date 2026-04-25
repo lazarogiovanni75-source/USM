@@ -46,11 +46,10 @@
         <!-- OAuth Callback URL (for Postforme dashboard) -->
         <div class="mb-6 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <p class="text-xs font-medium text-gray-500 mb-2">POSTFORME REDIRECT URL:</p>
-          <div class="flex items-center gap-2">
-            <code class="flex-1 text-xs bg-white px-2 py-1.5 rounded border border-gray-300 text-gray-700 truncate" id="oauth-callback-url">
-              https://ultimatesocialmedia01.com/auth/postforme/callback
-            </code>
-            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('oauth-callback-url').textContent).then(() => { const btn = this; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); })" 
+          <div class="flex items-center gap-2" data-controller="clipboard">
+            <input type="text" value="https://ultimatesocialmedia01.com/auth/postforme/callback" readonly
+                   class="flex-1 text-xs bg-white px-2 py-1.5 rounded border border-gray-300 text-gray-700 truncate" data-clipboard-target="source">
+            <button type="button" data-action="clipboard#copy"
                     class="px-2 py-1 text-xs font-medium text-white bg-gray-600 hover:bg-gray-700 rounded transition-colors">
               Copy
             </button>

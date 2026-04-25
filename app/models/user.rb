@@ -42,7 +42,7 @@ class User < ApplicationRecord
   # Plan Limits Configuration
   PLAN_LIMITS = {
     'Starter' => {
-      max_platforms: 3,
+      max_platforms: 9,
       storage_gb: 5,
       campaigns_per_month: 4,
       posts_per_month: 40,
@@ -53,7 +53,7 @@ class User < ApplicationRecord
       has_autonomous: false
     },
     'Entrepreneur' => {
-      max_platforms: 6,
+      max_platforms: 9,
       storage_gb: 10,
       campaigns_per_month: 8,
       posts_per_month: 80,
