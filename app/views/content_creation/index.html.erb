@@ -36,6 +36,7 @@
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" data-controller="mobile-debug">
     <% subscription = current_user.user_subscriptions.active.first %>
+    <!-- DEBUG: <%= current_user.email %> subscriptions: <%= current_user.user_subscriptions.count %> active: <%= current_user.user_subscriptions.active.count %> -->
     <% if subscription %>
       <% credits_info = subscription.credit_status %>
       <!-- Credits Display Banner -->
