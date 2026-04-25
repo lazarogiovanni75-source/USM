@@ -64,6 +64,12 @@ class VideoPollJob < ApplicationJob
           end
         end
 
+        if draft.metadata['overlay_text'].present?
+          Rails.logger.info "VideoPollJob: Applying text overlay for draft #{content_item_id}..."
+          VideoOverlayService.apply_overlay(draft)
+          draft.reload
+        end
+
         Rails.logger.info "VideoPollJob: Draft #{content_item_id} completed successfully with video: #{output_url}"
         Rails.logger.info "VideoPollJob: VERIFIED - Saved media_url to Draft #{content_item_id}: #{draft.reload.media_url}"
       else

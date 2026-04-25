@@ -32,8 +32,8 @@ class AtlasCloudService
   }.freeze
 
   # Dual video model selection based on text content
-  VIDEO_MODEL_TEXT = 'bytedance/seedance-v1.5-pro/text-to-video-fast'.freeze
-  VIDEO_MODEL_VISUAL = 'bytedance/seedance-v1.5-pro/image-to-video-fast'.freeze
+  VIDEO_MODEL_TEXT = 'bytedance/seedance-2.0/text-to-video'.freeze
+  VIDEO_MODEL_VISUAL = 'bytedance/seedance-v1.5-pro/text-to-video-fast'.freeze
   VIDEO_DEFAULTS = { resolution: '720p', max_duration: 10 }.freeze
 
   class Error < StandardError; end
@@ -131,10 +131,10 @@ class AtlasCloudService
 
   def select_video_model(prompt)
     if prompt_contains_text?(prompt)
-      Rails.logger.info "[AtlasCloudService] Prompt contains text - using Veo 3.1 lite"
+      Rails.logger.info "[AtlasCloudService] Prompt contains text - using Seedance 2.0"
       VIDEO_MODEL_TEXT
     else
-      Rails.logger.info "[AtlasCloudService] Prompt is purely visual - using Wan 2.5"
+      Rails.logger.info "[AtlasCloudService] Prompt is purely visual - using Seedance V1.5 Pro"
       VIDEO_MODEL_VISUAL
     end
   end

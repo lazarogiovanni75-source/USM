@@ -183,7 +183,8 @@ class ContentCreationController < ApplicationController
             'service' => service, 
             'model' => model,
             'aspect_ratio' => size,
-            'quality_tier' => quality
+            'quality_tier' => quality,
+            'overlay_text' => overlay_text
           }
         }
         draft_attrs[:quality_tier] = quality if DraftContent.column_names.include?('quality_tier')
@@ -215,6 +216,7 @@ class ContentCreationController < ApplicationController
     duration = params[:duration] || '10'
     source_image_url = params[:source_image_url]
     quality = params[:quality] || 'standard'
+    overlay_text = params[:overlay_text].to_s.strip
     
     # Validate quality tier
     quality = 'standard' unless QualityTiers.valid_quality?(quality)
