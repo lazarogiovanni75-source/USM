@@ -383,6 +383,8 @@ Rails.application.routes.draw do
       post 'generate_image'
       post 'generate_video'
       post 'edit_image'
+      post 'upload_media'
+      delete 'delete_media'
     end
     member do
       post 'publish_content'

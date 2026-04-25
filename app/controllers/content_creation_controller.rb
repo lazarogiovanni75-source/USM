@@ -365,6 +365,66 @@ class ContentCreationController < ApplicationController
     end
   end
 
+  def upload_media
+    uploaded_file = params[:media_file]
+    title = params[:title] || 'Uploaded Media'
+    content_type = params[:content_type] || 'image'
+    platform = params[:platform] || 'general'
+
+    if uploaded_file.nil?
+      redirect_to content_creation_index_path, alert: 'No file selected'
+      return
+    end
+
+    # Validate file type
+    allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'video/webm']
+    unless allowed_types.include?(uploaded_file.content_type)
+      redirect_to content_creation_index_path, alert: 'Invalid file type. Please upload a JPEG, PNG, GIF, WebP, or MP4 file.'
+      return
+    end
+
+    # Validate file size (50MB max)
+    max_size = 50.megabytes
+    if uploaded_file.size > max_size
+      redirect_to content_creation_index_path, alert: 'File too large. Maximum size is 50MB.'
+      return
+    end
+
+    begin
+      draft = current_user.draft_contents.create!(
+        title: title,
+        content: "User uploaded #{content_type}",
+        content_type: content_type,
+        platform: platform,
+        status: 'draft'
+      )
+
+      draft.media.attach(uploaded_file)
+      redirect_to content_creation_index_path, notice: 'File uploaded successfully!'
+    rescue => e
+      Rails.logger.error "Media Upload Error: #{e.message}"
+      redirect_to content_creation_index_path, alert: "Upload failed: #{e.message}"
+    end
+  end
+
+  def delete_media
+    draft_id = params[:draft_id]
+    draft = current_user.draft_contents.find(draft_id)
+    
+    if draft.media.attached?
+      draft.media.purge
+    end
+    
+    draft.destroy!
+    
+    redirect_to content_creation_index_path, notice: 'Media deleted'
+  rescue ActiveRecord::RecordNotFound
+    redirect_to content_creation_index_path, alert: 'Media not found'
+  rescue => e
+    Rails.logger.error "Delete Media Error: #{e.message}"
+    redirect_to content_creation_index_path, alert: "Delete failed: #{e.message}"
+  end
+
   private
 
   def build_content_prompt(topic, content_type, platform)

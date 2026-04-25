@@ -454,6 +454,90 @@
           </div>
         <% end %>
 
+        <!-- Media Upload Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Media Library</h2>
+              <span class="text-sm text-gray-500 dark:text-gray-400"><%= current_user.draft_contents.where.not(media: nil).or(current_user.draft_contents.where.not(media_url: nil)).count %> items</span>
+            </div>
+          </div>
+          
+          <!-- Upload Form -->
+          <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+            <form action="/content_creation/upload_media" method="post" enctype="multipart/form-data" class="space-y-4">
+              <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+              
+              <!-- Drag & Drop Zone -->
+              <div class="relative">
+                <div id="drop-zone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer bg-gray-50 dark:bg-gray-700/50">
+                  <input type="file" name="media_file" id="media-file-input" accept="image/*,video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelect(this)">
+                  <div id="upload-preview-content">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Drag & drop or click to upload</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">Images: JPG, PNG, GIF, WebP | Videos: MP4, MOV, WebM (max 50MB)</p>
+                  </div>
+                  <div id="file-selected-preview" class="hidden">
+                    <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p id="file-name-display" class="mt-2 text-sm font-medium text-gray-900 dark:text-white"></p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Click to change file</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Additional Options -->
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title (optional)</label>
+                  <input type="text" name="title" placeholder="Media title" class="form-input w-full">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Content Type</label>
+                  <select name="content_type" class="form-select w-full">
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                    <option value="story">Story</option>
+                    <option value="reel">Reel</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <div id="upload-status" class="text-sm"></div>
+                <button type="submit" class="btn-primary">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                  </svg>
+                  Upload Media
+                </button>
+              </div>
+            </form>
+          </div>
+          
+          <!-- Uploaded Media Grid -->
+          <div class="p-6">
+            <% uploaded_media = current_user.draft_contents.where("media_attachment_id IS NOT NULL OR media_url IS NOT NULL").order(updated_at: :desc).limit(20) %>
+            <% if uploaded_media.any? %>
+              <div id="uploaded-media-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <% uploaded_media.each do |draft| %>
+                  <%= render 'content_creation/uploaded_media_item', draft: draft %>
+                <% end %>
+              </div>
+            <% else %>
+              <div id="upload-empty-state" class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No uploaded media yet</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
         <!-- Recent Drafts -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
           <div class="p-6 border-b border-gray-100">
@@ -627,5 +711,57 @@ function copyImageUrl(url) {
     document.body.removeChild(textArea);
     alert('Image URL copied to clipboard!');
   });
+}
+
+function handleFileSelect(input) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var fileNameDisplay = document.getElementById('file-name-display');
+    var previewContent = document.getElementById('upload-preview-content');
+    var selectedPreview = document.getElementById('file-selected-preview');
+    
+    fileNameDisplay.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
+    previewContent.classList.add('hidden');
+    selectedPreview.classList.remove('hidden');
+  }
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// Drag and drop handling
+var dropZone = document.getElementById('drop-zone');
+if (dropZone) {
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+  
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.classList.add('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
+    }, false);
+  });
+  
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
+    }, false);
+  });
+  
+  dropZone.addEventListener('drop', (e) => {
+    var fileInput = document.getElementById('media-file-input');
+    if (e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      handleFileSelect(fileInput);
+    }
+  }, false);
 }
 </script>
