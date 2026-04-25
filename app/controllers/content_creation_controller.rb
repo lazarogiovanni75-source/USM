@@ -224,8 +224,9 @@ class ContentCreationController < ApplicationController
     # Check credits before generation
     subscription = current_user.user_subscriptions.active.first
     unless subscription && subscription.has_credits?(credit_cost)
+      credits_info = subscription ? subscription.credit_status : { remaining: 0 }
       redirect_to content_creation_index_path,
-        alert: "You don't have enough credits. Please upgrade your plan or wait for your monthly reset."
+        alert: "You don't have enough internal credits for this video generation. You have #{credits_info[:remaining]} credits remaining. Please upgrade your plan or wait for your monthly reset."
       return
     end
 
