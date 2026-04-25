@@ -380,6 +380,10 @@ RSpec.describe 'Turbo Architecture Validation', type: :system do
             # Exempt fetch calls to /assistant (real-time chat)
             next if line.match?(/fetch\s*\(\s*['"]\/assistant['"]/)  # index endpoint
             next if line.match?(/fetch\s*\(\s*[`'"]\/assistant\//)  # show/delete with trailing slash
+            # Exempt fetch calls to /assistants (chat history - real-time JSON)
+            next if line.match?(/fetch\s*\(\s*['"]\/assistants['"]/)  # index without trailing slash
+            next if line.match?(/fetch\s*\(\s*[`'"]\/assistants\//)  # show/delete with ID
+            next if line.match?(/fetch\s*\(\s*[`'"]\/assistants\/chat['"]/)  # chat endpoint
             # Exempt fetch calls from Otto-Pilot widget (background polling for image/video generation)
             next if line.match?(/fetch\s*\(\s*[`'"]\/api\/v1\/otto\//)
             # Exempt fetch calls to /otto/chat and /otto/clear
