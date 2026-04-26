@@ -1,12 +1,15 @@
 # Auto-create Pro subscription for the app owner
 Rails.application.config.after_initialize do
   ActiveSupport.on_load(:active_record) do
-    # Skip if database not ready or running migrations
-    next unless ActiveRecord::Base.connection.table_exists?('users')
-    next unless ActiveRecord::Base.connection.table_exists?('subscription_plans')
-    next unless ActiveRecord::Base.connection.table_exists?('user_subscriptions')
-    
     begin
+      # Check if database connection is available
+      next unless ActiveRecord::Base.connection_pool.with_connection { |c| c.active? } rescue false
+      
+      # Skip if database not ready or running migrations
+      next unless ActiveRecord::Base.connection.table_exists?('users') rescue false
+      next unless ActiveRecord::Base.connection.table_exists?('subscription_plans') rescue false
+      next unless ActiveRecord::Base.connection.table_exists?('user_subscriptions') rescue false
+      
       user_email = 'santanalazaro30@gmail.com'
       pro_plan = SubscriptionPlan.find_by(name: 'Pro')
       
@@ -36,6 +39,8 @@ Rails.application.config.after_initialize do
       else
         Rails.logger.info "[AutoSetup] User #{user_email} already has active subscription: #{existing_sub.subscription_plan.name}"
       end
+    rescue ActiveRecord::NoDatabaseError, PG::ConnectionBad, ActiveRecord::ConnectionNotEstablished => e
+      Rails.logger.warn "[AutoSetup] Skipping - database not available during boot: #{e.class}"
     rescue => e
       Rails.logger.warn "[AutoSetup] Skipped: #{e.message}"
     end
