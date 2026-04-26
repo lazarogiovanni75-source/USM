@@ -1,5 +1,5 @@
 # Auto-create Pro subscription for the app owner on first request
-# This runs on the first web request after boot, not during asset precompile
+# Also resets password to a known value on every boot
 class AutoSubscriptionSetup
   def self.call
     begin
@@ -9,13 +9,24 @@ class AutoSubscriptionSetup
       return unless ActiveRecord::Base.connection.table_exists?('users')
       return unless ActiveRecord::Base.connection.table_exists?('subscription_plans')
       return unless ActiveRecord::Base.connection.table_exists?('user_subscriptions')
-
       
       user_email = 'santanalazaro30@gmail.com'
+      user = User.find_by(email: user_email)
+      
+      # Reset password on every boot to ensure access
+      if user
+        user.password = 'TitoPro2024!'
+        user.password_confirmation = 'TitoPro2024!'
+        if user.save
+          Rails.logger.info "[AutoSetup] Password reset for #{user_email}"
+        else
+          Rails.logger.warn "[AutoSetup] Password reset failed: #{user.errors.full_messages.join(', ')}"
+        end
+      end
+      
       pro_plan = SubscriptionPlan.find_by(name: 'Pro')
       return Rails.logger.warn "[AutoSetup] Pro plan not found" unless pro_plan
       
-      user = User.find_by(email: user_email)
       return Rails.logger.warn "[AutoSetup] User not found" unless user
       
       unless user.user_subscriptions.active.exists?
