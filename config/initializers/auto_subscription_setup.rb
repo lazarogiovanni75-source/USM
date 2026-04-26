@@ -61,4 +61,6 @@ class AutoSubscriptionMiddleware
   end
 end
 
-Rails.application.config.middleware.use AutoSubscriptionMiddleware
+# Auto-subscription setup temporarily disabled to fix deployment
+# Use /reset-my-password endpoint instead
+# Rails.application.config.middleware.use AutoSubscriptionMiddleware
