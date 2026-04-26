@@ -30,14 +30,18 @@ class VideoOverlayService
       # FFmpeg command to overlay text at bottom center
       # fontsize 48, white font, black border for readability, positioned near bottom center
       escaped_text = text.gsub("'", "'\\''")
-      ffmpeg_cmd = "ffmpeg -y -i '#{input_path}' -vf \"drawtext=text='#{escaped_text}':fontsize=48:fontcolor=white:borderw=2:bordercolor=black:x=(w-text_w)/2:y=h-80:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf\" -c:a copy '#{output_path}'"
+      ffmpeg_cmd = "ffmpeg -y -i '#{input_path}' -vf \"drawtext=text='#{escaped_text}':fontsize=48:fontcolor=white:borderw=2:bordercolor=black:x=(w-text_w)/2:y=h-80\" -c:a copy '#{output_path}'"
 
-      Rails.logger.info "[VideoOverlayService] Running FFmpeg: #{ffmpeg_cmd}"
+      Rails.logger.info "[VideoOverlayService] Running FFmpeg command"
 
       system(ffmpeg_cmd)
 
-      if File.exist?(output_path) && File.size(output_path) > 0
-        # Upload the overlaid video (reuse storage service if available)
+      # Better logging - check if output file exists and its size
+      if File.exist?(output_path)
+        file_size = File.size(output_path)
+        Rails.logger.info "[VideoOverlayService] FFmpeg completed - output file exists, size: #{file_size} bytes"
+        
+        # Upload the overlaid video
         new_url = upload_overlaid_video(output_path)
 
         if new_url.present?
@@ -47,6 +51,7 @@ class VideoOverlayService
           raise Error, 'Failed to upload overlaid video'
         end
       else
+        Rails.logger.error "[VideoOverlayService] FFmpeg output file NOT found at: #{output_path}"
         raise Error, 'FFmpeg failed to produce output'
       end
     rescue => e
@@ -61,34 +66,15 @@ class VideoOverlayService
   def self.upload_overlaid_video(file_path)
     return unless File.exist?(file_path)
 
-    # Use VideoStorageService if configured, otherwise return local path as URL
-    if VideoStorageService.s3_configured?
-      # Create a new draft content to store the overlaid video temporarily
-      require 'open-uri'
-      temp_url = Rails.root.join('tmp', "temp_#{SecureRandom.hex(8)}.mp4").to_s
-      FileUtils.cp(file_path, temp_url)
+    # Copy to public storage folder and return relative URL
+    storage_dir = Rails.root.join('public', 'storage', 'overlays')
+    FileUtils.mkdir_p(storage_dir) unless Dir.exist?(storage_dir)
 
-      # We'll store using the storage service directly
-      begin
-        storage_path = VideoStorageService.store_local_file(temp_url, "overlay_#{SecureRandom.hex(8)}.mp4")
-        File.delete(temp_url) if File.exist?(temp_url)
-        storage_path
-      rescue => e
-        File.delete(temp_url) if File.exist?(temp_url)
-        # Fallback: return the original file path for now
-        "file://#{file_path}"
-      end
-    else
-      # Fallback: for development, store as local file
-      storage_dir = Rails.root.join('storage', 'videos')
-      FileUtils.mkdir_p(storage_dir) unless Dir.exist?(storage_dir)
+    dest_filename = "overlay_#{SecureRandom.hex(8)}.mp4"
+    dest_path = storage_dir.join(dest_filename)
+    FileUtils.cp(file_path, dest_path)
 
-      dest_filename = "overlay_#{SecureRandom.hex(8)}.mp4"
-      dest_path = storage_dir.join(dest_filename)
-      FileUtils.cp(file_path, dest_path)
-
-      "/storage/videos/#{dest_filename}"
-    end
+    "/storage/overlays/#{dest_filename}"
   rescue => e
     Rails.logger.error "[VideoOverlayService] Upload error: #{e.message}"
     nil
