@@ -49,9 +49,6 @@ Rails.application.routes.draw do
   # Emergency migration fix (no auth required)
   get 'migration-fix', to: 'migration_fix#run'
   
-  # Debug endpoint - shows user count and first user email (token protected)
-  get 'admin/debug-users', to: 'admin/debug_users#show'
-  
   # Emergency password reset endpoint (no auth required)
   get 'reset-my-password', to: 'home#reset_password'
   post 'reset-my-password', to: 'home#do_password_reset'
