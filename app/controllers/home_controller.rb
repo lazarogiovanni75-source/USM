@@ -1,4 +1,5 @@
 class HomeController < ApplicationController
+  skip_before_action :set_user_context, only: [:reset_password, :do_password_reset]
 
   def index
     # Show landing page with waitlist to everyone
