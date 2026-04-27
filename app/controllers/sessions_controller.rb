@@ -1,7 +1,6 @@
 class SessionsController < ApplicationController
   before_action :authenticate_user!, only: [:show, :devices, :destroy_one]
   before_action :redirect_if_signed_in, only: [:new, :create]
-  before_action :check_session_cookie_availability, only: [:new]
 
   def show
     @session = Current.session
