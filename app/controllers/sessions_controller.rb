@@ -16,8 +16,7 @@ class SessionsController < ApplicationController
   end
 
   def create
-    user = User.find_by(email: params[:user][:email])
-    if user&.authenticate(params[:user][:password])
+    if user = User.authenticate_by(email: params[:user][:email], password: params[:user][:password])
       @session = user.sessions.create!
       cookies.signed.permanent[:session_token] = { value: @session.id, httponly: true }
       redirect_to root_path, notice: "Signed in successfully"
