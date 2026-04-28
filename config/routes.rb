@@ -49,6 +49,9 @@ Rails.application.routes.draw do
   # Emergency migration fix (no auth required)
   get 'migration-fix', to: 'migration_fix#run'
   
+  # Debug: test if password authentication works
+  get 'admin/test-login', to: 'admin/debug_users#test_login'
+  
   # Debug: reset password for user by email (token protected, no auth)
   get 'admin/reset-password', to: 'admin/debug_users#reset_password'
   
