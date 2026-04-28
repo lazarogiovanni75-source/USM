@@ -81,7 +81,6 @@ Rails.application.configure do
   else
     # Fallback to test mode if SMTP not configured
     config.action_mailer.delivery_method = :test
-    Rails.logger.warn "Email: SMTP not configured - using test mode."
   end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
