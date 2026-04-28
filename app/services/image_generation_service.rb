@@ -74,7 +74,7 @@ class ImageGenerationService
           task_id: result['task_id'],
           service: 'atlas_cloud',
           output_url: nil,
-          metadata: { model: model || 'bytedance/seedream-v4.5/sequential', aspect_ratio: aspect_ratio, quality_tier: quality }
+          metadata: { model: model || 'openai/gpt-image-2/text-to-image', aspect_ratio: aspect_ratio, quality_tier: quality }
         }
       else
         Rails.logger.error "[ImageGeneration] Primary service returned no task_id: #{result.inspect}"

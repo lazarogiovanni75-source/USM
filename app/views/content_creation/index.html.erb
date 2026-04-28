@@ -295,7 +295,7 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Model</label>
               <select name="model" class="form-select w-full">
                 <% @image_models.each do |model_id, model_name| %>
-                  <option value="<%= model_id %>" <%= 'selected' if model_id == 'bytedance/seedream-v4.5/sequential' %>><%= model_name %></option>
+                  <option value="<%= model_id %>" <%= 'selected' if model_id == 'openai/gpt-image-2/text-to-image' %>><%= model_name %></option>
                 <% end %>
               </select>
             </div>

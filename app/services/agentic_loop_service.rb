@@ -121,7 +121,7 @@ class AgenticLoopService
   end
 
   def execute_generate_image(input, post)
-    result = AtlasCloudImageService.new.generate_image(prompt: input['prompt'], model: input['model'] || 'bytedance/seedream-v4.5/sequential', aspect_ratio: input['aspect_ratio'] || '1:1')
+    result = AtlasCloudImageService.new.generate_image(prompt: input['prompt'], model: input['model'] || 'openai/gpt-image-2/text-to-image', aspect_ratio: input['aspect_ratio'] || '1:1')
     return { success: false, error: result['error'] } unless result['task_id']
     output_url = poll_for_completion(:image, result['task_id'])
     @results[:images_generated] += 1
