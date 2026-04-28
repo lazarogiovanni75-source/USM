@@ -49,6 +49,12 @@ Rails.application.routes.draw do
   # Emergency migration fix (no auth required)
   get 'migration-fix', to: 'migration_fix#run'
   
+  # Debug: check subscription status
+  get 'admin/check-subscription', to: 'admin/debug_users#check_subscription'
+  
+  # Debug: fix subscription (set Pro plan and 600 credits)
+  get 'admin/fix-subscription', to: 'admin/debug_users#fix_subscription'
+  
   # Emergency password reset endpoint (no auth required)
   get 'reset-my-password', to: 'home#reset_password'
   post 'reset-my-password', to: 'home#do_password_reset'
