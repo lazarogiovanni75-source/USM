@@ -42,7 +42,7 @@ class VideoOverlayService
         Rails.logger.info "[VideoOverlayService] FFmpeg completed - output file exists, size: #{file_size} bytes"
         
         # Upload the overlaid video
-        new_url = upload_overlaid_video(output_path)
+        new_url = upload_overlaid_video(output_path, draft)
 
         if new_url.present?
           draft.update!(media_url: new_url)
@@ -63,20 +63,33 @@ class VideoOverlayService
     end
   end
 
-  def self.upload_overlaid_video(file_path)
+  def self.upload_overlaid_video(file_path, draft)
     return unless File.exist?(file_path)
+    return unless draft.present?
 
-    # Copy to public storage folder and return relative URL
-    storage_dir = Rails.root.join('public', 'storage', 'overlays')
-    FileUtils.mkdir_p(storage_dir) unless Dir.exist?(storage_dir)
+    begin
+      # Read the file and attach to draft via ActiveStorage
+      io = File.open(file_path)
+      filename = "overlay_#{SecureRandom.hex(8)}.mp4"
 
-    dest_filename = "overlay_#{SecureRandom.hex(8)}.mp4"
-    dest_path = storage_dir.join(dest_filename)
-    FileUtils.cp(file_path, dest_path)
+      draft.media.attach(
+        io: io,
+        filename: filename,
+        content_type: 'video/mp4'
+      )
 
-    "/storage/overlays/#{dest_filename}"
-  rescue => e
-    Rails.logger.error "[VideoOverlayService] Upload error: #{e.message}"
-    nil
+      if draft.save
+        # Return URL using VideoStorageService (supports CloudFront/S3/ActiveStorage fallback)
+        VideoStorageService.media_url(draft)
+      else
+        Rails.logger.error "[VideoOverlayService] Failed to save draft with attached video: #{draft.errors.full_messages.join(", ")}"
+        nil
+      end
+    rescue => e
+      Rails.logger.error "[VideoOverlayService] Upload error: #{e.message}"
+      nil
+    ensure
+      io&.close
+    end
   end
 end
