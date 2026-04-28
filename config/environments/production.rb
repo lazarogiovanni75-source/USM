@@ -81,7 +81,7 @@ Rails.application.configure do
   else
     # Fallback to test mode if SMTP not configured
     config.action_mailer.delivery_method = :test
-    Rails.logger.warn "Email: SMTP not configured - using test mode. SENDGRID_API_KEY set: #{ENV['SENDGRID_API_KEY']&.first(8)?.present}, EMAIL_SMTP_PASSWORD set: #{ENV['EMAIL_SMTP_PASSWORD']&.first(8)?.present}"
+    Rails.logger.warn "Email: SMTP not configured - using test mode."
   end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
