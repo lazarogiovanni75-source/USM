@@ -77,11 +77,11 @@ Rails.application.configure do
     config.action_mailer.delivery_method = :smtp
     config.action_mailer.perform_deliveries = true
     config.action_mailer.raise_delivery_errors = false
-    Rails.logger&.info "Email: SMTP configured with #{smtp_address}"
+    Rails.logger.info "Email: SMTP configured with #{smtp_address}, password length: #{smtp_password.length}, username: #{smtp_username.presence || 'apikey'}"
   else
     # Fallback to test mode if SMTP not configured
     config.action_mailer.delivery_method = :test
-    Rails.logger&.warn "Email: SMTP not configured - using test mode. EMAIL_SMTP_PASSWORD=#{ENV['EMAIL_SMTP_PASSWORD']&.first(8)}"
+    Rails.logger.warn "Email: SMTP not configured - using test mode. SENDGRID_API_KEY set: #{ENV['SENDGRID_API_KEY']&.first(8)?.present}, EMAIL_SMTP_PASSWORD set: #{ENV['EMAIL_SMTP_PASSWORD']&.first(8)?.present}"
   end
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
