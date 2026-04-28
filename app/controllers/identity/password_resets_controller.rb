@@ -39,6 +39,6 @@ class Identity::PasswordResetsController < ApplicationController
   end
 
   def send_password_reset_email
-    UserMailer.with(user: @user).password_reset.deliver_later
+    UserMailer.with(user: @user).password_reset.deliver_now
   end
 end
