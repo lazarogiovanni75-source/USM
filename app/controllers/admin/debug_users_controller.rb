@@ -14,14 +14,15 @@ class Admin::DebugUsersController < ApplicationController
       return
     end
     
-    subscriptions = user.user_subscriptions.active
-    credits_info = user.user_subscriptions.active.first&.credit_status
+    # Direct SQL to check subscriptions
+    subs = ActiveRecord::Base.connection.execute(
+      "SELECT id, status, credits_remaining, credits_reset_at FROM user_subscriptions WHERE user_id = #{user.id}"
+    ).to_a
     
     render plain: "User: #{user.email}\n" +
-      "Subscription count: #{subscriptions.count}\n" +
-      "Plan: #{user.subscription_plan}\n" +
-      "Credits remaining: #{credits_info&.dig(:remaining) || 'N/A'}\n" +
-      "Credits total: #{credits_info&.dig(:total) || 'N/A'}"
+      "User subscription_plan field: #{user.subscription_plan}\n" +
+      "Active subscriptions found: #{subs.count}\n" +
+      subs.map { |s| "  - ID: #{s['id']}, Status: #{s['status']}, Credits: #{s['credits_remaining']}, Reset: #{s['credits_reset_at']}" }.join("\n")
   end
   
   def fix_subscription
@@ -42,23 +43,29 @@ class Admin::DebugUsersController < ApplicationController
       return
     end
     
-    # Deactivate old subscriptions
-    user.user_subscriptions.update_all(status: :cancelled)
+    conn = ActiveRecord::Base.connection
     
-    # Create new subscription
-    subscription = user.user_subscriptions.create!(
-      subscription_plan: plan,
-      status: :active,
-      credits_remaining: credits,
-      credits_reset_at: 1.month.from_now
-    )
+    # Cancel all existing subscriptions
+    conn.execute("UPDATE user_subscriptions SET status = 'canceled' WHERE user_id = #{user.id}")
     
-    # Update user's subscription_plan field too
+    # Add credits_remaining column if it doesn't exist
+    unless conn.column_exists?(:user_subscriptions, :credits_remaining)
+      conn.execute("ALTER TABLE user_subscriptions ADD COLUMN credits_remaining integer DEFAULT 0")
+      conn.execute("ALTER TABLE user_subscriptions ADD COLUMN credits_reset_at timestamp")
+    end
+    
+    # Create new subscription with direct SQL
+    conn.execute("""
+      INSERT INTO user_subscriptions (user_id, subscription_plan_id, status, credits_remaining, credits_reset_at, created_at, updated_at)
+      VALUES (#{user.id}, #{plan.id}, 'active', #{credits}, '#{1.month.from_now.strftime('%Y-%m-%d %H:%M:%S')}', NOW(), NOW())
+    """)
+    
+    # Update user's subscription_plan field
     user.update!(subscription_plan: plan_name)
     
-    render plain: "SUCCESS!\nUser: #{user.email}\nPlan: #{plan_name}\nCredits: #{credits}\nSubscription ID: #{subscription.id}"
+    render plain: "SUCCESS!\nUser: #{user.email}\nPlan: #{plan_name}\nCredits: #{credits}\n\nRefresh the media creation page to see changes."
   rescue => e
-    render plain: "ERROR: #{e.message}"
+    render plain: "ERROR: #{e.message}\n#{e.backtrace.first(3).join("\n")}"
   end
   
   private
