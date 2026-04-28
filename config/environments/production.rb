@@ -77,7 +77,6 @@ Rails.application.configure do
     config.action_mailer.delivery_method = :smtp
     config.action_mailer.perform_deliveries = true
     config.action_mailer.raise_delivery_errors = false
-    Rails.logger.info "Email: SMTP configured with #{smtp_address}, password length: #{smtp_password.length}, username: #{smtp_username.presence || 'apikey'}"
   else
     # Fallback to test mode if SMTP not configured
     config.action_mailer.delivery_method = :test
