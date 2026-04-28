@@ -21,14 +21,14 @@ class AtlasCloudService
     'bytedance/seedance-v1.5-pro/image-to-video-fast' => 'ByteDance Seedance V1.5 Pro'
   }.freeze
 
-  # Available image models (ByteDance Seedream only)
+  # Available image models (OpenAI GPT Image)
   IMAGE_MODELS = {
-    'bytedance/seedream-v4.5/sequential' => 'ByteDance Seedream 4.5 (Text-to-Image)'
+    'openai/gpt-image-2/text-to-image' => 'OpenAI GPT Image 2 (Text-to-Image)'
   }.freeze
 
-  # Image editing models (ByteDance Seedream only)
+  # Image editing models (OpenAI GPT Image)
   IMAGE_EDIT_MODELS = {
-    'bytedance/seedream-v4.5/edit-sequential' => 'ByteDance Seedream 4.5 (Image Edit)'
+    'openai/gpt-image-2/edit' => 'OpenAI GPT Image 2 (Image Edit)'
   }.freeze
 
   # Dual video model selection based on text content
@@ -64,7 +64,7 @@ class AtlasCloudService
   # @param aspect_ratio [String] Aspect ratio (16:9, 9:16, 1:1, 4:3, 3:4)
   # @return [Hash] { task_id:, output:, status: }
   #
-  def generate_image(prompt:, model: 'bytedance/seedream-v4.5/sequential', aspect_ratio: '1:1')
+  def generate_image(prompt:, model: 'openai/gpt-image-2/text-to-image', aspect_ratio: '1:1')
     body = {
       model: model,
       prompt: prompt,
@@ -271,7 +271,7 @@ class AtlasCloudService
   #
   def edit_image(image_url:,
                  prompt:,
-                 model: 'qwen/qwen-image-2.0/edit',
+                 model: 'openai/gpt-image-2/edit',
                  aspect_ratio: '1:1')
     body = {
       model: model,
