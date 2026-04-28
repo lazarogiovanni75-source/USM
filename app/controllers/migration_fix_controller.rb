@@ -5,7 +5,7 @@ class MigrationFixController < ApplicationController
   skip_before_action :verify_authenticity_token, :authenticate_user!
   before_action :verify_secret_key, only: [:run]
 
-  # GET /migration-fix?secret=USM_EMERGENCY_2024
+  # GET /migration-fix?secret=<MIGRATION_SECRET_KEY>
   def run
     results = []
 
@@ -70,7 +70,8 @@ class MigrationFixController < ApplicationController
   private
 
   def verify_secret_key
-    return if params[:secret] == "USM_EMERGENCY_2024"
+    expected_key = ENV.fetch('MIGRATION_SECRET_KEY', nil)
+    return if expected_key.present? && params[:secret] == expected_key
     render html: "<html><body style='font-family:monospace;padding:20px;background:#111;color:#f44;'><h2>❌ Invalid Secret</h2></body></html>".html_safe and return
   end
 end
