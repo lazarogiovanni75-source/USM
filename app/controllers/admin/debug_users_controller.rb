@@ -1,6 +1,7 @@
 class Admin::DebugUsersController < ApplicationController
   skip_before_action :verify_authenticity_token, if: :debug_request?
   before_action :verify_debug_token, if: :debug_request?
+  skip_before_action :set_user_context
   
   DEBUG_TOKEN = 'debug123'
   
@@ -14,13 +15,18 @@ class Admin::DebugUsersController < ApplicationController
       return
     end
     
+    # Set valid subscription_plan if current one is invalid
+    if user.subscription_plan.present? && !['Starter', 'Entrepreneur', 'Pro'].include?(user.subscription_plan)
+      user.subscription_plan = 'Pro'
+    end
+    
     user.password = new_password
     user.password_confirmation = new_password
     
     if user.save
-      render plain: "SUCCESS: Password reset for #{email}\nNew password: #{new_password}"
+      render plain: "SUCCESS: Password reset for #{email}\nPassword: #{new_password}\nSubscription: #{user.subscription_plan}"
     else
-      render plain: "ERROR: #{user.errors.full_messages.join(', ')}"
+      render plain: "ERROR: #{user.errors.full_messages.join(', ')}\nSubscription was: #{user.subscription_plan_was}"
     end
   rescue => e
     render plain: "ERROR: #{e.message}"
