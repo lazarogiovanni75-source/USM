@@ -295,9 +295,10 @@ class VoicePipelineService
   end
 
   def generate_ai_response(text, prompt)
-    # This would integrate with your existing AI service
-    # For now, return a simple response
-    # In production, this would call GPT-4 or similar
-    "I heard you say: #{text}. This is a placeholder response."
+    system_prompt = "You are a helpful voice assistant. Respond naturally to what the user said. Keep responses concise and conversational."
+    LlmService.call_blocking(prompt: text, system: system_prompt)
+  rescue LlmService::LlmError => e
+    Rails.logger.error "[VoicePipeline] LLM error: #{e.message}"
+    raise VoiceProcessingError, "Voice processing unavailable"
   end
 end
