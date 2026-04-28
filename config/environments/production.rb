@@ -114,8 +114,9 @@ Rails.application.configure do
   # config.active_job.queue_adapter = :resque
   # config.active_job.queue_name_prefix = "myapp_production"
 
-  # Enable GoodJob async mode for background job processing
-  config.good_job.execution_mode = :external
+  # Enable GoodJob for background job processing
+  # Using :inline to process jobs immediately (no separate worker needed)
+  config.good_job.execution_mode = :inline
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
