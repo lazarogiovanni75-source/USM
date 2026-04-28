@@ -6,17 +6,17 @@
 # Authentication: Bearer token via ATLASCLOUD_API_KEY environment variable
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
-  DEFAULT_MODEL = 'bytedance/seedream-v4.5/sequential'
+  DEFAULT_MODEL = 'openai/gpt-image-2/text-to-image'
   TIMEOUT = 120
 
-  # Available image models (ByteDance Seedream only)
+  # Available image models (OpenAI GPT Image)
   AVAILABLE_MODELS = {
-    'bytedance/seedream-v4.5/sequential' => 'ByteDance Seedream 4.5 (Text-to-Image)'
+    'openai/gpt-image-2/text-to-image' => 'OpenAI GPT Image 2 (Text-to-Image)'
   }.freeze
 
-  # Image edit models (ByteDance Seedream only)
+  # Image edit models (OpenAI GPT Image)
   IMAGE_EDIT_MODELS = {
-    'bytedance/seedream-v4.5/edit-sequential' => 'ByteDance Seedream 4.5 (Image Edit)'
+    'openai/gpt-image-2/edit' => 'OpenAI GPT Image 2 (Image Edit)'
   }.freeze
 
   class Error < StandardError; end
@@ -31,7 +31,7 @@ class AtlasCloudImageService
   # Generate image using Atlas Cloud unified API
   #
   # @param prompt [String] Text prompt describing the image
-  # @param model [String] Model ID (default: bytedance/seedream-v4.5/sequential)
+  # @param model [String] Model ID (default: openai/gpt-image-2/text-to-image)
   # @param aspect_ratio [String] Aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4)
   # @param n [Integer] Number of images to generate
   # @param quality [String] Quality tier (standard, hd)
@@ -78,7 +78,7 @@ class AtlasCloudImageService
   #
   def edit_image(image_url:,
                  prompt:,
-                 model: 'bytedance/seedream-v4.5/edit-sequential',
+                 model: 'openai/gpt-image-2/edit',
                  aspect_ratio: '1:1')
     body = {
       model: model,
