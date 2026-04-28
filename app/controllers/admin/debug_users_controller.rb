@@ -32,6 +32,26 @@ class Admin::DebugUsersController < ApplicationController
     render plain: "ERROR: #{e.message}"
   end
   
+  def test_login
+    email = params[:email] || 'santanalazaro30@gmail.com'
+    password = params[:password] || 'TitoPro2024!'
+    
+    user = User.find_by(email: email)
+    if user.nil?
+      render plain: "ERROR: User not found with email: #{email}"
+      return
+    end
+    
+    result = user.authenticate(password)
+    if result
+      render plain: "AUTH SUCCESS: User authenticated!\nEmail: #{user.email}\nPassword digest exists: #{user.password_digest.present?}"
+    else
+      render plain: "AUTH FAILED: authenticate() returned false\nEmail: #{user.email}\nPassword digest exists: #{user.password_digest.present?}\nPossible issue: password hash in DB may be corrupted"
+    end
+  rescue => e
+    render plain: "ERROR: #{e.message}\n#{e.backtrace.first(3).join("\n")}"
+  end
+  
   private
   
   def debug_request?
