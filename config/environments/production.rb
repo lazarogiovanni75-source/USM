@@ -76,7 +76,7 @@ Rails.application.configure do
     }
     config.action_mailer.delivery_method = :smtp
     config.action_mailer.perform_deliveries = true
-    config.action_mailer.raise_delivery_errors = true
+    config.action_mailer.raise_delivery_errors = false
     Rails.logger&.info "Email: SMTP configured with #{smtp_address}"
   else
     # Fallback to test mode if SMTP not configured
@@ -115,8 +115,8 @@ Rails.application.configure do
   # config.active_job.queue_name_prefix = "myapp_production"
 
   # Enable GoodJob for background job processing
-  # Using :inline to process jobs immediately (no separate worker needed)
-  config.good_job.execution_mode = :inline
+  # Using :async for production to handle emails in background
+  config.good_job.execution_mode = :async
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
