@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_25_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_29_153239) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -370,6 +370,48 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_25_000001) do
     t.index ["agency_user_id"], name: "index_clients_on_agency_user_id"
     t.index ["status"], name: "index_clients_on_status"
     t.index ["user_id"], name: "index_clients_on_user_id"
+  end
+
+  create_table "competitor_posts", force: :cascade do |t|
+    t.bigint "competitor_id", null: false
+    t.string "platform_post_id"
+    t.string "platform"
+    t.string "caption"
+    t.text "content"
+    t.bigint "likes_count", default: 0
+    t.bigint "comments_count", default: 0
+    t.bigint "shares_count", default: 0
+    t.bigint "views_count", default: 0
+    t.datetime "posted_at"
+    t.string "post_url"
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["competitor_id", "posted_at"], name: "index_competitor_posts_on_competitor_id_and_posted_at"
+    t.index ["competitor_id"], name: "index_competitor_posts_on_competitor_id"
+    t.index ["platform_post_id"], name: "index_competitor_posts_on_platform_post_id", unique: true, where: "(platform_post_id IS NOT NULL)"
+  end
+
+  create_table "competitors", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "platform", null: false
+    t.string "handle", null: false
+    t.string "display_name"
+    t.string "profile_url"
+    t.bigint "follower_count", default: 0
+    t.bigint "following_count", default: 0
+    t.bigint "posts_count", default: 0
+    t.bigint "subscriber_count"
+    t.boolean "is_verified", default: false
+    t.boolean "is_active", default: true
+    t.datetime "last_synced_at"
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["is_active"], name: "index_competitors_on_is_active"
+    t.index ["platform"], name: "index_competitors_on_platform"
+    t.index ["user_id", "platform", "handle"], name: "index_competitors_on_user_id_and_platform_and_handle", unique: true
+    t.index ["user_id"], name: "index_competitors_on_user_id"
   end
 
   create_table "content_suggestions", force: :cascade do |t|
@@ -879,6 +921,53 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_25_000001) do
     t.index ["social_account_id"], name: "index_social_accounts_campaigns_on_social_account_id"
   end
 
+  create_table "social_listening_alerts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "platform"
+    t.string "keyword"
+    t.string "alert_type", null: false
+    t.text "content"
+    t.string "author_handle"
+    t.string "author_name"
+    t.bigint "author_followers", default: 0
+    t.string "mention_url"
+    t.string "sentiment", default: "neutral"
+    t.float "sentiment_score", default: 0.0
+    t.bigint "likes_count", default: 0
+    t.bigint "comments_count", default: 0
+    t.boolean "is_verified", default: false
+    t.datetime "mentioned_at"
+    t.datetime "read_at"
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["alert_type"], name: "index_social_listening_alerts_on_alert_type"
+    t.index ["platform"], name: "index_social_listening_alerts_on_platform"
+    t.index ["sentiment"], name: "index_social_listening_alerts_on_sentiment"
+    t.index ["user_id", "read_at"], name: "index_social_listening_alerts_on_user_id_and_read_at"
+    t.index ["user_id"], name: "index_social_listening_alerts_on_user_id"
+  end
+
+  create_table "social_listening_hashtags", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "hashtag", null: false
+    t.boolean "is_active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "hashtag"], name: "index_social_listening_hashtags_on_user_id_and_hashtag", unique: true
+    t.index ["user_id"], name: "index_social_listening_hashtags_on_user_id"
+  end
+
+  create_table "social_listening_keywords", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "keyword", null: false
+    t.boolean "is_active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "keyword"], name: "index_social_listening_keywords_on_user_id_and_keyword", unique: true
+    t.index ["user_id"], name: "index_social_listening_keywords_on_user_id"
+  end
+
   create_table "strategy_histories", force: :cascade do |t|
     t.bigint "user_id"
     t.string "focus_area", default: "comprehensive"
@@ -1132,6 +1221,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_25_000001) do
   add_foreign_key "campaigns", "clients"
   add_foreign_key "clients", "users"
   add_foreign_key "clients", "users", column: "agency_user_id"
+  add_foreign_key "competitor_posts", "competitors"
+  add_foreign_key "competitors", "users"
   add_foreign_key "content_suggestions", "draft_contents"
   add_foreign_key "content_template_variables", "content_templates"
   add_foreign_key "draft_contents", "campaigns"
@@ -1146,6 +1237,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_25_000001) do
   add_foreign_key "social_accounts", "clients"
   add_foreign_key "social_accounts_campaigns", "campaigns"
   add_foreign_key "social_accounts_campaigns", "social_accounts"
+  add_foreign_key "social_listening_alerts", "users"
+  add_foreign_key "social_listening_hashtags", "users"
+  add_foreign_key "social_listening_keywords", "users"
   add_foreign_key "task_executions", "scheduled_ai_tasks"
   add_foreign_key "task_executions", "users"
   add_foreign_key "trigger_executions", "auto_response_triggers"

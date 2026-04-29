@@ -389,6 +389,37 @@ Rails.application.routes.draw do
     end
   end
   
+  # Competitor Tracking
+  resources :competitor_tracking, only: [:index] do
+    collection do
+      get 'search'
+      post 'add'
+      post 'refresh'
+      post 'refresh_all'
+    end
+    member do
+      get 'insights'
+      post 'refresh'
+      delete 'destroy'
+    end
+  end
+  
+  # Social Listening
+  resources :social_listening, only: [:index] do
+    collection do
+      get 'alerts'
+      post 'mark_read'
+      post 'mark_all_read'
+      get 'configure'
+      post 'add_keyword'
+      post 'remove_keyword'
+      post 'add_hashtag'
+      post 'remove_hashtag'
+      post 'refresh_alerts'
+      get 'trends'
+    end
+  end
+  
   # Test Anthropic API
   get '/test_anthropic', to: 'test_anthropic#test'
   

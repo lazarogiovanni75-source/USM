@@ -1,0 +1,194 @@
+<!-- Competitor Insights -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-4">
+          <%= link_to social_media_automation_path, class: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200' do %>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+          <% end %>
+          <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+            <%= @competitor.handle.first.upcase %>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white"><%= @competitor.display_name %></h1>
+            <p class="text-gray-500 dark:text-gray-400">@<%= @competitor.handle %> • <%= @competitor.platform.titleize %></p>
+          </div>
+        </div>
+      </div>
+      <%= button_to refresh_competitor_tracking_path(@competitor), method: :post, class: 'btn-primary' do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Refresh Data
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div class="text-2xl font-bold text-gray-900 dark:text-white"><%= number_to_human(@competitor.follower_count) %></div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Followers</div>
+      <% if @competitor.follower_count_change.present? %>
+        <div class="mt-2 text-sm <%= @competitor.follower_count_change > 0 ? 'text-green-600' : 'text-red-600' %>">
+          <%= @competitor.follower_count_change > 0 ? '+' : '' %><%= number_to_percentage(@competitor.follower_count_change, precision: 1) %> this week
+        </div>
+      <% end %>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div class="text-2xl font-bold text-green-600 dark:text-green-400"><%= number_to_percentage(@competitor.engagement_rate, precision: 1) %></div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Engagement Rate</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div class="text-2xl font-bold text-blue-600 dark:text-blue-400"><%= @competitor.posts_count %></div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Total Posts</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div class="text-2xl font-bold text-purple-600 dark:text-purple-400"><%= @competitor.posts_per_day %></div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Posts/Day</div>
+    </div>
+  </div>
+
+  <!-- Content Themes -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Content Themes</h2>
+      <% if @competitor.content_themes.present? %>
+        <div class="flex flex-wrap gap-2">
+          <% @competitor.content_themes.each do |theme, count| %>
+            <span class="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm">
+              <%= theme.titleize %>
+              <span class="text-xs opacity-70">(<%= count %>)</span>
+            </span>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-gray-500 dark:text-gray-400">No content themes data available</p>
+      <% end %>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform Info</h2>
+      <dl class="space-y-3">
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Platform</dt>
+          <dd class="font-medium text-gray-900 dark:text-white"><%= @competitor.platform.titleize %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Verified</dt>
+          <dd class="font-medium text-gray-900 dark:text-white"><%= @competitor.is_verified? ? 'Yes' : 'No' %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500 dark:text-gray-400">Last Refreshed</dt>
+          <dd class="font-medium text-gray-900 dark:text-white">
+            <%= @competitor.last_refreshed_at ? time_ago_in_words(@competitor.last_refreshed_at) + ' ago' : 'Never' %>
+          </dd>
+        </div>
+        <% if @competitor.profile_url.present? %>
+          <div class="flex justify-between">
+            <dt class="text-gray-500 dark:text-gray-400">Profile URL</dt>
+            <dd class="font-medium">
+              <%= link_to 'View Profile', @competitor.profile_url, target: '_blank', class: 'text-purple-600 hover:text-purple-700 dark:text-purple-400' %>
+            </dd>
+          </div>
+        <% end %>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Recent Posts -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+    <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Recent Posts</h2>
+    </div>
+
+    <% if @competitor.recent_posts.any? %>
+      <div class="divide-y divide-gray-100 dark:divide-gray-700">
+        <% @competitor.recent_posts.each do |post| %>
+          <div class="p-6">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <% if post.post_type %>
+                    <span class="badge bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      <%= post.post_type.titleize %>
+                    </span>
+                  <% end %>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">
+                    <%= time_ago_in_words(post.published_at) %> ago
+                  </span>
+                </div>
+
+                <% if post.content.present? %>
+                  <p class="text-gray-900 dark:text-gray-100 mb-3"><%= post.content %></p>
+                <% end %>
+
+                <% if post.media_urls.present? && post.media_urls.any? %>
+                  <div class="flex gap-2 mb-3 overflow-x-auto">
+                    <% post.media_urls.first(4).each do |url| %>
+                      <%= image_tag url, class: 'w-24 h-24 object-cover rounded-lg' %>
+                    <% end %>
+                  </div>
+                <% end %>
+
+                <div class="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
+                  <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                    <%= number_to_human(post.likes_count || 0) %>
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <%= number_to_human(post.comments_count || 0) %>
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                    </svg>
+                    <%= number_to_human(post.shares_count || 0) %>
+                  </span>
+                  <% if post.engagement_rate.present? %>
+                    <span class="text-green-600 dark:text-green-400">
+                      <%= number_to_percentage(post.engagement_rate, precision: 1) %> engagement
+                    </span>
+                  <% end %>
+                </div>
+
+                <% if post.hashtags.present? && post.hashtags.any? %>
+                  <div class="flex flex-wrap gap-1 mt-3">
+                    <% post.hashtags.each do |tag| %>
+                      <span class="text-xs text-purple-600 dark:text-purple-400">#<%= tag %></span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+
+              <% if post.permalink.present? %>
+                <%= link_to post.permalink, target: '_blank', class: 'btn-icon ml-4' do %>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No posts tracked yet</h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Post data will appear after the next refresh</p>
+      </div>
+    <% end %>
+  </div>
+</div>

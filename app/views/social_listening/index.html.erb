@@ -1,0 +1,194 @@
+<!-- Social Listening Index -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Social Listening</h1>
+    <p class="mt-2 text-gray-600 dark:text-gray-400">Monitor brand mentions, keywords, and hashtags across platforms</p>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div class="text-3xl font-bold text-purple-600 dark:text-purple-400"><%= @total_alerts %></div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Total Alerts</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div class="text-3xl font-bold text-green-600 dark:text-green-400"><%= @alerts_by_sentiment[:positive] || 0 %></div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Positive Mentions</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div class="text-3xl font-bold text-red-600 dark:text-red-400"><%= @alerts_by_sentiment[:negative] || 0 %></div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Negative Mentions</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div class="text-3xl font-bold text-gray-600 dark:text-gray-400"><%= @alerts_by_sentiment[:neutral] || 0 %></div>
+      <div class="text-sm text-gray-500 dark:text-gray-400">Neutral Mentions</div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="flex gap-4 mb-6 border-b border-gray-200 dark:border-gray-700">
+    <%= link_to social_listening_index_path, class: "px-4 py-2 font-medium text-sm #{params[:action] == 'index' || !params[:action] ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500 hover:text-gray-700'} dark:text-gray-400" do %>
+      All Alerts
+    <% end %>
+    <%= link_to alerts_social_listening_index_path, class: "px-4 py-2 font-medium text-sm #{params[:action] == 'alerts' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500 hover:text-gray-700'} dark:text-gray-400" do %>
+      Unread Alerts
+      <% if @unread_count > 0 %>
+        <span class="ml-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5"><%= @unread_count %></span>
+      <% end %>
+    <% end %>
+    <%= link_to configure_social_listening_index_path, class: "px-4 py-2 font-medium text-sm #{params[:action] == 'configure' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500 hover:text-gray-700'} dark:text-gray-400" do %>
+      Configure
+    <% end %>
+  </div>
+
+  <!-- Sentiment Breakdown -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sentiment Analysis Overview</h2>
+    <div class="flex items-center gap-4">
+      <div class="flex-1 h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+        <div class="bg-green-500 h-full" style="width: <%= @sentiment_breakdown[:positive_percentage] %>%"></div>
+        <div class="bg-gray-400 h-full" style="width: <%= @sentiment_breakdown[:neutral_percentage] %>%"></div>
+        <div class="bg-red-500 h-full" style="width: <%= @sentiment_breakdown[:negative_percentage] %>%"></div>
+      </div>
+    </div>
+    <div class="flex justify-between mt-2 text-sm">
+      <span class="text-green-600 dark:text-green-400">Positive <%= @sentiment_breakdown[:positive_percentage] %>%</span>
+      <span class="text-gray-500 dark:text-gray-400">Neutral <%= @sentiment_breakdown[:neutral_percentage] %>%</span>
+      <span class="text-red-600 dark:text-red-400">Negative <%= @sentiment_breakdown[:negative_percentage] %>%</span>
+    </div>
+  </div>
+
+  <!-- Recent Alerts -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+    <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Recent Alerts</h2>
+      <div class="flex items-center gap-4">
+        <%= form_tag social_listening_index_path, method: :get, class: 'flex gap-2' do %>
+          <select name="sentiment" class="form-select text-sm" onchange="this.form.submit()">
+            <option value="">All Sentiment</option>
+            <option value="positive" <%= 'selected' if params[:sentiment] == 'positive' %>>Positive</option>
+            <option value="negative" <%= 'selected' if params[:sentiment] == 'negative' %>>Negative</option>
+            <option value="neutral" <%= 'selected' if params[:sentiment] == 'neutral' %>>Neutral</option>
+          </select>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @alerts.any? %>
+      <div class="divide-y divide-gray-100 dark:divide-gray-700">
+        <% @alerts.each do |alert| %>
+          <div class="p-6 <%= alert.read? ? 'opacity-60' : '' %>">
+            <div class="flex items-start justify-between">
+              <div class="flex items-start gap-4">
+                <!-- Sentiment Indicator -->
+                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                    <%= case alert.sentiment
+                        when 'positive' then 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400'
+                        when 'negative' then 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400'
+                        else 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        end %>">
+                  <% if alert.sentiment == 'positive' %>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a1 1 0 011.789 0c4.117 0 7.415-1.817 7.415-4.142a1 1 0 00-.363-1.118l-3.157-3.157a1 1 0 00-1.414 0l-4.21 4.21-1.414-1.414-4.21 4.21a1 1 0 000 1.414l2.121 2.121a1 1 0 001.414 0l4.21-4.21 1.414 1.414 4.21 4.21a1 1 0 001.414 0l.707-.707z"></path>
+                    </svg>
+                  <% elsif alert.sentiment == 'negative' %>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  <% else %>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                    </svg>
+                  <% end %>
+                </div>
+
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="badge 
+                      <%= case alert.sentiment
+                          when 'positive' then 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          when 'negative' then 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          end %>">
+                      <%= alert.sentiment.titleize %>
+                    </span>
+                    <% if alert.alert_type == 'competitor' %>
+                      <span class="badge bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">Competitor</span>
+                    <% elsif alert.alert_type == 'hashtag' %>
+                      <span class="badge bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Hashtag</span>
+                    <% elsif alert.alert_type == 'keyword' %>
+                      <span class="badge bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">Keyword</span>
+                    <% end %>
+                    <span class="badge bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                      <%= alert.platform.titleize %>
+                    </span>
+                  </div>
+
+                  <h3 class="font-medium text-gray-900 dark:text-white">
+                    <%= alert.title %>
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <%= alert.content.truncate(200) %>
+                  </p>
+
+                  <div class="flex items-center gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    <span><%= alert.author_handle %></span>
+                    <span>•</span>
+                    <span><%= time_ago_in_words(alert.published_at) %> ago</span>
+                    <% if alert.author_followers.present? %>
+                      <span>•</span>
+                      <span><%= number_to_human(alert.author_followers) %> followers</span>
+                    <% end %>
+                  </div>
+
+                  <% if alert.keywords_matched.any? %>
+                    <div class="flex flex-wrap gap-1 mt-3">
+                      <% alert.keywords_matched.each do |keyword| %>
+                        <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded">
+                          <%= keyword %>
+                        </span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 ml-4">
+                <% unless alert.read? %>
+                  <span class="w-2 h-2 bg-purple-500 rounded-full" title="Unread"></span>
+                <% end %>
+                <%= link_to alert.source_url, target: '_blank', class: 'btn-icon', title: 'View Source' do %>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                <% end %>
+                <%= button_to mark_read_social_listening_index_path(alert), method: :post, class: 'btn-icon', title: 'Mark as Read' do %>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Pagination -->
+      <div class="p-4 border-t border-gray-100 dark:border-gray-700">
+        <%= paginate @alerts %>
+      </div>
+    <% else %>
+      <div class="p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No alerts yet</h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Configure your keywords, hashtags, and competitors to start monitoring</p>
+        <%= link_to configure_social_listening_index_path, class: 'btn-primary mt-4' do %>
+          Configure Monitoring
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
