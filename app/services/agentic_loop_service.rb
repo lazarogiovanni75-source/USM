@@ -170,19 +170,10 @@ class AgenticLoopService
   def execute_notify_user(input, post)
     message = input['message'] || "Post '#{post.content.title}' processed"
     app_name = Rails.application.config.x.appname
-
-    html_content = <<~HTML
-      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:40px;">
-        <h1 style="font-size:24px;font-weight:700;">Autonomous Manager Update</h1>
-        <p>#{message}</p>
-        <p>Post: <strong>#{post.content.title}</strong></p>
-        <p>Platform: #{post.social_account.platform}</p>
-      </div>
-    HTML
-
+    html_content = "<div style='font-family:sans-serif;padding:20px;'><p>#{message}</p></div>"
     SendgridEmailService.send_email(
       to: @user.email,
-      subject: "[#{app_name}] #{message}",
+      subject: "[#{app_name}] Notification",
       html_content: html_content
     )
     { success: true, message: message }
