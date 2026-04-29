@@ -169,7 +169,22 @@ class AgenticLoopService
 
   def execute_notify_user(input, post)
     message = input['message'] || "Post '#{post.content.title}' processed"
-    UserMailer.with(user: @user, post: post, message: message).deliver_later
+    app_name = Rails.application.config.x.appname
+
+    html_content = <<~HTML
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:40px;">
+        <h1 style="font-size:24px;font-weight:700;">Autonomous Manager Update</h1>
+        <p>#{message}</p>
+        <p>Post: <strong>#{post.content.title}</strong></p>
+        <p>Platform: #{post.social_account.platform}</p>
+      </div>
+    HTML
+
+    SendgridEmailService.send_email(
+      to: @user.email,
+      subject: "[#{app_name}] #{message}",
+      html_content: html_content
+    )
     { success: true, message: message }
   rescue => e
     { success: false, error: e.message }
