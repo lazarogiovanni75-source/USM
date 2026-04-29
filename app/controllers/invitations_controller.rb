@@ -24,21 +24,21 @@ class InvitationsController < ApplicationController
   def send_invitation_instructions
     signed_id = @user.generate_token_for(:password_reset)
     app_name = Rails.application.config.x.appname
-    setup_url = identity_password_reset_url(sid: signed_id)
+    accept_url = edit_user_password_url(sid: signed_id)
 
     html_content = <<~HTML
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:40px;">
-        <h1 style="font-size:24px;font-weight:700;">You've Been Invited!</h1>
-        <p>You've been invited to join <strong>#{app_name}</strong>.</p>
-        <p>Click the link below to set up your account:</p>
-        <p><a href="#{setup_url}" style="background:#2563eb;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;">Set up your account</a></p>
-        <p style="color:#888;font-size:13px;">If you didn't expect this invitation, you can safely ignore this email.</p>
+        <h1 style="font-size:24px;font-weight:700;">You're Invited!</h1>
+        <p>Hey there,</p>
+        <p>Someone has invited you to join #{app_name}. Accept your invitation by clicking the link below and setting your password.</p>
+        <p><a href="#{accept_url}" style="background:#2563eb;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;">Accept Invitation</a></p>
+        <p style="color:#888;font-size:13px;">If you don't want to accept this invitation, you can safely ignore this email.</p>
       </div>
     HTML
 
     SendgridEmailService.send_email(
       to: @user.email,
-      subject: "[#{app_name}] Invitation instructions",
+      subject: "[#{app_name}] You've been invited",
       html_content: html_content
     )
   end
