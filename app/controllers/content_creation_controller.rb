@@ -166,8 +166,13 @@ class ContentCreationController < ApplicationController
         service = result[:service]
         task_id = result[:task_id]
         
-        # Deduct credits after successful generation start
-        subscription&.deduct_credits!(credit_cost)
+        begin
+          # Deduct credits after successful generation start
+          subscription.deduct_credits!(credit_cost)
+          Rails.logger.info "[ContentCreation] Credits deducted: #{credit_cost} for user #{current_user.id}"
+        rescue StandardError => credit_error
+          Rails.logger.error "[ContentCreation] Credit deduction failed: #{credit_error.message} - continuing with generation"
+        end
         
         Rails.logger.info "[ContentCreation] Creating draft with task_id: #{task_id}"
         
@@ -262,8 +267,13 @@ class ContentCreationController < ApplicationController
       if result[:success]
         service = result[:service]
         
-        # Deduct credits after successful generation start
-        subscription&.deduct_credits!(credit_cost)
+        begin
+          # Deduct credits after successful generation start
+          subscription.deduct_credits!(credit_cost)
+          Rails.logger.info "[ContentCreation] Credits deducted: #{credit_cost} for user #{current_user.id}"
+        rescue StandardError => credit_error
+          Rails.logger.error "[ContentCreation] Credit deduction failed: #{credit_error.message} - continuing with generation"
+        end
         
         draft_attrs = {
           title: "Video - #{prompt[0..50]}",

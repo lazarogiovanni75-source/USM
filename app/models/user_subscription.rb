@@ -61,16 +61,20 @@ class UserSubscription < ApplicationRecord
 
   # Deductions credits if sufficient balance exists
   # @param amount [Integer] Number of credits to deduct
-  # @return [Boolean] true if deduction successful, false if insufficient credits
-  # @raise [StandardError] if save fails unexpectedly
+  # @return [Boolean] true if deduction successful
+  # @raise [StandardError] if insufficient credits or save fails
   def deduct_credits!(amount)
-    return false if credits_remaining < amount
+    unless credits_remaining >= amount
+      raise StandardError, "Insufficient credits. Have #{credits_remaining}, need #{amount}"
+    end
 
     self.credits_remaining -= amount
     save!
+    Rails.logger.info "[Credits] Deducted #{amount} credits. User #{user_id} now has #{credits_remaining} remaining."
     true
-  rescue ActiveRecord::RecordInvalid
-    false
+  rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.error "[Credits] Failed to deduct #{amount} credits for user #{user_id}: #{e.message}"
+    raise StandardError, "Failed to save credit deduction: #{e.message}"
   end
 
   # Resets credits to full plan amount and updates reset timestamp

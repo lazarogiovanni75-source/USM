@@ -19,7 +19,7 @@ class WorkflowService
     if generate_image
       # Check credits before generation
       subscription = user.user_subscriptions.active.first
-      credit_cost = 1
+      credit_cost = QualityTiers.credit_cost_for(:image, 'standard')
       
       unless subscription && subscription.has_credits?(credit_cost)
         return { success: false, error: "You don't have enough credits. Please upgrade your plan or wait for your monthly reset." }
@@ -28,8 +28,13 @@ class WorkflowService
       image_result = ImageGenerationService.generate_image(prompt: visual_prompt)
       
       if image_result[:success] && image_result[:task_id].present?
-        # Deduct credits
-        subscription&.deduct_credits!(credit_cost)
+        begin
+          # Deduct credits
+          subscription.deduct_credits!(credit_cost)
+          Rails.logger.info "[WorkflowService] Credits deducted: #{credit_cost} for user #{user.id}"
+        rescue StandardError => credit_error
+          Rails.logger.error "[WorkflowService] Credit deduction failed: #{credit_error.message} - continuing with generation"
+        end
         
         draft = DraftContent.create!(
           user: user,
@@ -61,7 +66,7 @@ class WorkflowService
     elsif generate_video
       # Check credits before generation
       subscription = user.user_subscriptions.active.first
-      credit_cost = 5
+      credit_cost = QualityTiers.credit_cost_for(:video, 'standard')
       
       unless subscription && subscription.has_credits?(credit_cost)
         return { success: false, error: "You don't have enough credits. Please upgrade your plan or wait for your monthly reset." }
@@ -70,8 +75,13 @@ class WorkflowService
       video_result = VideoGenerationService.generate_video(prompt: visual_prompt)
       
       if video_result[:success] && video_result[:task_id].present?
-        # Deduct credits
-        subscription&.deduct_credits!(credit_cost)
+        begin
+          # Deduct credits
+          subscription.deduct_credits!(credit_cost)
+          Rails.logger.info "[WorkflowService] Credits deducted: #{credit_cost} for user #{user.id}"
+        rescue StandardError => credit_error
+          Rails.logger.error "[WorkflowService] Credit deduction failed: #{credit_error.message} - continuing with generation"
+        end
         
         draft = DraftContent.create!(
           user: user,
