@@ -3,31 +3,54 @@
 class SendgridEmailService
   class EmailDeliveryError < StandardError; end
 
+  SENDGRID_API_URL = "https://api.sendgrid.com/v3/mail/send".freeze
+
   def self.send_email(to:, subject:, html_content:, from_email: nil, from_name: nil)
     api_key = ENV["SENDGRID_API_KEY"]
     raise EmailDeliveryError, "SENDGRID_API_KEY not configured" if api_key.blank?
 
     from_email ||= ENV.fetch("SENDGRID_FROM_EMAIL", "noreply@ultimatesocialmedia01.com")
-    from_name ||= ENV.fetch("SENDGRID_FROM_NAME", "Social Media Automation")
+    from_name  ||= ENV.fetch("SENDGRID_FROM_NAME", "Social Media Automation")
 
-    sg = SendGrid::API.new(api_key: api_key)
+    payload = {
+      personalizations: [
+        {
+          to: [{ email: to.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "") }]
+        }
+      ],
+      from: {
+        email: from_email.to_s,
+        name:  from_name.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+      },
+      subject: subject.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: ""),
+      content: [
+        {
+          type:  "text/html",
+          value: html_content.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+        }
+      ]
+    }
 
-    from = SendGrid::From.new(email: from_email, name: from_name)
-    to = SendGrid::To.new(email: to)
-    subject = SendGrid::Subject.new(subject)
-    html_content = SendGrid::HtmlContent.new(html: html_content)
+    response = HTTParty.post(
+      SENDGRID_API_URL,
+      headers: {
+        "Authorization" => "Bearer #{api_key}",
+        "Content-Type"  => "application/json"
+      },
+      body: payload.to_json
+    )
 
-    mail = SendGrid::Mail.new(from, subject, to, html_content)
+    status = response.code.to_i
 
-    response = sg.client.mail._("send").post(request_body: mail.to_json)
-
-    unless response.status_code.to_i >= 200 && response.status_code.to_i < 300
-      raise EmailDeliveryError, "SendGrid API error: #{response.status_code} - #{response.body}"
+    unless status >= 200 && status < 300
+      # Read the raw body without JSON parsing to avoid control character errors
+      raw_body = response.body.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+      raise EmailDeliveryError, "SendGrid API error: #{status} - #{raw_body}"
     end
 
-    { success: true, status: response.status_code }
-  rescue JSON::ParserError => e
-    raise EmailDeliveryError, "SendGrid API response parse error: #{e.message}"
+    { success: true, status: status }
+  rescue EmailDeliveryError
+    raise
   rescue StandardError => e
     raise EmailDeliveryError, "SendGrid delivery failed: #{e.message}"
   end
