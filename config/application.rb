@@ -45,7 +45,7 @@ module Myapp
     # config.eager_load_paths << Rails.root.join("extras")
 
     # Application name configuration
-    config.x.appname = File.read(Rails.root.join('config', 'appname.txt')).strip
+    config.x.appname = File.read(Rails.root.join('config', 'appname.txt')).strip.encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
 
     # Postforme API key configuration
     config.x.postforme_api_key = ENV.fetch('ULTIMATE_POSTFORME_API_KEY', 'pfm_live_4NJHWqt7cUTpmVkXAqxCRa')
