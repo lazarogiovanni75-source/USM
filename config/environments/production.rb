@@ -58,17 +58,9 @@ Rails.application.configure do
   Rails.application.routes.default_url_options = host_and_port_and_protocol
   config.action_mailer.default_url_options = host_and_port_and_protocol
 
-  # Action Mailer SMTP configuration
-  config.action_mailer.delivery_method = :smtp
-  config.action_mailer.smtp_settings = {
-    address: 'smtp.sendgrid.net',
-    port: 2525,
-    domain: 'ultimatesocialmedia01.com',
-    user_name: 'apikey',
-    password: ENV['SENDGRID_API_KEY'],
-    authentication: :plain,
-    enable_starttls_auto: true
-  }
+  # Action Mailer configuration - SendGrid HTTP API
+  config.action_mailer.delivery_method = :sendgrid_actionmailer
+  config.action_mailer.sendgrid_actionmailer_settings = { api_key: ENV['SENDGRID_API_KEY'], raise_delivery_errors: true }
   config.action_mailer.default_url_options = { host: 'ultimatesocialmedia01.com', protocol: 'https' }
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
