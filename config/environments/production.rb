@@ -58,10 +58,7 @@ Rails.application.configure do
   Rails.application.routes.default_url_options = host_and_port_and_protocol
   config.action_mailer.default_url_options = host_and_port_and_protocol
 
-  # Action Mailer configuration - SendGrid HTTP API
-  config.action_mailer.delivery_method = :sendgrid_actionmailer
-  config.action_mailer.sendgrid_actionmailer_settings = { api_key: ENV['SENDGRID_API_KEY'], raise_delivery_errors: true }
-  config.action_mailer.default_url_options = { host: 'ultimatesocialmedia01.com', protocol: 'https' }
+
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   # Can be used together with config.force_ssl for Strict-Transport-Security and secure cookies.
