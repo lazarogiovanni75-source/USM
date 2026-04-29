@@ -45,9 +45,8 @@ class RegistrationsController < ApplicationController
         <h1 style="font-size:24px;font-weight:700;">Email Verification</h1>
         <p>Hey there,</p>
         <p>This is to confirm that <strong>#{user.email}</strong> is the email you want to use on your account.</p>
-        <p>Click the link below to verify your email address:</p>
-        <p><a href="#{verify_url}" style="background:#2563eb;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;">Yes, use this email for my account</a></p>
-        <p style="color:#888;font-size:13px;">If you didn't request this, you can safely ignore this email.</p>
+        <p><a href="#{verify_url}" style="background:#2563eb;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;">Verify my email</a></p>
+        <p style="color:#888;font-size:13px;">If you didn't create an account, you can safely ignore this email.</p>
       </div>
     HTML
 
