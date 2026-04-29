@@ -58,29 +58,18 @@ Rails.application.configure do
   Rails.application.routes.default_url_options = host_and_port_and_protocol
   config.action_mailer.default_url_options = host_and_port_and_protocol
 
-  # SMTP configuration for SendGrid
-  smtp_password = ENV["SENDGRID_API_KEY"] || ENV["EMAIL_SMTP_PASSWORD"] || ENV["SMTP_PASSWORD"]
-  smtp_address = ENV["EMAIL_SMTP_ADDRESS"] || ENV["SENDGRID_HOST"] || "smtp.sendgrid.net"
-  smtp_port = ENV["EMAIL_SMTP_PORT"] || ENV["SMTP_PORT"] || "587"
-  smtp_username = ENV["EMAIL_SMTP_USERNAME"] || ENV["SMTP_USERNAME"] || "apikey"
-
-  if smtp_password.present? && smtp_address.present?
-    config.action_mailer.smtp_settings = {
-      address: smtp_address,
-      port: smtp_port.presence || 587,
-      authentication: :login,
-      user_name: smtp_username.presence || 'apikey',
-      password: smtp_password,
-      enable_starttls_auto: true,
-      openssl_verify_mode: 'peer'
-    }
-    config.action_mailer.delivery_method = :smtp
-    config.action_mailer.perform_deliveries = true
-    config.action_mailer.raise_delivery_errors = false
-  else
-    # Fallback to test mode if SMTP not configured
-    config.action_mailer.delivery_method = :test
-  end
+  # Action Mailer SMTP configuration
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.smtp_settings = {
+    address: 'smtp.sendgrid.net',
+    port: 587,
+    domain: 'ultimatesocialmedia01.com',
+    user_name: 'apikey',
+    password: ENV.fetch('SENDGRID_API_KEY'),
+    authentication: :plain,
+    enable_starttls_auto: true
+  }
+  config.action_mailer.default_url_options = { host: 'ultimatesocialmedia01.com', protocol: 'https' }
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   # Can be used together with config.force_ssl for Strict-Transport-Security and secure cookies.
