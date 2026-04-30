@@ -205,7 +205,7 @@ class AtlasCloudService
       'status' => status,
       'output' => output,
       'progress' => data['progress'],
-      'error' => data['error']
+      'error' => data['error'] || data.dig('error', 'message')
     }
   rescue AtlasCloudService::Error => e
     if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
@@ -315,8 +315,10 @@ class AtlasCloudService
   def extract_task_id(result)
     result.dig('data', 'id') ||
       result.dig('data', 'task_id') ||
+      result.dig('data', 'prediction_id') ||
       result['id'] ||
-      result['task_id']
+      result['task_id'] ||
+      result['prediction_id']
   end
 
   # Extract output URL from various possible response structures
@@ -450,7 +452,9 @@ class AtlasCloudService
     when 500..599
       raise Error, "Server error: #{response.code}"
     else
-      raise Error, "Unexpected response: #{response.code} - #{response.body[0..200]}"
+      # Include raw response for debugging
+      raw_response = response.body[0..200]
+      raise Error, "Unexpected response: #{response.code} - #{raw_response}"
     end
   end
 end
