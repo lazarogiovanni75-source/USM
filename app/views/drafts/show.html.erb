@@ -61,20 +61,32 @@
           <% if error_msg && (error_msg.include?('500') || error_msg.include?('Server error')) %>
             <p class="text-gray-600">Atlas Cloud server is experiencing issues (Error 500).</p>
             <p class="text-sm text-gray-500 mt-2">The video generation service is temporarily unavailable. Please try again in a few minutes.</p>
-          <% elsif error_msg && error_msg.include?('not found') %>
-            <p class="text-gray-600">Video task not found (may have expired).</p>
-            <p class="text-sm text-gray-500 mt-2">Please try generating a new video.</p>
+            <div class="mt-4 flex justify-center gap-4">
+              <%= button_to "Retry Generation", retry_video_status_draft_path(@draft), method: :post, class: "btn-primary" %>
+              <%= link_to "Back to Content Creation", content_creation_index_path, class: "btn-secondary" %>
+            </div>
+          <% elsif error_msg && (error_msg.include?('not found') || error_msg.include?('Task not found')) %>
+            <p class="text-gray-600">Video task not found or has expired.</p>
+            <p class="text-sm text-gray-500 mt-2">This may happen if the video generation took too long. Please try generating a new video.</p>
+            <div class="mt-4 flex justify-center gap-4">
+              <%= link_to "Try Again", content_creation_index_path, class: "btn-primary" %>
+            </div>
           <% elsif error_msg && error_msg.include?('credits') %>
             <p class="text-gray-600">Insufficient credits in your Atlas Cloud account.</p>
             <p class="text-sm text-gray-500 mt-2">Please top up your Atlas Cloud account to continue generating videos.</p>
+          <% elsif error_msg && error_msg.include?('timed out') %>
+            <p class="text-gray-600">Video generation timed out.</p>
+            <p class="text-sm text-gray-500 mt-2">The generation took too long and was cancelled. Please try a shorter video or different prompt.</p>
+            <div class="mt-4 flex justify-center gap-4">
+              <%= link_to "Try Again", content_creation_index_path, class: "btn-primary" %>
+            </div>
           <% else %>
             <p class="text-gray-600"><%= error_msg || 'An unknown error occurred during generation.' %></p>
             <p class="text-sm text-gray-500 mt-2">This may be due to an invalid API key or the service being unavailable.</p>
+            <div class="mt-4 flex justify-center gap-4">
+              <%= link_to "Try Again", content_creation_index_path, class: "btn-primary" %>
+            </div>
           <% end %>
-          <div class="mt-4 flex justify-center gap-4">
-            <%= button_to "Retry Checking Status", retry_video_status_draft_path(@draft), method: :post, class: "btn-secondary" %>
-            <%= link_to "Try Again", content_creation_index_path, class: "btn-primary" %>
-          </div>
         </div>
       </div>
     <% elsif @draft.content_type.in?(['image', 'video']) && @draft.status == 'pending' %>
