@@ -103,6 +103,17 @@ class VideoPollJob < ApplicationJob
         return
       end
       VideoPollJob.set(wait: 2.seconds).perform_later(content_item_id, task_id, attempt + 1)
+    elsif raw_status == 'retry'
+      # Server error - retry after a delay
+      max_retry_attempts = 30
+      if attempt >= max_retry_attempts
+        error_msg = status_response['error'] || 'Atlas Cloud server error after multiple retries'
+        draft.update(status: 'failed', metadata: draft.metadata.merge({ 'error' => error_msg }))
+        Rails.logger.error "VideoPollJob: Max retry attempts reached for draft #{content_item_id} - server error"
+        return
+      end
+      Rails.logger.warn "VideoPollJob: Server error for task #{task_id} (attempt #{attempt + 1}/#{max_retry_attempts}), retrying..."
+      VideoPollJob.set(wait: 5.seconds).perform_later(content_item_id, task_id, attempt + 1)
     elsif raw_status == 'not_found' || raw_status.nil?
       max_not_found_retries = 60
 

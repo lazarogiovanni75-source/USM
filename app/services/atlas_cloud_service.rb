@@ -196,8 +196,10 @@ class AtlasCloudService
     data = result.dig('data') || result
     status = normalize_status(data['status'] || 'unknown')
 
+
     # Extract output URL using comprehensive extraction
     output = extract_output_url(data)
+
 
     Rails.logger.info "[AtlasCloudService] Task #{task_id} - Status: #{status}, Output found: #{output.present?}"
 
@@ -208,9 +210,15 @@ class AtlasCloudService
       'error' => data['error'] || data.dig('error', 'message')
     }
   rescue AtlasCloudService::Error => e
-    if e.message.include?('404') || e.message.include?('Not Found') || e.message.include?('not found')
+    error_msg_lower = e.message.downcase
+    if error_msg_lower.include?('404') || error_msg_lower.include?('not found') || error_msg_lower.include?('not_found')
       Rails.logger.warn "[AtlasCloudService] Task #{task_id} not found (404)"
       return { 'status' => 'not_found', 'output' => nil, 'error' => 'Task not found' }
+    elsif error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
+          error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
+      # Server error - return retryable status
+      Rails.logger.warn "[AtlasCloudService] Server error for #{task_id}: #{e.message} - returning retryable status"
+      return { 'status' => 'retry', 'output' => nil, 'error' => e.message }
     end
     raise
   end
