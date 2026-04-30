@@ -432,6 +432,7 @@ Rails.application.routes.draw do
       post 'convert_to_content'
       post 'duplicate'
       post 'retry_video_status'
+      get 'download'
     end
     collection do
       post 'bulk_actions'

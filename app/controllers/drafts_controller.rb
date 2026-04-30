@@ -1,6 +1,6 @@
 class DraftsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_draft, only: %i[show edit update destroy convert_to_content duplicate retry_video_status]
+  before_action :set_draft, only: %i[show edit update destroy convert_to_content duplicate retry_video_status download]
 
   def index
     @drafts = current_user.draft_contents.includes(:content_suggestions).order(updated_at: :desc)
@@ -161,6 +161,19 @@ class DraftsController < ApplicationController
     rescue => e
       Rails.logger.error "[retry_video_status] Error: #{e.message}"
       redirect_to draft_path(@draft), alert: "Error checking status: #{e.message}"
+    end
+  end
+
+  def download
+    # Check if media is attached via ActiveStorage
+    if @draft.media.attached?
+      # Serve from ActiveStorage
+      redirect_to rails_blob_path(@draft.media, disposition: "attachment")
+    elsif @draft.media_url.present?
+      # Fallback: redirect to the URL (may be expired)
+      redirect_to @draft.media_url, allow_other_host: true
+    else
+      redirect_to draft_path(@draft), alert: 'No media available for download.'
     end
   end
 
