@@ -104,7 +104,7 @@ Rails.application.configure do
     config.action_mailer.delivery_method = :test
   else
     config.action_mailer.delivery_method = :test
-    Rails.logger.warn "RESEND_API_KEY not set - email delivery disabled"
+    warn "RESEND_API_KEY not set - email delivery disabled"
   end
 
   # Ignore bad email addresses and do not raise email delivery errors.
