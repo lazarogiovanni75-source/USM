@@ -160,11 +160,8 @@ class VideoPollJob < ApplicationJob
           return { 'status' => 'failed', 'error' => error_msg }
         elsif error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
               error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
-          error_msg = "Atlas Cloud server error - #{e.message}"
-          draft = DraftContent.find_by(id: @content_item_id) if defined?(@content_item_id)
-          draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg })) if defined?(@content_item_id)
-          Rails.logger.error "VideoPollJob: Atlas Cloud server error for task #{task_id}: #{e.message}"
-          return { 'status' => 'failed', 'error' => error_msg }
+          # Server error - return retryable status to allow retries
+          return { 'status' => 'retry', 'error' => e.message }
         elsif error_msg_lower.include?('404') || error_msg_lower.include?('not found')
           return { 'status' => 'not_found', 'error' => e.message }
         elsif error_msg_lower.include?('rate limit')
@@ -179,10 +176,12 @@ class VideoPollJob < ApplicationJob
         AtlasCloudService.new.task_status(task_id)
       rescue AtlasCloudService::Error => e
         error_msg_lower = e.message.downcase
-        if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up') ||
-           error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
-           error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
+        if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up')
           return { 'status' => 'failed', 'error' => e.message }
+        elsif error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
+              error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
+          # Server error - return retryable status
+          return { 'status' => 'retry', 'error' => e.message }
         elsif error_msg_lower.include?('404') || error_msg_lower.include?('not found') ||
               error_msg_lower.include?('rate limit') || error_msg_lower.include?('connection error') ||
               error_msg_lower.include?('timeout')
