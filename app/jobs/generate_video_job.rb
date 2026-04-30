@@ -96,24 +96,52 @@ class GenerateVideoJob < ApplicationJob
         status_response = atlas_service.task_status(task_id)
         status = status_response['status']
 
+        Rails.logger.info "[GenerateVideoJob] Poll #{attempt}: status=#{status}, output=#{status_response['output']&.to_s&.[0..80]}"
+
         case status
-        when 'success', 'succeeded'
-          video.update!(
-            status: 'completed',
-            video_url: status_response['output']
-          )
+        when 'success', 'succeeded', 'completed', 'finished'
+          # Download video to permanent storage before updating record
+          output_url = status_response['output']
+          permanent_url = nil
+          
+          if output_url.present?
+            begin
+              permanent_url = download_video_to_storage(video, output_url)
+              video.update!(
+                status: 'completed',
+                video_url: permanent_url,
+                media_url: permanent_url
+              )
+              Rails.logger.info "[GenerateVideoJob] Video downloaded to S3: #{permanent_url}"
+            rescue => e
+              Rails.logger.error "[GenerateVideoJob] Failed to download video: #{e.message} - using original URL"
+              permanent_url = output_url
+              video.update!(
+                status: 'completed',
+                video_url: output_url,
+                media_url: output_url
+              )
+            end
+          else
+            video.update!(status: 'failed', error_message: 'No output URL in response')
+            ActionCable.server.broadcast(
+              "video_progress_#{video.id}",
+              { type: 'video-error', video_id: video.id, error: 'No video URL returned' }
+            )
+            return
+          end
 
           # Also save to Drafts so user can find it at /drafts
           if video.user.present?
             draft = DraftContent.create!(
               user: video.user,
               title: "AI Video: #{video.title.to_s.truncate(50)}",
-              content: "Video generated from prompt: #{video.title}\n\nVideo URL: #{video.video_url}",
+              content: "Video generated from prompt: #{video.title}\n\nVideo URL: #{permanent_url}",
               content_type: 'video',
               platform: 'general',
               status: 'draft',
               metadata: {
-                video_url: video.video_url,
+                video_url: permanent_url,
                 prompt: video.title,
                 video_id: video.id,
                 generated_at: Time.current.iso8601
@@ -127,7 +155,7 @@ class GenerateVideoJob < ApplicationJob
             {
               type: 'video-completed',
               video_id: video.id,
-              video_url: video.video_url,
+              video_url: permanent_url,
               draft_id: draft&.id,
               message: 'Video generated successfully!'
             }
@@ -174,5 +202,47 @@ class GenerateVideoJob < ApplicationJob
         error: 'Video generation timed out'
       }
     )
+  end
+
+  # Download video from temporary URL and upload to S3/ActiveStorage for permanent access
+  def download_video_to_storage(video, temp_url)
+    require 'open-uri'
+    require 'tempfile'
+
+    Rails.logger.info "[GenerateVideoJob] Downloading video from #{temp_url[0..80]}..."
+
+    # Download with SSL verification disabled for Alibaba Cloud URLs
+    ssl_verify_mode = (temp_url.include?('aliyuncs') || temp_url.include?('oss-')) ? 
+      OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
+
+    downloaded_file = URI.open(temp_url, ssl_verify_mode: ssl_verify_mode)
+    
+    # Create temp file
+    temp_file = Tempfile.new(['video', '.mp4'], binmode: true)
+    temp_file.write(downloaded_file.read)
+    temp_file.close
+
+    # Generate unique filename
+    filename = "video_#{video.id}_#{Time.current.to_i}.mp4"
+
+    # Attach to ActiveStorage (S3 in production)
+    video.media.attach(
+      io: File.open(temp_file.path),
+      filename: filename,
+      content_type: 'video/mp4'
+    )
+
+    # Return the permanent S3 URL
+    permanent_url = video.media.url
+
+    # Clean up temp file
+    temp_file.unlink
+    
+    Rails.logger.info "[GenerateVideoJob] Video uploaded to S3, URL: #{permanent_url[0..80]}..."
+    
+    permanent_url
+  rescue => e
+    Rails.logger.error "[GenerateVideoJob] Download failed: #{e.class} - #{e.message}"
+    raise
   end
 end
