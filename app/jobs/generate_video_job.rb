@@ -96,7 +96,7 @@ class GenerateVideoJob < ApplicationJob
         status_response = atlas_service.task_status(task_id)
         status = status_response['status']
 
-        Rails.logger.info "[GenerateVideoJob] Poll #{attempt}: status=#{status}, output=#{status_response['output']&.to_s&.[0..80]}"
+        Rails.logger.info "[GenerateVideoJob] Poll #{attempt}: status=#{status}, output=#{status_response['output'].to_s[0..80] if status_response['output']}"
 
         case status
         when 'success', 'succeeded', 'completed', 'finished'
