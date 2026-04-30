@@ -472,7 +472,7 @@
         
         <%# Video Preview Section - shows the latest generated video %>
         <% video_draft = @latest_video_draft || (params[:video_draft_id] ? current_user.draft_contents.find_by(id: params[:video_draft_id]) : nil) %>
-        <% if video_draft && video_draft.media_url.present? %>
+        <% if video_draft && video_draft.media_display_url.present? %>
           <div class="bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl shadow-lg overflow-hidden">
             <div class="p-4 border-b border-white/20">
               <div class="flex items-center justify-between">
@@ -483,7 +483,7 @@
             <div class="p-6">
               <div class="relative rounded-lg overflow-hidden bg-black shadow-xl">
                 <video controls class="w-full" poster="">
-                  <source src="<%= video_draft.media_url %>" type="video/mp4">
+                  <source src="<%= video_draft.media_display_url %>" type="video/mp4">
                   Your browser does not support the video tag.
                 </video>
                 <% if video_draft.quality_tier == 'hd' %>
@@ -501,7 +501,7 @@
                     </svg>
                     Download
                   </a>
-                  <button onclick="copyVideoUrl('<%= video_draft.media_url %>')" class="bg-white text-purple-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/90 transition-colors flex items-center">
+                  <button onclick="copyVideoUrl('<%= video_draft.media_display_url %>')" class="bg-white text-purple-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/90 transition-colors flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
                     </svg>
