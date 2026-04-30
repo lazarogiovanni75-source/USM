@@ -58,4 +58,9 @@ RSpec.configure do |config|
 
   # Auto-inject API auth headers in request specs
   config.include ApiRequestHelpers, type: :request
+
+  # Stub SendgridEmailService in all specs to avoid environment dependency
+  config.before(:each) do
+    allow(SendgridEmailService).to receive(:send_email).and_return({ success: true, status: 202 })
+  end
 end

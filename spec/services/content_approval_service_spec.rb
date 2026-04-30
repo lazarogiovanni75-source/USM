@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe ContentApprovalService, type: :service do
+  before do
+    allow(SendgridEmailService).to receive(:send_email).and_return({ success: true, status: 202 })
+  end
+
   describe '#call' do
     let(:user) { create(:user) }
     let(:content) { "This is a test post content" }
