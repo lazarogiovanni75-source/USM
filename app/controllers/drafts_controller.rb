@@ -170,7 +170,14 @@ class DraftsController < ApplicationController
       # Serve from ActiveStorage
       redirect_to rails_blob_path(@draft.media, disposition: "attachment")
     elsif @draft.media_url.present?
-      # Fallback: redirect to the URL (may be expired)
+      url = @draft.media_url.downcase
+      # Check if URL is an expired cloud storage URL
+      if url.include?('aliyuncs.com') || url.include?('oss-') || url.include?('dashscope')
+        # Skip expired Alibaba Cloud URLs - show alert instead of crashing
+        redirect_to draft_path(@draft), alert: 'This media has expired and is no longer available for download. Please generate new content.'
+        return
+      end
+      # Fallback: redirect to the URL
       redirect_to @draft.media_url, allow_other_host: true
     else
       redirect_to draft_path(@draft), alert: 'No media available for download.'

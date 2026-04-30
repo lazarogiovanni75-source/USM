@@ -79,8 +79,19 @@ class DraftContent < ApplicationRecord
       end
     end
     
-    # 2. Fall back to legacy media_url field
-    media_url
+    # 2. Check if legacy media_url is an expired cloud storage URL
+    if media_url.present?
+      url = media_url.downcase
+      # Alibaba Cloud OSS URLs typically expire and cause "Request has expired" errors
+      # Skip these and return nil to show placeholder instead of broken image
+      if url.include?('aliyuncs.com') || url.include?('oss-') || url.include?('dashscope')
+        Rails.logger.info "Skipping expired Alibaba Cloud URL for draft #{id}"
+        return nil
+      end
+      return media_url
+    end
+    
+    nil
   end
   
   private
