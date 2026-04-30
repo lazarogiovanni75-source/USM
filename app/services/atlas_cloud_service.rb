@@ -352,22 +352,34 @@ class AtlasCloudService
       return data['url']
     end
 
-    # Try data.result
-    if data['result'].present?
-      Rails.logger.debug "[AtlasCloudService] Found output in data.result: #{data['result']}"
+    # Try data.result.video_url (Atlas Cloud video format)
+    if data['result'].is_a?(Hash) && data.dig('result', 'video_url').present?
+      Rails.logger.debug "[AtlasCloudService] Found video_url in data.result: #{data.dig('result', 'video_url')}"
+      return data.dig('result', 'video_url')
+    end
+
+    # Try data.result directly if it's a string URL
+    if data['result'].is_a?(String) && data['result'].start_with?('http')
+      Rails.logger.debug "[AtlasCloudService] Found URL in data.result: #{data['result']}"
       return data['result']
     end
 
-    # Try data.data.result
-    if data['data'].is_a?(Hash) && data.dig('data', 'result').present?
-      Rails.logger.debug "[AtlasCloudService] Found output in data.data.result: #{data.dig('data', 'result')}"
-      return data.dig('data', 'result')
+    # Try data.result.image_url (Atlas Cloud image format)
+    if data['result'].is_a?(Hash) && data.dig('result', 'image_url').present?
+      Rails.logger.debug "[AtlasCloudService] Found image_url in data.result: #{data.dig('result', 'image_url')}"
+      return data.dig('result', 'image_url')
     end
 
     # Try data.generated_media
     if data['generated_media'].present?
       Rails.logger.debug "[AtlasCloudService] Found output in data.generated_media: #{data['generated_media']}"
       return data['generated_media']
+    end
+
+    # Try data.data.result
+    if data['data'].is_a?(Hash) && data.dig('data', 'result').present?
+      Rails.logger.debug "[AtlasCloudService] Found output in data.data.result: #{data.dig('data', 'result')}"
+      return data.dig('data', 'result')
     end
 
     # Try data.videos array
