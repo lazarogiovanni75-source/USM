@@ -64,11 +64,19 @@ class DraftContent < ApplicationRecord
   def media_display_url
     # 1. Try ActiveStorage attachment first
     if media.attached?
-      cloudfront_domain = ENV["CLOUDFRONT_DOMAIN"].presence
-      if cloudfront_domain.present?
-        return "#{cloudfront_domain}#{Rails.application.routes.url_helpers.rails_blob_path(media, only_path: true)}"
+      begin
+        cloudfront_domain = ENV["CLOUDFRONT_DOMAIN"].presence
+        if cloudfront_domain.present?
+          return "#{cloudfront_domain}#{Rails.application.routes.url_helpers.rails_blob_path(media, only_path: true)}"
+        end
+        return Rails.application.routes.url_helpers.rails_blob_url(media, only_path: false)
+      rescue Aws::S3::Errors::AccessDenied, Aws::S3::Errors::Forbidden => e
+        Rails.logger.warn "S3 access denied for media #{id}: #{e.message}"
+        return nil  # Return nil to trigger placeholder in views
+      rescue StandardError => e
+        Rails.logger.error "Failed to generate media URL for #{id}: #{e.message}"
+        return nil
       end
-      return Rails.application.routes.url_helpers.rails_blob_url(media, only_path: false)
     end
     
     # 2. Fall back to legacy media_url field

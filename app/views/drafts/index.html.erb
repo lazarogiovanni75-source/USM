@@ -61,9 +61,17 @@
     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       <% @drafts.each do |draft| %>
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-          <% if draft.content_type == 'image' && draft.media_display_url.present? %>
+          <% if draft.content_type == 'image' %>
             <div class="relative">
-              <img src="<%= draft.media_display_url %>" alt="<%= draft.title %>" class="w-full h-48 object-cover rounded-t-lg">
+              <% if draft.media_display_url.present? %>
+                <img src="<%= draft.media_display_url %>" alt="<%= draft.title %>" class="w-full h-48 object-cover rounded-t-lg">
+              <% else %>
+                <div class="w-full h-48 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-t-lg flex items-center justify-center">
+                  <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                </div>
+              <% end %>
               <span class="absolute top-2 right-2 badge badge-<%= draft.status %>"><%= draft.status.humanize %></span>
             </div>
           <% end %>
