@@ -57,8 +57,20 @@
         <div class="text-center py-8">
           <div class="text-red-500 text-5xl mb-4">⚠️</div>
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Generation Failed</h3>
-          <p class="text-gray-600"><%= @draft.metadata['error'] || 'An unknown error occurred during generation.' %></p>
-          <p class="text-sm text-gray-500 mt-2">This may be due to an invalid API key or the service being unavailable.</p>
+          <% error_msg = @draft.metadata['error'] %>
+          <% if error_msg && (error_msg.include?('500') || error_msg.include?('Server error')) %>
+            <p class="text-gray-600">Atlas Cloud server is experiencing issues (Error 500).</p>
+            <p class="text-sm text-gray-500 mt-2">The video generation service is temporarily unavailable. Please try again in a few minutes.</p>
+          <% elsif error_msg && error_msg.include?('not found') %>
+            <p class="text-gray-600">Video task not found (may have expired).</p>
+            <p class="text-sm text-gray-500 mt-2">Please try generating a new video.</p>
+          <% elsif error_msg && error_msg.include?('credits') %>
+            <p class="text-gray-600">Insufficient credits in your Atlas Cloud account.</p>
+            <p class="text-sm text-gray-500 mt-2">Please top up your Atlas Cloud account to continue generating videos.</p>
+          <% else %>
+            <p class="text-gray-600"><%= error_msg || 'An unknown error occurred during generation.' %></p>
+            <p class="text-sm text-gray-500 mt-2">This may be due to an invalid API key or the service being unavailable.</p>
+          <% end %>
           <div class="mt-4 flex justify-center gap-4">
             <%= button_to "Retry Checking Status", retry_video_status_draft_path(@draft), method: :post, class: "btn-secondary" %>
             <%= link_to "Try Again", content_creation_index_path, class: "btn-primary" %>
