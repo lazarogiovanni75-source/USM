@@ -4,13 +4,7 @@ class SocialListeningController < ApplicationController
   before_action :authenticate_user!
 
   def index
-    @alerts = current_user.social_listening_alerts
-                        .recent
-                        .limit(50)
-
-    @unread_count = current_user.social_listening_alerts.unread.count
-    @sentiment_breakdown = get_sentiment_breakdown
-    @recent_keywords = get_recent_keywords
+    render :coming_soon
   end
 
   def alerts
