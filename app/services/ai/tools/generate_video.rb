@@ -4,7 +4,7 @@ module Ai
       class Error < StandardError; end
       class InsufficientCreditsError < Error; end
       
-      def self.call(user:, campaign: nil, prompt:, duration: "10", model: "bytedance/seedance-v1.5-pro/text-to-video-fast", **)
+      def self.call(user:, campaign: nil, prompt:, duration: "10", model: "bytedance/google/veo3.1-lite/text-to-video", **)
         Rails.logger.info "[Tools::GenerateVideo] Generating video: #{prompt}"
         
         # Get active subscription and check credits

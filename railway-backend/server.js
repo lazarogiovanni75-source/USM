@@ -276,7 +276,7 @@ app.post('/video/start',
       const response = await axios.post(
         `${ATLAS_CLOUD_BASE_URL}/api/v1/model/generateVideo`,
         {
-          model: 'bytedance/seedance-v1-pro-fast/text-to-video',
+          model: 'google/veo3.1-lite/text-to-video',
           prompt: prompt,
           duration: 5,
           aspect_ratio: '16:9',

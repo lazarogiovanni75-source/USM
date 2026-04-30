@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Polling job for video generation tasks (supports multiple services)
-# Primary: Atlas Cloud/Seedance v1 Pro (https://api.atlascloud.ai)
+# Primary: Atlas Cloud/Google Veo 3.1 Lite (https://api.atlascloud.ai)
 # Secondary: Atlas Cloud (deprecated - fallback only)
 class VideoPollJob < ApplicationJob
   queue_as :default

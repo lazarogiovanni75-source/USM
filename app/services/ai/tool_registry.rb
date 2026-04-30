@@ -59,8 +59,8 @@ module Ai
               },
               model: {
                 type: "string",
-                enum: ["bytedance/seedance-v1.5-pro/text-to-video-fast", "bytedance/seedance-v1.5-pro/image-to-video-fast"],
-                description: "Video model (bytedance/seedance-v1.5-pro for text-to-video or image-to-video)"
+                enum: ["google/veo3.1-lite/text-to-video", "google/veo3.1-lite/image-to-video"],
+                description: "Video model (google/veo3.1-lite for text-to-video or image-to-video)"
               }
             },
             required: ["prompt"]

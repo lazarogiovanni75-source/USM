@@ -37,7 +37,7 @@ class GenerateVideoJob < ApplicationJob
     # Update video status to processing
     video.update!(status: 'processing')
 
-    # Generate video using AtlasCloudService (Seedance v1 Pro)
+    # Generate video using AtlasCloudService (Google Veo 3.1 Lite)
     atlas_service = AtlasCloudService.new
     response = atlas_service.generate_video(
       prompt: topic,

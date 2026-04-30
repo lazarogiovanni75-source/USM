@@ -12,13 +12,17 @@ class AtlasCloudService
   BASE_URL = 'https://api.atlascloud.ai'
   TIMEOUT = 120
 
-  # Available text-to-video models (ByteDance Seedance only)
+  # Available text-to-video models (Google Veo 3.1 Lite)
   TEXT_TO_VIDEO_MODELS = {
-    'bytedance/seedance-v1.5-pro/text-to-video-fast' => 'ByteDance Seedance V1.5 Pro'
+    'google/veo3.1-lite/text-to-video' => 'Google Veo 3.1 Lite'
   }.freeze
 
   IMAGE_TO_VIDEO_MODELS = {
-    'bytedance/seedance-v1.5-pro/image-to-video-fast' => 'ByteDance Seedance V1.5 Pro'
+    'google/veo3.1-lite/image-to-video' => 'Google Veo 3.1 Lite'
+  }.freeze
+
+  START_END_FRAME_MODELS = {
+    'google/veo3.1-lite/start-end-frame-to-video' => 'Google Veo 3.1 Lite'
   }.freeze
 
   # Available image models (OpenAI GPT Image)
@@ -31,9 +35,9 @@ class AtlasCloudService
     'openai/gpt-image-2/edit' => 'OpenAI GPT Image 2 (Image Edit)'
   }.freeze
 
-  # Dual video model selection based on text content
-  VIDEO_MODEL_TEXT = 'bytedance/seedance-2.0/text-to-video'.freeze
-  VIDEO_MODEL_VISUAL = 'bytedance/seedance-v1.5-pro/text-to-video-fast'.freeze
+  # Default video model (Google Veo 3.1 Lite)
+  VIDEO_MODEL_TEXT = 'google/veo3.1-lite/text-to-video'.freeze
+  VIDEO_MODEL_VISUAL = 'google/veo3.1-lite/text-to-video'.freeze
   VIDEO_DEFAULTS = { resolution: '720p', max_duration: 10 }.freeze
 
   class Error < StandardError; end
@@ -130,13 +134,9 @@ class AtlasCloudService
   end
 
   def select_video_model(prompt)
-    if prompt_contains_text?(prompt)
-      Rails.logger.info "[AtlasCloudService] Prompt contains text - using Seedance 2.0"
-      VIDEO_MODEL_TEXT
-    else
-      Rails.logger.info "[AtlasCloudService] Prompt is purely visual - using Seedance V1.5 Pro"
-      VIDEO_MODEL_VISUAL
-    end
+    # Always use Google Veo 3.1 Lite for all video generation
+    Rails.logger.info "[AtlasCloudService] Using Google Veo 3.1 Lite"
+    VIDEO_MODEL_TEXT
   end
 
   def prompt_contains_text?(prompt)
@@ -155,7 +155,7 @@ class AtlasCloudService
   #
   def generate_video_from_image(image_url:,
                                 prompt: '',
-                                model: 'bytedance/seedance-v1.5-pro/image-to-video-fast',
+                                model: 'google/veo3.1-lite/image-to-video',
                                 aspect_ratio: '16:9',
                                 duration: 5,
                                 quality: 'standard')
@@ -250,7 +250,7 @@ class AtlasCloudService
 
   # Get available models (for UI display)
   def self.available_video_models
-    TEXT_TO_VIDEO_MODELS.merge(IMAGE_TO_VIDEO_MODELS)
+    TEXT_TO_VIDEO_MODELS.merge(IMAGE_TO_VIDEO_MODELS).merge(START_END_FRAME_MODELS)
   end
 
   def self.available_image_models
