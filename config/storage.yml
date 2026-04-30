@@ -17,7 +17,6 @@ amazon:
   secret_access_key: <%= ENV.fetch("STORAGE_BUCKET_SECRET_ACCESS_KEY", ENV.fetch("AWS_SECRET_ACCESS_KEY", "")) %>
   region: <%= ENV.fetch("STORAGE_BUCKET_REGION", ENV.fetch("AWS_REGION", "us-east-1")) %>
   bucket: <%= ENV.fetch("STORAGE_BUCKET_NAME", "ultimate-social-media-production") %>
-  public: true
   http_open_timeout: 5
   http_read_timeout: 5
   retry_limit: 3
