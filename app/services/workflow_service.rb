@@ -55,11 +55,8 @@ class WorkflowService
         # Schedule polling job
         ImagePollJob.perform_later(draft.id, image_result[:task_id], image_result[:service])
         
-        # If image is immediately available
-        if image_result[:output_url].present?
-          draft.update!(media_url: image_result[:output_url], status: 'draft')
-          media_url = image_result[:output_url]
-        end
+        # Note: ImagePollJob will download and attach the image to ActiveStorage
+        # No need to save media_url here - the polling job handles it
         
         media_type = 'image'
       end

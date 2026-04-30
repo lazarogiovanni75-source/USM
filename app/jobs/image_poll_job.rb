@@ -44,9 +44,21 @@ class ImagePollJob < ApplicationJob
     if raw_status.in?(['success', 'completed', 'done', 'ready', 'succeeded'])
       output_url = status_response['output']
       if output_url.present?
-        draft.update(media_url: output_url, status: 'draft')
-        Rails.logger.info "ImagePollJob: Draft #{draft_id} completed successfully with URL: #{output_url}"
-        Rails.logger.info "ImagePollJob: VERIFIED - Saved media_url to Draft #{draft_id}: #{draft.reload.media_url}"
+        # Download and attach the image to ActiveStorage
+        begin
+          require 'open-uri'
+          image_file = URI.open(output_url)
+          filename = "image_#{draft_id}_#{Time.current.to_i}.jpg"
+          
+          draft.media.attach(io: image_file, filename: filename, content_type: 'image/jpeg')
+          draft.update!(status: 'draft')
+          
+          Rails.logger.info "ImagePollJob: Draft #{draft_id} completed - image downloaded and attached to ActiveStorage"
+        rescue => e
+          # Fallback: save URL if download fails
+          Rails.logger.warn "ImagePollJob: Failed to download image for draft #{draft_id}: #{e.message}. Saving URL instead."
+          draft.update(media_url: output_url, status: 'draft')
+        end
       else
         draft.update(status: 'failed')
         Rails.logger.error "ImagePollJob: Draft #{draft_id} succeeded but no output URL"

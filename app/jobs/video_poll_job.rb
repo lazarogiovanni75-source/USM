@@ -48,30 +48,42 @@ class VideoPollJob < ApplicationJob
     if raw_status.in?(['success', 'completed', 'done', 'finished', 'ready', 'succeeded'])
       output_url = status_response['output']
       if output_url.present?
-        draft.update(
-          media_url: output_url,
-          status: 'draft',
-          metadata: draft.metadata.merge({ 'completed_at' => Time.current.to_i })
-        )
+        # Download and attach the video to ActiveStorage
+        begin
+          require 'open-uri'
+          video_file = URI.open(output_url)
+          filename = "video_#{content_item_id}_#{Time.current.to_i}.mp4"
+          
+          draft.media.attach(io: video_file, filename: filename, content_type: 'video/mp4')
+          draft.update!(
+            status: 'draft',
+            metadata: draft.metadata.merge({ 'completed_at' => Time.current.to_i })
+          )
 
-        if VideoStorageService.s3_configured?
-          Rails.logger.info "VideoPollJob: Uploading video to S3 for draft #{content_item_id}..."
-          success = VideoStorageService.store_video_from_url(draft, output_url)
-          if success
-            Rails.logger.info "VideoPollJob: Successfully uploaded video to S3 for draft #{content_item_id}"
-          else
-            Rails.logger.warn "VideoPollJob: Failed to upload video to S3, using external URL instead"
+          Rails.logger.info "VideoPollJob: Draft #{content_item_id} completed - video downloaded and attached to ActiveStorage"
+
+          # Apply text overlay if configured
+          if draft.metadata['overlay_text'].present?
+            Rails.logger.info "VideoPollJob: Applying text overlay for draft #{content_item_id}..."
+            VideoOverlayService.apply_overlay(draft)
+            draft.reload
+          end
+        rescue => e
+          # Fallback: save URL if download fails
+          Rails.logger.warn "VideoPollJob: Failed to download video for draft #{content_item_id}: #{e.message}. Saving URL instead."
+          draft.update(
+            media_url: output_url,
+            status: 'draft',
+            metadata: draft.metadata.merge({ 'completed_at' => Time.current.to_i })
+          )
+
+          # Still try to apply overlay even if download failed
+          if draft.metadata['overlay_text'].present?
+            Rails.logger.info "VideoPollJob: Applying text overlay for draft #{content_item_id}..."
+            VideoOverlayService.apply_overlay(draft)
+            draft.reload
           end
         end
-
-        if draft.metadata['overlay_text'].present?
-          Rails.logger.info "VideoPollJob: Applying text overlay for draft #{content_item_id}..."
-          VideoOverlayService.apply_overlay(draft)
-          draft.reload
-        end
-
-        Rails.logger.info "VideoPollJob: Draft #{content_item_id} completed successfully with video: #{output_url}"
-        Rails.logger.info "VideoPollJob: VERIFIED - Saved media_url to Draft #{content_item_id}: #{draft.reload.media_url}"
       else
         draft.update(status: 'failed', metadata: draft.metadata.merge({ 'error' => 'Success but no output' }))
         Rails.logger.error "VideoPollJob: Draft #{content_item_id} succeeded but no output URL"
