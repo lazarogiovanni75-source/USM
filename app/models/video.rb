@@ -1,5 +1,6 @@
 class Video < ApplicationRecord
   belongs_to :user
+  has_one_attached :media
   
   # Validates
   validates :user, presence: true
