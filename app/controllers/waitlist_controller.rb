@@ -25,7 +25,7 @@ class WaitlistController < ApplicationController
           </div></body></html>
         HTML
 
-        SendgridEmailService.send_email(
+        ResendEmailService.send_email(
           to: entry.email,
           subject: "You're on the list — Ultimate Social Media",
           html_content: html_content

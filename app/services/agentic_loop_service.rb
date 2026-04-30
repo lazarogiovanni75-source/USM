@@ -171,7 +171,7 @@ class AgenticLoopService
     message = input['message'] || "Post '#{post.content.title}' processed"
     app_name = Rails.application.config.x.appname
     html_content = "<div style='font-family:sans-serif;padding:20px;'><p>#{message}</p></div>"
-    SendgridEmailService.send_email(
+    ResendEmailService.send_email(
       to: @user.email,
       subject: "[#{app_name}] Notification",
       html_content: html_content

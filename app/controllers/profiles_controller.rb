@@ -87,7 +87,7 @@ class ProfilesController < ApplicationController
       </div>
     HTML
 
-    SendgridEmailService.send_email(
+    ResendEmailService.send_email(
       to: @user.email,
       subject: "[#{app_name}] Verify your email",
       html_content: html_content

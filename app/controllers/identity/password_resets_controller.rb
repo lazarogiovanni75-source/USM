@@ -58,7 +58,7 @@ class Identity::PasswordResetsController < ApplicationController
       <p>If you didn't request this, please ignore this email.</p>
     HTML
 
-    SendgridEmailService.send_email(
+    ResendEmailService.send_email(
       to: @user.email,
       subject: subject,
       html_content: html_content

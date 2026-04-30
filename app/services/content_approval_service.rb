@@ -71,7 +71,7 @@ class ContentApprovalService < ApplicationService
       </body></html>
     HTML
 
-    SendgridEmailService.send_email(
+    ResendEmailService.send_email(
       to: user.email,
       subject: "[#{app_name}] Your AI content is ready for review ✍️",
       html_content: html_content
