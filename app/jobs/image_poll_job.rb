@@ -47,7 +47,6 @@ class ImagePollJob < ApplicationJob
         # Download and attach the image to ActiveStorage
         begin
           require 'open-uri'
-          require 'net/http'
           
           Rails.logger.info "ImagePollJob: Downloading image from #{output_url}"
           
@@ -68,7 +67,7 @@ class ImagePollJob < ApplicationJob
         rescue => e
           # Fallback: save URL if download fails
           Rails.logger.error "ImagePollJob: Failed to download image for draft #{draft_id}: #{e.class} - #{e.message}"
-          Rails.logger.error e.backtrace.first(5).join("\n")
+          Rails.logger.error e.backtrace.first(5).join("\n") if e.backtrace
           draft.update(media_url: output_url, status: 'failed')
         end
       else

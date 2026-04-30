@@ -51,7 +51,6 @@ class VideoPollJob < ApplicationJob
         # Download and attach the video to ActiveStorage
         begin
           require 'open-uri'
-          require 'net/http'
           
           Rails.logger.info "VideoPollJob: Downloading video from #{output_url}"
           
@@ -82,7 +81,7 @@ class VideoPollJob < ApplicationJob
         rescue => e
           # Fallback: save URL if download fails
           Rails.logger.error "VideoPollJob: Failed to download video for draft #{content_item_id}: #{e.class} - #{e.message}"
-          Rails.logger.error e.backtrace.first(5).join("\n")
+          Rails.logger.error e.backtrace.first(5).join("\n") if e.backtrace
           draft.update(
             media_url: output_url,
             status: 'failed',
