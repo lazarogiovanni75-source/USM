@@ -47,17 +47,29 @@ class ImagePollJob < ApplicationJob
         # Download and attach the image to ActiveStorage
         begin
           require 'open-uri'
-          image_file = URI.open(output_url)
+          require 'net/http'
+          
+          Rails.logger.info "ImagePollJob: Downloading image from #{output_url}"
+          
+          # Download with SSL verification disabled for Alibaba Cloud
+          downloaded_file = URI.open(output_url, ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE)
           filename = "image_#{draft_id}_#{Time.current.to_i}.jpg"
           
-          draft.media.attach(io: image_file, filename: filename, content_type: 'image/jpeg')
+          # Attach to ActiveStorage
+          draft.media.attach(
+            io: downloaded_file,
+            filename: filename,
+            content_type: 'image/jpeg'
+          )
+          
           draft.update!(status: 'draft')
           
           Rails.logger.info "ImagePollJob: Draft #{draft_id} completed - image downloaded and attached to ActiveStorage"
         rescue => e
           # Fallback: save URL if download fails
-          Rails.logger.warn "ImagePollJob: Failed to download image for draft #{draft_id}: #{e.message}. Saving URL instead."
-          draft.update(media_url: output_url, status: 'draft')
+          Rails.logger.error "ImagePollJob: Failed to download image for draft #{draft_id}: #{e.class} - #{e.message}"
+          Rails.logger.error e.backtrace.first(5).join("\n")
+          draft.update(media_url: output_url, status: 'failed')
         end
       else
         draft.update(status: 'failed')

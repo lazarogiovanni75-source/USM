@@ -51,10 +51,21 @@ class VideoPollJob < ApplicationJob
         # Download and attach the video to ActiveStorage
         begin
           require 'open-uri'
-          video_file = URI.open(output_url)
+          require 'net/http'
+          
+          Rails.logger.info "VideoPollJob: Downloading video from #{output_url}"
+          
+          # Download with SSL verification disabled for Alibaba Cloud
+          downloaded_file = URI.open(output_url, ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE)
           filename = "video_#{content_item_id}_#{Time.current.to_i}.mp4"
           
-          draft.media.attach(io: video_file, filename: filename, content_type: 'video/mp4')
+          # Attach to ActiveStorage
+          draft.media.attach(
+            io: downloaded_file,
+            filename: filename,
+            content_type: 'video/mp4'
+          )
+          
           draft.update!(
             status: 'draft',
             metadata: draft.metadata.merge({ 'completed_at' => Time.current.to_i })
@@ -70,19 +81,13 @@ class VideoPollJob < ApplicationJob
           end
         rescue => e
           # Fallback: save URL if download fails
-          Rails.logger.warn "VideoPollJob: Failed to download video for draft #{content_item_id}: #{e.message}. Saving URL instead."
+          Rails.logger.error "VideoPollJob: Failed to download video for draft #{content_item_id}: #{e.class} - #{e.message}"
+          Rails.logger.error e.backtrace.first(5).join("\n")
           draft.update(
             media_url: output_url,
-            status: 'draft',
-            metadata: draft.metadata.merge({ 'completed_at' => Time.current.to_i })
+            status: 'failed',
+            metadata: draft.metadata.merge({ 'error' => e.message })
           )
-
-          # Still try to apply overlay even if download failed
-          if draft.metadata['overlay_text'].present?
-            Rails.logger.info "VideoPollJob: Applying text overlay for draft #{content_item_id}..."
-            VideoOverlayService.apply_overlay(draft)
-            draft.reload
-          end
         end
       else
         draft.update(status: 'failed', metadata: draft.metadata.merge({ 'error' => 'Success but no output' }))
