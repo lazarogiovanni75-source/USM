@@ -19,10 +19,10 @@ class ImagePollJob < ApplicationJob
     end
 
     draft = DraftContent.find(draft_id)
-    return if draft.media_url.present?
+    return if draft.media_url.present? && draft.status == 'draft'
 
     if attempt >= MAX_ATTEMPTS
-      draft.update(status: 'failed')
+      draft.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => 'Max polling attempts reached' }))
       Rails.logger.error "ImagePollJob: Max attempts reached for draft #{draft_id}"
       return
     end
@@ -114,12 +114,13 @@ class ImagePollJob < ApplicationJob
         end
       end
     elsif raw_status.in?(['failed', 'error'])
-      if attempt >= 3
-        draft.update(status: 'failed')
-        Rails.logger.error "ImagePollJob: Draft #{draft_id} failed - #{status_response['error']}"
-      else
-        ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
-      end
+      # Immediately update the draft with the error message
+      error_msg = status_response['error'] || 'Image generation failed'
+      draft.update(
+        status: 'failed',
+        metadata: (draft.metadata || {}).merge({ 'error' => error_msg })
+      )
+      Rails.logger.error "ImagePollJob: Draft #{draft_id} failed - #{error_msg}"
     elsif raw_status.in?(['in_progress', 'starting', 'pending', 'processing', 'running'])
       attempt += 1
       ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt)
@@ -143,7 +144,7 @@ class ImagePollJob < ApplicationJob
         AtlasCloudImageService.new.task_status(task_id)
       rescue AtlasCloudImageService::AuthenticationError => e
         error_msg = 'Authentication failed - please check your Atlas Cloud API key'
-        draft = DraftContent.find_by(id: @draft_id)
+        draft = DraftContent.find_by(id: draft_id)
         draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
         Rails.logger.error "ImagePollJob: Authentication error for task #{task_id}: #{e.message}"
         return { 'status' => 'failed', 'error' => error_msg }
@@ -151,14 +152,14 @@ class ImagePollJob < ApplicationJob
         error_msg_lower = e.message.downcase
         if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up')
           error_msg = 'Insufficient credits - please top up your Atlas Cloud account'
-          draft = DraftContent.find_by(id: @draft_id)
+          draft = DraftContent.find_by(id: draft_id)
           draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
           Rails.logger.error "ImagePollJob: Insufficient credits for task #{task_id}"
           return { 'status' => 'failed', 'error' => error_msg }
         elsif error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
               error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
           error_msg = "Atlas Cloud server error - #{e.message}"
-          draft = DraftContent.find_by(id: @draft_id)
+          draft = DraftContent.find_by(id: draft_id)
           draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
           Rails.logger.error "ImagePollJob: Atlas Cloud server error for task #{task_id}: #{e.message}"
           return { 'status' => 'failed', 'error' => error_msg }
@@ -181,7 +182,10 @@ class ImagePollJob < ApplicationJob
         if error_msg_lower.include?('insufficient credits') || error_msg_lower.include?('top up') ||
            error_msg_lower.include?('server error: 500') || error_msg_lower.include?('server error: 502') ||
            error_msg_lower.include?('server error: 503') || error_msg_lower.include?('server error: 504')
-          return { 'status' => 'failed', 'error' => e.message }
+          error_msg = e.message
+          draft = DraftContent.find_by(id: draft_id)
+          draft&.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => error_msg }))
+          return { 'status' => 'failed', 'error' => error_msg }
         elsif error_msg_lower.include?('404') || error_msg_lower.include?('not found') ||
               error_msg_lower.include?('rate limit') || error_msg_lower.include?('connection error') ||
               error_msg_lower.include?('timeout')
