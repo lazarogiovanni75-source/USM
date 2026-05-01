@@ -46,10 +46,12 @@ class AtlasCloudImageService
       model: model,
       prompt: prompt,
       aspect_ratio: aspect_ratio,
-      n: 1,  # Always generate exactly 1 image
-      quality: quality  # Pass quality tier to API
+      n: 1  # Always generate exactly 1 image
     }
-
+    
+    # Only include quality if it's 'hd' (standard is the default and may cause API errors)
+    body[:quality] = quality if quality == 'hd'
+    
     Rails.logger.info "[AtlasCloudImageService] Generating image with model: #{model}, aspect_ratio: #{aspect_ratio}, quality: #{quality}"
 
     result = post_request('/api/v1/model/generateImage', body)

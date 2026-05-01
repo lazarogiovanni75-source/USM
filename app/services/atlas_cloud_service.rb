@@ -112,10 +112,12 @@ class AtlasCloudService
       prompt: prompt,
       aspect_ratio: aspect_ratio,
       duration: duration,
-      resolution: resolution,
-      quality: quality
+      resolution: resolution
     }
-
+    
+    # Only include quality if it's 'hd' (standard is the default)
+    body[:quality] = quality if quality == 'hd'
+    
     Rails.logger.info "[AtlasCloudService] Submitting text-to-video with model: #{selected_model}, resolution: #{resolution}"
 
 
@@ -164,10 +166,12 @@ class AtlasCloudService
       prompt: prompt,
       image_url: image_url,
       aspect_ratio: aspect_ratio,
-      duration: duration,
-      quality: quality
+      duration: duration
     }
-
+    
+    # Only include quality if it's 'hd' (standard is the default)
+    body[:quality] = quality if quality == 'hd'
+    
     Rails.logger.info "[AtlasCloudService] Submitting image-to-video with model: #{model}, quality: #{quality}"
 
     result = post_request('/api/v1/model/generateVideo', body)
@@ -176,6 +180,52 @@ class AtlasCloudService
 
     if task_id.present?
       Rails.logger.info "[AtlasCloudService] Image-to-video started, task_id: #{task_id}"
+      { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
+    else
+      Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
+      { 'task_id' => nil, 'output' => nil, 'error' => result.dig('message') || 'Failed to start video generation' }
+    end
+  end
+
+  # Generate video from start and end frames (image-to-video with two images)
+  #
+  # @param start_image_url [String] URL of the start frame image
+  # @param end_image_url [String] URL of the end frame image
+  # @param prompt [String] Optional text prompt to guide the generation
+  # @param model [String] Model ID (default: google/veo3.1-lite/start-end-frame-to-video)
+  # @param aspect_ratio [String] Aspect ratio (default: 16:9)
+  # @param duration [Integer] Video duration in seconds (default: 5)
+  # @param quality [String] Quality tier (standard, hd)
+  # @return [Hash] { task_id:, output:, status: }
+  #
+  def generate_video_from_start_end_frames(start_image_url:,
+                                          end_image_url:,
+                                          prompt: '',
+                                          model: 'google/veo3.1-lite/start-end-frame-to-video',
+                                          aspect_ratio: '16:9',
+                                          duration: 5,
+                                          quality: 'standard')
+    body = {
+      model: model,
+      prompt: prompt,
+      start_image_url: start_image_url,
+      end_image_url: end_image_url,
+      aspect_ratio: aspect_ratio,
+      duration: duration
+    }
+    
+    # Only include quality if it's 'hd' (standard is the default)
+    body[:quality] = quality if quality == 'hd'
+    
+    Rails.logger.info "[AtlasCloudService] Submitting start-end-frame-to-video with model: #{model}, quality: #{quality}"
+
+    result = post_request('/api/v1/model/generateVideo', body)
+
+
+    task_id = extract_task_id(result)
+
+    if task_id.present?
+      Rails.logger.info "[AtlasCloudService] Start-end-frame-to-video started, task_id: #{task_id}"
       { 'task_id' => task_id, 'output' => nil, 'status' => 'pending' }
     else
       Rails.logger.error "[AtlasCloudService] No task_id in response: #{result.inspect}"
