@@ -47,12 +47,27 @@ class VideoPollJob < ApplicationJob
 
     if raw_status.in?(['success', 'completed', 'done', 'finished', 'ready', 'succeeded'])
       output_url = status_response['output']
+      
+      # If output is nil but status is success, try alternative URL sources
+      if output_url.blank?
+        # Try to extract URL from draft metadata (alternative sources)
+        output_url = draft.metadata['output_url'] || 
+                     draft.metadata['video_url'] ||
+                     draft.metadata['result_url'] ||
+                     draft.metadata.dig('result', 'video_url') ||
+                     draft.metadata.dig('result', 'url')
+        
+        if output_url.present?
+          Rails.logger.info "VideoPollJob: Found output URL from metadata for draft #{content_item_id}"
+        end
+      end
+      
       if output_url.present?
         # Download and attach the video to ActiveStorage
         begin
           require 'open-uri'
           
-          Rails.logger.info "VideoPollJob: Downloading video from #{output_url}"
+          Rails.logger.info "VideoPollJob: Downloading video from #{output_url[0..80]}..."
           
           # Download with SSL verification disabled for Alibaba Cloud
           downloaded_file = URI.open(output_url, ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE)
@@ -67,6 +82,7 @@ class VideoPollJob < ApplicationJob
           
           draft.update!(
             status: 'draft',
+            media_url: output_url, # Also save URL directly for immediate display
             metadata: draft.metadata.merge({ 'completed_at' => Time.current.to_i })
           )
 
@@ -79,18 +95,44 @@ class VideoPollJob < ApplicationJob
             draft.reload
           end
         rescue => e
-          # Fallback: save URL if download fails
+          # Fallback: save URL if download fails - still mark as draft so user can access
           Rails.logger.error "VideoPollJob: Failed to download video for draft #{content_item_id}: #{e.class} - #{e.message}"
           Rails.logger.error e.backtrace.first(5).join("\n") if e.backtrace
+          # Save the URL so user can at least see the video link
           draft.update(
             media_url: output_url,
-            status: 'failed',
-            metadata: draft.metadata.merge({ 'error' => e.message })
+            status: 'draft', # Mark as draft so it shows up - download can be retried
+            metadata: draft.metadata.merge({ 
+              'error' => "Download failed: #{e.message}",
+              'video_url' => output_url,
+              'download_failed_at' => Time.current.to_i
+            })
           )
         end
       else
-        draft.update(status: 'failed', metadata: draft.metadata.merge({ 'error' => 'Success but no output' }))
-        Rails.logger.error "VideoPollJob: Draft #{content_item_id} succeeded but no output URL"
+        # No output URL available - check if task is still processing or stuck
+        Rails.logger.warn "VideoPollJob: Success status but no output URL for draft #{content_item_id}. Full response: #{status_response.inspect}"
+        
+        # Check if the draft was generated via a different path (e.g., GenerateVideoJob which saves URL directly)
+        if draft.metadata['video_url'].present?
+          Rails.logger.info "VideoPollJob: Found video_url in metadata, using it directly"
+          direct_url = draft.metadata['video_url']
+          draft.update(
+            status: 'draft',
+            media_url: direct_url,
+            metadata: draft.metadata.merge({ 'completed_at' => Time.current.to_i })
+          )
+        elsif attempt >= 10
+          # Give up after 10 attempts if still no output
+          draft.update(
+            status: 'failed',
+            metadata: draft.metadata.merge({ 'error' => 'Video completed but no output URL received after multiple checks' })
+          )
+        else
+          # Continue polling
+          Rails.logger.info "VideoPollJob: Will retry - no output yet (attempt #{attempt + 1})"
+          VideoPollJob.set(wait: 3.seconds).perform_later(content_item_id, task_id, attempt + 1)
+        end
       end
     elsif raw_status.in?(['failed', 'error'])
       error_msg = status_response['error'] || status_response['message'] || 'Video generation failed without details'

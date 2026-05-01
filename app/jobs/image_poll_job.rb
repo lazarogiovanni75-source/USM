@@ -43,12 +43,26 @@ class ImagePollJob < ApplicationJob
 
     if raw_status.in?(['success', 'completed', 'done', 'ready', 'succeeded'])
       output_url = status_response['output']
+      
+      # If output is nil but status is success, try alternative URL sources
+      if output_url.blank?
+        output_url = draft.metadata['output_url'] || 
+                     draft.metadata['image_url'] ||
+                     draft.metadata['result_url'] ||
+                     draft.metadata.dig('result', 'image_url') ||
+                     draft.metadata.dig('result', 'url')
+        
+        if output_url.present?
+          Rails.logger.info "ImagePollJob: Found output URL from metadata for draft #{draft_id}"
+        end
+      end
+      
       if output_url.present?
         # Download and attach the image to ActiveStorage
         begin
           require 'open-uri'
           
-          Rails.logger.info "ImagePollJob: Downloading image from #{output_url}"
+          Rails.logger.info "ImagePollJob: Downloading image from #{output_url[0..80]}..."
           
           # Download with SSL verification disabled for Alibaba Cloud
           downloaded_file = URI.open(output_url, ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE)
@@ -61,18 +75,43 @@ class ImagePollJob < ApplicationJob
             content_type: 'image/jpeg'
           )
           
-          draft.update!(status: 'draft')
+          draft.update!(
+            status: 'draft',
+            media_url: output_url, # Also save URL directly for immediate display
+            metadata: (draft.metadata || {}).merge({ 'completed_at' => Time.current.to_i })
+          )
           
           Rails.logger.info "ImagePollJob: Draft #{draft_id} completed - image downloaded and attached to ActiveStorage"
         rescue => e
-          # Fallback: save URL if download fails
+          # Fallback: save URL if download fails - still mark as draft
           Rails.logger.error "ImagePollJob: Failed to download image for draft #{draft_id}: #{e.class} - #{e.message}"
           Rails.logger.error e.backtrace.first(5).join("\n") if e.backtrace
-          draft.update(media_url: output_url, status: 'failed')
+          draft.update(
+            media_url: output_url,
+            status: 'draft', # Mark as draft so it shows up
+            metadata: (draft.metadata || {}).merge({ 
+              'error' => "Download failed: #{e.message}",
+              'image_url' => output_url,
+              'download_failed_at' => Time.current.to_i
+            })
+          )
         end
       else
-        draft.update(status: 'failed')
-        Rails.logger.error "ImagePollJob: Draft #{draft_id} succeeded but no output URL"
+        # No output URL - check metadata
+        Rails.logger.warn "ImagePollJob: Success status but no output URL for draft #{draft_id}"
+        
+        if draft.metadata['image_url'].present?
+          Rails.logger.info "ImagePollJob: Found image_url in metadata, using it directly"
+          draft.update(
+            status: 'draft',
+            media_url: draft.metadata['image_url'],
+            metadata: (draft.metadata || {}).merge({ 'completed_at' => Time.current.to_i })
+          )
+        elsif attempt >= 5
+          draft.update(status: 'failed', metadata: (draft.metadata || {}).merge({ 'error' => 'Image completed but no output URL' }))
+        else
+          ImagePollJob.set(wait: 3.seconds).perform_later(draft_id, task_id, service, attempt + 1)
+        end
       end
     elsif raw_status.in?(['failed', 'error'])
       if attempt >= 3
