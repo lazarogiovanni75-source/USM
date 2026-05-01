@@ -325,7 +325,7 @@ class ContentCreationController < ApplicationController
   def edit_image
     draft_id = params[:draft_id]
     edit_prompt = params[:edit_prompt]
-    edit_model = params[:edit_model] || 'qwen/qwen-image-2.0/edit'
+    edit_model = params[:edit_model] || 'openai/gpt-image-2/edit'
 
     draft = current_user.draft_contents.find(draft_id)
 
