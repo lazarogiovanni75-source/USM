@@ -62,7 +62,7 @@ class ImageGenerationService
     begin
       result = service.generate_image(
         prompt: prompt,
-        model: model || 'atlascloud/qwen-image/text-to-image',
+        model: model || 'openai/gpt-image-2/text-to-image',
         aspect_ratio: aspect_ratio,
         quality: quality
       )
