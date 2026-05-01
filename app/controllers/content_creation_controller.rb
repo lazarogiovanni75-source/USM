@@ -135,7 +135,7 @@ class ContentCreationController < ApplicationController
   def generate_image
     prompt = params[:prompt]
     size = params[:size] || '1:1'
-    model = params[:model] || 'atlascloud/qwen-image/text-to-image'
+    model = params[:model].presence || 'openai/gpt-image-2/text-to-image'
     quality = params[:quality] || 'standard'
     
     # Validate quality tier
