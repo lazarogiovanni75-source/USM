@@ -394,6 +394,13 @@ class AtlasCloudService
       return data['output']
     end
 
+    # Try data.data.outputs array (Atlas Cloud nested format)
+    if data['data'].is_a?(Hash) && data.dig('data', 'outputs').is_a?(Array) && data.dig('data', 'outputs').any?
+      output = data.dig('data', 'outputs').first
+      Rails.logger.debug "[AtlasCloudService] Found output in data.data.outputs: #{output}"
+      return output
+    end
+
     # Try data.data.output (nested)
     if data['data'].is_a?(Hash) && data.dig('data', 'output').present?
       Rails.logger.debug "[AtlasCloudService] Found output in data.data.output: #{data.dig('data', 'output')}"
@@ -438,8 +445,20 @@ class AtlasCloudService
 
     # Try data.data.result
     if data['data'].is_a?(Hash) && data.dig('data', 'result').present?
-      Rails.logger.debug "[AtlasCloudService] Found output in data.data.result: #{data.dig('data', 'result')}"
-      return data.dig('data', 'result')
+      result_data = data.dig('data', 'result')
+      # Check if result is a hash with video_url/image_url
+      if result_data.is_a?(Hash)
+        if result_data['video_url'].present?
+          Rails.logger.debug "[AtlasCloudService] Found video_url in data.data.result: #{result_data['video_url']}"
+          return result_data['video_url']
+        elsif result_data['image_url'].present?
+          Rails.logger.debug "[AtlasCloudService] Found image_url in data.data.result: #{result_data['image_url']}"
+          return result_data['image_url']
+        end
+      elsif result_data.is_a?(String) && result_data.start_with?('http')
+        Rails.logger.debug "[AtlasCloudService] Found URL in data.data.result: #{result_data}"
+        return result_data
+      end
     end
 
     # Try data.videos array

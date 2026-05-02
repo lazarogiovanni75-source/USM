@@ -129,7 +129,7 @@ class AgenticLoopService
   end
 
   def execute_generate_video(input, post)
-    result = AtlasCloudService.new.generate_video_from_text(prompt: input['prompt'], model: input['model'] || 'atlascloud/magi-1-24b', aspect_ratio: input['aspect_ratio'] || '16:9', duration: input['duration'] || 5)
+    result = AtlasCloudService.new.generate_video_from_text(prompt: input['prompt'], model: input['model'] || 'google/veo3.1-lite/text-to-video', aspect_ratio: input['aspect_ratio'] || '16:9', duration: input['duration'] || 8)
     return { success: false, error: result['error'] } unless result['task_id']
     output_url = poll_for_completion(:video, result['task_id'])
     @results[:videos_generated] += 1

@@ -41,7 +41,7 @@ class GenerateVideoJob < ApplicationJob
     atlas_service = AtlasCloudService.new
     response = atlas_service.generate_video(
       prompt: topic,
-      duration: 5,
+      duration: 8,
       aspect_ratio: '16:9'
     )
 
