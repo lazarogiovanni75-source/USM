@@ -1,7 +1,7 @@
 class AssistantConversation < ApplicationRecord
   belongs_to :user
 
-  before_save :generate_title_if_needed, if: :first_message?
+  before_save :generate_title_from_first_message, if: :first_message?
 
   def messages_array
     JSON.parse(messages || '[]')

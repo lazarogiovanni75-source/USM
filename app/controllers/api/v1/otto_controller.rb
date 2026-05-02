@@ -596,9 +596,10 @@ module Api
           Rails.logger.info "[Otto] chat_response START - message class: #{message.class}, value: #{message.to_s[0..30]}"
           
           # Build conversation history from AssistantConversation (last 20 messages max)
+          # Note: Anthropic API only accepts role and content, not timestamp
           @conversation ||= current_user.assistant_conversations.order(updated_at: :desc).first
           history = if @conversation.present?
-            @conversation.messages_array.last(20)
+            @conversation.messages_array.last(20).map { |m| { role: m['role'], content: m['content'] } }
           else
             []
           end
