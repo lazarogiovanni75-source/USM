@@ -6,17 +6,17 @@
 # Authentication: Bearer token via ATLASCLOUD_API_KEY environment variable
 class AtlasCloudImageService
   BASE_URL = 'https://api.atlascloud.ai'
-  DEFAULT_MODEL = 'openai/gpt-image-2/text-to-image'
+  DEFAULT_MODEL = 'openai/gpt-image-1-mini/text-to-image'
   TIMEOUT = 120
 
   # Available image models (OpenAI GPT Image)
   AVAILABLE_MODELS = {
-    'openai/gpt-image-2/text-to-image' => 'OpenAI GPT Image 2 (Text-to-Image)'
+    'openai/gpt-image-1-mini/text-to-image' => 'OpenAI GPT Image 1 Mini (Text-to-Image)'
   }.freeze
 
   # Image edit models (OpenAI GPT Image)
   IMAGE_EDIT_MODELS = {
-    'openai/gpt-image-2/edit' => 'OpenAI GPT Image 2 (Image Edit)'
+    'openai/gpt-image-1-mini/edit' => 'OpenAI GPT Image 1 Mini (Image Edit)'
   }.freeze
 
   class Error < StandardError; end
@@ -80,7 +80,7 @@ class AtlasCloudImageService
   #
   def edit_image(image_url:,
                  prompt:,
-                 model: 'openai/gpt-image-2/edit',
+                 model: 'openai/gpt-image-1-mini/edit',
                  aspect_ratio: '1:1')
     body = {
       model: model,

@@ -27,12 +27,12 @@ class AtlasCloudService
 
   # Available image models (OpenAI GPT Image)
   IMAGE_MODELS = {
-    'openai/gpt-image-2/text-to-image' => 'OpenAI GPT Image 2 (Text-to-Image)'
+    'openai/gpt-image-1-mini/text-to-image' => 'OpenAI GPT Image 1 Mini (Text-to-Image)'
   }.freeze
 
   # Image editing models (OpenAI GPT Image)
   IMAGE_EDIT_MODELS = {
-    'openai/gpt-image-2/edit' => 'OpenAI GPT Image 2 (Image Edit)'
+    'openai/gpt-image-1-mini/edit' => 'OpenAI GPT Image 1 Mini (Image Edit)'
   }.freeze
 
   # Default video model (Google Veo 3.1 Lite)
@@ -68,7 +68,7 @@ class AtlasCloudService
   # @param aspect_ratio [String] Aspect ratio (16:9, 9:16, 1:1, 4:3, 3:4)
   # @return [Hash] { task_id:, output:, status: }
   #
-  def generate_image(prompt:, model: 'openai/gpt-image-2/text-to-image', aspect_ratio: '1:1')
+  def generate_image(prompt:, model: 'openai/gpt-image-1-mini/text-to-image', aspect_ratio: '1:1')
     body = {
       model: model,
       prompt: prompt,

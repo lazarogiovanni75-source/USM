@@ -135,7 +135,7 @@ class ContentCreationController < ApplicationController
   def generate_image
     prompt = params[:prompt]
     size = params[:size] || '1:1'
-    model = params[:model].presence || 'openai/gpt-image-2/text-to-image'
+    model = params[:model].presence || 'openai/gpt-image-1-mini/text-to-image'
     quality = params[:quality] || 'standard'
     
     # Validate quality tier
@@ -325,7 +325,7 @@ class ContentCreationController < ApplicationController
   def edit_image
     draft_id = params[:draft_id]
     edit_prompt = params[:edit_prompt]
-    edit_model = params[:edit_model] || 'openai/gpt-image-2/edit'
+    edit_model = params[:edit_model] || 'openai/gpt-image-1-mini/edit'
 
     draft = current_user.draft_contents.find(draft_id)
 
