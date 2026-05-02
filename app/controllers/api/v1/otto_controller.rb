@@ -6,17 +6,23 @@ module Api
 
       def chat
         user_message = params[:message].to_s.strip
+        conversation_id = params[:conversation_id]
 
         if user_message.blank?
           render json: { error: "Message cannot be blank" }, status: :unprocessable_entity
           return
         end
 
-        # Save the user's message (use new + save to avoid validation exceptions)
-        msg = current_user.otto_messages.new(role: "user", content: user_message)
-        unless msg.save
-          Rails.logger.error "[Otto] Failed to save user message: #{msg.errors.full_messages}"
+        # Load or create conversation (use AssistantConversation for persistent history)
+        @conversation = if conversation_id.present?
+          current_user.assistant_conversations.find_by(id: conversation_id)
+        else
+          nil
         end
+        @conversation ||= current_user.assistant_conversations.create(user: current_user)
+
+        # Save user message to conversation
+        @conversation.add_message!('user', user_message)
 
         # Check if user wants to update brand profile
         if brand_update_intent?(user_message)
@@ -71,8 +77,36 @@ module Api
         render json: { error: "Failed to get draft status" }, status: :internal_server_error
       end
       def history
-        messages = current_user.otto_messages.order(created_at: :asc).last(20)
-        render json: { messages: messages.map { |m| { role: m.role, content: m.content } } }
+        # Return conversation history from AssistantConversation
+        conversation_id = params[:conversation_id]
+        conversation = if conversation_id.present?
+          current_user.assistant_conversations.find_by(id: conversation_id)
+        else
+          current_user.assistant_conversations.order(updated_at: :desc).first
+        end
+
+        if conversation
+          messages = conversation.messages_array
+          render json: { messages: messages, conversation_id: conversation.id }
+        else
+          render json: { messages: [] }
+        end
+      end
+
+      def conversations
+        # Return list of all conversations for sidebar
+        convs = current_user.assistant_conversations
+          .order(updated_at: :desc)
+          .limit(50)
+          .map do |c|
+            {
+              id: c.id,
+              title: c.title.presence || "New conversation",
+              updated_at: c.updated_at,
+              message_count: c.messages_array.count
+            }
+          end
+        render json: { conversations: convs }
       end
 
       def start_onboarding
@@ -146,7 +180,14 @@ module Api
         }
       end
       def clear
-        current_user.otto_messages.destroy_all
+        # Clear current conversation
+        conversation_id = params[:conversation_id]
+        if conversation_id.present?
+          conversation = current_user.assistant_conversations.find_by(id: conversation_id)
+          conversation&.clear!
+        else
+          current_user.assistant_conversations.order(updated_at: :desc).first&.clear!
+        end
         render json: { success: true }
       end
 
@@ -554,13 +595,13 @@ module Api
         begin
           Rails.logger.info "[Otto] chat_response START - message class: #{message.class}, value: #{message.to_s[0..30]}"
           
-          # Build conversation history (last 10 messages max)
-          history = current_user.otto_messages.order(created_at: :asc).last(20).map do |msg|
-          { role: msg.role, content: msg.content.to_s }
-        end
-        history = history.each_with_object([]) do |msg, arr|
-          arr << msg if arr.empty? || arr.last[:role] != msg[:role]
-        end
+          # Build conversation history from AssistantConversation (last 20 messages max)
+          @conversation ||= current_user.assistant_conversations.order(updated_at: :desc).first
+          history = if @conversation.present?
+            @conversation.messages_array.last(20)
+          else
+            []
+          end
           Rails.logger.info "[Otto] History built: #{history.length} messages"
 
           Rails.logger.info "[Otto] Calling Anthropic API with tools..."
@@ -656,7 +697,7 @@ module Api
         final_reply = all_replies.join("\n\n")
         
         if final_reply.present?
-          current_user.otto_messages.create(role: "assistant", content: final_reply)
+          @conversation&.add_message!('assistant', final_reply)
         end
         
         { reply: final_reply.presence || "Done! Let me know if you need anything else.", task: task_info }

@@ -35,12 +35,23 @@ export default class OttoSidebarController extends Controller {
 
   async loadConversations() {
     try {
-      const response = await fetch('/assistants/', {
+      // Try API endpoint first, then fall back to Rails endpoint
+      let response = await fetch('/api/v1/otto/conversations', {
         headers: {
           'X-CSRF-Token': this.csrfToken || '',
           'Accept': 'application/json'
         }
       });
+
+      if (!response.ok) {
+        // Fall back to Rails assistants endpoint
+        response = await fetch('/assistants/', {
+          headers: {
+            'X-CSRF-Token': this.csrfToken || '',
+            'Accept': 'application/json'
+          }
+        });
+      }
 
       if (!response.ok) throw new Error('Failed to load conversations');
 
@@ -115,12 +126,23 @@ export default class OttoSidebarController extends Controller {
     if (!conversationId) return;
 
     try {
-      const response = await fetch(`/assistants/${conversationId}`, {
+      // Try API endpoint first, then fall back to Rails endpoint
+      let response = await fetch(`/api/v1/otto/history?conversation_id=${conversationId}`, {
         headers: {
           'X-CSRF-Token': this.csrfToken || '',
           'Accept': 'application/json'
         }
       });
+
+      if (!response.ok) {
+        // Fall back to Rails assistants endpoint
+        response = await fetch(`/assistants/${conversationId}`, {
+          headers: {
+            'X-CSRF-Token': this.csrfToken || '',
+            'Accept': 'application/json'
+          }
+        });
+      }
 
       if (!response.ok) throw new Error('Failed to load conversation');
 
@@ -133,9 +155,9 @@ export default class OttoSidebarController extends Controller {
       // Notify Otto controller to load this conversation
       const loadEvent = new CustomEvent('otto:load-conversation', {
         detail: {
-          id: data.id,
-          title: data.title,
-          messages: data.messages
+          id: data.conversation_id || conversationId,
+          title: data.title || 'Conversation',
+          messages: data.messages || []
         }
       });
       document.dispatchEvent(loadEvent);

@@ -157,18 +157,30 @@ export default class OttoController extends Controller {
 
   private async loadMostRecentConversation() {
     try {
-      const response = await fetch('/assistants', {
+      // Try API endpoint first, then fall back to Rails endpoint
+      let response = await fetch('/api/v1/otto/conversations', {
         headers: {
           'X-CSRF-Token': this.csrfToken || '',
           'Accept': 'application/json'
         }
       });
 
+      if (!response.ok) {
+        // Fall back to Rails assistants endpoint
+        response = await fetch('/assistants', {
+          headers: {
+            'X-CSRF-Token': this.csrfToken || '',
+            'Accept': 'application/json'
+          }
+        });
+      }
+
       if (!response.ok) return;
 
       const data = await response.json();
-      if (data.conversations && data.conversations.length > 0) {
-        const recent = data.conversations[0];
+      const conversations = data.conversations || [];
+      if (conversations.length > 0) {
+        const recent = conversations[0];
         this.currentConversationId = recent.id.toString();
         await this.loadConversationById(recent.id.toString());
       } else {
@@ -182,12 +194,23 @@ export default class OttoController extends Controller {
 
   private async loadConversationById(id: string) {
     try {
-      const response = await fetch(`/assistants/${id}`, {
+      // Try API endpoint first, then fall back to Rails endpoint
+      let response = await fetch(`/api/v1/otto/history?conversation_id=${id}`, {
         headers: { 
           'X-CSRF-Token': this.csrfToken || '',
           'Accept': 'application/json'
         }
       });
+
+      if (!response.ok) {
+        // Fall back to Rails assistants endpoint
+        response = await fetch(`/assistants/${id}`, {
+          headers: { 
+            'X-CSRF-Token': this.csrfToken || '',
+            'Accept': 'application/json'
+          }
+        });
+      }
       
       if (!response.ok) {
         this.addWelcomeMessage();
@@ -195,14 +218,15 @@ export default class OttoController extends Controller {
       }
       
       const data = await response.json();
-      if (data.messages && data.messages.length > 0) {
+      const messages = data.messages || [];
+      if (messages.length > 0) {
         this.messagesTarget.innerHTML = '';
-        data.messages.forEach((msg: {role: string, content: string}) => {
+        messages.forEach((msg: {role: string, content: string}) => {
           if (msg.role === 'user' || msg.role === 'assistant') {
             this.appendMessage(msg.role as 'user' | 'assistant', msg.content);
           }
         });
-        this.updateHeaderTitle(data.title);
+        this.updateHeaderTitle(data.title || 'Conversation');
       } else {
         this.addWelcomeMessage();
       }
