@@ -283,8 +283,19 @@ module Api
       end
 
       def detect_task_type(message)
+        # Check for image generation requests
+        return 'generate_image' if message.match?(/\b(generate|create|make)\b.*\b(image|picture|photo|illustration)\b/i) ||
+                                    message.match?(/\b(image|picture|photo|illustration)\b.*\b(of|for|about)\b/i)
+        
+        # Check for video generation requests
+        return 'generate_video' if message.match?(/\b(generate|create|make)\b.*\b(video|clip|animation)\b/i) ||
+                                    message.match?(/\b(video|clip|animation)\b.*\b(of|for|about)\b/i)
+        
+        # Check for social posting
         return 'post_social' if message.match?(/\b(post|publish|share)\b.*\b(to|on)\b/i) ||
                                   message.match?(/\b(to|on)\b.*\b(instagram|facebook|twitter|x|tiktok|linkedin)\b/i)
+        
+        # Check for content creation
         return 'create_content' if message.match?(/\b(content|post|caption)\b/) ||
                                     message.match?(/\b(write|generate|create|draft)\b.*\b(post|caption|text)\b/i)
         'unknown'
