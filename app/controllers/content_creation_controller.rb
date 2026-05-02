@@ -217,7 +217,7 @@ class ContentCreationController < ApplicationController
     prompt = params[:prompt]
     model = params[:model] # nil = auto-select based on prompt
     aspect_ratio = params[:aspect_ratio] || '16:9'
-    duration = params[:duration] || '10'
+    duration = params[:duration] || '8'
     source_image_url = params[:source_image_url]
     quality = params[:quality] || 'standard'
     overlay_text = params[:overlay_text].to_s.strip

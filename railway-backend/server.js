@@ -278,7 +278,7 @@ app.post('/video/start',
         {
           model: 'google/veo3.1-lite/text-to-video',
           prompt: prompt,
-          duration: 5,
+          duration: 8,
           aspect_ratio: '16:9',
           resolution: '720p'
         },
