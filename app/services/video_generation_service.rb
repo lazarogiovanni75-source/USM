@@ -19,7 +19,7 @@ class VideoGenerationService
   # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] Result with task_id and metadata
   #
-  def self.generate_video(prompt:, duration: '5', aspect_ratio: '16:9', model: nil, quality: 'standard')
+  def self.generate_video(prompt:, duration: '8', aspect_ratio: '16:9', model: nil, quality: 'standard')
     # Pass model: nil to let AtlasCloudService auto-select based on prompt content
     service = AtlasCloudService.new
 
@@ -65,7 +65,7 @@ class VideoGenerationService
   # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] Result with task_id and metadata
   #
-  def self.generate_video_from_image(image_url:, prompt: '', duration: '5', aspect_ratio: '16:9', model: nil, quality: 'standard')
+  def self.generate_video_from_image(image_url:, prompt: '', duration: '8', aspect_ratio: '16:9', model: nil, quality: 'standard')
     model ||= 'google/veo3.1-lite/image-to-video'
     
     service = AtlasCloudService.new
@@ -120,7 +120,7 @@ class VideoGenerationService
   # @param quality [String] Quality tier (standard, hd)
   # @return [Hash] Result with task_id and metadata
   #
-  def self.generate_video_from_start_end_frames(start_image_url:, end_image_url:, prompt: '', duration: '5', aspect_ratio: '16:9', model: nil, quality: 'standard')
+  def self.generate_video_from_start_end_frames(start_image_url:, end_image_url:, prompt: '', duration: '8', aspect_ratio: '16:9', model: nil, quality: 'standard')
     model ||= 'google/veo3.1-lite/start-end-frame-to-video'
     
     service = AtlasCloudService.new

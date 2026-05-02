@@ -38,7 +38,7 @@ class AtlasCloudService
   # Default video model (Google Veo 3.1 Lite)
   VIDEO_MODEL_TEXT = 'google/veo3.1-lite/text-to-video'.freeze
   VIDEO_MODEL_VISUAL = 'google/veo3.1-lite/text-to-video'.freeze
-  VIDEO_DEFAULTS = { resolution: '720p', max_duration: 10 }.freeze
+  VIDEO_DEFAULTS = { resolution: '720p', max_duration: 8 }.freeze
 
   class Error < StandardError; end
   class AuthenticationError < Error; end
