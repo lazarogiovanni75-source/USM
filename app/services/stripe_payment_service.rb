@@ -251,7 +251,7 @@ class StripePaymentService < ApplicationService
     end
   end
 
-  # CLACKY_NOTE: Only needed for subscription-based payments
+  # Handle subscription deletion - update user subscription and user records
   def self.handle_subscription_deleted(subscription)
     stripe_sub_id = subscription['id']
     user_subscription = UserSubscription.find_by(stripe_subscription_id: stripe_sub_id)
