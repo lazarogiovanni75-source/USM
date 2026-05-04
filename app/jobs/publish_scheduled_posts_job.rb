@@ -8,7 +8,7 @@ class PublishScheduledPostsJob < ApplicationJob
     Rails.logger.info "[PublishScheduledPostsJob] Checking for posts due to publish"
 
     # Find posts scheduled for now or past
-    due_posts = ScheduledPost.where('publish_at <= ?', Time.current)
+    due_posts = ScheduledPost.where('scheduled_at <= ?', Time.current)
                              .where(status: 'scheduled')
                              .where.not(postforme_post_id: nil)
 
@@ -23,7 +23,7 @@ class PublishScheduledPostsJob < ApplicationJob
     end
 
     # Also check for posts without postforme_post_id that are due
-    posts_without_platform_id = ScheduledPost.where('publish_at <= ?', Time.current)
+    posts_without_platform_id = ScheduledPost.where('scheduled_at <= ?', Time.current)
                                             .where(status: 'scheduled')
                                             .where(postforme_post_id: nil)
 

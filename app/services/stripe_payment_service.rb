@@ -291,6 +291,15 @@ class StripePaymentService < ApplicationService
     when 'Subscription', 'UserSubscription'
       subscription = payment.payable
       subscription.update!(status: 'active') if subscription.respond_to?(:status)
+      subscription.reset_credits!
+      subscription.user.update!(subscription_plan: subscription.subscription_plan.name, subscription_status: 'active')
+      
+      # Handle promo code usage tracking
+      if payment.metadata['promo_code'].present?
+        promo_code = PromoCode.find_by(code: payment.metadata['promo_code'])
+        promo_code&.use!
+        Rails.logger.info "Promo code #{payment.metadata['promo_code']} marked as used for payment #{payment.id}" if promo_code
+      end
     else
       Rails.logger.info "No specific handler for payable type: #{payment.payable_type}"
     end
