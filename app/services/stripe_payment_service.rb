@@ -251,13 +251,19 @@ class StripePaymentService < ApplicationService
     end
   end
 
-  # CLACKY_NOTE: Only needed for subscription-based payments
+  # Handle subscription cancellation when user deletes their subscription in Stripe
   def self.handle_subscription_deleted(subscription)
-    # Handle subscription cancellation
-    # sub = Subscription.find_by(stripe_subscription_id: subscription['id'])
-    # sub&.update!(status: 'canceled')
-
-    Rails.logger.info "Subscription deleted: #{subscription['id']}"
+    stripe_sub_id = subscription['id']
+    user_subscription = UserSubscription.find_by(stripe_subscription_id: stripe_sub_id)
+    
+    if user_subscription.present?
+      user_subscription.update!(status: 'canceled')
+      user_subscription.user.update!(
+        subscription_plan: nil,
+        subscription_status: 'canceled'
+      )
+      Rails.logger.info "Subscription #{stripe_sub_id} canceled and user plan revoked"
+    end
   end
 
   # ⚠️ CRITICAL: process_payment_paid is the ONLY place to update business data after payment
