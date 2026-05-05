@@ -176,6 +176,12 @@ class StripePaymentService < ApplicationService
     payment.mark_as_paid!
     Rails.logger.info "Checkout session completed for payment #{payment.id}"
 
+    # Store Stripe subscription ID in metadata for process_payment_paid to use
+    if checkout_session['subscription'].present?
+      existing_metadata = payment.metadata || {}
+      payment.update!(metadata: existing_metadata.merge('stripe_subscription_id' => checkout_session['subscription']))
+    end
+
     process_payment_paid(payment)
   end
 
