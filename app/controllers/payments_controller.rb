@@ -49,14 +49,26 @@ class PaymentsController < ApplicationController
     sig_header = request.env['HTTP_STRIPE_SIGNATURE']
     endpoint_secret = Rails.application.config.stripe[:webhook_secret]
 
+    if endpoint_secret.blank?
+      Rails.logger.error "[StripeWebhook] STRIPE_WEBHOOK_SECRET is not configured — rejecting request"
+      return render json: { error: 'Webhook secret not configured' }, status: :internal_server_error
+    end
+
+    if sig_header.blank?
+      Rails.logger.warn "[StripeWebhook] Request rejected: missing Stripe-Signature header"
+      return render json: { error: 'Missing signature' }, status: :bad_request
+    end
+
     begin
       event = Stripe::Webhook.construct_event(payload, sig_header, endpoint_secret)
       StripePaymentService.process_webhook_event(event)
       render json: { status: 'success' }
     rescue JSON::ParserError => e
-      render json: { error: 'Invalid payload' }, status: 400
+      Rails.logger.error "[StripeWebhook] Invalid JSON payload: #{e.message}"
+      render json: { error: 'Invalid payload' }, status: :bad_request
     rescue Stripe::SignatureVerificationError => e
-      render json: { error: 'Invalid signature' }, status: 400
+      Rails.logger.warn "[StripeWebhook] Signature verification failed — possible spoofed request: #{e.message}"
+      render json: { error: 'Invalid signature' }, status: :bad_request
     end
   end
 
