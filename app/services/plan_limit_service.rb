@@ -90,7 +90,9 @@ class PlanLimitService
   def calculate_storage_usage
     # Sum up media file sizes from draft_contents and contents
     # This is a simplified calculation
-    0 # TODO: Implement actual storage calculation based on ActiveStorage
+    ActiveStorage::Attachment.joins(:blob)
+  .where(record: @user.draft_contents)
+  .sum('active_storage_blobs.byte_size')
   end
 
   def next_plan
